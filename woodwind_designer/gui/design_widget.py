@@ -4,11 +4,12 @@ from pathlib import Path
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGroupBox, QPushButton,
     QComboBox, QSpinBox, QLabel, QTextEdit, QFileDialog, QProgressBar,
-    QFormLayout, QMessageBox
+    QFormLayout, QMessageBox, QCheckBox, QLineEdit
 )
 from PySide6.QtCore import QThread, Signal, Qt
 
 from ..engine.demakein_wrapper import DemakeinDesigner, HAVE_DEMAKEIN
+from ..engine.remote_client import RemoteDesigner
 
 
 class DesignWorker(QThread):
@@ -79,6 +80,43 @@ class DesignWidget(QWidget):
 
         layout.addWidget(config_group)
 
+        # -- Remote server --
+        server_box = QGroupBox("Remote Compute")
+        server_box.setStyleSheet(
+            "QGroupBox { font-weight: bold; border: 1px solid #4a4a4a; border-radius: 6px; "
+            "margin-top: 10px; padding-top: 14px; background: #1e1e1e; }"
+            "QGroupBox::title { subcontrol-origin: margin; left: 12px; padding: 0 6px; color: #D4A76A; }"
+        )
+        server_layout = QHBoxLayout(server_box)
+
+        self.remote_check = QCheckBox("Use Remote Server")
+        self.remote_check.setStyleSheet("color: #C0B0A0;")
+        server_layout.addWidget(self.remote_check)
+
+        self.server_url_input = QLineEdit("http://localhost:8000")
+        self.server_url_input.setStyleSheet(
+            "QLineEdit { padding: 4px 8px; border: 1px solid #4a4a4a; border-radius: 4px; "
+            "background: #2a2a2a; color: #C0B0A0; }"
+            "QLineEdit:hover { border-color: #C99B5C; }"
+        )
+        server_layout.addWidget(self.server_url_input, stretch=1)
+
+        self.test_btn = QPushButton("Test")
+        self.test_btn.setStyleSheet(
+            "QPushButton { padding: 4px 12px; border: 1px solid #4a4a4a; border-radius: 4px; "
+            "background: #2a2a2a; color: #C0B0A0; }"
+            "QPushButton:hover { background: #3a3a3a; border-color: #C99B5C; }"
+        )
+        self.test_btn.clicked.connect(self._test_server)
+        server_layout.addWidget(self.test_btn)
+
+        self.server_status = QLabel("")
+        self.server_status.setStyleSheet("color: #8B5E3C; font-size: 11px; padding-left: 4px;")
+        server_layout.addWidget(self.server_status)
+
+        server_layout.addStretch()
+        layout.addWidget(server_box)
+
         actions = QHBoxLayout()
         self.run_btn = QPushButton("Run Design")
         self.run_btn.clicked.connect(self._run_design)
@@ -134,11 +172,18 @@ class DesignWidget(QWidget):
         desc = self.designer.get_description(key)
         self.desc_label.setText(desc)
 
+    def _get_designer(self):
+        if self.remote_check.isChecked():
+            url = self.server_url_input.text().strip()
+            return RemoteDesigner(url)
+        return self.designer
+
     def _run_design(self):
         key = self._current_preset_key()
         if not key:
             return
 
+        designer = self._get_designer()
         out_dir = os.path.join(tempfile.gettempdir(), f"woodwind_{key}")
         self.log_output.clear()
         self.run_btn.setEnabled(False)
@@ -146,7 +191,7 @@ class DesignWidget(QWidget):
         self.progress_bar.show()
 
         self._worker = DesignWorker(
-            self.designer, key,
+            designer, key,
             self.transpose_spin.value(), out_dir
         )
         self._worker.progress.connect(lambda msg: self.log_output.append(msg))
@@ -170,6 +215,18 @@ class DesignWidget(QWidget):
         else:
             self.log_output.append(f"Failed: {result.log}")
 
+    def _test_server(self):
+        url = self.server_url_input.text().strip()
+        client = RemoteDesigner(url)
+        if client.health():
+            self.server_status.setText("Connected")
+            self.server_status.setStyleSheet("color: #6AAB6A; font-size: 11px; padding-left: 4px;")
+            self.log_output.append(f"Connected to server at {url}")
+        else:
+            self.server_status.setText("No response")
+            self.server_status.setStyleSheet("color: #C04040; font-size: 11px; padding-left: 4px;")
+            self.log_output.append(f"Failed to reach server at {url}")
+
     def select_preset(self, preset: str):
         family, sub = self.designer.find_preset_category(preset)
         if family:
@@ -184,6 +241,6 @@ class DesignWidget(QWidget):
                 return
 
     def _reset_ui(self):
-        self.run_btn.setEnabled(HAVE_DEMAKEIN)
+        self.run_btn.setEnabled(HAVE_DEMAKEIN or self.remote_check.isChecked())
         self.cancel_btn.setEnabled(False)
         self.progress_bar.hide()
