@@ -8,3 +8,11 @@ build/
 .vscode/
 .idea/
 *.wfp/
+
+designs/
+__pycache__/
+*.pyc
+dist/
+build/
+*.spec
+*.egg-info/

@@ -148,6 +148,17 @@ class DemakeinDesigner:
                 if self._recursing:
                     return
                 self.buf += text
+                if "\r" in self.buf:
+                    line = self.buf.rsplit("\r", 1)[-1]
+                    stripped = line.strip()
+                    if stripped and self.callback:
+                        _ProgressStream._recursing = True
+                        try:
+                            _orig_stdout.write(f"[progress] {stripped}\n")
+                            _orig_stdout.flush()
+                            self.callback(stripped)
+                        finally:
+                            _ProgressStream._recursing = False
                 if "\n" in self.buf:
                     lines = self.buf.split("\n")
                     for line in lines[:-1]:

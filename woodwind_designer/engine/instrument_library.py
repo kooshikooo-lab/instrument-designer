@@ -150,6 +150,50 @@ LIBRARY: list[InstrumentEntry] = [
                     "6 finger holes, based on simple-system flute design.",
     ),
     InstrumentEntry(
+        name="Axianov Irish Flute (D)",
+        family="Wind", subcategory="Flute", type_label="Transverse Flute",
+        range="Tenor", key="D",
+        source="Printables – Marat Axianoff",
+        image_url="https://woozle.org/blog/2024/12-04-3d-printed-flute/flute-on-chair.jpg",
+        audio_url="https://www.youtube.com/watch?v=tF9X-xXbwEQ",
+        download_url="https://www.printables.com/model/1097180-axianov-irish-flute",
+        tags=["intermediate", "side-blown", "irish", "6-hole", "keyless", "historical"],
+        difficulty="Intermediate",
+        description="Keyless Irish transverse flute in D, designed by professional "
+                    "Russian flutemaker Marat Axianoff. Open-hole, no keys, based on "
+                    "pre-Boehm 1600s design. Hundreds of successful builds worldwide. "
+                    "3-piece construction, prints for ~$5 of PLA. No post-processing needed.",
+    ),
+    InstrumentEntry(
+        name="Side-Blown Flute in A Major",
+        family="Wind", subcategory="Flute", type_label="Transverse Flute",
+        range="Alto", key="A",
+        source="Printables – Nicolas Bras",
+        image_url="",
+        audio_url="https://www.youtube.com/watch?v=UJITjxPpH4E",
+        download_url="https://www.printables.com/model/1001883-side-blown-flute-in-a-major",
+        tags=["intermediate", "side-blown", "6-hole", "professional"],
+        difficulty="Intermediate",
+        description="3-part side-blown flute in A major by professional musician "
+                    "Nicolas Bras. 6 finger holes, glue-together assembly. Sand holes "
+                    "lightly, then ready to play. Well-tested design with good intonation.",
+    ),
+    InstrumentEntry(
+        name="Traditional Bansuri B Natural",
+        family="Wind", subcategory="Flute", type_label="Transverse Flute",
+        range="Tenor", key="B (Natural)",
+        source="Cults3D – Odell-Creations",
+        image_url="",
+        audio_url="https://www.youtube.com/watch?v=9LqKIB8Vx0M",
+        download_url="https://cults3d.com/en/3d-model/gadget/traditional-keyless-north-indian-bansuri-b-natural-transverse-flute",
+        tags=["intermediate", "bansuri", "indian", "large-bore", "keyless"],
+        difficulty="Intermediate",
+        description="Traditional keyless North Indian Bansuri in B Natural. Designed "
+                    "to match genuine bamboo bansuri as closely as possible with 3D "
+                    "printing. Large bore, deep mellow sound. PETG recommended, prints "
+                    "without supports. 3-piece design with tight-fitting joints.",
+    ),
+    InstrumentEntry(
         name="Dragon Recorder",
         family="Wind", subcategory="Flute", type_label="Fipple Flute",
         range="Soprano", key="C",
@@ -207,6 +251,52 @@ LIBRARY: list[InstrumentEntry] = [
         difficulty="Beginner",
         description="Simple single-reed pipe. Like a clarinet practice chanter. "
                     "Great introduction to reed instruments.",
+    ),
+    InstrumentEntry(
+        name="Modern Chalumeau in C (Clarinet)",
+        family="Wind", subcategory="Woodwind", type_label="Single Reed",
+        range="Soprano", key="C",
+        source="Printables – Tom",
+        image_url="",
+        audio_url="https://www.youtube.com/watch?v=weU1eW8vMQA",
+        download_url="https://www.printables.com/model/752555-clarinet-modern-chalumeau-in-c",
+        tags=["intermediate", "clarinet", "chalumeau", "single-reed", "keyed"],
+        difficulty="Intermediate",
+        description="Simple clarinet in C with two extension keys. Suitable for "
+                    "Vandoren Eb clarinet mouthpiece. 3-part body with bell, barrel, "
+                    "and main section. Updated with corrected finger hole positions. "
+                    "Good entry point for 3D-printed clarinet builds.",
+    ),
+    InstrumentEntry(
+        name="C Clarinet Remix (14mm Bore)",
+        family="Wind", subcategory="Woodwind", type_label="Single Reed",
+        range="Soprano", key="C",
+        source="Printables – Gubbledenut",
+        image_url="",
+        audio_url="https://www.youtube.com/watch?v=weU1eW8vMQA",
+        download_url="https://www.printables.com/model/888905-c-clarinet-remix",
+        tags=["intermediate", "clarinet", "chalumeau", "14mm-bore", "remix", "tunable"],
+        difficulty="Intermediate",
+        description="Remix of Tom's Chalumeau with 14mm bore (vs original narrower "
+                    "bore), 3-part split body, and adjustable tuning via bell and barrel. "
+                    "Fixes intonation issues of the original design. Barrel fits standard "
+                    "Eb mouthpiece. RAised key blocks away from body.",
+    ),
+    InstrumentEntry(
+        name="Membrane Clarinet",
+        family="Wind", subcategory="Woodwind", type_label="Single Reed",
+        range="Soprano", key="Variable",
+        source="Printables – DrJones",
+        image_url="",
+        audio_url="https://www.youtube.com/watch?v=y4prclZPEsA",
+        download_url="https://www.printables.com/model/495171-membrane-clarinet",
+        tags=["intermediate", "clarinet", "membrane", "no-reed", "screw-together"],
+        difficulty="Intermediate",
+        description="Fully 3D-printed clarinet with no metal keys or reeds needed. "
+                    "Uses a thin plastic sheet (bag foil or space blanket) as a membrane "
+                    "reed. 3 screw-together parts with left-hand/right-hand threads. "
+                    "Membrane holder offers 2 degrees of freedom for tuning. Inspired "
+                    "by Nicolas Bras' membrane clarinet concept.",
     ),
     InstrumentEntry(
         name="Folk Shawm",
