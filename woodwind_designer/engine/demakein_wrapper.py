@@ -100,8 +100,18 @@ class DemakeinDesigner:
     def get_description(self, preset: str) -> str:
         return self.PRESET_DESCRIPTIONS.get(preset, "")
 
+    def _patch_optimize_for_quick(self):
+        import demakein.optimize as _opt
+        _orig = _opt.improve
+        def _quick_improve(comment, constrainer, scorer, start_x, **kw):
+            kw.setdefault("pool_factor", 2)
+            kw.setdefault("ftol", 1e-2)
+            kw.setdefault("initial_accuracy", 0.005)
+            return _orig(comment, constrainer, scorer, start_x, **kw)
+        _opt.improve = _quick_improve
+
     def design(self, preset: str, transpose: int = 0, output_dir: Optional[str] = None,
-               on_progress=None) -> DesignResult:
+               on_progress=None, quick: bool = False) -> DesignResult:
         if not HAVE_DEMAKEIN:
             return DesignResult(
                 output_dir=output_dir or "",
@@ -129,6 +139,12 @@ class DemakeinDesigner:
 
         designer = cls(output_dir=design_dir, transpose=transpose)
         self._current_designer = designer
+
+        # Quick Draft mode: faster optimization, coarser meshes
+        if quick:
+            designer.workers = os.cpu_count() or 4
+            os.environ["DEMAKEIN_DRAFT"] = "1"
+            self._patch_optimize_for_quick()
 
         import sys as _sys
         import io as _io

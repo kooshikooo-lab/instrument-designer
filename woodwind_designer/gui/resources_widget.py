@@ -94,7 +94,68 @@ class ResourcesWidget(QWidget):
 
         layout.addWidget(tips_box)
 
-        # -- 2. Open-Source Instrument Projects --
+        # -- 2. Tutorials & How-To Guides --
+        tut_box = QGroupBox("Tutorials & How-To Guides for 3D-Printed Instruments")
+        tut_box.setStyleSheet(SECTION_STYLE)
+        tut_layout = QVBoxLayout(tut_box)
+
+        tutorials = [
+            ("3D Printable Flutes FAQ – Print Settings & Post-Processing",
+             "https://3dprintableflutes.com/pages/faq",
+             "Comprehensive guide: print orientation, seam placement, windway bridging, "
+             "troubleshooting stuck joints, sanding bore interiors. Essential reading."),
+            ("Axianov Irish Flute Build & Assembly Guide",
+             "https://www.printables.com/model/1097180-axianov-irish-flute",
+             "Step-by-step: printing (100% infill, PLA), thread-winding joints, sealing "
+             "air leaks, cork vs thread, dunk test for leak detection."),
+            ("Breath Flute Project – Post-Processing & Sanding Guide",
+             "https://www.breathflute.com/pdf/BreathFlute_DevelGuide.pdf",
+             "Detailed PDF with custom sanding block STLs for bore/mortice finishing. "
+             "Semantic versioning for flue sanding blocks, dowels, and wedges."),
+            ("Instructables – 3D Printing Musical Instruments",
+             "https://www.instructables.com/3d-Printing-Musical-Instruments/",
+             "Walkthrough from design to finished instrument. Covers material choice, "
+             "printer calibration, post-processing for playable results."),
+            ("Flutecraft – I 3D Printed a Native American Style Flute",
+             "https://flutecraft.org/i-3d-printed-a-native-american-style-flute-heres-what-ive-learned/800",
+             "Real-world experience: 24h print time, 3-piece assembly, tuning tips, "
+             "what to expect from a first 3D-printed flute build."),
+            ("Print Flute – Web-Based Flute Designer",
+             "https://print-flute.vercel.app/",
+             "Interactive browser tool: place tone holes, predict pitches, generate STL. "
+             "Includes acoustic calculations and real audio analysis."),
+            ("Chalumier – Faster Demakein Alternative (Java)",
+             "https://github.com/MarkChuCarroll/chalumier",
+             "Alternative instrument design tool based on demakein. Claims 4x faster "
+             "optimization (20 min → 5 min for simple flutes). Open-source."),
+            ("FreeCAD Forum – Modelling Wind Instruments for 3D Printing",
+             "https://forum.freecad.org/viewtopic.php?t=13485",
+             "Discussion thread on bore design, finger hole placement, and FreeCAD "
+             "workflow for parametric wind instrument design."),
+            ("Printone – Interactive Design of 3D-Printable Wind Instruments (PDF)",
+             "https://www.cs.dartmouth.edu/~athina/papers/a184-umetani.pdf",
+             "Academic paper on interactive design interface for free-form wind instruments. "
+             "Includes simulation-guided finger hole placement."),
+            ("The 3D Printed Flute – Digital Fabrication of Musical Instruments (PDF)",
+             "https://amitz.co/ewExternalFiles/JNMR_3DPrintedFlute.pdf",
+             "MIT Media Lab paper on designing and fabricating a 3D-printed concert flute. "
+             "Compares FDM vs PolyJet, key mechanism design, material decomposition."),
+        ]
+        for name, url, desc in tutorials:
+            row = QHBoxLayout()
+            row.setSpacing(8)
+            link = _LinkButton(name, url)
+            link.setFixedWidth(320)
+            row.addWidget(link)
+            d = QLabel(desc)
+            d.setWordWrap(True)
+            d.setStyleSheet("color: #908070; font-size: 11px;")
+            row.addWidget(d, stretch=1)
+            tut_layout.addLayout(row)
+
+        layout.addWidget(tut_box)
+
+        # -- 3. Open-Source Instrument Projects --
         proj_box = QGroupBox("Open-Source 3D-Printable Instrument Projects")
         proj_box.setStyleSheet(SECTION_STYLE)
         proj_layout = QVBoxLayout(proj_box)

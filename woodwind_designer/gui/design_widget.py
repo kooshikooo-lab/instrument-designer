@@ -11,26 +11,34 @@ from PySide6.QtCore import QThread, Signal, Qt
 from ..engine.demakein_wrapper import DemakeinDesigner, HAVE_DEMAKEIN
 from ..engine.remote_client import RemoteDesigner
 
+QUICK_HELP = (
+    "Quick Draft uses faster optimization (smaller pool, looser convergence) "
+    "and lower-quality STL meshes. Results are less refined but produced much faster."
+)
+
 
 class DesignWorker(QThread):
     finished = Signal(object)
     progress = Signal(str)
 
-    def __init__(self, designer, preset, transpose, output_dir):
+    def __init__(self, designer, preset, transpose, output_dir, quick=False):
         super().__init__()
         self.designer = designer
         self.preset = preset
         self.transpose = transpose
         self.output_dir = output_dir
+        self.quick = quick
 
     def run(self):
         display = self.designer.PRESET_DISPLAY_NAMES.get(self.preset, self.preset)
-        self.progress.emit(f"Starting design: {display} (transpose={self.transpose})...")
+        label = f"Quick Draft: {display}" if self.quick else f"Starting design: {display}"
+        self.progress.emit(f"{label} (transpose={self.transpose})...")
         result = self.designer.design(
             preset=self.preset,
             transpose=self.transpose,
             output_dir=self.output_dir,
             on_progress=lambda msg: self.progress.emit(msg),
+            quick=self.quick,
         )
         self.progress.emit("Design complete." if result.success else "Design failed.")
         self.finished.emit(result)
@@ -77,6 +85,11 @@ class DesignWidget(QWidget):
 
         self.output_path = QLabel("(auto)")
         config_layout.addRow("Output:", self.output_path)
+
+        self.quick_check = QCheckBox("Quick Draft (faster, less refined)")
+        self.quick_check.setToolTip(QUICK_HELP)
+        self.quick_check.setStyleSheet("color: #C0B0A0; padding: 4px 0;")
+        config_layout.addRow("", self.quick_check)
 
         layout.addWidget(config_group)
 
@@ -184,6 +197,7 @@ class DesignWidget(QWidget):
             return
 
         designer = self._get_designer()
+        quick = self.quick_check.isChecked()
         out_dir = os.path.join(tempfile.gettempdir(), f"woodwind_{key}")
         self.log_output.clear()
         self.run_btn.setEnabled(False)
@@ -192,7 +206,7 @@ class DesignWidget(QWidget):
 
         self._worker = DesignWorker(
             designer, key,
-            self.transpose_spin.value(), out_dir
+            self.transpose_spin.value(), out_dir, quick
         )
         self._worker.progress.connect(lambda msg: self.log_output.append(msg))
         self._worker.finished.connect(self._on_design_done)
