@@ -1,0 +1,142 @@
+# Glissotar Bass Clarinet (Hybrid Design)
+# Combines continuous glissando mechanism of Glissotar with Bass Clarinet specifications
+
+name: "Glissotar Bass Clarinet - Continuous Glissando Bass Clarinet"
+bore_type: "clarinet"  # Closed-open cylinder like bass clarinet
+bore_length: 0.90  # 900mm - bass clarinet length
+temperature_c: 20.0
+material: "resin"
+mouthpiece_type: "bass_clarinet"  # Bass clarinet reed
+
+# Bass clarinet bore: roughly cylindrical with slight taper
+# (position in meters, radius in meters)
+bore_profile:
+  - [0.0, 0.0075]      # Mouthpiece end - narrow (bass clarinet barrel)
+  - [0.15, 0.0075]     # Relatively constant bore
+  - [0.30, 0.0075]
+  - [0.45, 0.0075]
+  - [0.60, 0.0075]
+  - [0.75, 0.0075]
+  - [0.85, 0.0078]     # Slight expansion near bell
+  - [0.90, 0.0080]     # Bell end
+
+# Hybrid Design: Continuous glissando slit on a bass clarinet body
+# The slit allows smooth pitch transitions while maintaining the
+# deep, warm tone of the bass clarinet.
+#
+# In practice:
+# - Longitudinal slit ~700mm long, positioned on upper body
+# - Magnetic or silicone strip covering the slit
+# - Player slides finger to expose different amounts
+# - Creates continuous pitch glide from Bb2 upward
+
+# Traditional left-hand tone holes + continuous slit vents
+tone_holes:
+  # Left hand - traditional holes for lowest notes
+  - position: 0.15
+    radius: 0.005
+    chimney_height: 0.010
+    label: "Left-hand 1 (thumb)"
+    is_register_hole: false
+  
+  - position: 0.22
+    radius: 0.005
+    chimney_height: 0.010
+    label: "Left-hand 2"
+    is_register_hole: false
+  
+  - position: 0.29
+    radius: 0.0055
+    chimney_height: 0.010
+    label: "Left-hand 3"
+    is_register_hole: false
+  
+  # Register hole (octave/register key)
+  - position: 0.08
+    radius: 0.003
+    chimney_height: 0.008
+    label: "Register key (octave vent)"
+    is_register_hole: true
+  
+  # Right hand - traditional holes
+  - position: 0.36
+    radius: 0.0055
+    chimney_height: 0.010
+    label: "Right-hand 1"
+    is_register_hole: false
+  
+  - position: 0.43
+    radius: 0.005
+    chimney_height: 0.010
+    label: "Right-hand 2"
+    is_register_hole: false
+  
+  - position: 0.50
+    radius: 0.005
+    chimney_height: 0.010
+    label: "Right-hand 3"
+    is_register_hole: false
+  
+  - position: 0.57
+    radius: 0.0055
+    chimney_height: 0.010
+    label: "Right-hand 4"
+    is_register_hole: false
+  
+  # Continuous glissando slit vents
+  # These represent different positions along the glissando slit
+  # Player can expose any combination by sliding finger
+  
+  - position: 0.64
+    radius: 0.0012
+    chimney_height: 0.006
+    label: "Glissando slit 1 (lower)"
+    is_register_hole: false
+  
+  - position: 0.70
+    radius: 0.0012
+    chimney_height: 0.006
+    label: "Glissando slit 2"
+    is_register_hole: false
+  
+  - position: 0.76
+    radius: 0.0012
+    chimney_height: 0.006
+    label: "Glissando slit 3"
+    is_register_hole: false
+  
+  - position: 0.82
+    radius: 0.0012
+    chimney_height: 0.006
+    label: "Glissando slit 4 (upper)"
+    is_register_hole: false
+  
+  # Pinky keys (traditional bass clarinet)
+  - position: 0.80
+    radius: 0.004
+    chimney_height: 0.010
+    label: "Pinky key 1 (Bb/B)"
+    is_register_hole: false
+  
+  - position: 0.85
+    radius: 0.004
+    chimney_height: 0.010
+    label: "Pinky key 2 (low C)"
+    is_register_hole: false
+
+# Mouthpiece specifications
+mouthpiece:
+  length: 0.10
+  width: 0.032
+  height: 0.015
+  facing_angle: 45.0
+  reed_length: 0.075
+  reed_width: 0.025
+  reed_type: "bass_clarinet_reed"  # Larger, softer reed than soprano
+
+# Acoustic properties summary:
+# - Fundamental: Bb2 (55 Hz) for bass clarinet range
+# - Register: Low Bb to high Eb/F (3 octaves)
+# - With glissando slit: smooth pitch transitions throughout range
+# - Timbre: Deep, warm, resonant bass clarinet tone
+# - Overblowing: At the twelfth (clarinet acoustics)

@@ -1,0 +1,101 @@
+# Glissotar Design for 3D Printing
+# Continuous glissando woodwind instrument
+# Based on Hungarian tárogató with sliding finger mechanism
+
+name: "Glissotar - Continuous Glissando Woodwind"
+bore_type: "conical"  # Tapered bore like saxophone/tárogató
+bore_length: 0.65  # 650 mm - soprano size
+temperature_c: 20.0
+material: "resin"
+mouthpiece_type: "single_reed"  # Single reed like clarinet/tárogató
+
+# Conical bore profile - expands from mouthpiece to bell
+# (position in meters, radius in meters)
+bore_profile:
+  - [0.0, 0.008]       # Mouthpiece end - narrow
+  - [0.1, 0.009]
+  - [0.2, 0.0105]
+  - [0.3, 0.012]
+  - [0.4, 0.0135]
+  - [0.5, 0.015]
+  - [0.6, 0.0165]      # Bell end - wider
+  - [0.65, 0.018]      # Bell flare
+
+# Continuous slit for glissando
+# In practice, this would be:
+# - A longitudinal slit ~500mm long
+# - Covered with magnetic strip or silicone membrane
+# - Player slides finger to expose varying amounts
+# - Produces continuous pitch glide
+
+# For simulation purposes, we'll model discrete vents
+# that approximate the continuous slit behavior
+# These represent the exposed portion of the slit at different positions
+
+tone_holes:
+  # Register hole (vented octave key)
+  - position: 0.08
+    radius: 0.002
+    chimney_height: 0.008
+    label: "Register/Octave Key"
+    is_register_hole: true
+  
+  # Continuous slit approximation - sampled at regular intervals
+  # Position represents where player's finger is on the slit
+  
+  # Upper register slit vents (for high notes)
+  - position: 0.15
+    radius: 0.0015
+    chimney_height: 0.006
+    label: "Slit vent 1 (high register)"
+    is_register_hole: false
+  
+  - position: 0.22
+    radius: 0.0015
+    chimney_height: 0.006
+    label: "Slit vent 2"
+    is_register_hole: false
+  
+  - position: 0.29
+    radius: 0.0015
+    chimney_height: 0.006
+    label: "Slit vent 3"
+    is_register_hole: false
+  
+  - position: 0.36
+    radius: 0.0015
+    chimney_height: 0.006
+    label: "Slit vent 4"
+    is_register_hole: false
+  
+  - position: 0.43
+    radius: 0.0015
+    chimney_height: 0.006
+    label: "Slit vent 5"
+    is_register_hole: false
+  
+  - position: 0.50
+    radius: 0.0015
+    chimney_height: 0.006
+    label: "Slit vent 6 (middle)"
+    is_register_hole: false
+  
+  - position: 0.57
+    radius: 0.0015
+    chimney_height: 0.006
+    label: "Slit vent 7"
+    is_register_hole: false
+  
+  - position: 0.62
+    radius: 0.0015
+    chimney_height: 0.006
+    label: "Slit vent 8 (near bell)"
+    is_register_hole: false
+
+# Mouthpiece specifications
+mouthpiece:
+  length: 0.08      # 80mm
+  facing_angle: 45.0
+  reed_type: "single_reed"  # Like clarinet/tárogató
+  reed_length: 0.065
+  window_length: 0.045
