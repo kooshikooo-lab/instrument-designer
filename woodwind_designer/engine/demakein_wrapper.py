@@ -101,15 +101,19 @@ class DemakeinDesigner:
     def get_description(self, preset: str) -> str:
         return self.PRESET_DESCRIPTIONS.get(preset, "")
 
-    def _patch_optimize_for_quick(self):
+    def _patch_optimize(self, quick: bool):
         import demakein.optimize as _opt
         _orig = _opt.improve
-        def _quick_improve(comment, constrainer, scorer, start_x, **kw):
-            kw.setdefault("pool_factor", 2)
-            kw.setdefault("ftol", 1e-2)
-            kw.setdefault("initial_accuracy", 0.005)
+        if quick:
+            pool = 2; ftol_val = 1e-2; acc = 0.005
+        else:
+            pool = 3; ftol_val = 5e-4; acc = 0.002
+        def _patched_improve(comment, constrainer, scorer, start_x, **kw):
+            kw["pool_factor"] = pool
+            kw["ftol"] = ftol_val
+            kw["initial_accuracy"] = acc
             return _orig(comment, constrainer, scorer, start_x, **kw)
-        _opt.improve = _quick_improve
+        _opt.improve = _patched_improve
 
     def design(self, preset: str, transpose: int = 0, output_dir: Optional[str] = None,
                on_progress=None, quick: bool = False) -> DesignResult:
@@ -141,11 +145,11 @@ class DemakeinDesigner:
         designer = cls(output_dir=design_dir, transpose=transpose)
         self._current_designer = designer
 
-        # Quick Draft mode: faster optimization, coarser meshes
+        # Patch optimization parameters for all modes
+        designer.workers = os.cpu_count() or 4
         if quick:
-            designer.workers = os.cpu_count() or 4
             os.environ["DEMAKEIN_DRAFT"] = "1"
-            self._patch_optimize_for_quick()
+        self._patch_optimize(quick)
 
         import sys as _sys
         import io as _io
@@ -202,7 +206,12 @@ class DemakeinDesigner:
         _sys.stdout = _ProgressStream(_sys.stdout, on_progress)
 
         try:
+            if on_progress:
+                mode = "Quick Draft" if quick else "Full optimization"
+                on_progress(f"{mode} in progress (may take several minutes)...")
             designer.run()
+            if on_progress:
+                on_progress("Optimization complete — generating 3D model...")
             designer.process_make()
             stl_files = sorted(Path(design_dir).rglob("*.stl"))
 

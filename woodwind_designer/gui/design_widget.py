@@ -299,6 +299,8 @@ class DesignWidget(QWidget):
         quick = self.quick_check.isChecked()
         out_dir = os.path.join(tempfile.gettempdir(), f"woodwind_{key}")
         self.log_output.clear()
+        self.log_output.append("Design started — optimization in progress (may take several minutes)...")
+        self.log_output.append("Tip: enable Quick Draft for faster but less refined results.")
         self.run_btn.setEnabled(False)
         self.cancel_btn.setEnabled(True)
         self.progress_bar.show()
@@ -309,9 +311,26 @@ class DesignWidget(QWidget):
         )
         self._worker.progress.connect(lambda msg: self.log_output.append(msg))
         self._worker.finished.connect(self._on_design_done)
+
+        from PySide6.QtCore import QTimer
+        self._design_timer = QTimer()
+        self._design_timer.setSingleShot(True)
+        self._design_timer.timeout.connect(self._on_design_timeout)
+        self._design_timer.start(900000)
+
         self._worker.start()
 
+    def _on_design_timeout(self):
+        if self._worker and self._worker.isRunning():
+            self._worker.terminate()
+            self._worker.wait()
+            self.log_output.append("Design timed out after 15 minutes. Try Quick Draft or a simpler preset.")
+            self._reset_ui()
+
     def _cancel(self):
+        timer = getattr(self, '_design_timer', None)
+        if timer:
+            timer.stop()
         if self._worker and self._worker.isRunning():
             self._worker.terminate()
             self._worker.wait()
@@ -323,6 +342,9 @@ class DesignWidget(QWidget):
         self.run_btn.setEnabled(enabled)
 
     def _on_design_done(self, result):
+        timer = getattr(self, '_design_timer', None)
+        if timer:
+            timer.stop()
         self._reset_ui()
         if result.success:
             self.log_output.append(f"Completed: {result.log}")
