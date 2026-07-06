@@ -108,14 +108,15 @@ class DemakeinDesigner:
         if self._ORIG_IMPROVE is None:
             self._ORIG_IMPROVE = _opt.improve
         if quick:
-            pool = 1; ftol_val = 5e-2; acc = 0.01
+            pool = 1; ftol_val = 0.5; acc = 0.05; xtol_val = 1e-3
         else:
-            pool = 3; ftol_val = 5e-4; acc = 0.002
+            pool = 3; ftol_val = 5e-4; acc = 0.002; xtol_val = 1e-6
         def _patched_improve(comment, constrainer, scorer, start_x, **kw):
             kw["workers"] = 1
             kw["pool_factor"] = pool
             kw["ftol"] = ftol_val
             kw["initial_accuracy"] = acc
+            kw["xtol"] = xtol_val
             return self._ORIG_IMPROVE(comment, constrainer, scorer, start_x, **kw)
         _opt.improve = _patched_improve
 
