@@ -161,7 +161,7 @@ class ResourcesWidget(QWidget):
         proj_layout = QVBoxLayout(proj_box)
 
         projects = [
-            ("Demakein", "https://github.com/introlab/demakein",
+            ("Demakein", "https://github.com/pfh/demakein",
              "Python library for designing and optimizing woodwind instruments. Used by this app."),
             ("OpenWInD", "https://github.com/OpenWind/OpenWind",
              "Acoustic simulation software for wind instruments (Inria)."),

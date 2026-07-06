@@ -9,7 +9,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import QThread, Signal, Qt
 
 from ..engine.freecad_engine import (
-    generate_instrument, bore_from_yaml, is_available as fc_available
+    generate_instrument, bore_from_yaml, is_available as fc_available, FreeCADResult
 )
 
 
@@ -30,7 +30,7 @@ class FreeCADWorker(QThread):
         try:
             bore, holes = bore_from_yaml(self.yaml_path)
         except Exception as e:
-            self.finished.emit(type("R", (), {"success": False, "log": f"Failed to read YAML: {e}"})())
+            self.finished.emit(FreeCADResult(success=False, log=f"Failed to read YAML: {e}"))
             return
 
         self.progress.emit(f"Found bore: {len(bore)} segments, holes: {len(holes)}")
@@ -110,6 +110,13 @@ class FreeCADWidget(QWidget):
         self.log_output = QTextEdit()
         self.log_output.setReadOnly(True)
         layout.addWidget(self.log_output, stretch=1)
+
+    def load_yaml(self, yaml_path: str):
+        if os.path.exists(yaml_path):
+            self.yaml_label.setText(yaml_path)
+            self.log_output.append(f"Loaded config: {yaml_path}")
+        else:
+            self.log_output.append(f"Config not found: {yaml_path}")
 
     def _browse(self):
         path, _ = QFileDialog.getOpenFileName(

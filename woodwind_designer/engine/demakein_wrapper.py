@@ -23,6 +23,7 @@ class DesignResult:
     output_dir: str
     ident: str
     stl_files: list = field(default_factory=list)
+    config_yaml: str = ""
     log: str = ""
     success: bool = False
 
@@ -204,10 +205,41 @@ class DemakeinDesigner:
             designer.run()
             designer.process_make()
             stl_files = sorted(Path(design_dir).rglob("*.stl"))
+
+            config_yaml = ""
+            try:
+                sf = getattr(designer, 'state_filename', None)
+                if sf and os.path.exists(sf):
+                    with open(sf) as _fh:
+                        state_vec = json.load(_fh)
+                    inst = designer.unpack(state_vec)
+                    if inst is not None:
+                        import yaml as _yaml
+                        _n = 60
+                        _positions = [inst.length * i / (_n - 1) for i in range(_n)]
+                        bore_profile = [[round(p, 4), round(inst.inner(p) / 2.0, 4)] for p in _positions]
+                        tone_holes = [
+                            {"position": round(p, 4), "radius": round(d / 2.0, 4),
+                             "chimney_height": round(h, 4)}
+                            for p, d, h in zip(inst.hole_positions, inst.hole_diameters, inst.hole_lengths)
+                        ]
+                        yaml_cfg = {
+                            "bore_length": round(inst.length / 1000.0, 4),
+                            "bore_profile": bore_profile,
+                            "tone_holes": tone_holes,
+                        }
+                        yaml_path = os.path.join(design_dir, f"{preset}_config.yaml")
+                        with open(yaml_path, "w") as _yh:
+                            _yaml.dump(yaml_cfg, _yh, default_flow_style=None)
+                        config_yaml = yaml_path
+            except Exception:
+                pass
+
             return DesignResult(
                 output_dir=design_dir,
                 ident=designer.ident(),
                 stl_files=[str(f) for f in stl_files],
+                config_yaml=config_yaml,
                 success=True,
                 log=f"Design '{designer.ident()}' completed. {len(stl_files)} STL files."
             )

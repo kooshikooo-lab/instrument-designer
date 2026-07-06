@@ -25,28 +25,44 @@ class RemoteDesigner:
         transpose: int = 0,
         output_dir: Optional[str] = None,
         on_progress: Optional[Callable[[str], None]] = None,
+        quick: bool = False,
     ) -> DesignResult:
         if not output_dir:
             output_dir = os.path.join(tempfile.gettempdir(), f"remote_{preset}")
 
-        resp = self._session.post(
-            f"{self.server_url}/design",
-            json={"preset": preset, "transpose": transpose},
-            timeout=30,
-        )
-        resp.raise_for_status()
-        job_id = resp.json()["job_id"]
+        try:
+            resp = self._session.post(
+                f"{self.server_url}/design",
+                json={"preset": preset, "transpose": transpose, "quick": quick},
+                timeout=30,
+            )
+            resp.raise_for_status()
+            job_id = resp.json()["job_id"]
+        except Exception as e:
+            return DesignResult(
+                output_dir=output_dir, ident="",
+                log=f"Failed to submit job: {e}", success=False
+            )
 
         if on_progress:
             on_progress(f"Submitted job {job_id} to server...")
 
         last_idx = 0
-        while True:
-            status = self._session.get(
-                f"{self.server_url}/design/{job_id}/status", timeout=30
-            )
-            status.raise_for_status()
-            data = status.json()
+        max_polls = 600
+        poll_count = 0
+        while poll_count < max_polls:
+            poll_count += 1
+            try:
+                status = self._session.get(
+                    f"{self.server_url}/design/{job_id}/status", timeout=30
+                )
+                status.raise_for_status()
+                data = status.json()
+            except Exception as e:
+                return DesignResult(
+                    output_dir=output_dir, ident="",
+                    log=f"Status check failed: {e}", success=False
+                )
 
             progress = data.get("progress", [])
             for msg in progress[last_idx:]:
@@ -57,19 +73,32 @@ class RemoteDesigner:
             if data["status"] in ("completed", "failed"):
                 result_data = data.get("result", {}) or {}
                 stl_files = []
+                config_yaml = ""
                 if result_data.get("success"):
-                    stl_files = self._download_stls(
-                        job_id, output_dir, result_data.get("stl_files", [])
-                    )
+                    try:
+                        stl_files = self._download_stls(
+                            job_id, output_dir, result_data.get("stl_files", [])
+                        )
+                    except Exception as e:
+                        return DesignResult(
+                            output_dir=output_dir, ident="",
+                            log=f"Download failed: {e}", success=False,
+                        )
                 return DesignResult(
                     output_dir=output_dir,
                     ident=result_data.get("ident", ""),
                     stl_files=stl_files,
+                    config_yaml=result_data.get("config_yaml", ""),
                     log=result_data.get("log", ""),
                     success=result_data.get("success", False),
                 )
 
             time.sleep(1)
+
+        return DesignResult(
+            output_dir=output_dir, ident="",
+            log="Timed out waiting for server (600 polls)", success=False,
+        )
 
     def _download_stls(self, job_id: str, output_dir: str, stl_names: list[str]) -> list[str]:
         resp = self._session.get(

@@ -29,6 +29,7 @@ class LibraryWidget(QWidget):
     def __init__(self):
         super().__init__()
         self._net = QNetworkAccessManager(self)
+        self._current_entry = None
         self._setup_ui()
         self._populate()
 

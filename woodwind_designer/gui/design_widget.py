@@ -45,10 +45,13 @@ class DesignWorker(QThread):
 
 
 class DesignWidget(QWidget):
+    design_completed = Signal(str, str)  # yaml_path, preset_name
+
     def __init__(self):
         super().__init__()
         self.designer = DemakeinDesigner()
         self._worker = None
+        self._last_yaml = ""
         self._setup_ui()
 
     def _setup_ui(self):
@@ -104,6 +107,7 @@ class DesignWidget(QWidget):
 
         self.remote_check = QCheckBox("Use Remote Server")
         self.remote_check.setStyleSheet("color: #C0B0A0;")
+        self.remote_check.toggled.connect(lambda: self._update_run_btn())
         server_layout.addWidget(self.remote_check)
 
         self.server_url_input = QLineEdit("http://localhost:8000")
@@ -148,10 +152,24 @@ class DesignWidget(QWidget):
 
         layout.addLayout(actions)
 
+        self.send_bar = QHBoxLayout()
+        self.send_bar.setContentsMargins(0, 4, 0, 4)
+        self.send_to_sim_btn = QPushButton("Send to Simulate")
+        self.send_to_sim_btn.setEnabled(False)
+        self.send_to_sim_btn.clicked.connect(self._send_to_simulate)
+        self.send_bar.addWidget(self.send_to_sim_btn)
+        self.send_to_fc_btn = QPushButton("Send to 3D Export")
+        self.send_to_fc_btn.setEnabled(False)
+        self.send_to_fc_btn.clicked.connect(self._send_to_freecad)
+        self.send_bar.addWidget(self.send_to_fc_btn)
+        self.send_bar.addStretch()
+        layout.addLayout(self.send_bar)
+
         self.log_output = QTextEdit()
         self.log_output.setReadOnly(True)
         layout.addWidget(self.log_output, stretch=1)
 
+        self._update_run_btn()
         self._on_family_changed(self.family_combo.currentText())
 
     def _current_preset_key(self) -> str:
@@ -219,6 +237,10 @@ class DesignWidget(QWidget):
             self.log_output.append("Design cancelled.")
         self._reset_ui()
 
+    def _update_run_btn(self):
+        enabled = HAVE_DEMAKEIN or self.remote_check.isChecked()
+        self.run_btn.setEnabled(enabled)
+
     def _on_design_done(self, result):
         self._reset_ui()
         if result.success:
@@ -226,8 +248,24 @@ class DesignWidget(QWidget):
             for stl in result.stl_files:
                 sz = os.path.getsize(stl) / 1024 if os.path.exists(stl) else 0
                 self.log_output.append(f"  STL: {stl} ({sz:.1f} KB)")
+            if result.config_yaml and os.path.exists(result.config_yaml):
+                self._last_yaml = result.config_yaml
+                self.send_to_sim_btn.setEnabled(True)
+                self.send_to_fc_btn.setEnabled(True)
+                self.log_output.append(f"\nConfig: {result.config_yaml}")
+                self.log_output.append("↳ Use buttons to send to Simulate or 3D Export")
+            else:
+                self.log_output.append("\n(No YAML config generated for this preset)")
         else:
             self.log_output.append(f"Failed: {result.log}")
+
+    def _send_to_simulate(self):
+        if self._last_yaml and os.path.exists(self._last_yaml):
+            self.design_completed.emit(self._last_yaml, "simulate")
+
+    def _send_to_freecad(self):
+        if self._last_yaml and os.path.exists(self._last_yaml):
+            self.design_completed.emit(self._last_yaml, "freecad")
 
     def _test_server(self):
         url = self.server_url_input.text().strip()

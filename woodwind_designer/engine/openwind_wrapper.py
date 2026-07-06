@@ -109,14 +109,15 @@ class OpenWindSimulator:
 
     def _compute_impedance(self, bore_lines, hole_lines, freqs):
         try:
-            geom = InstrumentGeometry(main_bore=bore_lines)
+            geom = InstrumentGeometry(main_bore=bore_lines, unit="mm")
             imp = ImpedanceComputation(
                 freqs, main_bore=bore_lines,
                 holes_valves=hole_lines if hole_lines else [],
-                temperature=25.0, losses=True
+                temperature=25.0, losses=True,
+                unit="mm",
             )
             return freqs, imp.impedance, imp.Zc
-        except Exception:
+        except Exception as e:
             return None
 
     def _find_peaks(self, freqs, impedances):

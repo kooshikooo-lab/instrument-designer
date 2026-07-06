@@ -33,7 +33,7 @@ LIBRARY: list[InstrumentEntry] = [
         demakein_preset="folk_whistle",
         image_url="https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Tin_whistle_in_D.JPG/640px-Tin_whistle_in_D.JPG",
         audio_url="https://www.youtube.com/watch?v=DMZcX8joXG8",
-        download_url="https://github.com/introlab/demakein",
+        download_url="https://github.com/pfh/demakein",
         tags=["beginner", "folk", "irish", "6-hole"],
         difficulty="Beginner",
         description="Classic 6-hole tin whistle in D. The most popular starter flute. "
@@ -47,7 +47,7 @@ LIBRARY: list[InstrumentEntry] = [
         demakein_preset="folk_flute",
         image_url="https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Tin_whistle_in_D.JPG/640px-Tin_whistle_in_D.JPG",
         audio_url="https://www.youtube.com/watch?v=SJ2ScDqRMAA",
-        download_url="https://github.com/introlab/demakein",
+        download_url="https://github.com/pfh/demakein",
         tags=["beginner", "folk", "6-hole"],
         difficulty="Beginner",
         description="Pennywhistle-style folk flute with 6 finger holes. "
@@ -61,7 +61,7 @@ LIBRARY: list[InstrumentEntry] = [
         demakein_preset="recorder",
         image_url="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Soprano_recorder.jpg/640px-Soprano_recorder.jpg",
         audio_url="https://www.youtube.com/watch?v=Z3NqPppUIMk",
-        download_url="https://github.com/introlab/demakein",
+        download_url="https://github.com/pfh/demakein",
         tags=["beginner", "baroque", "8-hole", "classical"],
         difficulty="Beginner",
         description="Full soprano recorder with Baroque fingering system. "
@@ -75,7 +75,7 @@ LIBRARY: list[InstrumentEntry] = [
         demakein_preset="dorian_whistle",
         image_url="https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Tin_whistle_in_D.JPG/640px-Tin_whistle_in_D.JPG",
         audio_url="https://www.youtube.com/watch?v=DMZcX8joXG8",
-        download_url="https://github.com/introlab/demakein",
+        download_url="https://github.com/pfh/demakein",
         tags=["beginner", "folk", "modal"],
         difficulty="Beginner",
         description="Whistle tuned to the Dorian mode. "
@@ -89,11 +89,25 @@ LIBRARY: list[InstrumentEntry] = [
         demakein_preset="three_hole_whistle",
         image_url="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/Galoubet.JPG/640px-Galoubet.JPG",
         audio_url="https://www.youtube.com/watch?v=4NfWf-hURQc",
-        download_url="https://github.com/introlab/demakein",
+        download_url="https://github.com/pfh/demakein",
         tags=["beginner", "medieval", "folk", "3-hole"],
         difficulty="Beginner",
         description="Medieval three-hole tabor pipe. Played with one hand "
                     "while the other hand plays a drum (tabor).",
+    ),
+    InstrumentEntry(
+        name="BASS Tin Whistle (in A)",
+        family="Wind", subcategory="Flute", type_label="Fipple Flute",
+        range="Bass", key="A",
+        source="Printables – Tofu_Panda",
+        image_url="",
+        audio_url="https://www.youtube.com/watch?v=DMZcX8joXG8",
+        download_url="https://www.printables.com/model/1499495-bass-tin-whistle-in-a",
+        tags=["intermediate", "whistle", "bass", "low-a", "large"],
+        difficulty="Intermediate",
+        description="A low A bass tin whistle. Produces a deep, rich whistle tone "
+                    "a fourth below the classic D tin whistle. Larger build, "
+                    "satisfying low-end sound for folk and ambient music.",
     ),
     InstrumentEntry(
         name="Pan Flute",
@@ -103,7 +117,7 @@ LIBRARY: list[InstrumentEntry] = [
         demakein_preset="pflute",
         image_url="https://upload.wikimedia.org/wikipedia/commons/thumb/8/88/Pan_flute.jpg/640px-Pan_flute.jpg",
         audio_url="https://www.youtube.com/watch?v=0hnsJ-42Vns",
-        download_url="https://github.com/introlab/demakein",
+        download_url="https://github.com/pfh/demakein",
         tags=["intermediate", "panpipes", "folk", "multiple-pipes"],
         difficulty="Intermediate",
         description="Multi-pipe pan flute (panpipes) with graduated tubes. "
@@ -122,6 +136,20 @@ LIBRARY: list[InstrumentEntry] = [
         difficulty="Beginner",
         description="A 7-pipe whistle-style pan flute. Each pipe is a "
                     "separate whistle tuned by length. No supports needed.",
+    ),
+    InstrumentEntry(
+        name="Daphnis Pan Flute",
+        family="Wind", subcategory="Flute", type_label="Pan Flute",
+        range="Alto", key="C",
+        source="Printables – DSpecter",
+        image_url="",
+        audio_url="https://www.youtube.com/watch?v=0hnsJ-42Vns",
+        download_url="https://www.printables.com/model/439762-daphnis-a-3d-printable-pan-flute-v10",
+        tags=["intermediate", "panpipes", "classical", "tuned", "multi-pipe"],
+        difficulty="Intermediate",
+        description="A tuned 3D-printable pan flute. Graduated pipes in a "
+                    "curved arrangement for easy playability. Print each pipe "
+                    "separately, tune by sanding the tops, then glue together.",
     ),
     InstrumentEntry(
         name="Slide Whistle",
@@ -206,6 +234,21 @@ LIBRARY: list[InstrumentEntry] = [
         description="A soprano recorder shaped like a dragon. Fully "
                     "playable with Baroque fingering. Fun decorative design.",
     ),
+    InstrumentEntry(
+        name="Glissonardo",
+        family="Wind", subcategory="Flute", type_label="Fipple Flute",
+        range="Soprano", key="C",
+        source="Printables – Glissonic Instruments",
+        image_url="",
+        audio_url="https://www.youtube.com/watch?v=WkO2SY7WfpI",
+        download_url="https://www.printables.com/model/1516682-glissonardo",
+        tags=["intermediate", "recorder", "glissando", "da-vinci", "historical"],
+        difficulty="Intermediate",
+        description="Small recorder-type wind instrument based on Leonardo da "
+                    "Vinci's 'fissure flute' from the Codex Atlanticus. Uses a "
+                    "sliding finger over a slit for continuous pitch changes. "
+                    "Range over an octave. Designed by Glissonic Instruments.",
+    ),
     # -- Ocarinas --
     InstrumentEntry(
         name="12-Hole Ocarina (Alto C)",
@@ -246,7 +289,7 @@ LIBRARY: list[InstrumentEntry] = [
         demakein_preset="reedpipe",
         image_url="https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/Practice_chanter.jpg/640px-Practice_chanter.jpg",
         audio_url="https://www.youtube.com/watch?v=FYH5Nhf3J0o",
-        download_url="https://github.com/introlab/demakein",
+        download_url="https://github.com/pfh/demakein",
         tags=["beginner", "reed", "clarinet-like", "practice"],
         difficulty="Beginner",
         description="Simple single-reed pipe. Like a clarinet practice chanter. "
@@ -288,7 +331,7 @@ LIBRARY: list[InstrumentEntry] = [
         range="Soprano", key="Variable",
         source="Printables – DrJones",
         image_url="",
-        audio_url="https://www.youtube.com/watch?v=y4prclZPEsA",
+        audio_url="https://www.youtube.com/watch?v=Jk7J4_bneZo",
         download_url="https://www.printables.com/model/495171-membrane-clarinet",
         tags=["intermediate", "clarinet", "membrane", "no-reed", "screw-together"],
         difficulty="Intermediate",
@@ -299,14 +342,187 @@ LIBRARY: list[InstrumentEntry] = [
                     "by Nicolas Bras' membrane clarinet concept.",
     ),
     InstrumentEntry(
+        name="Curvy Clarinet",
+        family="Wind", subcategory="Woodwind", type_label="Single Reed",
+        range="Soprano", key="C",
+        source="Printables – Nkosi Smith",
+        image_url="",
+        audio_url="https://www.youtube.com/watch?v=weU1eW8vMQA",
+        download_url="https://www.printables.com/model/1605969-curvy-clarinet",
+        tags=["intermediate", "clarinet", "curvy", "compact", "soprano-sax-mouthpiece"],
+        difficulty="Intermediate",
+        description="Compact curvy clarinet with a soprano saxophone mouthpiece. "
+                    "6-note pentatonic layout with a relaxed, mellow tone. 3D-printed "
+                    "body with elegant curved design. Good for beginners and as a "
+                    "portable practice instrument.",
+    ),
+    InstrumentEntry(
+        name="Alto Saxophone Hybrid (Zaxophone)",
+        family="Wind", subcategory="Woodwind", type_label="Single Reed",
+        range="Alto", key="Bb",
+        source="Cults3D – BEENRA",
+        image_url="",
+        audio_url="https://www.youtube.com/watch?v=7fg7nB6I1n0",
+        download_url="https://cults3d.com/en/3d-model/gadget/3d-printable-alto-saxophone-hybrid-instrument",
+        tags=["advanced", "saxophone", "alto", "hybrid", "conical-bore", "3d-printable"],
+        difficulty="Advanced",
+        description="3D-printable alto saxophone hybrid (Zaxophone) combining an alto sax "
+                    "mouthpiece with a recorder-like body and fingering system. Conical bore "
+                    "tuned to Bb (fundamental Bb3, ~116.5 Hz). Uses standard alto sax "
+                    "mouthpiece and reed. Print in sections (neck, body, bell) in PETG or ABS. "
+                    "Simplified fingering for accessibility. Designed by BEENRA.",
+    ),
+    InstrumentEntry(
+        name="3DP Minisax (Pocket Sax)",
+        family="Wind", subcategory="Woodwind", type_label="Single Reed",
+        range="Soprano", key="Bb",
+        source="Thingiverse – mldotjs",
+        image_url="",
+        audio_url="https://youtu.be/deijf9jOcm4",
+        download_url="https://www.thingiverse.com/thing:4732605",
+        tags=["intermediate", "saxophone", "mini", "pocket", "xaphoon", "single-reed"],
+        difficulty="Intermediate",
+        description="3D-printed variant of the MiniSax / Xaphoon / pocket sax. A compact "
+                    "single-reed instrument with a simple tube body and finger holes. "
+                    "Designed as an affordable alternative to commercial pocket saxophones. "
+                    "Uses a standard soprano sax or clarinet mouthpiece. Free STL files.",
+    ),
+    InstrumentEntry(
+        name="Bb Soprano Clarinet (Body STL)",
+        family="Wind", subcategory="Woodwind", type_label="Single Reed",
+        range="Soprano", key="Bb",
+        source="JDWoodwinds (Commercial STL)",
+        image_url="",
+        audio_url="https://www.youtube.com/watch?v=weU1eW8vMQA",
+        download_url="https://jdwoodwind.com/shop/p/3d-clarinet-model",
+        tags=["expert", "clarinet", "boehm", "keywork-required", "commercial-stl"],
+        difficulty="Expert",
+        description="STL file for 3D-printable Bb soprano clarinet body, barrel, and bell. "
+                    "Designed for Eastar keywork (donor clarinet required). Output is the "
+                    "printed body only — you must install real clarinet keys. Recommended "
+                    "for experienced clarinet repair technicians. By JDWoodwinds.",
+    ),
+    InstrumentEntry(
+        name="Piccolo Clarinet in A Natural",
+        family="Wind", subcategory="Woodwind", type_label="Single Reed",
+        range="Sopranino", key="A",
+        source="JDWoodwinds (Commercial STL)",
+        image_url="",
+        audio_url="https://www.youtube.com/watch?v=weU1eW8vMQA",
+        download_url="https://jdwoodwind.com/shop/p/piccolo-clarinet-stl",
+        tags=["expert", "clarinet", "piccolo", "high-pitch", "rare", "commercial-stl"],
+        difficulty="Expert",
+        description="STL file for a piccolo clarinet in A natural — a rare high-pitch "
+                    "member of the clarinet family. Requires donor keywork for assembly. "
+                    "Very compact instrument, pitches higher than the standard Bb clarinet. "
+                    "For expert builders only. By JDWoodwinds.",
+    ),
+    InstrumentEntry(
+        name="Bass Clarinet in G (STL)",
+        family="Wind", subcategory="Woodwind", type_label="Single Reed",
+        range="Bass", key="G",
+        source="JDWoodwinds (Commercial STL)",
+        image_url="",
+        audio_url="https://www.youtube.com/watch?v=_qg4z5eXno4",
+        download_url="https://jdwoodwind.com/shop/p/stl-files-bass-clarinet-in-g",
+        tags=["expert", "clarinet", "bass", "g-clarinet", "keywork-required", "commercial-stl"],
+        difficulty="Expert",
+        description="STL files for a 3D-printable bass clarinet in G. Simplified Boehm "
+                    "system keywork, 30mm bass clarinet pad, bell procured from China (eBay). "
+                    "Requires donor keywork and bass clarinet pads. Minimum 250mm build "
+                    "height. PLA+ recommended. Expert level — requires clarinet repair "
+                    "skills. By JDWoodwinds.",
+    ),
+    InstrumentEntry(
+        name="EEEb Octocontra-alto Clarinet",
+        family="Wind", subcategory="Woodwind", type_label="Single Reed",
+        range="Sub-contrabass", key="EEEb",
+        source="JDWoodwinds (Commercial 3MF)",
+        image_url="",
+        audio_url="https://www.youtube.com/watch?v=yNtABfHKjDs",
+        download_url="https://jdwoodwind.com/shop/p/3mf-octocontra-alto-clarinet",
+        tags=["expert", "clarinet", "octocontra", "sub-contrabass", "largest", "commercial-stl"],
+        difficulty="Expert",
+        description="3MF file for an EEEb octocontra-alto clarinet — one of the largest "
+                    "and rarest members of the clarinet family. Pitched a fifth below the "
+                    "Bb contrabass clarinet and one octave below the Eb contra-alto. Only "
+                    "two prototype examples were ever built historically (Leblanc, 1930s). "
+                    "This is a 3D-printable recreation. Expert level only. By JDWoodwinds.",
+    ),
+    InstrumentEntry(
+        name="17-Key Boehm Clarinet (Display)",
+        family="Wind", subcategory="Woodwind", type_label="Single Reed",
+        range="Soprano", key="Bb",
+        source="Cults3D – kwyk_Mini",
+        image_url="",
+        audio_url="",
+        download_url="https://cults3d.com/en/3d-model/various/clarinette-boehm-17-clef",
+        tags=["beginner", "clarinet", "boehm", "decorative", "display", "resin"],
+        difficulty="Beginner",
+        description="Detailed 17-key Boehm clarinet model for 3D printing. Body and "
+                    "keys printed as a single solid piece (bore is solid, not hollow). "
+                    "Designed for resin printing. Decorative/display only — not playable "
+                    "without significant modification. Good for props, teaching aids, "
+                    "or miniatures when scaled down.",
+    ),
+    InstrumentEntry(
+        name="Heckelphone-clarinet (Heckelphon-Klarinette)",
+        family="Wind", subcategory="Woodwind", type_label="Single Reed",
+        range="Baritone", key="Bb",
+        source="Historical (Wilhelm Heckel, 1907)",
+        image_url="",
+        audio_url="https://www.youtube.com/watch?v=MkSnRRGqMFc",
+        download_url="",
+        tags=["museum", "historical", "heckel", "conical-bore", "rare", "single-reed"],
+        difficulty="Expert",
+        description="The heckelphone-clarinet (Heckelphon-Klarinette) is an extremely rare "
+                    "woodwind invented in 1907 by Wilhelm Heckel. Despite the name, it is "
+                    "essentially a wooden saxophone — wide conical bore, red-stained maple, "
+                    "single reed, overblowing the octave. Only 12-15 were ever made. Serial "
+                    "#2 is the only surviving example in private hands. Range D3-C6. Softer "
+                    "tone than saxophone. No STL files available — historical reference.",
+    ),
+    InstrumentEntry(
+        name="Saxonette (Clariphon / Claribel)",
+        family="Wind", subcategory="Woodwind", type_label="Single Reed",
+        range="Soprano", key="Bb/C/A",
+        source="Historical (Buescher, 1918)",
+        image_url="",
+        audio_url="https://www.youtube.com/watch?v=M_x5UfmZ-14",
+        download_url="",
+        tags=["museum", "historical", "clarinet", "curved", "saxophone-shaped", "1920s"],
+        difficulty="Expert",
+        description="The saxonette (also Clariphon or Claribel) is a soprano clarinet in "
+                    "Bb, C, or A with a curved metal barrel and upturned bell — giving it "
+                    "the visual shape of a saxophone while remaining a standard cylindrical-"
+                    "bore clarinet. Produced by Buescher (1918-1921) and Gretsch (1923). "
+                    "Albert system, occasionally Boehm. No STL files available.",
+    ),
+    InstrumentEntry(
+        name="Conn-o-Sax",
+        family="Wind", subcategory="Woodwind", type_label="Single Reed",
+        range="Soprano", key="F",
+        source="Historical (C.G. Conn, 1928)",
+        image_url="",
+        audio_url="https://www.youtube.com/watch?v=KCVCca5dqJw",
+        download_url="",
+        tags=["museum", "historical", "conn", "hybrid", "rare", "single-reed", "1920s"],
+        difficulty="Expert",
+        description="The Conn-o-Sax is a rare hybrid woodwind built by C.G. Conn in 1928. "
+                    "A single-reed instrument pitched in F (between alto and soprano sax), "
+                    "with a straight body, curved neck, and spherical bell. Only a small "
+                    "number were produced. Designed as a novelty instrument for jazz and "
+                    "dance bands. No STL files available — historical reference.",
+    ),
+    InstrumentEntry(
         name="Folk Shawm",
         family="Wind", subcategory="Woodwind", type_label="Double Reed",
         range="Soprano", key="C",
         source="Demakein Built-in",
         demakein_preset="folk_shawm",
         image_url="https://upload.wikimedia.org/wikipedia/commons/thumb/2/20/Shawm.jpg/640px-Shawm.jpg",
-        audio_url="https://www.youtube.com/watch?v=FBpXOL7W0mE",
-        download_url="https://github.com/introlab/demakein",
+        audio_url="https://www.youtube.com/watch?v=HwL5ISrEe_M",
+        download_url="https://github.com/pfh/demakein",
         tags=["intermediate", "double-reed", "folk", "shawn"],
         difficulty="Intermediate",
         description="Double-reed folk shawm with compact hole placement. "
@@ -320,8 +536,8 @@ LIBRARY: list[InstrumentEntry] = [
         source="Demakein Built-in",
         demakein_preset="shawm",
         image_url="https://upload.wikimedia.org/wikipedia/commons/thumb/2/20/Shawm.jpg/640px-Shawm.jpg",
-        audio_url="https://www.youtube.com/watch?v=FBpXOL7W0mE",
-        download_url="https://github.com/introlab/demakein",
+        audio_url="https://www.youtube.com/watch?v=JoaiLceiFZA",
+        download_url="https://github.com/pfh/demakein",
         tags=["advanced", "double-reed", "medieval", "full-size"],
         difficulty="Advanced",
         description="Full-size double-reed shawm. Larger and more "
@@ -336,11 +552,26 @@ LIBRARY: list[InstrumentEntry] = [
         demakein_preset="reed_drone",
         image_url="https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/Practice_chanter.jpg/640px-Practice_chanter.jpg",
         audio_url="https://www.youtube.com/watch?v=jQKjFGIAXjA",
-        download_url="https://github.com/introlab/demakein",
+        download_url="https://github.com/pfh/demakein",
         tags=["intermediate", "drone", "bagpipe", "continuous"],
         difficulty="Intermediate",
         description="Continuous-sounding reed drone pipe. "
                     "Intended for use as a bagpipe drone or held drone instrument.",
+    ),
+    InstrumentEntry(
+        name="Rackett (Sausage Bassoon)",
+        family="Wind", subcategory="Woodwind", type_label="Double Reed",
+        range="Bass", key="C",
+        source="Printables – PyroSteel",
+        image_url="",
+        audio_url="https://www.youtube.com/watch?v=QwPgiVCVxEA",
+        download_url="https://www.printables.com/model/1014532-rackett",
+        tags=["advanced", "double-reed", "renaissance", "historical", "compact-bass"],
+        difficulty="Advanced",
+        description="Renaissance-era double reed instrument, also known as the "
+                    "sausage bassoon or cervalas. Achieves a very low bass range "
+                    "in a compact body by folding multiple parallel bores. Quiet, "
+                    "mellow tone. Requires reed making skills.",
     ),
     InstrumentEntry(
         name="Glissotar (Soprano)",
@@ -376,7 +607,7 @@ LIBRARY: list[InstrumentEntry] = [
         range="Soprano", key="Variable",
         source="Printables – PistonPin",
         image_url="https://media.printables.com/media/prints/30637/images/54951_a3a14df9-198a-4d95-b4f4-5122122e1cb0/thumbs/inside/1600x1200/jpg/kazoo.webp",
-        audio_url="https://www.youtube.com/watch?v=B_ dátummalYLQ8",
+        audio_url="https://www.youtube.com/watch?v=iC65ufGUvKM",
         download_url="https://www.printables.com/model/30637-kazoo",
         tags=["beginner", "kazoo", "free-reed", "membrane", "fun"],
         difficulty="Beginner",
@@ -427,6 +658,87 @@ LIBRARY: list[InstrumentEntry] = [
         description="Functional Kudu horn trumpet (shofar). "
                     "Smooth spiral shape, plays as a natural brass instrument. "
                     "~660mm tall, can be printed in sections.",
+    ),
+    InstrumentEntry(
+        name="Mini Ophicleide (Keyless Serpent)",
+        family="Wind", subcategory="Brass", type_label="Brass",
+        range="Bass", key="C",
+        source="Printables – Melmaking",
+        image_url="",
+        audio_url="https://www.youtube.com/watch?v=t9mB72TC8Kw",
+        download_url="https://www.printables.com/model/478359-mini-ophicleide",
+        tags=["advanced", "brass", "ophicleide", "serpent", "keyless", "historical"],
+        difficulty="Advanced",
+        description="Keyless mini ophicleide / serpent. A compact bass brass "
+                    "instrument based on the 19th-century ophicleide and the "
+                    "older serpent. Uses a cup mouthpiece (trumpet mouthpiece). "
+                    "6 finger holes produce a chromatic bass range. Compact and portable.",
+    ),
+    InstrumentEntry(
+        name="PrintBone Trombone (3D-Printed)",
+        family="Wind", subcategory="Brass", type_label="Brass",
+        range="Tenor", key="Bb",
+        source="Printables – PieterB",
+        image_url="",
+        audio_url="https://www.youtube.com/watch?v=H_VVgddzFDI",
+        download_url="https://www.printables.com/model/80017-the-printbone-v11-a-fully-printable-playable-tromb",
+        tags=["advanced", "trombone", "brass", "slide", "openscad", "large-print"],
+        difficulty="Advanced",
+        description="The PrintBone v1.1 is a fully 3D-printed playable trombone. 8.5-inch "
+                    "bell, fits a Bach 42 or 50 slide connector. Can be paired with a brass "
+                    "slide or PVC/ carbon fiber slide. OpenSCAD sources on GitHub allow "
+                    "parameterized customization. Large build volume required (210x220x200mm "
+                    "minimum). 25-40% infill recommended. By PieterB.",
+    ),
+    InstrumentEntry(
+        name="Jazzophone (Sax-Shaped Trumpet)",
+        family="Wind", subcategory="Brass", type_label="Brass",
+        range="Soprano", key="Bb",
+        source="Historical (1920s, Graslitz)",
+        image_url="",
+        audio_url="https://www.youtube.com/watch?v=uMhE4qk8G6c",
+        download_url="",
+        tags=["museum", "historical", "jazzophone", "1920s", "two-bell", "sax-shaped"],
+        difficulty="Expert",
+        description="The Jazzophone is a rare 1920s brass instrument — a trumpet built in "
+                    "the shape of a saxophone with two bells. One bell sounds like a normal "
+                    "trumpet, the other like a muted trumpet (built-in wah-wah mute). Three "
+                    "regular trumpet valves plus a 4th upside-down valve to switch bells. "
+                    "Invented in Graslitz (Czechoslovakia) as a cheaper alternative to the "
+                    "saxophone in jazz bands. ~100 made. No STL files available.",
+    ),
+    InstrumentEntry(
+        name="Normaphone (Sax-Shaped Brass)",
+        family="Wind", subcategory="Brass", type_label="Brass",
+        range="Tenor", key="Bb",
+        source="Historical (Heber, 1924)",
+        image_url="",
+        audio_url="https://www.youtube.com/watch?v=4LAkLc-qUvE",
+        download_url="",
+        tags=["museum", "historical", "normaphone", "1920s", "sax-shaped", "jazz"],
+        difficulty="Expert",
+        description="The Normaphone is a 1920s saxophone-shaped brass instrument invented "
+                    "by Richard Oskar Heber in Markneukirchen, Germany. Built as a cheaper "
+                    "alternative to the saxophone — any trumpeter, hornist, or bassist could "
+                    "play it without retraining. Four sizes: soprano, alto, tenor, bass. "
+                    "Three Perinet or rotary valves. Advertised as 'very appropriate for "
+                    "jazz bands and other effect ensembles'. ~100 produced. No STL available.",
+    ),
+    InstrumentEntry(
+        name="Sudrophone (Ophicleide Brass + Mirliton)",
+        family="Wind", subcategory="Brass", type_label="Brass",
+        range="Baritone", key="C/Bb",
+        source="Historical (Sudre, 1892)",
+        image_url="",
+        audio_url="https://www.youtube.com/watch?v=R6v9UfqHYCM",
+        download_url="",
+        tags=["museum", "historical", "sudrophone", "ophicleide", "mirliton", "1890s"],
+        difficulty="Expert",
+        description="The Sudrophone is a brass instrument invented by François Sudre in "
+                    "1892. Conical bore, 3–4 Perinet valves, ophicleide-shaped body. Its "
+                    "unique feature: a mirliton (kazoo-like silk membrane) on the bell "
+                    "that can be engaged to create a nasal cello-like or bassoon-like tone. "
+                    "Designed to stand out from the saxhorn family. No STL files available.",
     ),
 
     # ##############################################################

@@ -56,6 +56,7 @@ class MainWindow(QMainWindow):
         self.resources_tab = ResourcesWidget()
         self.project_tab = ProjectWidget()
         self.design_tab = DesignWidget()
+        self.design_tab.design_completed.connect(self._on_design_completed)
         self.sim_tab = SimulationWidget()
         self.freecad_tab = FreeCADWidget()
 
@@ -87,6 +88,16 @@ class MainWindow(QMainWindow):
         self.tabs.setCurrentWidget(self.design_tab)
         self.design_tab.select_preset(preset)
         self.status_label.setText(f"Loaded preset: {preset} from library")
+
+    def _on_design_completed(self, yaml_path: str, target: str):
+        if target == "simulate":
+            self.sim_tab.load_yaml(yaml_path)
+            self.tabs.setCurrentWidget(self.sim_tab)
+            self.status_label.setText(f"Config loaded in Simulate tab: {yaml_path}")
+        elif target == "freecad":
+            self.freecad_tab.load_yaml(yaml_path)
+            self.tabs.setCurrentWidget(self.freecad_tab)
+            self.status_label.setText(f"Config loaded in 3D Export tab: {yaml_path}")
 
     def _open_workspace(self):
         path = str(Path.home() / "WoodwindProjects")

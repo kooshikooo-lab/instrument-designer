@@ -1,5 +1,4 @@
 import os
-import yaml
 from pathlib import Path
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGroupBox, QPushButton,
@@ -114,6 +113,13 @@ class SimulationWidget(QWidget):
         splitter.setSizes([200, 400])
         layout.addWidget(splitter, stretch=1)
 
+    def load_yaml(self, yaml_path: str):
+        if os.path.exists(yaml_path):
+            self.yaml_path_label.setText(yaml_path)
+            self.log_output.append(f"Loaded config: {yaml_path}")
+        else:
+            self.log_output.append(f"Config not found: {yaml_path}")
+
     def _browse_yaml(self):
         path, _ = QFileDialog.getOpenFileName(
             self, "Select YAML Config",
@@ -167,7 +173,8 @@ class SimulationWidget(QWidget):
             if result.plot_path and os.path.exists(result.plot_path):
                 pixmap = QPixmap(result.plot_path)
                 if not pixmap.isNull():
-                    scaled = pixmap.scaledToWidth(self.plot_label.width() - 20)
+                    w = max(1, self.plot_label.width() - 20)
+                    scaled = pixmap.scaledToWidth(w)
                     self.plot_label.setPixmap(scaled)
                     self.plot_label.setText("")
                 else:
