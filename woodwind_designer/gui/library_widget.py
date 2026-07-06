@@ -344,9 +344,15 @@ class LibraryWidget(QWidget):
             self._play_synthesized(entry)
 
     def _play_synthesized(self, entry):
+        import re
         range_map = {"Soprano": 5, "Alto": 4, "Tenor": 3, "Bass": 2, "Contrabass": 1}
         octave = range_map.get(entry.range, 4)
-        note = entry.key.rstrip("b#") + str(octave)
+        key = entry.key.strip()
+        m = re.match(r'^([A-G][#B]?)\b', key.upper())
+        if m:
+            note = m.group(1) + str(octave)
+        else:
+            note = f"C{octave}"
         type_map = {"flute": "flute", "fipple": "flute", "reed": "reed",
                     "single reed": "reed", "double reed": "reed",
                     "brass": "brass", "brasswind": "brass"}

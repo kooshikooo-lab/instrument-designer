@@ -84,7 +84,7 @@ class ParameterEditor(QDialog):
 
         len_group = QGroupBox("Bore Length")
         len_layout = QHBoxLayout(len_group)
-        self.length_label = QLabel(f"{self._config.get('bore_length', 0):.3f} mm")
+        self.length_label = QLabel(f"{self._config.get('bore_length', 0):.3f} m")
         self.length_label.setStyleSheet("font-size: 14px; font-weight: bold; color: #E8D5B7;")
         len_layout.addWidget(self.length_label)
         len_layout.addStretch()

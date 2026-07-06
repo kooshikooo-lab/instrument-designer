@@ -251,7 +251,6 @@ class ProjectWidget(QWidget):
         if not ok or not name.strip():
             return
         name = name.strip()
-        old_project = self._current_project
         self._capture_state_from_tabs()
         proj = create_project(
             base_dir=self._workspace,
@@ -283,9 +282,10 @@ class ProjectWidget(QWidget):
         if yaml_str:
             self._current_project.set_config_yaml(yaml_str)
         if st._last_result and st._last_result.success:
+            json_path = st.simulator.save_results_json(st._last_result)
             self._current_project.import_simulation(
                 st._last_result.plot_path,
-                st._last_result.output_dir,
+                json_path,
             )
 
     def _restore_state_to_tabs(self):

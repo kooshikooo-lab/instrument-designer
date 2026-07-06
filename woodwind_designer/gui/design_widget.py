@@ -485,4 +485,6 @@ class DesignWidget(QWidget):
         self.run_btn.setEnabled(HAVE_DEMAKEIN or self.remote_check.isChecked())
         self.cancel_btn.setEnabled(False)
         self.progress_bar.hide()
+        self.send_to_sim_btn.setEnabled(False)
+        self.send_to_fc_btn.setEnabled(False)
         self.edit_params_btn.setEnabled(False)

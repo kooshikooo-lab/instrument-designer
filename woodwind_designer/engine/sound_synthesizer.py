@@ -20,12 +20,16 @@ def _get_cache_dir():
 
 
 def _note_to_freq(note: str) -> float:
+    import re
     note = note.strip().upper()
+    m = re.match(r'^([A-G][#B]?)(-?\d+)$', note)
+    if not m:
+        return 440.0
     name_map = {"C": 0, "C#": 1, "DB": 1, "D": 2, "D#": 3, "EB": 3,
                 "E": 4, "F": 5, "F#": 6, "GB": 6, "G": 7, "G#": 8,
                 "AB": 8, "A": 9, "A#": 10, "BB": 10, "B": 11}
-    note_name = note[:-1]
-    octave = int(note[-1])
+    note_name = m.group(1)
+    octave = int(m.group(2))
     semitone = name_map.get(note_name, 9)
     return 440.0 * (2.0 ** ((semitone - 9 + (octave - 4) * 12) / 12.0))
 

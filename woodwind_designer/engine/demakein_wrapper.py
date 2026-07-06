@@ -1,6 +1,49 @@
+"""
+demakein_wrapper.py — Primary instrument designer using demakein's optimizer.
+================================================================================
+
+Part of the Instrument Designer project. This is the PRODUCTION module that
+wraps demakein's instrument design classes and optimization engine for use
+in a PySide6 GUI application.
+
+Architecture
+------------
+demakein (https://github.com/keenanweaver/demakein) provides:
+  - Instrument parameterization (Design_folk_flute, Design_recorder, etc.)
+  - Constraint scoring (bore geometry, hole spacing, etc.)
+  - Acoustic scoring (resonance quality)
+  - Custom evolution-strategy optimizer (demakein.optimize.improve)
+  - Multiprocessing worker pool (demakein.legion) — the fragile part
+
+This module wraps demakein with:
+  - A clean async-friendly API (DemakeinDesigner.design())
+  - stdout/stderr interception for progress reporting in the GUI
+  - YAML config export for FreeCAD-based 3D model generation
+  - Monkey-patches for PyInstaller/frozen-build compatibility
+
+Key fixes applied (see git history):
+  - Bug A: Worker crashes from sys.stdout=None in frozen builds
+  - Bug B: process_make() re-ran optimization + crashed on shutdown
+  - Bug C: YAML generation read pickle as JSON (silent failure)
+  - Bug D: stderr not intercepted for progress callbacks
+  - Bug E: ANSI escape codes in progress messages
+
+For an experimental scipy-based alternative (no multiprocessing),
+see scipy_optimizer.py in this same directory.
+
+Usage
+-----
+    from woodwind_designer.engine.demakein_wrapper import DemakeinDesigner
+
+    d = DemakeinDesigner(output_base="designs")
+    result = d.design("folk_flute", transpose=0, quick=True,
+                      on_progress=lambda msg: print(msg))
+    if result.success:
+        print(f"YAML config: {result.config_yaml}")
+        print(f"STL files: {result.stl_files}")
+"""
+
 import os
-import json
-import tempfile
 from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Optional
@@ -16,6 +59,18 @@ try:
     HAVE_DEMAKEIN = True
 except ImportError:
     HAVE_DEMAKEIN = False
+
+if HAVE_DEMAKEIN:
+    import demakein.config as _demakein_config
+    _ORIG_WRITE_COLORED = _demakein_config.write_colored_text
+    def _SAFE_WRITE_COLORED(*args, **kwargs):
+        import sys, io
+        if sys.stdout is None:
+            sys.stdout = io.StringIO()
+        if sys.stderr is None:
+            sys.stderr = io.StringIO()
+        return _ORIG_WRITE_COLORED(*args, **kwargs)
+    _demakein_config.write_colored_text = _SAFE_WRITE_COLORED
 
 
 @dataclass
@@ -160,6 +215,10 @@ class DemakeinDesigner:
         import io as _io
 
         _orig_stdout = _sys.stdout or _io.StringIO()
+        _orig_stderr = _sys.stderr or _io.StringIO()
+
+        import re as _re
+        _ANSI_RE = _re.compile(r'\x1b\[[0-9;]*[a-zA-Z]|\x1b\W')
 
         class _ProgressStream:
             _recursing = False
@@ -169,32 +228,41 @@ class DemakeinDesigner:
                 self.callback = callback
                 self.buf = ""
 
+            def isatty(self):
+                return False
+
+            def fileno(self):
+                raise OSError()
+
+            def _extract(self, raw):
+                return _ANSI_RE.sub('', raw).strip()
+
             def write(self, text):
                 self.stream.write(text)
                 if self._recursing:
                     return
                 self.buf += text
                 if "\r" in self.buf:
-                    line = self.buf.rsplit("\r", 1)[-1]
-                    stripped = line.strip()
-                    if stripped and self.callback:
+                    line = self._extract(self.buf.rsplit("\r", 1)[-1])
+                    if line and self.callback:
                         _ProgressStream._recursing = True
                         try:
-                            _orig_stdout.write(f"[progress] {stripped}\n")
+                            _orig_stdout.write(f"[progress] {line}\n")
                             _orig_stdout.flush()
-                            self.callback(stripped)
+                            self.callback(line)
                         finally:
                             _ProgressStream._recursing = False
+                    self.buf = self.buf[self.buf.rfind("\r") + 1:]
                 if "\n" in self.buf:
                     lines = self.buf.split("\n")
                     for line in lines[:-1]:
-                        stripped = line.strip()
-                        if stripped and self.callback:
+                        line = self._extract(line)
+                        if line and self.callback:
                             _ProgressStream._recursing = True
                             try:
-                                _orig_stdout.write(f"[progress] {stripped}\n")
+                                _orig_stdout.write(f"[progress] {line}\n")
                                 _orig_stdout.flush()
-                                self.callback(stripped)
+                                self.callback(line)
                             finally:
                                 _ProgressStream._recursing = False
                     self.buf = lines[-1]
@@ -205,47 +273,39 @@ class DemakeinDesigner:
                 except (OSError, AttributeError):
                     pass
 
-            def __getattr__(self, name):
-                return getattr(self.stream, name)
-
         _sys.stdout = _ProgressStream(_sys.stdout, on_progress)
+        _sys.stderr = _ProgressStream(_sys.stderr, on_progress)
 
         try:
             if on_progress:
                 mode = "Quick Draft" if quick else "Full optimization"
                 on_progress(f"{mode} in progress (may take several minutes)...")
             designer.run()
-            if on_progress:
-                on_progress("Optimization complete — generating 3D model...")
-            designer.process_make()
             stl_files = sorted(Path(design_dir).rglob("*.stl"))
 
             config_yaml = ""
             try:
-                sf = getattr(designer, 'state_filename', None)
-                if sf and os.path.exists(sf):
-                    with open(sf) as _fh:
-                        state_vec = json.load(_fh)
-                    inst = designer.unpack(state_vec)
-                    if inst is not None:
-                        import yaml as _yaml
-                        _n = 60
-                        _positions = [inst.length * i / (_n - 1) for i in range(_n)]
-                        bore_profile = [[round(p, 4), round(inst.inner(p) / 2.0, 4)] for p in _positions]
-                        tone_holes = [
-                            {"position": round(p, 4), "radius": round(d / 2.0, 4),
-                             "chimney_height": round(h, 4)}
-                            for p, d, h in zip(inst.hole_positions, inst.hole_diameters, inst.hole_lengths)
-                        ]
-                        yaml_cfg = {
-                            "bore_length": round(inst.length / 1000.0, 4),
-                            "bore_profile": bore_profile,
-                            "tone_holes": tone_holes,
-                        }
-                        yaml_path = os.path.join(design_dir, f"{preset}_config.yaml")
-                        with open(yaml_path, "w") as _yh:
-                            _yaml.dump(yaml_cfg, _yh, default_flow_style=None)
-                        config_yaml = yaml_path
+                sv = getattr(designer, 'state_vec', None)
+                if sv is not None:
+                    inst = designer.unpack(sv)
+                    import yaml as _yaml
+                    _n = 60
+                    _positions = [inst.length * i / (_n - 1) for i in range(_n)]
+                    bore_profile = [[round(p, 4), round(inst.inner(p) / 2.0, 4)] for p in _positions]
+                    tone_holes = [
+                        {"position": round(p, 4), "radius": round(d / 2.0, 4),
+                         "chimney_height": round(h, 4)}
+                        for p, d, h in zip(inst.hole_positions, inst.hole_diameters, inst.hole_lengths)
+                    ]
+                    yaml_cfg = {
+                        "bore_length": round(inst.length / 1000.0, 4),
+                        "bore_profile": bore_profile,
+                        "tone_holes": tone_holes,
+                    }
+                    yaml_path = os.path.join(design_dir, f"{preset}_config.yaml")
+                    with open(yaml_path, "w") as _yh:
+                        _yaml.dump(yaml_cfg, _yh, default_flow_style=None)
+                    config_yaml = yaml_path
             except Exception:
                 pass
 
@@ -267,3 +327,4 @@ class DemakeinDesigner:
             )
         finally:
             _sys.stdout = _orig_stdout
+            _sys.stderr = _orig_stderr
