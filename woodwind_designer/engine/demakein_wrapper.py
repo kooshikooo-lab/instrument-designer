@@ -101,18 +101,21 @@ class DemakeinDesigner:
     def get_description(self, preset: str) -> str:
         return self.PRESET_DESCRIPTIONS.get(preset, "")
 
+    _ORIG_IMPROVE = None
+
     def _patch_optimize(self, quick: bool):
         import demakein.optimize as _opt
-        _orig = _opt.improve
+        if self._ORIG_IMPROVE is None:
+            self._ORIG_IMPROVE = _opt.improve
         if quick:
-            pool = 2; ftol_val = 1e-2; acc = 0.005
+            pool = 1; ftol_val = 5e-2; acc = 0.01
         else:
             pool = 3; ftol_val = 5e-4; acc = 0.002
         def _patched_improve(comment, constrainer, scorer, start_x, **kw):
             kw["pool_factor"] = pool
             kw["ftol"] = ftol_val
             kw["initial_accuracy"] = acc
-            return _orig(comment, constrainer, scorer, start_x, **kw)
+            return self._ORIG_IMPROVE(comment, constrainer, scorer, start_x, **kw)
         _opt.improve = _patched_improve
 
     def design(self, preset: str, transpose: int = 0, output_dir: Optional[str] = None,

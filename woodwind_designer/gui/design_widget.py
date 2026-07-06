@@ -297,7 +297,7 @@ class DesignWidget(QWidget):
 
         designer = self._get_designer()
         quick = self.quick_check.isChecked()
-        out_dir = os.path.join(tempfile.gettempdir(), f"woodwind_{key}")
+        out_dir = os.path.join(tempfile.gettempdir(), f"woodwind_{key}_{os.urandom(4).hex()}")
         self.log_output.clear()
         self.log_output.append("Design started — optimization in progress (may take several minutes)...")
         self.log_output.append("Tip: enable Quick Draft for faster but less refined results.")
@@ -386,7 +386,7 @@ class DesignWidget(QWidget):
             return
 
         transpose_values = list(range(self.batch_from.value(), self.batch_to.value() + 1))
-        out_base = os.path.join(tempfile.gettempdir(), f"batch_{key}")
+        out_base = os.path.join(tempfile.gettempdir(), f"batch_{key}_{os.urandom(4).hex()}")
         quick = self.quick_check.isChecked()
         designer = self._get_designer()
 
