@@ -8,7 +8,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import QThread, Signal, Qt
 from PySide6.QtGui import QPixmap
 
-from ..engine.openwind_wrapper import OpenWindSimulator, HAVE_OPENWIND
+from ..engine.openwind_wrapper import OpenWindSimulator, HAVE_OPENWIND, SimulationResult
 
 
 class SimulationWorker(QThread):
@@ -39,6 +39,7 @@ class SimulationWidget(QWidget):
         super().__init__()
         self.simulator = OpenWindSimulator()
         self._worker = None
+        self._last_result = None
         self._setup_ui()
 
     def _setup_ui(self):
@@ -92,6 +93,16 @@ class SimulationWidget(QWidget):
         self.progress_bar.setRange(0, 0)
         self.progress_bar.hide()
         actions.addWidget(self.progress_bar)
+
+        self.save_plot_btn = QPushButton("Save Plot...")
+        self.save_plot_btn.clicked.connect(self._save_plot)
+        self.save_plot_btn.setEnabled(False)
+        actions.addWidget(self.save_plot_btn)
+
+        self.save_data_btn = QPushButton("Save Data (CSV)...")
+        self.save_data_btn.clicked.connect(self._save_data)
+        self.save_data_btn.setEnabled(False)
+        actions.addWidget(self.save_data_btn)
 
         actions.addStretch()
         top_row.addLayout(actions)
@@ -162,6 +173,9 @@ class SimulationWidget(QWidget):
 
     def _on_sim_done(self, result):
         self._reset_ui()
+        self._last_result = result if result.success else None
+        self.save_plot_btn.setEnabled(result.success and bool(result.plot_path))
+        self.save_data_btn.setEnabled(result.success)
         if result.success:
             self.log_output.append(f"✓ {result.log}")
             if result.peak_freqs:
@@ -181,6 +195,36 @@ class SimulationWidget(QWidget):
                     self.plot_label.setText(f"Plot saved: {result.plot_path}")
         else:
             self.log_output.append(f"✗ {result.log}")
+
+    def _save_plot(self):
+        if not self._last_result or not self._last_result.plot_path:
+            return
+        dst, _ = QFileDialog.getSaveFileName(
+            self, "Save Impedance Plot",
+            os.path.join(os.path.expanduser("~"), "impedance_plot.png"),
+            "PNG Images (*.png);;All files (*.*)"
+        )
+        if dst:
+            import shutil
+            shutil.copy2(self._last_result.plot_path, dst)
+            self.log_output.append(f"Plot saved: {dst}")
+
+    def _save_data(self):
+        if not self._last_result:
+            return
+        dst, _ = QFileDialog.getSaveFileName(
+            self, "Save Simulation Data",
+            os.path.join(os.path.expanduser("~"), "simulation_data.csv"),
+            "CSV files (*.csv);;All files (*.*)"
+        )
+        if dst:
+            freqs = self._last_result.frequencies
+            impedances = self._last_result.impedance
+            with open(dst, "w") as f:
+                f.write("frequency_hz,impedance_magnitude\n")
+                for f_val, z_val in zip(freqs, impedances):
+                    f.write(f"{f_val},{abs(z_val)}\n")
+            self.log_output.append(f"Data saved: {dst}")
 
     def _reset_ui(self):
         self.run_btn.setEnabled(HAVE_OPENWIND)

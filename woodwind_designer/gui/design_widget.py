@@ -10,6 +10,7 @@ from PySide6.QtCore import QThread, Signal, Qt
 
 from ..engine.demakein_wrapper import DemakeinDesigner, HAVE_DEMAKEIN
 from ..engine.remote_client import RemoteDesigner
+from .parameter_editor import ParameterEditor
 
 QUICK_HELP = (
     "Quick Draft uses faster optimization (smaller pool, looser convergence) "
@@ -44,8 +45,49 @@ class DesignWorker(QThread):
         self.finished.emit(result)
 
 
+class BatchDesignWorker(QThread):
+    finished = Signal(object)
+    progress = Signal(str)
+
+    def __init__(self, designer, preset, transpose_range, output_base, quick):
+        super().__init__()
+        self.designer = designer
+        self.preset = preset
+        self.transpose_range = transpose_range
+        self.output_base = output_base
+        self.quick = quick
+        self.results = []
+
+    def run(self):
+        total = len(self.transpose_range)
+        for i, transp in enumerate(self.transpose_range):
+            display = self.designer.PRESET_DISPLAY_NAMES.get(self.preset, self.preset)
+            self.progress.emit(f"[{i+1}/{total}] Transpose={transp:+d}: {display}")
+            out_dir = os.path.join(self.output_base, f"t{transp:+d}")
+            try:
+                result = self.designer.design(
+                    preset=self.preset, transpose=transp,
+                    output_dir=out_dir,
+                    on_progress=lambda msg: None,
+                    quick=self.quick,
+                )
+                self.results.append((transp, result))
+                if result.success:
+                    self.progress.emit(f"[{i+1}/{total}] {display} transpose={transp:+d} OK")
+                else:
+                    self.progress.emit(f"[{i+1}/{total}] {display} transpose={transp:+d} FAILED")
+            except Exception as e:
+                self.progress.emit(f"[{i+1}/{total}] transpose={transp:+d} ERROR: {e}")
+                from ..engine.demakein_wrapper import DesignResult
+                self.results.append((transp, DesignResult(
+                    output_dir=out_dir, ident="", log=str(e), success=False
+                )))
+        self.finished.emit(self.results)
+
+
 class DesignWidget(QWidget):
-    design_completed = Signal(str, str)  # yaml_path, preset_name
+    design_completed = Signal(str, str)  # yaml_path, target
+    design_succeeded = Signal(str)       # yaml_path (for auto-save)
 
     def __init__(self):
         super().__init__()
@@ -162,8 +204,47 @@ class DesignWidget(QWidget):
         self.send_to_fc_btn.setEnabled(False)
         self.send_to_fc_btn.clicked.connect(self._send_to_freecad)
         self.send_bar.addWidget(self.send_to_fc_btn)
+        self.edit_params_btn = QPushButton("Edit Parameters...")
+        self.edit_params_btn.setEnabled(False)
+        self.edit_params_btn.clicked.connect(self._edit_parameters)
+        self.send_bar.addWidget(self.edit_params_btn)
         self.send_bar.addStretch()
         layout.addLayout(self.send_bar)
+
+        # -- Batch mode --
+        batch_box = QGroupBox("Batch Design")
+        batch_layout = QVBoxLayout(batch_box)
+
+        batch_top = QHBoxLayout()
+        self.batch_check = QCheckBox("Enable Batch Mode")
+        self.batch_check.toggled.connect(self._toggle_batch)
+        self.batch_check.setStyleSheet("color: #C0B0A0;")
+        batch_top.addWidget(self.batch_check)
+
+        batch_top.addWidget(QLabel("From:"))
+        self.batch_from = QSpinBox()
+        self.batch_from.setRange(-24, 24)
+        self.batch_from.setValue(-6)
+        self.batch_from.setSuffix(" st")
+        self.batch_from.setEnabled(False)
+        batch_top.addWidget(self.batch_from)
+
+        batch_top.addWidget(QLabel("To:"))
+        self.batch_to = QSpinBox()
+        self.batch_to.setRange(-24, 24)
+        self.batch_to.setValue(6)
+        self.batch_to.setSuffix(" st")
+        self.batch_to.setEnabled(False)
+        batch_top.addWidget(self.batch_to)
+
+        self.batch_run_btn = QPushButton("Run Batch")
+        self.batch_run_btn.clicked.connect(self._run_batch)
+        self.batch_run_btn.setEnabled(False)
+        batch_top.addWidget(self.batch_run_btn)
+
+        batch_top.addStretch()
+        batch_layout.addLayout(batch_top)
+        layout.addWidget(batch_box)
 
         self.log_output = QTextEdit()
         self.log_output.setReadOnly(True)
@@ -252,12 +333,88 @@ class DesignWidget(QWidget):
                 self._last_yaml = result.config_yaml
                 self.send_to_sim_btn.setEnabled(True)
                 self.send_to_fc_btn.setEnabled(True)
+                self.edit_params_btn.setEnabled(True)
                 self.log_output.append(f"\nConfig: {result.config_yaml}")
                 self.log_output.append("↳ Use buttons to send to Simulate or 3D Export")
+                self.design_succeeded.emit(result.config_yaml)
             else:
                 self.log_output.append("\n(No YAML config generated for this preset)")
         else:
             self.log_output.append(f"Failed: {result.log}")
+
+    def _edit_parameters(self):
+        if not self._last_yaml or not os.path.exists(self._last_yaml):
+            return
+        dialog = ParameterEditor(self._last_yaml, self)
+        dialog.exec()
+        self.log_output.append(f"Parameters updated: {self._last_yaml}")
+
+    def _toggle_batch(self, checked):
+        self.batch_from.setEnabled(checked)
+        self.batch_to.setEnabled(checked)
+        self.batch_run_btn.setEnabled(checked)
+
+    def _run_batch(self):
+        key = self._current_preset_key()
+        if not key:
+            return
+        if self.batch_from.value() > self.batch_to.value():
+            QMessageBox.warning(self, "Invalid Range",
+                                "Start transposition must be ≤ end transposition.")
+            return
+
+        transpose_values = list(range(self.batch_from.value(), self.batch_to.value() + 1))
+        out_base = os.path.join(tempfile.gettempdir(), f"batch_{key}")
+        quick = self.quick_check.isChecked()
+        designer = self._get_designer()
+
+        self.log_output.clear()
+        self.log_output.append(f"Batch: {len(transpose_values)} transpositions "
+                               f"({transpose_values[0]:+d} to {transpose_values[-1]:+d})")
+        self.batch_run_btn.setEnabled(False)
+        self.run_btn.setEnabled(False)
+        self.progress_bar.show()
+
+        self._batch_worker = BatchDesignWorker(
+            designer, key, transpose_values, out_base, quick
+        )
+        self._batch_worker.progress.connect(lambda msg: self.log_output.append(msg))
+        self._batch_worker.finished.connect(self._on_batch_done)
+        self._batch_worker.start()
+
+    def _on_batch_done(self, results):
+        self.progress_bar.hide()
+        self.batch_run_btn.setEnabled(self.batch_check.isChecked())
+        self.run_btn.setEnabled(True)
+
+        successes = sum(1 for _, r in results if r.success)
+        failures = len(results) - successes
+        self.log_output.append(f"\nBatch complete: {successes} OK, {failures} failed")
+
+        header = f"  {'Transpose':>9}  {'Result':>8}  {'STLs':>6}  {'Config':>7}"
+        self.log_output.append(header)
+        self.log_output.append("  " + "-" * len(header))
+        for transp, result in results:
+            status = "OK" if result.success else "FAIL"
+            n_stl = len(result.stl_files)
+            has_yaml = "yes" if (result.config_yaml and os.path.exists(result.config_yaml)) else ""
+            self.log_output.append(
+                f"  {transp:+>+9d}  {status:>8}  {n_stl:>6}  {has_yaml:>7}"
+            )
+
+        last_success = None
+        for transp, result in reversed(results):
+            if result.success and result.config_yaml:
+                last_success = (transp, result)
+                break
+        if last_success:
+            _, last = last_success
+            self._last_yaml = last.config_yaml
+            self.send_to_sim_btn.setEnabled(True)
+            self.send_to_fc_btn.setEnabled(True)
+            self.edit_params_btn.setEnabled(True)
+            self.log_output.append(f"\nLoaded last successful config: {last.config_yaml}")
+            self.design_succeeded.emit(last.config_yaml)
 
     def _send_to_simulate(self):
         if self._last_yaml and os.path.exists(self._last_yaml):
@@ -292,7 +449,18 @@ class DesignWidget(QWidget):
                 self.log_output.append(f"Loaded: {display}")
                 return
 
+    def get_state(self):
+        key = self._current_preset_key()
+        return key, self.transpose_spin.value(), self.quick_check.isChecked()
+
+    def get_last_yaml(self) -> str:
+        if self._last_yaml and os.path.exists(self._last_yaml):
+            with open(self._last_yaml) as f:
+                return f.read()
+        return ""
+
     def _reset_ui(self):
         self.run_btn.setEnabled(HAVE_DEMAKEIN or self.remote_check.isChecked())
         self.cancel_btn.setEnabled(False)
         self.progress_bar.hide()
+        self.edit_params_btn.setEnabled(False)

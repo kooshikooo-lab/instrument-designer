@@ -8,8 +8,17 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 
-FREECAD_CMD = r"C:\Program Files\FreeCAD 1.1\bin\freecadcmd.exe"
 BACKEND_SCRIPT = Path(__file__).parent / "freecad_backend.py"
+
+_COMMON_FREECAD_PATHS = [
+    r"C:\Program Files\FreeCAD 1.1\bin\freecadcmd.exe",
+    r"C:\Program Files\FreeCAD 1.0\bin\freecadcmd.exe",
+    r"C:\Program Files\FreeCAD 0.21\bin\freecadcmd.exe",
+    r"C:\Program Files\FreeCAD 0.20\bin\freecadcmd.exe",
+    r"C:\Program Files\FreeCAD\bin\freecadcmd.exe",
+]
+
+FREECAD_CMD = ""
 
 
 @dataclass
@@ -21,8 +30,25 @@ class FreeCADResult:
     success: bool = False
 
 
+def find_freecad() -> str:
+    for p in _COMMON_FREECAD_PATHS:
+        if os.path.exists(p):
+            return p
+    return ""
+
+
 def is_available() -> bool:
-    return os.path.exists(FREECAD_CMD)
+    global FREECAD_CMD
+    if not FREECAD_CMD:
+        FREECAD_CMD = find_freecad()
+    return bool(FREECAD_CMD) and os.path.exists(FREECAD_CMD)
+
+
+def freecad_path() -> str:
+    global FREECAD_CMD
+    if not FREECAD_CMD:
+        FREECAD_CMD = find_freecad()
+    return FREECAD_CMD
 
 
 def generate_instrument(
@@ -33,9 +59,11 @@ def generate_instrument(
     export_step: bool = False,
     export_fcstd: bool = False,
 ) -> FreeCADResult:
-    if not os.path.exists(FREECAD_CMD):
+    cmd = freecad_path()
+    if not cmd:
+        paths_display = "\n".join(_COMMON_FREECAD_PATHS)
         return FreeCADResult(
-            log=f"FreeCAD not found at {FREECAD_CMD}. Install FreeCAD 1.1 first.",
+            log=f"FreeCAD not found. Looked in:\n{paths_display}\nInstall FreeCAD 1.1+ or update _COMMON_FREECAD_PATHS in freecad_engine.py.",
             success=False
         )
     if not BACKEND_SCRIPT.exists():
@@ -60,7 +88,7 @@ def generate_instrument(
         env["FC_PARAMS"] = json.dumps(params)
 
         proc = subprocess.run(
-            [FREECAD_CMD, str(BACKEND_SCRIPT)],
+            [cmd, str(BACKEND_SCRIPT)],
             capture_output=True, text=True, timeout=120, env=env,
         )
 

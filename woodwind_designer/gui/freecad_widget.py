@@ -9,7 +9,8 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import QThread, Signal, Qt
 
 from ..engine.freecad_engine import (
-    generate_instrument, bore_from_yaml, is_available as fc_available, FreeCADResult
+    generate_instrument, bore_from_yaml, is_available as fc_available,
+    freecad_path, FreeCADResult
 )
 
 
@@ -98,13 +99,25 @@ class FreeCADWidget(QWidget):
 
         layout.addLayout(actions)
 
-        if not fc_available():
+        fc_path = freecad_path()
+        if not fc_path:
             help_text = QLabel(
-                "FreeCAD 1.1 not found.\n"
+                "FreeCAD not found.\n"
                 "Install from: https://www.freecad.org/downloads.php\n"
-                f"(expected at: C:\\Program Files\\FreeCAD 1.1\\bin\\freecadcmd.exe)"
+                "Auto-detected paths checked:\n  " +
+                "\n  ".join([
+                    r"C:\Program Files\FreeCAD 1.1\bin\freecadcmd.exe",
+                    r"C:\Program Files\FreeCAD 1.0\bin\freecadcmd.exe",
+                    r"C:\Program Files\FreeCAD 0.21\bin\freecadcmd.exe",
+                    r"C:\Program Files\FreeCAD 0.20\bin\freecadcmd.exe",
+                    r"C:\Program Files\FreeCAD\bin\freecadcmd.exe",
+                ])
             )
             help_text.setStyleSheet("color: #D4A76A; padding: 10px;")
+            layout.addWidget(help_text)
+        else:
+            help_text = QLabel(f"FreeCAD detected: {fc_path}")
+            help_text.setStyleSheet("color: #8B5E3C; padding: 10px;")
             layout.addWidget(help_text)
 
         self.log_output = QTextEdit()

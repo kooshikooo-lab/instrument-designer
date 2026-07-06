@@ -22,12 +22,13 @@ PROJECT_EXT = ".wfp"
 @dataclass
 class ProjectMeta:
     name: str
-    version: str = "1.0"
+    version: str = "2.0"
     created: str = ""
     modified: str = ""
     instrument_type: str = ""
     preset: str = ""
     transpose: int = 0
+    quick_draft: bool = False
     description: str = ""
 
     def __post_init__(self):
@@ -125,6 +126,14 @@ class Project:
             return []
         return sorted(self.models_dir.iterdir())
 
+    @property
+    def simulation_results_path(self) -> Path:
+        return self.simulations_dir / "simulation_results.json"
+
+    @property
+    def simulation_plot_path(self) -> Path:
+        return self.simulations_dir / "impedance_plot.png"
+
     def get_config_yaml(self) -> str:
         return self._config_yaml
 
@@ -133,15 +142,28 @@ class Project:
         if self.path.exists():
             self.config_path.write_text(yaml_str, encoding="utf-8")
 
+    def import_simulation(self, plot_path: str, data_path: str = "") -> list[str]:
+        copied = []
+        if plot_path and os.path.exists(plot_path):
+            dest = self.simulations_dir / Path(plot_path).name
+            shutil.copy2(plot_path, str(dest))
+            copied.append(str(dest))
+        if data_path and os.path.exists(data_path):
+            dest = self.simulations_dir / Path(data_path).name
+            shutil.copy2(data_path, str(dest))
+            copied.append(str(dest))
+        return copied
+
 
 def create_project(base_dir: str, name: str, preset: str = "",
                    instrument_type: str = "", transpose: int = 0,
-                   config_yaml: str = "") -> Project:
+                   quick_draft: bool = False, config_yaml: str = "") -> Project:
     meta = ProjectMeta(
         name=name,
         instrument_type=instrument_type,
         preset=preset,
         transpose=transpose,
+        quick_draft=quick_draft,
     )
     proj_dir = Path(base_dir) / (name + PROJECT_EXT)
     project = Project(str(proj_dir))

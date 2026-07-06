@@ -7,6 +7,7 @@ from PySide6.QtCore import Qt, QThread, Signal
 from PySide6.QtGui import QAction, QFont, QPixmap
 
 from .. import __app_name__, __version__
+from ..engine.project import create_project, list_projects
 from .design_widget import DesignWidget
 from .simulation_widget import SimulationWidget
 from .freecad_widget import FreeCADWidget
@@ -29,6 +30,27 @@ class MainWindow(QMainWindow):
         menubar = self.menuBar()
 
         file_menu = menubar.addMenu("&File")
+        new_project_action = QAction("&New Project", self)
+        new_project_action.setShortcut("Ctrl+N")
+        new_project_action.triggered.connect(self._new_project)
+        file_menu.addAction(new_project_action)
+
+        open_project_action = QAction("&Open Project...", self)
+        open_project_action.setShortcut("Ctrl+O")
+        open_project_action.triggered.connect(self._open_project)
+        file_menu.addAction(open_project_action)
+
+        save_project_action = QAction("&Save Project", self)
+        save_project_action.setShortcut("Ctrl+S")
+        save_project_action.triggered.connect(self._save_project)
+        file_menu.addAction(save_project_action)
+
+        save_as_action = QAction("Save Project &As...", self)
+        save_as_action.setShortcut("Ctrl+Shift+S")
+        save_as_action.triggered.connect(self._save_project_as)
+        file_menu.addAction(save_as_action)
+
+        file_menu.addSeparator()
         exit_action = QAction("E&xit", self)
         exit_action.setShortcut("Ctrl+Q")
         exit_action.triggered.connect(self.close)
@@ -55,8 +77,11 @@ class MainWindow(QMainWindow):
         self.library_tab.preset_selected.connect(self._on_preset_from_library)
         self.resources_tab = ResourcesWidget()
         self.project_tab = ProjectWidget()
+        self.project_tab.set_main_window(self)
+        self.project_tab.project_opened.connect(self._on_project_opened)
         self.design_tab = DesignWidget()
         self.design_tab.design_completed.connect(self._on_design_completed)
+        self.design_tab.design_succeeded.connect(self._on_design_succeeded)
         self.sim_tab = SimulationWidget()
         self.freecad_tab = FreeCADWidget()
 
@@ -89,6 +114,11 @@ class MainWindow(QMainWindow):
         self.design_tab.select_preset(preset)
         self.status_label.setText(f"Loaded preset: {preset} from library")
 
+    def _on_design_succeeded(self, yaml_path: str):
+        if self.project_tab._current_project:
+            self.project_tab._capture_state_from_tabs()
+            self.project_tab._current_project.save()
+
     def _on_design_completed(self, yaml_path: str, target: str):
         if target == "simulate":
             self.sim_tab.load_yaml(yaml_path)
@@ -98,6 +128,27 @@ class MainWindow(QMainWindow):
             self.freecad_tab.load_yaml(yaml_path)
             self.tabs.setCurrentWidget(self.freecad_tab)
             self.status_label.setText(f"Config loaded in 3D Export tab: {yaml_path}")
+
+    def _on_project_opened(self, preset: str):
+        if preset:
+            self.tabs.setCurrentWidget(self.design_tab)
+            self.design_tab.select_preset(preset)
+        self.project_tab._restore_state_to_tabs()
+        self.status_label.setText(f"Project: {self.project_tab._current_project.name}")
+
+    def _new_project(self):
+        self.tabs.setCurrentWidget(self.project_tab)
+        self.project_tab._new_project()
+
+    def _open_project(self):
+        self.tabs.setCurrentWidget(self.project_tab)
+        self.project_tab._open_project()
+
+    def _save_project(self):
+        self.project_tab._save_project()
+
+    def _save_project_as(self):
+        self.project_tab._save_project_as()
 
     def _open_workspace(self):
         path = str(Path.home() / "WoodwindProjects")

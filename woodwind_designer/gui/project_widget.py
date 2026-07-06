@@ -61,7 +61,11 @@ class ProjectWidget(QWidget):
         super().__init__()
         self._current_project: Project | None = None
         self._workspace = str(Path.home() / "WoodwindProjects")
+        self._main_window = None
         self._setup_ui()
+
+    def set_main_window(self, mw):
+        self._main_window = mw
 
     def _setup_ui(self):
         layout = QVBoxLayout(self)
@@ -237,8 +241,80 @@ class ProjectWidget(QWidget):
 
     def _save_project(self):
         if self._current_project:
+            self._capture_state_from_tabs()
             self._current_project.save()
             QMessageBox.information(self, "Saved", "Project saved.")
+
+    def _save_project_as(self):
+        name, ok = QLineEdit.getText(self, "Save Project As", "Project name:",
+                                      text=self._current_project.name if self._current_project else "")
+        if not ok or not name.strip():
+            return
+        name = name.strip()
+        old_project = self._current_project
+        self._capture_state_from_tabs()
+        proj = create_project(
+            base_dir=self._workspace,
+            name=name,
+            preset=self._current_project.meta.preset if self._current_project else "",
+            transpose=self._current_project.meta.transpose if self._current_project else 0,
+            quick_draft=self._current_project.meta.quick_draft if self._current_project else False,
+            config_yaml=self._current_project.get_config_yaml() if self._current_project else "",
+        )
+        if self._current_project and self._current_project.meta.description:
+            proj.meta.description = self._current_project.meta.description
+        proj.save()
+        self._current_project = proj
+        self._refresh_list()
+        QMessageBox.information(self, "Saved", f"Project saved as '{name}'.")
+
+    def _capture_state_from_tabs(self):
+        if not self._current_project or not self._main_window:
+            return
+        mw = self._main_window
+        dt = mw.design_tab
+        st = mw.sim_tab
+        preset, transpose, quick = dt.get_state()
+        if preset:
+            self._current_project.meta.preset = preset
+            self._current_project.meta.transpose = transpose
+            self._current_project.meta.quick_draft = quick
+        yaml_str = dt.get_last_yaml()
+        if yaml_str:
+            self._current_project.set_config_yaml(yaml_str)
+        if st._last_result and st._last_result.success:
+            self._current_project.import_simulation(
+                st._last_result.plot_path,
+                st._last_result.output_dir,
+            )
+
+    def _restore_state_to_tabs(self):
+        if not self._current_project or not self._main_window:
+            return
+        mw = self._main_window
+        preset = self._current_project.meta.preset
+        if preset:
+            mw.design_tab.select_preset(preset)
+            mw.design_tab.transpose_spin.setValue(self._current_project.meta.transpose)
+            mw.design_tab.quick_check.setChecked(self._current_project.meta.quick_draft)
+        yaml_path = str(self._current_project.config_path)
+        if self._current_project.config_path.exists():
+            mw.sim_tab.load_yaml(yaml_path)
+            mw.freecad_tab.load_yaml(yaml_path)
+        sim_plot = self._current_project.simulation_plot_path
+        if sim_plot.exists():
+            from PySide6.QtGui import QPixmap
+            pix = QPixmap(str(sim_plot))
+            if not pix.isNull():
+                mw.sim_tab.plot_label.setPixmap(pix.scaledToWidth(400))
+                mw.sim_tab.plot_label.setText("")
+
+    def current_project_path(self) -> str:
+        return str(self._current_project.path) if self._current_project else ""
+
+    def set_workspace(self, path: str):
+        self._workspace = path
+        self._refresh_list()
 
     def _set_workspace(self):
         path = QFileDialog.getExistingDirectory(
