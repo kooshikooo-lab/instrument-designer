@@ -112,7 +112,8 @@ class DemakeinDesigner:
         else:
             pool = 3; ftol_val = 5e-4; acc = 0.002; xtol_val = 1e-6
         def _patched_improve(comment, constrainer, scorer, start_x, **kw):
-            kw["workers"] = 1
+            from demakein import legion as _legion
+            _legion.set_locals()
             kw["pool_factor"] = pool
             kw["ftol"] = ftol_val
             kw["initial_accuracy"] = acc
@@ -152,6 +153,7 @@ class DemakeinDesigner:
 
         self._patch_optimize(quick)
         if quick:
+            designer.workers = os.cpu_count() or 4
             os.environ["DEMAKEIN_DRAFT"] = "1"
 
         import sys as _sys
