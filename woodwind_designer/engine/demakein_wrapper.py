@@ -148,11 +148,12 @@ class DemakeinDesigner:
         designer = cls(output_dir=design_dir, transpose=transpose)
         self._current_designer = designer
 
-        # Patch optimization parameters for all modes
-        designer.workers = os.cpu_count() or 4
-        if quick:
-            os.environ["DEMAKEIN_DRAFT"] = "1"
         self._patch_optimize(quick)
+        if quick:
+            designer.workers = os.cpu_count() or 4
+            os.environ["DEMAKEIN_DRAFT"] = "1"
+        from demakein import legion as _legion
+        _legion.set_locals()
 
         import sys as _sys
         import io as _io
