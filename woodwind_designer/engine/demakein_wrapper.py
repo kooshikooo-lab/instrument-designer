@@ -150,10 +150,7 @@ class DemakeinDesigner:
 
         self._patch_optimize(quick)
         if quick:
-            designer.workers = os.cpu_count() or 4
             os.environ["DEMAKEIN_DRAFT"] = "1"
-        from demakein import legion as _legion
-        _legion.set_locals()
 
         import sys as _sys
         import io as _io
