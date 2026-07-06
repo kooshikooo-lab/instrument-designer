@@ -112,6 +112,7 @@ class DemakeinDesigner:
         else:
             pool = 3; ftol_val = 5e-4; acc = 0.002
         def _patched_improve(comment, constrainer, scorer, start_x, **kw):
+            kw["workers"] = 1
             kw["pool_factor"] = pool
             kw["ftol"] = ftol_val
             kw["initial_accuracy"] = acc
