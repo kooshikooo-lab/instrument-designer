@@ -4,15 +4,17 @@ from PySide6.QtWidgets import (
     QComboBox, QFormLayout, QButtonGroup, QFileDialog, QMessageBox,
     QDialog
 )
-from PySide6.QtCore import Qt, Signal, QUrl
+from PySide6.QtCore import Qt, Signal, QUrl, QTimer
 from PySide6.QtGui import QFont, QPixmap, QDesktopServices
 from PySide6.QtNetwork import QNetworkAccessManager, QNetworkRequest
+from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
 
 from ..engine.instrument_library import (
     LIBRARY, get_families, get_subcategories, get_by_subcategory, get_type_labels, get_tags
 )
 from ..engine.demakein_wrapper import HAVE_DEMAKEIN
 from ..engine.instrument_icons import render_icon, render_large
+from ..engine.sound_synthesizer import generate_from_note, generate_from_freq
 
 
 class _ImageLabel(QLabel):
@@ -30,6 +32,11 @@ class LibraryWidget(QWidget):
         super().__init__()
         self._net = QNetworkAccessManager(self)
         self._current_entry = None
+        self._player = QMediaPlayer(self)
+        self._audio_output = QAudioOutput(self)
+        self._player.setAudioOutput(self._audio_output)
+        self._audio_output.setVolume(0.7)
+        self._player.mediaStatusChanged.connect(self._on_media_status)
         self._setup_ui()
         self._populate()
 
@@ -295,7 +302,8 @@ class LibraryWidget(QWidget):
         self.info_difficulty.setText(entry.difficulty)
         self.generate_btn.setEnabled(bool(entry.demakein_preset) and HAVE_DEMAKEIN)
         self.download_btn.setEnabled(bool(entry.download_url))
-        self.listen_btn.setEnabled(bool(entry.audio_url))
+        can_listen = bool(entry.audio_url) or bool(entry.demakein_preset)
+        self.listen_btn.setEnabled(can_listen)
         self._current_entry = entry
 
         # Try to load web image for the detail view
@@ -326,8 +334,37 @@ class LibraryWidget(QWidget):
             QDesktopServices.openUrl(QUrl(self._current_entry.download_url))
 
     def _open_audio(self):
-        if self._current_entry and self._current_entry.audio_url:
-            QDesktopServices.openUrl(QUrl(self._current_entry.audio_url))
+        if not self._current_entry:
+            return
+        entry = self._current_entry
+        if entry.audio_url:
+            QDesktopServices.openUrl(QUrl(entry.audio_url))
+            return
+        if entry.demakein_preset:
+            self._play_synthesized(entry)
+
+    def _play_synthesized(self, entry):
+        range_map = {"Soprano": 5, "Alto": 4, "Tenor": 3, "Bass": 2, "Contrabass": 1}
+        octave = range_map.get(entry.range, 4)
+        note = entry.key.rstrip("b#") + str(octave)
+        type_map = {"flute": "flute", "fipple": "flute", "reed": "reed",
+                    "single reed": "reed", "double reed": "reed",
+                    "brass": "brass", "brasswind": "brass"}
+        inst_type = "flute"
+        for k, v in type_map.items():
+            if k in entry.type_label.lower():
+                inst_type = v
+                break
+        path = generate_from_note(note, inst_type)
+        self._player.setSource(QUrl.fromLocalFile(path))
+        self._player.play()
+        self.listen_btn.setText("Playing...")
+        self.listen_btn.setEnabled(False)
+
+    def _on_media_status(self, status):
+        if status == QMediaPlayer.EndOfMedia:
+            self.listen_btn.setText("Listen")
+            self.listen_btn.setEnabled(True)
 
     def _attach_sound(self):
         if not self._current_entry:

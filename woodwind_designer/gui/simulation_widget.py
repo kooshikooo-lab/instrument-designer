@@ -5,10 +5,12 @@ from PySide6.QtWidgets import (
     QTextEdit, QFileDialog, QProgressBar, QLabel, QFormLayout,
     QDoubleSpinBox, QSpinBox, QSplitter
 )
-from PySide6.QtCore import QThread, Signal, Qt
+from PySide6.QtCore import QThread, Signal, Qt, QUrl
 from PySide6.QtGui import QPixmap
+from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
 
 from ..engine.openwind_wrapper import OpenWindSimulator, HAVE_OPENWIND, SimulationResult
+from ..engine.sound_synthesizer import generate_from_peaks
 
 
 class SimulationWorker(QThread):
@@ -40,6 +42,11 @@ class SimulationWidget(QWidget):
         self.simulator = OpenWindSimulator()
         self._worker = None
         self._last_result = None
+        self._player = QMediaPlayer(self)
+        self._audio_output = QAudioOutput(self)
+        self._player.setAudioOutput(self._audio_output)
+        self._audio_output.setVolume(0.7)
+        self._player.mediaStatusChanged.connect(self._on_play_status)
         self._setup_ui()
 
     def _setup_ui(self):
@@ -103,6 +110,11 @@ class SimulationWidget(QWidget):
         self.save_data_btn.clicked.connect(self._save_data)
         self.save_data_btn.setEnabled(False)
         actions.addWidget(self.save_data_btn)
+
+        self.play_sound_btn = QPushButton("Play Sound")
+        self.play_sound_btn.clicked.connect(self._play_sound)
+        self.play_sound_btn.setEnabled(False)
+        actions.addWidget(self.play_sound_btn)
 
         actions.addStretch()
         top_row.addLayout(actions)
@@ -176,6 +188,7 @@ class SimulationWidget(QWidget):
         self._last_result = result if result.success else None
         self.save_plot_btn.setEnabled(result.success and bool(result.plot_path))
         self.save_data_btn.setEnabled(result.success)
+        self.play_sound_btn.setEnabled(result.success and bool(result.peak_freqs))
         if result.success:
             self.log_output.append(f"✓ {result.log}")
             if result.peak_freqs:
@@ -225,6 +238,20 @@ class SimulationWidget(QWidget):
                 for f_val, z_val in zip(freqs, impedances):
                     f.write(f"{f_val},{abs(z_val)}\n")
             self.log_output.append(f"Data saved: {dst}")
+
+    def _play_sound(self):
+        if not self._last_result or not self._last_result.peak_freqs:
+            return
+        path = generate_from_peaks(self._last_result.peak_freqs)
+        self._player.setSource(QUrl.fromLocalFile(path))
+        self._player.play()
+        self.play_sound_btn.setText("Playing...")
+        self.play_sound_btn.setEnabled(False)
+
+    def _on_play_status(self, status):
+        if status == QMediaPlayer.EndOfMedia:
+            self.play_sound_btn.setText("Play Sound")
+            self.play_sound_btn.setEnabled(True)
 
     def _reset_ui(self):
         self.run_btn.setEnabled(HAVE_OPENWIND)
