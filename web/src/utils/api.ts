@@ -7,6 +7,14 @@ export interface DesignJob {
   result?: { output_dir: string; files: string[] };
 }
 
+export interface StepExportParams {
+  preset: string;
+  length: number;
+  bore_diameter: number;
+  wall_thickness: number;
+  segments?: number;
+}
+
 export async function checkHealth(): Promise<{ status: string; version: string }> {
   const res = await fetch(`${API_BASE}/health`);
   return res.json();
@@ -34,4 +42,38 @@ export async function getDesignStatus(jobId: string): Promise<DesignJob> {
 
 export function getDesignDownloadUrl(jobId: string): string {
   return `${API_BASE}/design/${jobId}/download`;
+}
+
+export async function exportStep(params: StepExportParams): Promise<Blob> {
+  const res = await fetch(`${API_BASE}/export/step`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
+  if (!res.ok) throw new Error(`STEP export failed: ${res.statusText}`);
+  return res.blob();
+}
+
+export async function computeImpedance(preset: string): Promise<{
+  frequencies: number[];
+  impedanceMagnitude: number[];
+  impedanceReal: number[];
+  impedanceImag: number[];
+}> {
+  const res = await fetch(`${API_BASE}/impedance/compute`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ preset }),
+  });
+  if (!res.ok) throw new Error(`Impedance computation failed: ${res.statusText}`);
+  return res.json();
+}
+
+export async function getPrecomputedImpedance(preset: string): Promise<{
+  frequencies: number[];
+  impedance_magnitude: number[];
+}> {
+  const res = await fetch(`${API_BASE}/impedance/precomputed/${preset}`);
+  if (!res.ok) throw new Error(`Precomputed impedance not found: ${preset}`);
+  return res.json();
 }

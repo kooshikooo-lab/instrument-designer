@@ -1,28 +1,27 @@
 import { useEffect, useRef } from "react";
+import { IMPEDANCE_DATA } from "../data/impedance-data";
 
 interface ImpedancePlotProps {
+  preset?: string;
   frequencies?: number[];
   impedance?: number[];
   label?: string;
 }
 
-const DEMO_FREQUENCIES = Array.from({ length: 200 }, (_, i) => 100 + i * 25);
-const DEMO_IMPEDANCE = DEMO_FREQUENCIES.map((f) => {
-  const base = 50;
-  const peaks = [329.6, 659.3, 988.9, 1318.5, 1648.1];
-  let val = base;
-  for (const p of peaks) {
-    val += 200 / (1 + Math.pow((f - p) / 30, 2));
-  }
-  return val + Math.random() * 10;
-});
-
 export default function ImpedancePlot({
-  frequencies = DEMO_FREQUENCIES,
-  impedance = DEMO_IMPEDANCE,
-  label = "Acoustic Impedance (Demo)",
+  preset,
+  frequencies: propFrequencies,
+  impedance: propImpedance,
+  label: propLabel,
 }: ImpedancePlotProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const presetData = preset ? IMPEDANCE_DATA[preset] : null;
+
+  const frequencies = propFrequencies ?? presetData?.frequencies ?? [];
+  const impedance = propImpedance ?? presetData?.impedanceMagnitude ?? [];
+
+  const label = propLabel ?? (presetData ? `Acoustic Impedance (${presetData.preset})` : "Acoustic Impedance");
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -87,7 +86,7 @@ export default function ImpedancePlot({
     ctx.translate(12, H / 2);
     ctx.rotate(-Math.PI / 2);
     ctx.textAlign = "center";
-    ctx.fillText("|Z| (Pa·s/m³)", 0, 0);
+    ctx.fillText("|Z| (Pa·s/m\u00B3)", 0, 0);
     ctx.restore();
 
     ctx.beginPath();
@@ -111,6 +110,14 @@ export default function ImpedancePlot({
     ctx.fillStyle = gradient;
     ctx.fill();
   }, [frequencies, impedance, label]);
+
+  if (frequencies.length === 0) {
+    return (
+      <div className="bg-neutral-900 rounded-xl border border-neutral-800 overflow-hidden p-8 text-center">
+        <p className="text-sm text-neutral-500">Select a preset to view acoustic impedance data</p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-neutral-900 rounded-xl border border-neutral-800 overflow-hidden">

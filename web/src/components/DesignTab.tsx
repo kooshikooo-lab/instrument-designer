@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { DEMAKEIN_PRESETS } from "../data/instruments";
-import { checkHealth, startDesign, getDesignStatus, getDesignDownloadUrl } from "../utils/api";
+import { checkHealth, startDesign, getDesignStatus, getDesignDownloadUrl, exportStep } from "../utils/api";
 import STLViewer from "./STLViewer";
 import ParametricGenerator from "./ParametricGenerator";
 import ImpedancePlot from "./ImpedancePlot";
@@ -22,6 +22,7 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
   const [running, setRunning] = useState(false);
   const [generatedBlob, setGeneratedBlob] = useState<Blob | null>(null);
   const [generatedFilename, setGeneratedFilename] = useState<string>("");
+  const [stepExporting, setStepExporting] = useState(false);
 
   useEffect(() => {
     if (initialPreset) {
@@ -61,6 +62,28 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
     } catch (e) {
       setStatus(`Error: ${e}`);
       setRunning(false);
+    }
+  };
+
+  const handleStepExport = async () => {
+    setStepExporting(true);
+    try {
+      const blob = await exportStep({
+        preset: preset || "custom",
+        length: 200,
+        bore_diameter: 20,
+        wall_thickness: 3,
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${preset || "custom"}-bore.step`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("STEP export failed:", e);
+    } finally {
+      setStepExporting(false);
     }
   };
 
@@ -153,6 +176,13 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
             Download Generated
           </a>
         )}
+        <button
+          onClick={handleStepExport}
+          disabled={stepExporting}
+          className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-neutral-800 disabled:text-neutral-600 text-sm text-white rounded-lg transition-colors font-medium"
+        >
+          {stepExporting ? "Exporting..." : "Export STEP"}
+        </button>
       </div>
 
       {(progress.length > 0 || status) && (
@@ -186,7 +216,7 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
 
       <div className="space-y-4">
         <h3 className="text-sm font-medium text-neutral-200">Acoustic Impedance</h3>
-        <ImpedancePlot />
+        <ImpedancePlot preset={preset || undefined} />
       </div>
 
       {preset && (
@@ -207,6 +237,7 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
           <li>Connect to the FastAPI server running Demakein + OpenWInD</li>
           <li>Run the design - the server optimizes bore shape and hole placement</li>
           <li>Download the generated STL files for 3D printing</li>
+          <li>Export STEP files via Build123d for CAD editing</li>
         </ol>
       </div>
     </div>
