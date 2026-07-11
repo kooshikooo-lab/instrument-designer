@@ -1,0 +1,11 @@
+C:\instrument-designer\web\src-tauri\target\debug\deps\arrayvec-c2a7a99ffc22baad.d: C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\arrayvec-0.7.8\src\lib.rs C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\arrayvec-0.7.8\src\arrayvec_impl.rs C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\arrayvec-0.7.8\src\arrayvec.rs C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\arrayvec-0.7.8\src\array_string.rs C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\arrayvec-0.7.8\src\char.rs C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\arrayvec-0.7.8\src\errors.rs C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\arrayvec-0.7.8\src\utils.rs
+
+C:\instrument-designer\web\src-tauri\target\debug\deps\libarrayvec-c2a7a99ffc22baad.rmeta: C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\arrayvec-0.7.8\src\lib.rs C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\arrayvec-0.7.8\src\arrayvec_impl.rs C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\arrayvec-0.7.8\src\arrayvec.rs C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\arrayvec-0.7.8\src\array_string.rs C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\arrayvec-0.7.8\src\char.rs C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\arrayvec-0.7.8\src\errors.rs C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\arrayvec-0.7.8\src\utils.rs
+
+C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\arrayvec-0.7.8\src\lib.rs:
+C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\arrayvec-0.7.8\src\arrayvec_impl.rs:
+C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\arrayvec-0.7.8\src\arrayvec.rs:
+C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\arrayvec-0.7.8\src\array_string.rs:
+C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\arrayvec-0.7.8\src\char.rs:
+C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\arrayvec-0.7.8\src\errors.rs:
+C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\arrayvec-0.7.8\src\utils.rs:

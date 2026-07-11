@@ -1,4 +1,5 @@
 import type { Instrument } from "../data/instruments";
+import TonePlayer from "./TonePlayer";
 
 interface Props {
   instrument: Instrument;
@@ -103,6 +104,8 @@ export function InstrumentDetail({ instrument, onClose, onGenerate }: Props) {
           </button>
         )}
       </div>
+
+      <TonePlayer range={i.range} instrumentName={i.name} />
     </div>
   );
 }

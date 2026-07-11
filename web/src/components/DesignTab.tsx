@@ -1,11 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DEMAKEIN_PRESETS } from "../data/instruments";
 import { checkHealth, startDesign, getDesignStatus, getDesignDownloadUrl } from "../utils/api";
 import STLViewer from "./STLViewer";
 import ParametricGenerator from "./ParametricGenerator";
+import ImpedancePlot from "./ImpedancePlot";
+import TonePlayer from "./TonePlayer";
 
-export function DesignTab() {
-  const [preset, setPreset] = useState("");
+interface DesignTabProps {
+  initialPreset?: string;
+  onPresetUsed?: () => void;
+}
+
+export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
+  const [preset, setPreset] = useState(initialPreset || "");
   const [transpose, setTranspose] = useState(0);
   const [serverUrl, setServerUrl] = useState("http://localhost:8000");
   const [connected, setConnected] = useState<boolean | null>(null);
@@ -15,6 +22,13 @@ export function DesignTab() {
   const [running, setRunning] = useState(false);
   const [generatedBlob, setGeneratedBlob] = useState<Blob | null>(null);
   const [generatedFilename, setGeneratedFilename] = useState<string>("");
+
+  useEffect(() => {
+    if (initialPreset) {
+      setPreset(initialPreset);
+      onPresetUsed?.();
+    }
+  }, [initialPreset]);
 
   const testConnection = async () => {
     try {
@@ -169,6 +183,21 @@ export function DesignTab() {
           <STLViewer file={generatedBlob ? new File([generatedBlob], generatedFilename) : null} />
         </div>
       </div>
+
+      <div className="space-y-4">
+        <h3 className="text-sm font-medium text-neutral-200">Acoustic Impedance</h3>
+        <ImpedancePlot />
+      </div>
+
+      {preset && (
+        <div className="space-y-4">
+          <h3 className="text-sm font-medium text-neutral-200">Sound Preview</h3>
+          <TonePlayer
+            range={preset === "didgeridoo" ? "D2-D3" : preset === "ocarina" ? "C5-C7" : "C4-C6"}
+            instrumentName={DEMAKEIN_PRESETS[preset] || preset}
+          />
+        </div>
+      )}
 
       <div className="bg-neutral-900 rounded-xl border border-neutral-800 p-5">
         <h3 className="text-sm font-medium text-neutral-200 mb-3">How It Works</h3>

@@ -11,9 +11,10 @@ type Tab = "library" | "design" | "resources";
 export default function App() {
   const [tab, setTab] = useState<Tab>("library");
   const [selected, setSelected] = useState<Instrument | null>(null);
+  const [designPreset, setDesignPreset] = useState<string>("");
 
-  const handleGenerateFromLibrary = (_preset: string) => {
-    setSelected(null);
+  const handleGenerateFromLibrary = (preset: string) => {
+    setDesignPreset(preset);
     setTab("design");
   };
 
@@ -47,7 +48,12 @@ export default function App() {
               )}
             </div>
           )}
-          {tab === "design" && <DesignTab />}
+          {tab === "design" && (
+            <DesignTab
+              initialPreset={designPreset}
+              onPresetUsed={() => setDesignPreset("")}
+            />
+          )}
           {tab === "resources" && <ResourcesTab />}
         </div>
       </main>
