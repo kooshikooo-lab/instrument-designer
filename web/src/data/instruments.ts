@@ -1,0 +1,407 @@
+export interface Instrument {
+  name: string;
+  family: string;
+  subcategory: string;
+  type_label: string;
+  range: string;
+  key: string;
+  source: string;
+  demakein_preset?: string;
+  image_url: string;
+  audio_url: string;
+  download_url: string;
+  source_url?: string;
+  tags: string[];
+  difficulty: string;
+  description: string;
+}
+
+export const DEMAKEIN_PRESETS: Record<string, string> = {
+  penny_whistle: "Penny Whistle (6-hole)",
+  recorder: "Recorder (Baroque)",
+  irish_flute: "Irish Flute",
+  shakuhachi: "Shakuhachi",
+  quena: "Quena",
+  ocarina: "Ocarina (12-hole)",
+  didgeridoo: "Didgeridoo",
+  slide_whistle: "Slide Whistle",
+  tin_whistle: "Tin Whistle",
+};
+
+export const SUBCATEGORIES = [
+  "Simple System",
+  "Keyed",
+  "Slide",
+  "Vessel",
+  "Bamboo",
+  "Historical",
+];
+
+export const TYPE_LABELS: Record<string, string> = {
+  "transverse-flute": "Transverse Flute",
+  "fipple-flute": "Fipple Flute",
+  "recorder": "Recorder",
+  "whistle": "Whistle",
+  "ocarina": "Ocarina",
+  "didgeridoo": "Didgeridoo",
+  "slide-whistle": "Slide Whistle",
+};
+
+export const TAGS = [
+  "beginner",
+  "3d-printable",
+  "tunable",
+  "travel",
+  "concert",
+  "folk",
+  "circular-bore",
+  "conical-bore",
+  "cylindrical",
+];
+
+export const DIFFICULTIES = ["beginner", "intermediate", "advanced"];
+
+export const INSTRUMENTS: Instrument[] = [
+  {
+    name: "Penny Whistle (D)",
+    family: "Flutes",
+    subcategory: "Simple System",
+    type_label: "whistle",
+    range: "D5–D7",
+    key: "D",
+    source: "Demakein",
+    demakein_preset: "penny_whistle",
+    image_url: "",
+    audio_url: "",
+    download_url: "",
+    tags: ["beginner", "3d-printable", "travel", "folk"],
+    difficulty: "beginner",
+    description:
+      "A simple 6-hole penny whistle in D. The easiest instrument to 3D print and play. Popular in Irish traditional music.",
+  },
+  {
+    name: "Tin Whistle (C)",
+    family: "Flutes",
+    subcategory: "Simple System",
+    type_label: "whistle",
+    range: "C5–C7",
+    key: "C",
+    source: "Demakein",
+    demakein_preset: "tin_whistle",
+    image_url: "",
+    audio_url: "",
+    download_url: "",
+    tags: ["beginner", "3d-printable", "travel", "folk"],
+    difficulty: "beginner",
+    description:
+      "6-hole tin whistle in C. Slightly lower than the D whistle. Great for beginners learning folk music.",
+  },
+  {
+    name: "Recorder (Soprano, C)",
+    family: "Flutes",
+    subcategory: "Simple System",
+    type_label: "recorder",
+    range: "C5–D7",
+    key: "C",
+    source: "Demakein",
+    demakein_preset: "recorder",
+    image_url: "",
+    audio_url: "",
+    download_url: "",
+    tags: ["beginner", "3d-printable", "concert"],
+    difficulty: "beginner",
+    description:
+      "Baroque soprano recorder in C. Widely used in music education. Simple bore with 7 finger holes and a thumb hole.",
+  },
+  {
+    name: "Recorder (Alto, F)",
+    family: "Flutes",
+    subcategory: "Simple System",
+    type_label: "recorder",
+    range: "F4–G6",
+    key: "F",
+    source: "Demakein",
+    demakein_preset: "recorder",
+    image_url: "",
+    audio_url: "",
+    download_url: "",
+    tags: ["intermediate", "3d-printable", "concert"],
+    difficulty: "intermediate",
+    description:
+      "Baroque alto recorder in F. The most commonly played recorder for solo performance. Rich, mellow tone.",
+  },
+  {
+    name: "Ocarina (12-hole, C)",
+    family: "Vessel Flutes",
+    subcategory: "Vessel",
+    type_label: "ocarina",
+    range: "C5–F6",
+    key: "C",
+    source: "Demakein",
+    demakein_preset: "ocarina",
+    image_url: "",
+    audio_url: "",
+    download_url: "",
+    tags: ["beginner", "3d-printable", "travel", "folk"],
+    difficulty: "beginner",
+    description:
+      "12-hole transverse ocarina in C. Compact vessel flute with a sweet, pure tone. Very popular for 3D printing.",
+  },
+  {
+    name: "Ocarina (6-hole, Altus)",
+    family: "Vessel Flutes",
+    subcategory: "Vessel",
+    type_label: "ocarina",
+    range: "D5–A6",
+    key: "D",
+    source: "Demakein",
+    demakein_preset: "ocarina",
+    image_url: "",
+    audio_url: "",
+    download_url: "",
+    tags: ["beginner", "3d-printable", "travel"],
+    difficulty: "beginner",
+    description:
+      "Simple 6-hole pendant ocarina. The most compact and easiest ocarina design. Limited range but very portable.",
+  },
+  {
+    name: "Slide Whistle",
+    family: "Flutes",
+    subcategory: "Slide",
+    type_label: "slide-whistle",
+    range: "C4–C6",
+    key: "C",
+    source: "Demakein",
+    demakein_preset: "slide_whistle",
+    image_url: "",
+    audio_url: "",
+    download_url: "",
+    tags: ["beginner", "3d-printable", "travel"],
+    difficulty: "beginner",
+    description:
+      "Fun slide whistle with a moving piston. Continuous pitch control from low to high. Great for sound effects.",
+  },
+  {
+    name: "Irish Flute (D)",
+    family: "Flutes",
+    subcategory: "Simple System",
+    type_label: "transverse-flute",
+    range: "D4–D6",
+    key: "D",
+    source: "Demakein",
+    demakein_preset: "irish_flute",
+    image_url: "",
+    audio_url: "",
+    download_url: "",
+    tags: ["intermediate", "3d-printable", "folk", "concert"],
+    difficulty: "intermediate",
+    description:
+      "Simple-system transverse flute in D for Irish traditional music. Conical bore produces a warm, woody tone.",
+  },
+  {
+    name: "Shakuhachi",
+    family: "Flutes",
+    subcategory: "Bamboo",
+    type_label: "fipple-flute",
+    range: "D4–D5",
+    key: "D",
+    source: "Demakein",
+    demakein_preset: "shakuhachi",
+    image_url: "",
+    audio_url: "",
+    download_url: "",
+    tags: ["advanced", "folk", "cylindrical"],
+    difficulty: "advanced",
+    description:
+      "Japanese bamboo end-blown flute. 5-hole pentatonic scale with expressive pitch bending via half-holing.",
+  },
+  {
+    name: "Quena",
+    family: "Flutes",
+    subcategory: "Simple System",
+    type_label: "fipple-flute",
+    range: "G4–G5",
+    key: "G",
+    source: "Demakein",
+    demakein_preset: "quena",
+    image_url: "",
+    audio_url: "",
+    download_url: "",
+    tags: ["intermediate", "3d-printable", "folk", "cylindrical"],
+    difficulty: "intermediate",
+    description:
+      "Andean notched flute. Played by blowing across a V-shaped notch. Breathy, expressive tone.",
+  },
+  {
+    name: "Didgeridoo",
+    family: "Aerophones",
+    subcategory: "Simple System",
+    type_label: "didgeridoo",
+    range: "D2–D3",
+    key: "D",
+    source: "Demakein",
+    demakein_preset: "didgeridoo",
+    image_url: "",
+    audio_url: "",
+    download_url: "",
+    tags: ["intermediate", "3d-printable", "folk", "circular-bore"],
+    difficulty: "intermediate",
+    description:
+      "Australian Aboriginal drone pipe. Cylindrical bore with lip-reed excitation. Played with circular breathing.",
+  },
+  {
+    name: "Bass Recorder (F)",
+    family: "Flutes",
+    subcategory: "Simple System",
+    type_label: "recorder",
+    range: "F3–G5",
+    key: "F",
+    source: "Demakein",
+    demakein_preset: "recorder",
+    image_url: "",
+    audio_url: "",
+    download_url: "",
+    tags: ["advanced", "3d-printable", "concert"],
+    difficulty: "advanced",
+    description:
+      "Large bass recorder in F. Deep, rich tone. Requires large bore and precise hole placement for intonation.",
+  },
+  {
+    name: "Chromatic Recorder (G)",
+    family: "Flutes",
+    subcategory: "Keyed",
+    type_label: "recorder",
+    range: "G4–A6",
+    key: "G",
+    source: "Demakein",
+    demakein_preset: "recorder",
+    image_url: "",
+    audio_url: "",
+    download_url: "",
+    tags: ["advanced", "3d-printable", "concert"],
+    difficulty: "advanced",
+    description:
+      "Chromatic recorder with keywork for semitone holes. Full chromatic range for classical performance.",
+  },
+  {
+    name: "Ney (Persian)",
+    family: "Flutes",
+    subcategory: "Bamboo",
+    type_label: "fipple-flute",
+    range: "D4–D5",
+    key: "D",
+    source: "Demakein",
+    demakein_preset: "shakuhachi",
+    image_url: "",
+    audio_url: "",
+    download_url: "",
+    tags: ["advanced", "folk", "cylindrical"],
+    difficulty: "advanced",
+    description:
+      "Persian end-blown reed flute. 7 holes with thumb hole. Ethereal, breathy tone central to Persian classical music.",
+  },
+  {
+    name: "Xiao (Chinese)",
+    family: "Flutes",
+    subcategory: "Bamboo",
+    type_label: "fipple-flute",
+    range: "D4–D5",
+    key: "D",
+    source: "Demakein",
+    demakein_preset: "shakuhachi",
+    image_url: "",
+    audio_url: "",
+    download_url: "",
+    tags: ["advanced", "folk", "cylindrical"],
+    difficulty: "advanced",
+    description:
+      "Chinese vertical end-blown flute. Similar to shakuhachi. Smooth, lyrical tone for contemplative music.",
+  },
+  {
+    name: "Fife",
+    family: "Flutes",
+    subcategory: "Simple System",
+    type_label: "transverse-flute",
+    range: "C5–C7",
+    key: "C",
+    source: "Demakein",
+    demakein_preset: "penny_whistle",
+    image_url: "",
+    audio_url: "",
+    download_url: "",
+    tags: ["intermediate", "3d-printable", "travel", "folk"],
+    difficulty: "intermediate",
+    description:
+      "Small military fife. High-pitched transverse flute without keys. Used in marching bands.",
+  },
+  {
+    name: "Kazoo (Membranophone)",
+    family: "Aerophones",
+    subcategory: "Simple System",
+    type_label: "whistle",
+    range: "Any pitch",
+    key: "C",
+    source: "Custom",
+    image_url: "",
+    audio_url: "",
+    download_url: "",
+    tags: ["beginner", "3d-printable", "travel"],
+    difficulty: "beginner",
+    description:
+      "Voice modulator with a vibrating membrane. Hum into it to create a buzzy, distorted tone. Fun and easy to print.",
+  },
+  {
+    name: "Bottle Blowing",
+    family: "Vessel Flutes",
+    subcategory: "Vessel",
+    type_label: "ocarina",
+    range: "C4–G4",
+    key: "C",
+    source: "Custom",
+    image_url: "",
+    audio_url: "",
+    download_url: "",
+    tags: ["beginner", "3d-printable", "travel"],
+    difficulty: "beginner",
+    description:
+      "Helmholtz resonator blown across the top. Variable pitch by filling with water. Simple physics, easy to print.",
+  },
+  {
+    name: "Pan Flute (G Major)",
+    family: "Flutes",
+    subcategory: "Simple System",
+    type_label: "fipple-flute",
+    range: "G4–G6",
+    key: "G",
+    source: "Custom",
+    image_url: "",
+    audio_url: "",
+    download_url: "",
+    tags: ["intermediate", "3d-printable", "travel", "folk"],
+    difficulty: "intermediate",
+    description:
+      "Set of closed-end tubes tuned to G major. Each tube produces one note. Blown across the top like a bottle.",
+  },
+  {
+    name: "Alphorn",
+    family: "Aerophones",
+    subcategory: "Simple System",
+    type_label: "didgeridoo",
+    range: "Bb1–Bb2",
+    key: "Bb",
+    source: "Custom",
+    image_url: "",
+    audio_url: "",
+    download_url: "",
+    tags: ["advanced", "circular-bore"],
+    difficulty: "advanced",
+    description:
+      "Swiss Alpine horn. Long conical bore produces natural harmonic series. Often printed in segments and glued.",
+  },
+];
+
+export const SUBCATEGORY_MAP: Record<string, Instrument[]> = {};
+INSTRUMENTS.forEach((inst) => {
+  if (!SUBCATEGORY_MAP[inst.subcategory]) SUBCATEGORY_MAP[inst.subcategory] = [];
+  SUBCATEGORY_MAP[inst.subcategory].push(inst);
+});
