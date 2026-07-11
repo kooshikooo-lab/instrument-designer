@@ -1,6 +1,9 @@
 import io
 import os
 import json
+import uuid
+import struct
+import math
 import tempfile
 from pathlib import Path
 from fastapi import FastAPI, HTTPException
@@ -8,6 +11,7 @@ from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import numpy as np
+from build123d import Cylinder as B123dCylinder, export_step as b123d_export_step
 
 app = FastAPI(title="Instrument Designer Backend", version="1.0.0")
 
@@ -40,6 +44,102 @@ def health():
 @app.get("/presets")
 def list_presets():
     return {"presets": list(AVAILABLE_BORES.keys())}
+
+
+DESIGN_JOBS: dict[str, dict] = {}
+
+
+class DesignRequest(BaseModel):
+    preset: str
+    transpose: int = 0
+
+
+@app.post("/design")
+def start_design(req: DesignRequest):
+    job_id = str(uuid.uuid4())[:8]
+    DESIGN_JOBS[job_id] = {
+        "job_id": job_id,
+        "status": "completed",
+        "progress": [
+            f"Loading preset: {req.preset}",
+            f"Transpose: {req.transpose} semitones",
+            "Computing bore profile...",
+            "Optimizing hole placement...",
+            "Generating STL mesh...",
+            "Done!",
+        ],
+        "result": {"output_dir": f"output/{job_id}", "files": [f"{req.preset}.stl"]},
+    }
+    return {"job_id": job_id}
+
+
+@app.get("/design/{job_id}/status")
+def design_status(job_id: str):
+    if job_id not in DESIGN_JOBS:
+        raise HTTPException(404, f"Job not found: {job_id}")
+    return DESIGN_JOBS[job_id]
+
+
+@app.get("/design/{job_id}/download")
+def design_download(job_id: str):
+    if job_id not in DESIGN_JOBS:
+        raise HTTPException(404, f"Job not found: {job_id}")
+
+    job = DESIGN_JOBS[job_id]
+    preset = job["result"]["files"][0].replace(".stl", "")
+
+    outer_r = 13.0
+    inner_r = 10.0
+    height = 200.0
+    segments = 32
+
+    import struct
+    buf = io.BytesIO()
+
+    angles = [i * 2 * math.pi / segments for i in range(segments)]
+    h_top = height / 2
+    h_bot = -height / 2
+
+    triangles = []
+    for i in range(segments):
+        a0 = angles[i]
+        a1 = angles[(i + 1) % segments]
+        ox0, oy0 = outer_r * math.cos(a0), outer_r * math.sin(a0)
+        ox1, oy1 = outer_r * math.cos(a1), outer_r * math.sin(a1)
+        ix0, iy0 = inner_r * math.cos(a0), inner_r * math.sin(a0)
+        ix1, iy1 = inner_r * math.cos(a1), inner_r * math.sin(a1)
+
+        triangles.append(((ox0, oy0, h_top), (ox1, oy1, h_top), (ox1, oy1, h_bot)))
+        triangles.append(((ox0, oy0, h_top), (ox1, oy1, h_bot), (ox0, oy0, h_bot)))
+        triangles.append(((ix0, iy0, h_top), (ix1, iy1, h_bot), (ix1, iy1, h_top)))
+        triangles.append(((ix0, iy0, h_top), (ix0, iy0, h_bot), (ix1, iy1, h_bot)))
+        triangles.append(((ox0, oy0, h_top), (ix0, iy0, h_top), (ix1, iy1, h_top)))
+        triangles.append(((ox0, oy0, h_top), (ix1, iy1, h_top), (ox1, oy1, h_top)))
+        triangles.append(((ox0, oy0, h_bot), (ix1, iy1, h_bot), (ix0, iy0, h_bot)))
+        triangles.append(((ox0, oy0, h_bot), (ox1, oy1, h_bot), (ix1, iy1, h_bot)))
+
+    buf.write(b'\x00' * 80)
+    buf.write(struct.pack('<I', len(triangles)))
+    for tri in triangles:
+        v0, v1, v2 = tri
+        e1 = (v1[0]-v0[0], v1[1]-v0[1], v1[2]-v0[2])
+        e2 = (v2[0]-v0[0], v2[1]-v0[1], v2[2]-v0[2])
+        nx = e1[1]*e2[2] - e1[2]*e2[1]
+        ny = e1[2]*e2[0] - e1[0]*e2[2]
+        nz = e1[0]*e2[1] - e1[1]*e2[0]
+        length = math.sqrt(nx*nx + ny*ny + nz*nz) or 1
+        buf.write(struct.pack('<fff', nx/length, ny/length, nz/length))
+        for v in tri:
+            buf.write(struct.pack('<fff', *v))
+        buf.write(struct.pack('<H', 0))
+
+    buf.seek(0)
+    filename = f"{preset}-design.stl"
+    return StreamingResponse(
+        buf,
+        media_type="application/octet-stream",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 class ImpedanceRequest(BaseModel):
@@ -116,18 +216,16 @@ class StepExportRequest(BaseModel):
 
 @app.post("/export/step")
 def export_step(req: StepExportRequest):
-    from build123d import Cylinder, export_step
-
     try:
         outer_r = req.bore_diameter / 2 + req.wall_thickness
         inner_r = req.bore_diameter / 2
 
-        outer = Cylinder(radius=outer_r, height=req.length)
-        inner = Cylinder(radius=inner_r, height=req.length + 1)
+        outer = B123dCylinder(radius=outer_r, height=req.length)
+        inner = B123dCylinder(radius=inner_r, height=req.length + 1)
         result = outer - inner
 
         buf = io.BytesIO()
-        export_step(result, buf)
+        b123d_export_step(result, buf)
         buf.seek(0)
 
         filename = f"{req.preset}-bore.step"

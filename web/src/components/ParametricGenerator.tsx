@@ -1,10 +1,17 @@
 import { useState } from "react";
 
 function geometryToSTL(geometry: any): ArrayBuffer {
-  const positions = geometry.positions;
-  const triangles = geometry.triangles;
-  const numTriangles = triangles ? triangles.length : positions.length / 3;
+  const polygons = geometry.polygons || [];
+  const triangles: number[][] = [];
 
+  for (const poly of polygons) {
+    const verts = poly.vertices;
+    for (let i = 1; i < verts.length - 1; i++) {
+      triangles.push([verts[0], verts[i], verts[i + 1]]);
+    }
+  }
+
+  const numTriangles = triangles.length;
   const headerSize = 84;
   const triangleSize = 50;
   const bufferSize = headerSize + numTriangles * triangleSize;
@@ -15,18 +22,10 @@ function geometryToSTL(geometry: any): ArrayBuffer {
   view.setUint32(80, numTriangles, true);
 
   let offset = 84;
-  const writeTriangle = (i: number) => {
-    let v0: number[], v1: number[], v2: number[];
-    if (triangles) {
-      const tri = triangles[i];
-      v0 = [positions[tri[0] * 3], positions[tri[0] * 3 + 1], positions[tri[0] * 3 + 2]];
-      v1 = [positions[tri[1] * 3], positions[tri[1] * 3 + 1], positions[tri[1] * 3 + 2]];
-      v2 = [positions[tri[2] * 3], positions[tri[2] * 3 + 1], positions[tri[2] * 3 + 2]];
-    } else {
-      v0 = [positions[i * 9], positions[i * 9 + 1], positions[i * 9 + 2]];
-      v1 = [positions[i * 9 + 3], positions[i * 9 + 4], positions[i * 9 + 5]];
-      v2 = [positions[i * 9 + 6], positions[i * 9 + 7], positions[i * 9 + 8]];
-    }
+  for (const tri of triangles) {
+    const v0 = tri[0];
+    const v1 = tri[1];
+    const v2 = tri[2];
     const e1 = [v1[0] - v0[0], v1[1] - v0[1], v1[2] - v0[2]];
     const e2 = [v2[0] - v0[0], v2[1] - v0[1], v2[2] - v0[2]];
     const nx = e1[1] * e2[2] - e1[2] * e2[1];
@@ -42,9 +41,7 @@ function geometryToSTL(geometry: any): ArrayBuffer {
       view.setFloat32(offset, v[2], true); offset += 4;
     }
     view.setUint16(offset, 0, true); offset += 2;
-  };
-
-  for (let i = 0; i < numTriangles; i++) writeTriangle(i);
+  }
   return buffer;
 }
 
