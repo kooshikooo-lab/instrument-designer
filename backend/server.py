@@ -11,7 +11,7 @@ from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import numpy as np
-from build123d import Cylinder as B123dCylinder, export_step as b123d_export_step
+from build123d import Cylinder as B123dCylinder, export_step as b123d_export_step, Align, Location, Axis
 
 app = FastAPI(title="Instrument Designer Backend", version="1.0.0")
 
@@ -328,12 +328,36 @@ class StepExportRequest(BaseModel):
 @app.post("/export/step")
 def export_step(req: StepExportRequest):
     try:
-        outer_r = req.bore_diameter / 2 + req.wall_thickness
-        inner_r = req.bore_diameter / 2
+        bore = parse_bore_profile(req.preset) if req.preset in AVAILABLE_BORES else None
+        holes = TONE_HOLES.get(req.preset, [])
 
-        outer = B123dCylinder(radius=outer_r, height=req.length)
-        inner = B123dCylinder(radius=inner_r, height=req.length + 1)
+        if bore:
+            total_length = bore[-1][1] - bore[0][0]
+            mean_inner_r = sum(s[2] + s[3] for s in bore) / (2 * len(bore))
+            mean_outer_r = mean_inner_r + 2.0
+        else:
+            total_length = req.length
+            inner_r = req.bore_diameter / 2
+            mean_outer_r = inner_r + req.wall_thickness
+            mean_inner_r = inner_r
+
+        outer = B123dCylinder(radius=mean_outer_r, height=total_length,
+                              align=(Align.CENTER, Align.CENTER, Align.MIN))
+        inner = B123dCylinder(radius=mean_inner_r, height=total_length + 1,
+                              align=(Align.CENTER, Align.CENTER, Align.MIN))
         result = outer - inner
+
+        if holes:
+            for h in holes:
+                z_pos = h["z"]
+                hole_r = h["r"]
+                hole_cyl = B123dCylinder(
+                    radius=hole_r, height=req.wall_thickness + 4.0,
+                    align=(Align.CENTER, Align.CENTER, Align.CENTER),
+                )
+                hole_cyl = hole_cyl.moved(Location((0, 0, z_pos - total_length / 2)))
+                hole_cyl = hole_cyl.rotate(Axis.Y, 90)
+                result = result - hole_cyl
 
         buf = io.BytesIO()
         b123d_export_step(result, buf)
