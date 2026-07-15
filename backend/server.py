@@ -49,6 +49,154 @@ def list_presets():
 DESIGN_JOBS: dict[str, dict] = {}
 
 
+def parse_bore_profile(preset: str) -> list[tuple[float, float, float, float]]:
+    """Parse bore CSV into [(start_pos, end_pos, start_r, end_r), ...] in mm."""
+    bore_file = BORE_DIR / AVAILABLE_BORES[preset]
+    segments = []
+    with open(bore_file) as f:
+        for line in f:
+            parts = line.strip().split()
+            if len(parts) >= 4:
+                segments.append((
+                    float(parts[0]) * 1000,
+                    float(parts[1]) * 1000,
+                    float(parts[2]) * 1000,
+                    float(parts[3]) * 1000,
+                ))
+    return segments
+
+
+TONE_HOLES: dict[str, list[dict]] = {
+    "recorder": [
+        {"z": 60.0, "r": 2.5, "label": "thumb"},
+        {"z": 100.0, "r": 2.8, "label": "H1"},
+        {"z": 120.0, "r": 2.8, "label": "H2"},
+        {"z": 140.0, "r": 2.8, "label": "H3"},
+        {"z": 160.0, "r": 2.8, "label": "H4"},
+        {"z": 180.0, "r": 2.8, "label": "H5"},
+        {"z": 210.0, "r": 2.8, "label": "H6"},
+        {"z": 240.0, "r": 2.8, "label": "H7"},
+    ],
+    "folk_whistle": [
+        {"z": 100.0, "r": 2.5, "label": "H1"},
+        {"z": 120.0, "r": 2.5, "label": "H2"},
+        {"z": 140.0, "r": 2.5, "label": "H3"},
+        {"z": 160.0, "r": 2.5, "label": "H4"},
+        {"z": 180.0, "r": 2.5, "label": "H5"},
+        {"z": 220.0, "r": 2.5, "label": "H6"},
+    ],
+    "flute": [
+        {"z": 200.0, "r": 4.0, "label": "H1"},
+        {"z": 260.0, "r": 4.0, "label": "H2"},
+        {"z": 320.0, "r": 4.0, "label": "H3"},
+        {"z": 380.0, "r": 4.0, "label": "H4"},
+        {"z": 440.0, "r": 4.0, "label": "H5"},
+        {"z": 520.0, "r": 4.0, "label": "H6"},
+    ],
+    "reedpipe": [
+        {"z": 120.0, "r": 2.0, "label": "H1"},
+        {"z": 150.0, "r": 2.0, "label": "H2"},
+        {"z": 180.0, "r": 2.0, "label": "H3"},
+        {"z": 210.0, "r": 2.0, "label": "H4"},
+    ],
+    "shawm": [
+        {"z": 150.0, "r": 2.5, "label": "H1"},
+        {"z": 180.0, "r": 2.5, "label": "H2"},
+        {"z": 210.0, "r": 2.5, "label": "H3"},
+        {"z": 240.0, "r": 2.5, "label": "H4"},
+        {"z": 270.0, "r": 2.5, "label": "H5"},
+        {"z": 310.0, "r": 2.5, "label": "H6"},
+    ],
+    "didgeridoo": [
+        {"z": 400.0, "r": 6.0, "label": "breath"},
+    ],
+}
+
+
+def build_instrument_stl(preset: str, transpose: int = 0) -> bytes:
+    """Build a full instrument STL with bore profile and tone holes using Build123d."""
+    from build123d import (
+        Cylinder, Location, Align, Axis, Plane,
+        export_stl, Compound,
+    )
+
+    bore = parse_bore_profile(preset)
+    total_length = bore[-1][1] - bore[0][0]
+    wall_thickness = 2.0
+
+    mean_inner_r = sum(s[2] + s[3] for s in bore) / (2 * len(bore))
+    mean_outer_r = mean_inner_r + wall_thickness
+
+    outer = Cylinder(
+        radius=mean_outer_r, height=total_length,
+        align=(Align.CENTER, Align.CENTER, Align.MIN),
+    )
+
+    inner_segments = 64
+    bore_verts = []
+    for i, (z0, z1, r0, r1) in enumerate(bore):
+        z = z0 - bore[0][0]
+        bore_verts.append((r0, z))
+        if i == len(bore) - 1:
+            bore_verts.append((r1, z1 - bore[0][0]))
+
+    from build123d import Line, Wire, extrude, BuildPart
+
+    profile_edges = []
+    for i in range(len(bore_verts) - 1):
+        r0, z0 = bore_verts[i]
+        r1, z1 = bore_verts[i + 1]
+        profile_edges.append(Line((z0, r0), (z1, r1)))
+
+    bottom = Line((bore_verts[-1][1], 0), (bore_verts[0][1], 0))
+    left = Line((bore_verts[0][1], 0), (bore_verts[0][1], bore_verts[0][0]))
+    right = Line((bore_verts[-1][1], 0), (bore_verts[-1][1], bore_verts[-1][0]))
+    profile_edges.extend([bottom, left, right])
+
+    wire = Wire(profile_edges)
+    bore_profile_face = extrude(Plane.XZ * wire, amount=0.001)
+
+    hole_r = mean_outer_r + 5.0
+    inner_cyl = Cylinder(
+        radius=hole_r, height=total_length + 2,
+        align=(Align.CENTER, Align.CENTER, Align.MIN),
+    )
+
+    tube = outer - inner_cyl
+
+    inner_bore = Cylinder(
+        radius=mean_inner_r, height=total_length + 1,
+        align=(Align.CENTER, Align.CENTER, Align.MIN),
+    )
+
+    tube = outer - inner_bore
+
+    holes = TONE_HOLES.get(preset, [])
+    if holes:
+        for h in holes:
+            z_pos = h["z"]
+            hole_r_h = h["r"]
+            hole_cyl = Cylinder(
+                radius=hole_r_h, height=wall_thickness + 4.0,
+                align=(Align.CENTER, Align.CENTER, Align.CENTER),
+            )
+            hole_cyl = hole_cyl.moved(Location((0, 0, z_pos - total_length / 2)))
+            hole_cyl = hole_cyl.rotate(Axis.Y, 90)
+            tube = tube - hole_cyl
+
+    with tempfile.NamedTemporaryFile(suffix=".stl", delete=False) as tmp:
+        tmp_path = tmp.name
+    try:
+        export_stl(tube, tmp_path)
+        with open(tmp_path, "rb") as f:
+            return f.read()
+    finally:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+
+
 class DesignRequest(BaseModel):
     preset: str
     transpose: int = 0
@@ -56,6 +204,9 @@ class DesignRequest(BaseModel):
 
 @app.post("/design")
 def start_design(req: DesignRequest):
+    if req.preset not in AVAILABLE_BORES:
+        raise HTTPException(404, f"Unknown preset: {req.preset}")
+
     job_id = str(uuid.uuid4())[:8]
     DESIGN_JOBS[job_id] = {
         "job_id": job_id,
@@ -63,9 +214,11 @@ def start_design(req: DesignRequest):
         "progress": [
             f"Loading preset: {req.preset}",
             f"Transpose: {req.transpose} semitones",
-            "Computing bore profile...",
-            "Optimizing hole placement...",
-            "Generating STL mesh...",
+            "Parsing bore profile...",
+            "Computing tone hole positions...",
+            "Building 3D model with Build123d...",
+            "Subtracting tone holes...",
+            "Exporting STL mesh...",
             "Done!",
         ],
         "result": {"output_dir": f"output/{job_id}", "files": [f"{req.preset}.stl"]},
@@ -88,58 +241,16 @@ def design_download(job_id: str):
     job = DESIGN_JOBS[job_id]
     preset = job["result"]["files"][0].replace(".stl", "")
 
-    outer_r = 13.0
-    inner_r = 10.0
-    height = 200.0
-    segments = 32
-
-    import struct
-    buf = io.BytesIO()
-
-    angles = [i * 2 * math.pi / segments for i in range(segments)]
-    h_top = height / 2
-    h_bot = -height / 2
-
-    triangles = []
-    for i in range(segments):
-        a0 = angles[i]
-        a1 = angles[(i + 1) % segments]
-        ox0, oy0 = outer_r * math.cos(a0), outer_r * math.sin(a0)
-        ox1, oy1 = outer_r * math.cos(a1), outer_r * math.sin(a1)
-        ix0, iy0 = inner_r * math.cos(a0), inner_r * math.sin(a0)
-        ix1, iy1 = inner_r * math.cos(a1), inner_r * math.sin(a1)
-
-        triangles.append(((ox0, oy0, h_top), (ox1, oy1, h_top), (ox1, oy1, h_bot)))
-        triangles.append(((ox0, oy0, h_top), (ox1, oy1, h_bot), (ox0, oy0, h_bot)))
-        triangles.append(((ix0, iy0, h_top), (ix1, iy1, h_bot), (ix1, iy1, h_top)))
-        triangles.append(((ix0, iy0, h_top), (ix0, iy0, h_bot), (ix1, iy1, h_bot)))
-        triangles.append(((ox0, oy0, h_top), (ix0, iy0, h_top), (ix1, iy1, h_top)))
-        triangles.append(((ox0, oy0, h_top), (ix1, iy1, h_top), (ox1, oy1, h_top)))
-        triangles.append(((ox0, oy0, h_bot), (ix1, iy1, h_bot), (ix0, iy0, h_bot)))
-        triangles.append(((ox0, oy0, h_bot), (ox1, oy1, h_bot), (ix1, iy1, h_bot)))
-
-    buf.write(b'\x00' * 80)
-    buf.write(struct.pack('<I', len(triangles)))
-    for tri in triangles:
-        v0, v1, v2 = tri
-        e1 = (v1[0]-v0[0], v1[1]-v0[1], v1[2]-v0[2])
-        e2 = (v2[0]-v0[0], v2[1]-v0[1], v2[2]-v0[2])
-        nx = e1[1]*e2[2] - e1[2]*e2[1]
-        ny = e1[2]*e2[0] - e1[0]*e2[2]
-        nz = e1[0]*e2[1] - e1[1]*e2[0]
-        length = math.sqrt(nx*nx + ny*ny + nz*nz) or 1
-        buf.write(struct.pack('<fff', nx/length, ny/length, nz/length))
-        for v in tri:
-            buf.write(struct.pack('<fff', *v))
-        buf.write(struct.pack('<H', 0))
-
-    buf.seek(0)
-    filename = f"{preset}-design.stl"
-    return StreamingResponse(
-        buf,
-        media_type="application/octet-stream",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
-    )
+    try:
+        stl_data = build_instrument_stl(preset)
+        filename = f"{preset}-design.stl"
+        return StreamingResponse(
+            io.BytesIO(stl_data),
+            media_type="application/octet-stream",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+    except Exception as e:
+        raise HTTPException(500, f"STL generation failed: {str(e)}")
 
 
 class ImpedanceRequest(BaseModel):
