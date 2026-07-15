@@ -8,11 +8,13 @@ build/
 .vscode/
 .idea/
 *.wfp/
+target/
+node_modules/
+*.exe
+*.pdb
+*.dll
+*.lib
+*.exp
+*.stl
 
 designs/
-__pycache__/
-*.pyc
-dist/
-build/
-*.spec
-*.egg-info/
