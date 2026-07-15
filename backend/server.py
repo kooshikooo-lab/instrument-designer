@@ -390,6 +390,117 @@ def export_custom_step(
         raise HTTPException(500, f"Custom STEP export failed: {str(e)}")
 
 
+class SimulateSoundRequest(BaseModel):
+    preset: str
+    duration: float = 1.0
+    player_type: str = "FLUTE"
+    temperature: float = 25.0
+
+
+@app.post("/simulate/sound")
+def simulate_sound(req: SimulateSoundRequest):
+    from openwind import simulate, Player
+    import scipy.io.wavfile as wavfile
+
+    if req.preset not in AVAILABLE_BORES:
+        raise HTTPException(404, f"Unknown preset: {req.preset}")
+
+    bore_file = str(BORE_DIR / AVAILABLE_BORES[req.preset])
+    player = Player(req.player_type)
+
+    try:
+        rec = simulate(
+            duration=req.duration,
+            main_bore=bore_file,
+            player=player,
+            temperature=req.temperature,
+            verbosity=0,
+        )
+    except Exception as e:
+        raise HTTPException(500, f"OpenWInD simulation failed: {str(e)}")
+
+    bell_key = [k for k in rec.values if "bell_radiation_pressure" in k]
+    if not bell_key:
+        raise HTTPException(500, "No bell radiation pressure in simulation output")
+
+    signal = np.array(rec.values[bell_key[0]], dtype=np.float64)
+    sample_rate = int(round(1.0 / rec.dt))
+
+    signal_max = np.max(np.abs(signal))
+    if signal_max > 0:
+        signal = signal / signal_max * 0.9
+
+    signal_int16 = (signal * 32767).astype(np.int16)
+
+    buf = io.BytesIO()
+    wavfile.write(buf, sample_rate, signal_int16)
+    buf.seek(0)
+
+    filename = f"{req.preset}-simulated.wav"
+    return StreamingResponse(
+        buf,
+        media_type="audio/wav",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+class AnalyzeAudioRequest(BaseModel):
+    preset: str = ""
+    n_fft: int = 4096
+    top_peaks: int = 10
+
+
+@app.post("/analyze/audio")
+def analyze_audio(req: AnalyzeAudioRequest):
+    if not req.preset:
+        raise HTTPException(400, "preset is required for peak reference")
+
+    json_file = IMPEDANCE_DIR / f"{req.preset}.json"
+    if not json_file.exists():
+        raise HTTPException(404, f"Precomputed impedance not found for: {req.preset}")
+
+    with open(json_file) as f:
+        data = json.load(f)
+
+    frequencies = np.array(data["frequencies"])
+    z_mag = np.array(data["impedance_magnitude"])
+
+    peak_indices = []
+    for i in range(1, len(z_mag) - 1):
+        if z_mag[i] > z_mag[i - 1] and z_mag[i] > z_mag[i + 1]:
+            peak_indices.append(i)
+    peak_indices.sort(key=lambda i: z_mag[i], reverse=True)
+
+    peaks = []
+    A4 = 440.0
+    note_names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
+
+    for idx in peak_indices[: req.top_peaks]:
+        freq = frequencies[idx]
+        semitones = 12 * np.log2(freq / A4)
+        note_num = int(round(semitones)) + 69
+        note_name = note_names[note_num % 12]
+        octave = note_num // 12 - 1
+        cents = round((semitones - round(semitones)) * 100)
+
+        peaks.append({
+            "frequency": round(float(freq), 1),
+            "magnitude": round(float(z_mag[idx]), 2),
+            "note": note_name,
+            "octave": octave,
+            "cents": cents,
+        })
+
+    peaks.sort(key=lambda p: p["frequency"])
+
+    return {
+        "preset": req.preset,
+        "peaks": peaks,
+        "frequencies": frequencies.tolist(),
+        "impedance_magnitude": z_mag.tolist(),
+    }
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

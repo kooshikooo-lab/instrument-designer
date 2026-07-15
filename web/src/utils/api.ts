@@ -77,3 +77,45 @@ export async function getPrecomputedImpedance(preset: string): Promise<{
   if (!res.ok) throw new Error(`Precomputed impedance not found: ${preset}`);
   return res.json();
 }
+
+export interface SimulateSoundParams {
+  preset: string;
+  duration?: number;
+  player_type?: string;
+  temperature?: number;
+}
+
+export async function simulateSound(params: SimulateSoundParams): Promise<Blob> {
+  const res = await fetch(`${API_BASE}/simulate/sound`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
+  if (!res.ok) throw new Error(`Sound simulation failed: ${res.statusText}`);
+  return res.blob();
+}
+
+export interface ImpedancePeak {
+  frequency: number;
+  magnitude: number;
+  note: string;
+  octave: number;
+  cents: number;
+}
+
+export interface AnalyzeAudioResult {
+  preset: string;
+  peaks: ImpedancePeak[];
+  frequencies: number[];
+  impedance_magnitude: number[];
+}
+
+export async function analyzeAudio(preset: string, topPeaks?: number): Promise<AnalyzeAudioResult> {
+  const res = await fetch(`${API_BASE}/analyze/audio`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ preset, top_peaks: topPeaks ?? 10 }),
+  });
+  if (!res.ok) throw new Error(`Audio analysis failed: ${res.statusText}`);
+  return res.json();
+}
