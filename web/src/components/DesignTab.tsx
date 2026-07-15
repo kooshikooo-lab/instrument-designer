@@ -5,6 +5,7 @@ import STLViewer from "./STLViewer";
 import ParametricGenerator from "./ParametricGenerator";
 import ImpedancePlot from "./ImpedancePlot";
 import TonePlayer from "./TonePlayer";
+import MicrophoneAnalyzer from "./MicrophoneAnalyzer";
 
 interface DesignTabProps {
   initialPreset?: string;
@@ -279,6 +280,11 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
       <div className="space-y-4">
         <h3 className="text-sm font-medium text-neutral-200">Acoustic Impedance</h3>
         <ImpedancePlot preset={preset || undefined} />
+      </div>
+
+      <div className="space-y-4">
+        <h3 className="text-sm font-medium text-neutral-200">Live Measurement</h3>
+        <MicrophoneAnalyzer />
       </div>
 
       {preset && (
