@@ -9,28 +9,9 @@ interface STLViewerProps {
   url?: string;
 }
 
+/** Fallback demo bore shown when no STL file is loaded. */
 function DemoBore() {
   const geometry = useMemo(() => {
-    const outer = new THREE.CylinderGeometry(1.2, 1.0, 6, 64, 1, true);
-    const inner = new THREE.CylinderGeometry(1.0, 0.8, 6.1, 64, 1, true);
-    const caps = new THREE.RingGeometry(0.8, 1.2, 64);
-
-    const outerMesh = new THREE.Mesh(outer);
-    const innerMesh = new THREE.Mesh(inner);
-    const topCap = new THREE.Mesh(caps);
-    const bottomCap = new THREE.Mesh(caps);
-
-    topCap.rotation.x = -Math.PI / 2;
-    topCap.position.y = 3;
-    bottomCap.rotation.x = Math.PI / 2;
-    bottomCap.position.y = -3;
-
-    const group = new THREE.Group();
-    group.add(outerMesh);
-    group.add(innerMesh);
-    group.add(topCap);
-    group.add(bottomCap);
-
     return new THREE.CylinderGeometry(1.1, 0.9, 6, 64);
   }, []);
 

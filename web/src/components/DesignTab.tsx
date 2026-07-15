@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { DEMAKEIN_PRESETS } from "../data/instruments";
 import { checkHealth, startDesign, getDesignStatus, getDesignDownloadUrl, exportStep } from "../utils/api";
-import { PitchResult } from "../utils/pitch";
+import type { PitchResult } from "../utils/pitch";
 import STLViewer from "./STLViewer";
 import ParametricGenerator from "./ParametricGenerator";
 import ImpedancePlot from "./ImpedancePlot";

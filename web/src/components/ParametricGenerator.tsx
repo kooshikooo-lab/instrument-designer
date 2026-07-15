@@ -1,6 +1,12 @@
 import { useState } from "react";
 
-function geometryToSTL(geometry: any): ArrayBuffer {
+/** JSCAD geometry polygon structure — vertices are 3D coordinate arrays. */
+interface JSCADGeometry {
+  polygons?: { vertices: number[][] }[];
+}
+
+/** Convert a JSCAD geometry object to a binary STL ArrayBuffer. */
+function geometryToSTL(geometry: JSCADGeometry): ArrayBuffer {
   const polygons = geometry.polygons || [];
   const triangles: number[][] = [];
 
@@ -71,16 +77,6 @@ const PARAMETRIC_PRESETS: Record<string, { name: string; description: string; pa
       wallThickness: { label: "Wall Thickness (mm)", min: 1, max: 5, step: 0.25, default: 2 },
     },
   },
-  didgeridoo: {
-    name: "Didgeridoo Tube",
-    description: "Generate a straight didgeridoo bore tube",
-    params: {
-      length: { label: "Length (mm)", min: 800, max: 1800, step: 10, default: 1200 },
-      boreDiameter: { label: "Bore Diameter (mm)", min: 20, max: 50, step: 1, default: 30 },
-      wallThickness: { label: "Wall Thickness (mm)", min: 2, max: 8, step: 0.5, default: 4 },
-      mouthpieceDiameter: { label: "Mouthpiece Diameter (mm)", min: 15, max: 40, step: 1, default: 25 },
-    },
-  },
   flute: {
     name: "Flute Headjoint",
     description: "Generate a cylindrical flute headjoint",
@@ -119,7 +115,7 @@ export default function ParametricGenerator({ instrumentKey, onGenerated }: Para
       const { booleans, primitives } = jscad;
       const { subtract } = booleans;
 
-      let result: any;
+      let result: JSCADGeometry;
 
       if (presetKey === "recorder") {
         const outer = primitives.cylinder({ radius: params.boreDiameter / 2 + params.wallThickness, height: params.length, segments: 64 });

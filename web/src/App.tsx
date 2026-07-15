@@ -1,17 +1,31 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import type { Instrument } from "./data/instruments";
+import { INSTRUMENTS } from "./data/instruments";
+import { INSTRUMENT_RESOURCES } from "./data/instrument-resources";
 import { Sidebar } from "./components/Sidebar";
 import { InstrumentBrowser } from "./components/InstrumentBrowser";
 import { InstrumentDetail } from "./components/InstrumentDetail";
 import { DesignTab } from "./components/DesignTab";
 import { ResourcesTab } from "./components/ResourcesTab";
 
-type Tab = "library" | "design" | "resources";
+export type Tab = "library" | "design" | "resources";
+
+function mergeResources(instruments: Instrument[]): Instrument[] {
+  return instruments.map((inst) => {
+    const res = INSTRUMENT_RESOURCES[inst.name];
+    if (res) {
+      return { ...inst, resources: res };
+    }
+    return inst;
+  });
+}
 
 export default function App() {
   const [tab, setTab] = useState<Tab>("library");
   const [selected, setSelected] = useState<Instrument | null>(null);
   const [designPreset, setDesignPreset] = useState<string>("");
+
+  const instruments = useMemo(() => mergeResources(INSTRUMENTS), []);
 
   const handleGenerateFromLibrary = (preset: string) => {
     setDesignPreset(preset);
@@ -35,7 +49,7 @@ export default function App() {
           {tab === "library" && (
             <div className="flex h-full">
               <div className={`${selected ? "w-[420px]" : "w-full"} transition-all duration-300 border-r border-neutral-800 overflow-auto`}>
-                <InstrumentBrowser onSelect={setSelected} />
+                <InstrumentBrowser instruments={instruments} onSelect={setSelected} />
               </div>
               {selected && (
                 <div className="flex-1 overflow-auto">

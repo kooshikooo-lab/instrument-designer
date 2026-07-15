@@ -1,15 +1,16 @@
 import { useState, useMemo } from "react";
-import { INSTRUMENTS, SUBCATEGORIES, TYPE_LABELS, TAGS } from "../data/instruments";
+import { SUBCATEGORIES, TYPE_LABELS, TAGS } from "../data/instruments";
 import type { Instrument } from "../data/instruments";
 import { filterInstruments, EMPTY_FILTERS } from "../utils/filters";
 
 interface Props {
+  instruments: Instrument[];
   onSelect: (inst: Instrument) => void;
 }
 
-export function InstrumentBrowser({ onSelect }: Props) {
+export function InstrumentBrowser({ instruments, onSelect }: Props) {
   const [filters, setFilters] = useState(EMPTY_FILTERS);
-  const filtered = useMemo(() => filterInstruments(INSTRUMENTS, filters), [filters]);
+  const filtered = useMemo(() => filterInstruments(instruments, filters), [instruments, filters]);
 
   return (
     <div className="p-4 space-y-4">

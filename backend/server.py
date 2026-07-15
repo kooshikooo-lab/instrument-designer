@@ -2,14 +2,14 @@ import io
 import os
 import json
 import uuid
-import struct
-import math
 import tempfile
+import threading
+import time
 from pathlib import Path
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import numpy as np
 from build123d import Cylinder as B123dCylinder, export_step as b123d_export_step, Align, Location, Axis
 
@@ -38,15 +38,61 @@ AVAILABLE_BORES = {
 
 @app.get("/health")
 def health():
+    """Health check endpoint — returns server status and version."""
     return {"status": "ok", "version": "1.0.0"}
 
 
 @app.get("/presets")
 def list_presets():
+    """List all available bore profile presets (recorder, folk_whistle, flute, etc.)."""
     return {"presets": list(AVAILABLE_BORES.keys())}
 
 
 DESIGN_JOBS: dict[str, dict] = {}
+JOB_MAX_AGE_SECONDS = 3600  # Clean up jobs older than 1 hour
+JOB_MAX_COUNT = 50  # Keep at most 50 completed jobs
+
+
+def _cleanup_old_jobs():
+    """Remove completed jobs older than JOB_MAX_AGE_SECONDS to prevent memory leaks."""
+    now = time.time()
+    to_delete = [
+        jid for jid, job in DESIGN_JOBS.items()
+        if job.get("status") in ("completed", "failed")
+        and now - job.get("completed_at", now) > JOB_MAX_AGE_SECONDS
+    ]
+    for jid in to_delete:
+        del DESIGN_JOBS[jid]
+    # Also enforce max count by dropping oldest completed jobs
+    completed = [
+        (jid, job) for jid, job in DESIGN_JOBS.items()
+        if job.get("status") in ("completed", "failed")
+    ]
+    if len(completed) > JOB_MAX_COUNT:
+        completed.sort(key=lambda x: x[1].get("completed_at", 0))
+        for jid, _ in completed[: len(completed) - JOB_MAX_COUNT]:
+            del DESIGN_JOBS[jid]
+
+
+JOB_LOCK = threading.Lock()
+
+
+def _run_design_job(job_id: str, preset: str, transpose: int):
+    """Background thread target — runs Build123d STL generation and updates job status."""
+    try:
+        with JOB_LOCK:
+            DESIGN_JOBS[job_id]["progress"].append("Starting Build123d...")
+        stl_data = build_instrument_stl(preset, transpose)
+        with JOB_LOCK:
+            DESIGN_JOBS[job_id]["stl_data"] = stl_data
+            DESIGN_JOBS[job_id]["progress"].append("STL mesh generated")
+            DESIGN_JOBS[job_id]["progress"].append("Done!")
+            DESIGN_JOBS[job_id]["status"] = "completed"
+    except Exception as e:
+        with JOB_LOCK:
+            DESIGN_JOBS[job_id]["status"] = "failed"
+            DESIGN_JOBS[job_id]["progress"].append(f"Error: {str(e)}")
+            DESIGN_JOBS[job_id]["error"] = str(e)
 
 
 def parse_bore_profile(preset: str) -> list[tuple[float, float, float, float]]:
@@ -132,7 +178,6 @@ def build_instrument_stl(preset: str, transpose: int = 0) -> bytes:
         align=(Align.CENTER, Align.CENTER, Align.MIN),
     )
 
-    inner_segments = 64
     bore_verts = []
     for i, (z0, z1, r0, r1) in enumerate(bore):
         z = z0 - bore[0][0]
@@ -155,14 +200,6 @@ def build_instrument_stl(preset: str, transpose: int = 0) -> bytes:
 
     wire = Wire(profile_edges)
     bore_profile_face = extrude(Plane.XZ * wire, amount=0.001)
-
-    hole_r = mean_outer_r + 5.0
-    inner_cyl = Cylinder(
-        radius=hole_r, height=total_length + 2,
-        align=(Align.CENTER, Align.CENTER, Align.MIN),
-    )
-
-    tube = outer - inner_cyl
 
     inner_bore = Cylinder(
         radius=mean_inner_r, height=total_length + 1,
@@ -198,70 +235,103 @@ def build_instrument_stl(preset: str, transpose: int = 0) -> bytes:
 
 
 class DesignRequest(BaseModel):
+    """Request body for starting a design job."""
     preset: str
     transpose: int = 0
 
 
 @app.post("/design")
 def start_design(req: DesignRequest):
+    """Start an async design job — generates an STL file with bore profile and tone holes.
+
+    Returns a job_id that can be polled via /design/{job_id}/status.
+    The STL is built using Build123d with CSG operations (outer tube minus inner bore minus tone holes).
+    """
     if req.preset not in AVAILABLE_BORES:
         raise HTTPException(404, f"Unknown preset: {req.preset}")
 
     job_id = str(uuid.uuid4())[:8]
-    DESIGN_JOBS[job_id] = {
-        "job_id": job_id,
-        "status": "completed",
-        "progress": [
-            f"Loading preset: {req.preset}",
-            f"Transpose: {req.transpose} semitones",
-            "Parsing bore profile...",
-            "Computing tone hole positions...",
-            "Building 3D model with Build123d...",
-            "Subtracting tone holes...",
-            "Exporting STL mesh...",
-            "Done!",
-        ],
-        "result": {"output_dir": f"output/{job_id}", "files": [f"{req.preset}.stl"]},
-    }
+    with JOB_LOCK:
+        DESIGN_JOBS[job_id] = {
+            "job_id": job_id,
+            "status": "running",
+            "progress": [
+                f"Loading preset: {req.preset}",
+                f"Transpose: {req.transpose} semitones",
+                "Parsing bore profile...",
+                "Computing tone hole positions...",
+            ],
+            "result": {"output_dir": f"output/{job_id}", "files": [f"{req.preset}.stl"]},
+            "preset": req.preset,
+            "stl_data": None,
+        }
+
+    t = threading.Thread(target=_run_design_job, args=(job_id, req.preset, req.transpose), daemon=True)
+    t.start()
     return {"job_id": job_id}
 
 
 @app.get("/design/{job_id}/status")
 def design_status(job_id: str):
+    """Get the current status and progress of a design job.
+
+    Returns job_id, status (running/completed/failed), progress messages,
+    result metadata, and preset name. Does NOT include stl_data (bytes) to avoid serialization issues.
+    """
     if job_id not in DESIGN_JOBS:
         raise HTTPException(404, f"Job not found: {job_id}")
-    return DESIGN_JOBS[job_id]
+    job = DESIGN_JOBS[job_id]
+    return {
+        "job_id": job["job_id"],
+        "status": job["status"],
+        "progress": job["progress"],
+        "result": job["result"],
+        "preset": job["preset"],
+        "error": job.get("error"),
+    }
 
 
 @app.get("/design/{job_id}/download")
 def design_download(job_id: str):
+    """Download the generated STL file for a completed design job.
+
+    If the job's stl_data was cleaned up from memory, regenerates it on-the-fly.
+    Returns the STL as a binary stream with Content-Disposition header.
+    """
     if job_id not in DESIGN_JOBS:
         raise HTTPException(404, f"Job not found: {job_id}")
 
     job = DESIGN_JOBS[job_id]
     preset = job["result"]["files"][0].replace(".stl", "")
 
-    try:
-        stl_data = build_instrument_stl(preset)
-        filename = f"{preset}-design.stl"
-        return StreamingResponse(
-            io.BytesIO(stl_data),
-            media_type="application/octet-stream",
-            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
-        )
-    except Exception as e:
-        raise HTTPException(500, f"STL generation failed: {str(e)}")
+    with JOB_LOCK:
+        stl_data = job.get("stl_data")
+
+    if stl_data is None:
+        try:
+            stl_data = build_instrument_stl(preset)
+        except Exception as e:
+            raise HTTPException(500, f"STL generation failed: {str(e)}")
+
+    filename = f"{preset}-design.stl"
+    return StreamingResponse(
+        io.BytesIO(stl_data),
+        media_type="application/octet-stream",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 class ImpedanceRequest(BaseModel):
+    """Request body for real-time impedance computation."""
     preset: str
-    frequencies_start: float = 50
-    frequencies_end: float = 3000
-    frequencies_step: float = 2
-    temperature: float = 25.0
+    frequencies_start: float = Field(default=50, ge=1, le=10000)
+    frequencies_end: float = Field(default=3000, ge=10, le=20000)
+    frequencies_step: float = Field(default=2, ge=0.1, le=100)
+    temperature: float = Field(default=25.0, ge=-20, le=60)
 
 
 class ImpedanceResponse(BaseModel):
+    """Response body for impedance computation results."""
     frequencies: list[float]
     impedance_real: list[float]
     impedance_imag: list[float]
@@ -271,6 +341,12 @@ class ImpedanceResponse(BaseModel):
 
 @app.post("/impedance/compute", response_model=ImpedanceResponse)
 def compute_impedance(req: ImpedanceRequest):
+    """Compute acoustic impedance in real-time using OpenWInD.
+
+    Takes a bore preset, frequency range (start/end/step), and temperature.
+    Returns arrays of frequencies, real/imaginary impedance, and impedance magnitude.
+    This is a slow operation (~10-30 seconds) — prefer /impedance/precomputed when available.
+    """
     import openwind
 
     if req.preset not in AVAILABLE_BORES:
@@ -302,6 +378,14 @@ def compute_impedance(req: ImpedanceRequest):
 
 @app.get("/impedance/precomputed/{preset}")
 def get_precomputed_impedance(preset: str):
+    """Get pre-computed impedance data for a preset (fast, instant response).
+
+    Returns JSON with frequencies, impedance_real, impedance_imag, impedance_magnitude arrays.
+    Preset is validated against AVAILABLE_BORES to prevent path traversal attacks.
+    """
+    # Validate preset to prevent path traversal
+    if preset not in AVAILABLE_BORES:
+        raise HTTPException(404, f"Unknown preset: {preset}. Available: {list(AVAILABLE_BORES.keys())}")
     json_file = IMPEDANCE_DIR / f"{preset}.json"
     if not json_file.exists():
         raise HTTPException(404, f"Precomputed impedance not found for: {preset}")
@@ -313,11 +397,13 @@ def get_precomputed_impedance(preset: str):
 
 @app.get("/impedance/precomputed")
 def list_precomputed():
+    """List all presets that have pre-computed impedance data available."""
     files = list(IMPEDANCE_DIR.glob("*.json"))
     return {"available": [f.stem for f in files]}
 
 
 class StepExportRequest(BaseModel):
+    """Request body for STEP file export."""
     preset: str
     length: float = 200
     bore_diameter: float = 20
@@ -327,6 +413,12 @@ class StepExportRequest(BaseModel):
 
 @app.post("/export/step")
 def export_step(req: StepExportRequest):
+    """Export a bore profile as a STEP file using Build123d.
+
+    If preset matches a known bore profile, uses its dimensions and tone holes.
+    Otherwise uses the custom parameters (length, bore_diameter, wall_thickness).
+    Returns the STEP file as a binary stream.
+    """
     try:
         bore = parse_bore_profile(req.preset) if req.preset in AVAILABLE_BORES else None
         holes = TONE_HOLES.get(req.preset, [])
@@ -378,6 +470,11 @@ def export_custom_step(
     bore_points: list[list[float]],
     wall_thickness: float = 3.0,
 ):
+    """Export a custom bore profile as STEP from a list of (position, radius) points.
+
+    bore_points should be [[x0, r0], [x1, r1], ...] where x is position and r is radius in mm.
+    Creates a 2D profile extruded to 3D via Build123d.
+    """
     from build123d import Wire, extrude, Plane, BuildPart, export_step
 
     try:
@@ -415,6 +512,7 @@ def export_custom_step(
 
 
 class SimulateSoundRequest(BaseModel):
+    """Request body for time-domain sound simulation."""
     preset: str
     duration: float = 1.0
     player_type: str = "FLUTE"
@@ -423,6 +521,12 @@ class SimulateSoundRequest(BaseModel):
 
 @app.post("/simulate/sound")
 def simulate_sound(req: SimulateSoundRequest):
+    """Simulate time-domain audio output from a bore profile using OpenWInD.
+
+    Uses OpenWInD's coupled player-bore simulation. Returns a WAV file with the
+    bell radiation pressure signal normalized to [-0.9, 0.9]. Sample rate ~550kHz.
+    Default player type is FLUTE; also supports CLARINET, LIPS, SOPRANO_RECORDER, etc.
+    """
     from openwind import simulate, Player
     import scipy.io.wavfile as wavfile
 
@@ -469,6 +573,7 @@ def simulate_sound(req: SimulateSoundRequest):
 
 
 class AnalyzeAudioRequest(BaseModel):
+    """Request body for impedance peak analysis."""
     preset: str = ""
     n_fft: int = 4096
     top_peaks: int = 10
@@ -476,8 +581,16 @@ class AnalyzeAudioRequest(BaseModel):
 
 @app.post("/analyze/audio")
 def analyze_audio(req: AnalyzeAudioRequest):
+    """Analyze impedance peaks from pre-computed data and map them to musical notes.
+
+    Finds local maxima in the impedance magnitude array, converts each peak frequency
+    to a note name (C, C#, D...) with octave and cents deviation from A4=440Hz.
+    Returns the top N peaks sorted by frequency.
+    """
     if not req.preset:
         raise HTTPException(400, "preset is required for peak reference")
+    if req.preset not in AVAILABLE_BORES:
+        raise HTTPException(404, f"Unknown preset: {req.preset}. Available: {list(AVAILABLE_BORES.keys())}")
 
     json_file = IMPEDANCE_DIR / f"{req.preset}.json"
     if not json_file.exists():

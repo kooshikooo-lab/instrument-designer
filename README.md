@@ -5,7 +5,7 @@ A web-based parametric wind instrument design tool with integrated acoustic simu
 ## Features
 
 ### Instrument Library
-- 42 pre-configured instruments across 6 families: flutes, whistles, recorders, shawms, reedpipes, and didgeridoos
+- 58 pre-configured instruments across 10+ families: flutes, whistles, recorders, shawms, reedpipes, didgeridoos, PVC instruments, hybrid instruments, overtone flutes, and more
 - Searchable and filterable by family, difficulty, range, and tags
 - Each instrument includes descriptions, fingering charts, and source attribution
 
@@ -170,6 +170,12 @@ Key components: posts/pillars (mounted on body), hinge rods (2mm stainless steel
 - [Lefebvre & Scavone (2013)](https://arxiv.org/abs/1207.5490) — External tonehole interactions in woodwind instruments
 - [Champ & Scavone (2025)](https://www.frontiersin.org/journals/signal-processing/articles/10.3389/frsip.2025.1519450/full) — Port-Hamiltonian system model of woodwind instruments
 - [Larry Wang, MIT (2019)](https://dspace.mit.edu/handle/1721.1/123116) — Algorithmic design of wind instrument shape via 3D FDTD and deep learning
+
+## Future Expansion
+
+Non-wind instrument research is cataloged for future development: `chat-logs/2026-07-15-non-wind-instruments-catalog.md`
+- Mbira/Kalimba, Circle Guitar, Hydraulophone, Theremin, Sea Organ, and more
+- See `ROADMAP.md` Section 11 for priority order and architecture readiness
 
 ## Frequency Analysis & Acoustic Measurement
 

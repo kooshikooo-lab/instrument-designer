@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { IMPEDANCE_DATA } from "../data/impedance-data";
-import { PitchResult } from "../utils/pitch";
+import type { PitchResult } from "../utils/pitch";
 
 interface ImpedancePlotProps {
   preset?: string;

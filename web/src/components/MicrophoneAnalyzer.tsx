@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useMicrophone } from "../hooks/useMicrophone";
-import { detectPitch, freqToNote, PitchResult } from "../utils/pitch";
+import { detectPitch, freqToNote } from "../utils/pitch";
+import type { PitchResult } from "../utils/pitch";
 import SpectrumPlot from "./SpectrumPlot";
 
 interface MicrophoneAnalyzerProps {

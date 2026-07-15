@@ -1,3 +1,24 @@
+export interface ResourceLink {
+  title: string;
+  url: string;
+  type: "video" | "book" | "tutorial" | "article" | "forum" | "shop" | "other";
+  description?: string;
+}
+
+export interface ResourceIllustration {
+  url: string;
+  caption: string;
+  alt: string;
+}
+
+export interface InstrumentResources {
+  tips?: string[];
+  build_notes?: string[];
+  illustrations?: ResourceIllustration[];
+  links?: ResourceLink[];
+  faq?: { question: string; answer: string }[];
+}
+
 export interface Instrument {
   name: string;
   family: string;
@@ -14,6 +35,7 @@ export interface Instrument {
   demakein_preset?: string;
   tags: string[];
   difficulty: string;
+  resources?: InstrumentResources;
 }
 
 export const INSTRUMENTS: Instrument[] = [
@@ -376,16 +398,30 @@ export const INSTRUMENTS: Instrument[] = [
     description: "Renaissance-era double reed instrument. Achieves a very low bass range in a compact body.",
   },
   {
-    name: "Glissotar (Soprano)",
+    name: "Glissotar Purpleheart (Original)",
     family: "Wind", subcategory: "Woodwind", type_label: "Single Reed + Slit",
     range: "Soprano", key: "C",
-    source: "Custom Design",
+    source: "Glissonic",
+    source_url: "https://glissonic.com/shop/",
     image_url: "",
     audio_url: "https://www.youtube.com/watch?v=35HX0DXYB_0",
     download_url: "",
-    tags: ["advanced", "experimental", "glissando", "continuous"],
+    tags: ["advanced", "experimental", "glissando", "continuous", "purpleheart", "premium"],
     difficulty: "Advanced",
-    description: "Continuous glissando woodwind. Conical bore with a sliding slit mechanism for seamless pitch bends.",
+    description: "The original Glissotar by Dániel Váczi. Conical bore with sliding ribbon mechanism for continuous pitch. Made of purpleheart hardwood. Won First Prize + People's Choice at Guthman Competition 2022. 8 years of development.",
+  },
+  {
+    name: "Glissotar Jam (3D-Printed)",
+    family: "Wind", subcategory: "Woodwind", type_label: "Single Reed + Slit",
+    range: "Soprano", key: "C",
+    source: "Glissonic",
+    source_url: "https://glissonic.com/shop/",
+    image_url: "",
+    audio_url: "https://www.youtube.com/watch?v=35HX0DXYB_0",
+    download_url: "",
+    tags: ["advanced", "experimental", "glissando", "continuous", "3d-printed", "bio-composite"],
+    difficulty: "Advanced",
+    description: "3D-printed version of the Glissotar in durable bio-composite. Same form and function as Purpleheart original. Slightly brighter tone with more upper harmonics. Robust against moisture anomalies.",
   },
   {
     name: "Glissotar Bass Clarinet",
@@ -395,9 +431,22 @@ export const INSTRUMENTS: Instrument[] = [
     image_url: "",
     audio_url: "https://www.youtube.com/watch?v=35HX0DXYB_0",
     download_url: "",
-    tags: ["advanced", "experimental", "glissando", "bass"],
+    tags: ["advanced", "experimental", "glissando", "bass", "hybrid"],
     difficulty: "Advanced",
-    description: "Hybrid bass clarinet with continuous glissando slit. 900mm length.",
+    description: "Hybrid bass clarinet with continuous glissando slit mechanism. 900mm length. Combines glissonic ribbon system with bass clarinet cylindrical bore.",
+  },
+  {
+    name: "Glissopipe",
+    family: "Wind", subcategory: "Flute", type_label: "Fipple Flute + Slit",
+    range: "Soprano", key: "C",
+    source: "Glissonic",
+    source_url: "https://www.glissopipe.com/",
+    image_url: "",
+    audio_url: "",
+    download_url: "",
+    tags: ["beginner", "experimental", "glissando", "recorder-form", "educational", "kickstarter"],
+    difficulty: "Beginner",
+    description: "Recorder-style instrument with glissonic continuous pitch system. Designed for beginners, educators, and families. Intuitive acoustic instrument with microtonal freedom and glissando potential. Part of the Glissonic family by Dániel Váczi.",
   },
   {
     name: "Kazoo",
@@ -542,6 +591,188 @@ export const INSTRUMENTS: Instrument[] = [
     tags: ["trumpet", "tool", "mouthpiece", "puller", "repair"],
     difficulty: "Beginner",
     description: "Tool for removing stuck mouthpieces from trumpets. Uses 1/4-20 hardware.",
+  },
+
+  {
+    name: "JDWoodwinds Bass Clarinet in G",
+    family: "Wind", subcategory: "Woodwind", type_label: "Single Reed",
+    range: "Bass", key: "G",
+    source: "JDWoodwinds",
+    source_url: "https://jdwoodwind.com/shop/p/stl-files-bass-clarinet-in-g",
+    image_url: "",
+    audio_url: "https://www.youtube.com/watch?v=Aj-UPzMYUTw",
+    download_url: "https://jdwoodwind.com/shop/p/stl-files-bass-clarinet-in-g",
+    tags: ["advanced", "bass-clarinet", "3d-printed", "simplified-boehm", "keyed", "g-key"],
+    difficulty: "Expert",
+    description: "Fully 3D printed bass clarinet in G with simplified Boehm keywork. 24mm bore, low E range. Requires: brass tubing for tenons, stainless steel rod for keys, neoprene pads, springs, cork, and a Chinese bass clarinet bell from eBay. Expert-level project requiring both 3D printing and clarinet repair skills.",
+  },
+
+  {
+    name: "PVC Pipe Bass Clarinet (Hybrid)",
+    family: "Wind", subcategory: "Woodwind", type_label: "Single Reed",
+    range: "Bass", key: "Bb",
+    source: "Custom Design",
+    source_url: "",
+    image_url: "",
+    audio_url: "https://www.youtube.com/watch?v=Aj-UPzMYUTw",
+    download_url: "",
+    tags: ["advanced", "bass-clarinet", "pvc-pipe", "hybrid", "3d-printed-adapters", "hardware-store"],
+    difficulty: "Advanced",
+    description: "Bass clarinet using 1\" PVC pipe as the main cylindrical bore, with 3D printed neck joint, bell adapter, register vent, and simplified key mounts. PVC pipe ID (26.6mm) stepped down to 24mm via printed adapters. Requires: PVC pipe, 3D printed parts, bass clarinet mouthpiece, bell (eBay), neoprene pads, springs, cork. Estimated total cost $80-160.",
+  },
+
+  {
+    name: "PVC Membrane Clarinet",
+    family: "Wind", subcategory: "Woodwind", type_label: "Membrane Reed",
+    range: "Soprano", key: "Variable",
+    source: "Printables",
+    source_url: "https://www.printables.com/model/441519-pvc-membrane-clarinet",
+    image_url: "",
+    audio_url: "https://www.youtube.com/watch?v=Jk7J4_bneZo",
+    download_url: "https://www.printables.com/model/441519-pvc-membrane-clarinet",
+    tags: ["beginner", "pvc-pipe", "membrane", "no-reed", "easy", "printable"],
+    difficulty: "Beginner",
+    description: "3D printed PVC membrane clarinet by Fabien T. based on Nicolas Bras' design. Uses 16mm PVC electrical tubing as body, 3D printed mouthpiece with balloon/latex membrane. Easy to play — no technique needed. Adjust membrane tension by screwing the cap. Available in 16mm and 20mm PVC versions.",
+  },
+
+  {
+    name: "Dan Bruner's PVC Clarinet (A3)",
+    family: "Wind", subcategory: "Woodwind", type_label: "Single Reed",
+    range: "Alto", key: "A",
+    source: "Geocities",
+    source_url: "https://www.geocities.ws/danielbruner/instruments/clarA3.html",
+    image_url: "https://www.geocities.ws/danielbruner/instruments/clarA3-01.jpg",
+    audio_url: "",
+    download_url: "https://www.geocities.ws/danielbruner/instruments/clarA3.html",
+    tags: ["intermediate", "pvc-pipe", "sax-reed", "diy", "tunable", "alto"],
+    difficulty: "Intermediate",
+    description: "PVC clarinet in A3 by Dan Bruner. Uses 1/2\" Schedule 40 PVC pipe body with alto sax reed (wider than pipe ID). Head joint shaped on belt sander for reed angle. Finger holes tuned by ear using diatonic scale. Reed secured with screw through PVC wall. Modular: same mouthpiece fits different 'note pipes' for different keys.",
+  },
+
+  {
+    name: "Inline Membrane Clarinet",
+    family: "Wind", subcategory: "Woodwind", type_label: "Membrane Reed",
+    range: "Soprano", key: "Variable",
+    source: "Printables",
+    source_url: "https://www.printables.com/model/487374-inline-membrane-clarinet-mouthpiece",
+    image_url: "",
+    audio_url: "",
+    download_url: "https://www.printables.com/model/487374-inline-membrane-clarinet-mouthpiece",
+    tags: ["intermediate", "membrane", "inline", "pex-adapter", "o-ring", "printable"],
+    difficulty: "Intermediate",
+    description: "Inline membrane clarinet mouthpiece by Chad Allen. Similar to Nicolas Bras design but inline like a traditional clarinet. Uses O-rings (3/4\" ID, 7/8\" OD) to seal the membrane compartment. Includes modular PEX adapter for connecting to different pipe sizes. PTFE tape recommended for sealing.",
+  },
+
+  {
+    name: "Ultra-Compact Bass Clarinet",
+    family: "Wind", subcategory: "Woodwind", type_label: "Single Reed",
+    range: "Bass", key: "Bb",
+    source: "MakerWorld",
+    source_url: "https://makerworld.com/en/models/2021364-clarinet-mustache",
+    image_url: "",
+    audio_url: "",
+    download_url: "",
+    tags: ["advanced", "bass-clarinet", "compact", "3d-printed", "experimental"],
+    difficulty: "Advanced",
+    description: "Ultra-compact bass clarinet design from MakerWorld. Experimental compact form factor for the bass clarinet family.",
+  },
+
+  {
+    name: "PVC Shakuhachi",
+    family: "Wind", subcategory: "Flute", type_label: "End-Blown Flute",
+    range: "Tenor", key: "D",
+    source: "shaku6.com",
+    source_url: "https://shaku6.com/pvc.php",
+    image_url: "",
+    audio_url: "https://www.youtube.com/watch?v=F6DhY4q5o9A",
+    download_url: "https://shaku6.com/pvc.php",
+    tags: ["beginner", "pvc-pipe", "shakuhachi", "japanese", "end-blown", "diy", "$1-build"],
+    difficulty: "Beginner",
+    description: "PVC pipe shakuhachi — $1 cost, 30 minutes to build with drill. 20mm ID PVC pipe, 55cm length. Sound comparable to genuine bamboo shakuhachi. 5 holes (10mm dia) + thumb hole. Source: shaku6.com detailed construction guide.",
+  },
+
+  {
+    name: "PVC Native American Flute (G)",
+    family: "Wind", subcategory: "Flute", type_label: "Fipple Flute",
+    range: "Tenor", key: "G",
+    source: "PhreshAyer / UO Makerspace",
+    source_url: "https://www.youtube.com/watch?v=misjPOhd-9o",
+    image_url: "",
+    audio_url: "https://www.youtube.com/watch?v=misjPOhd-9o",
+    download_url: "",
+    tags: ["beginner", "pvc-pipe", "native-american", "fipple", "easy", "3d-printed-fetish", "tunable"],
+    difficulty: "Beginner",
+    description: "PVC Native American flute with 3D printed air-flow director (fetish). Uses 3/4\" Schedule 40 PVC pipe. Much easier to play than transverse flutes. Tuned in key of G. PhreshAyer design — well-documented build video. Build time ~30 min with drill.",
+  },
+
+  {
+    name: "PVC Pan Flute (8-Pipe)",
+    family: "Wind", subcategory: "Flute", type_label: "Pan Flute",
+    range: "Soprano", key: "C",
+    source: "DIY / Make Studio JUMP",
+    source_url: "https://www.instructables.com/DIY-PVC-Pipe-Flutes/",
+    image_url: "",
+    audio_url: "https://www.youtube.com/watch?v=0hnsJ-42Vns",
+    download_url: "",
+    tags: ["beginner", "pvc-pipe", "panpipes", "diy", "multiple-pipes", "graduated", "no-3d-printer"],
+    difficulty: "Beginner",
+    description: "8-pipe pan flute made from graduated lengths of 1/2\" PVC pipe. Closed at bottom, glued together in a row. Each pipe = one note. Curved or flat arrangement. No 3D printer needed — hardware store materials only.",
+  },
+
+  {
+    name: "3D Printable Soprano Recorder (pfh)",
+    family: "Wind", subcategory: "Flute", type_label: "Fipple Flute",
+    range: "Soprano", key: "D",
+    source: "Thingiverse (pfh)",
+    source_url: "https://www.thingiverse.com/thing:162490",
+    image_url: "",
+    audio_url: "https://www.youtube.com/watch?v=Z3NqPppUIMk",
+    download_url: "https://www.thingiverse.com/thing:162490",
+    tags: ["beginner", "demakein", "recorder", "folk", "soprano", "tapered-bore", "cc-by"],
+    difficulty: "Beginner",
+    description: "Folk flute / recorder in D by Paul Harrison (pfh), designed with Demakein. Simple 6-hole fingering, two octaves. Tapered bore. Available as 1-piece through 5-piece assembly. CC BY license. Gold standard for 3D printable flutes. Also available: Alto G, Alto F, Tenor D, Tenor E, Pflute (chromatic).",
+  },
+
+  {
+    name: "Saxophone Low A Extension",
+    family: "Wind", subcategory: "Parts & Accessories", type_label: "Extension",
+    range: "Bass", key: "A",
+    source: "DIY Design",
+    source_url: "",
+    image_url: "",
+    audio_url: "",
+    download_url: "",
+    tags: ["intermediate", "saxophone", "extension", "low-a", "pvc-pipe", "bari-sax"],
+    difficulty: "Intermediate",
+    description: "Extension tube for Bb baritone saxophone to produce low A. 6\" long tube (4\" inner diameter PVC), inserted into bell. Press-fit with foam weatherstrip seal. Materials: Schedule 20/40 PVC pipe, 3D printed adapter, weatherstrip seal. Cost ~$10.",
+  },
+
+  {
+    name: "Bass Clarinet Low C Extension (Modular)",
+    family: "Wind", subcategory: "Parts & Accessories", type_label: "Extension",
+    range: "Bass", key: "C",
+    source: "Academic / DIY",
+    source_url: "",
+    image_url: "",
+    audio_url: "",
+    download_url: "",
+    tags: ["advanced", "bass-clarinet", "extension", "low-c", "modular", "3d-printed", "u-tube"],
+    difficulty: "Advanced",
+    description: "Modular 3D-printed U-tube extension for bass clarinet. Each section adds one semitone below standard low Eb. Detachable — use 1 section for low D, 2 for low C. Bore ~30-35mm diameter, ~15-20cm per semitone. Materials: PLA/PETG body, neoprene pads, stainless steel rods.",
+  },
+
+  {
+    name: "Bassoon Bocal / Crook",
+    family: "Wind", subcategory: "Parts & Accessories", type_label: "Bocal",
+    range: "Tenor", key: "C",
+    source: "Heckel System",
+    source_url: "",
+    image_url: "",
+    audio_url: "",
+    download_url: "",
+    tags: ["advanced", "bassoon", "bocal", "crook", "conical", "brass", "historical"],
+    difficulty: "Advanced",
+    description: "Conical bore metal bocal (crook) connecting reed to bassoon body. Heckel system: #1 (shortest, brightest) to #5 (longest, darkest). ~30cm length, tapers from ~4mm (reed) to ~12mm (body) internal diameter. Traditional materials: brass or German silver.",
   },
 ];
 
