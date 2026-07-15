@@ -7,6 +7,7 @@ import ParametricGenerator from "./ParametricGenerator";
 import ImpedancePlot from "./ImpedancePlot";
 import TonePlayer from "./TonePlayer";
 import MicrophoneAnalyzer from "./MicrophoneAnalyzer";
+import PresetInfo from "./PresetInfo";
 
 interface DesignTabProps {
   initialPreset?: string;
@@ -267,6 +268,8 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
           </div>
         </div>
       )}
+
+      {preset && <PresetInfo preset={preset} />}
 
       <div className="bg-neutral-900 rounded-xl border border-neutral-800 p-5 space-y-4">
         <h3 className="text-sm font-medium text-neutral-200">Parametric Generator</h3>
