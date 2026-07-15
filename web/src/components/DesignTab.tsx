@@ -23,6 +23,8 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
   const [generatedBlob, setGeneratedBlob] = useState<Blob | null>(null);
   const [generatedFilename, setGeneratedFilename] = useState<string>("");
   const [stepExporting, setStepExporting] = useState(false);
+  const [serverBlob, setServerBlob] = useState<Blob | null>(null);
+  const [serverFilename, setServerFilename] = useState<string>("");
 
   useEffect(() => {
     if (initialPreset) {
@@ -57,6 +59,16 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
         if (result.status === "completed" || result.status === "failed") {
           clearInterval(poll);
           setRunning(false);
+          if (result.status === "completed") {
+            try {
+              const res = await fetch(getDesignDownloadUrl(job_id));
+              const blob = await res.blob();
+              setServerBlob(blob);
+              setServerFilename(`${preset}-design.stl`);
+            } catch {
+              console.error("Failed to auto-load STL into viewer");
+            }
+          }
         }
       }, 1000);
     } catch (e) {
@@ -197,21 +209,71 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="space-y-4">
-          <h3 className="text-sm font-medium text-neutral-200">Parametric Generator</h3>
-          <ParametricGenerator
-            instrumentKey={preset}
-            onGenerated={(blob, filename) => {
-              setGeneratedBlob(blob);
-              setGeneratedFilename(filename);
-            }}
-          />
+      {(serverBlob || generatedBlob) && (
+        <div className="bg-neutral-900 rounded-xl border border-neutral-800 p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium text-neutral-200">
+              3D Preview {serverBlob ? "(Server Design)" : "(Parametric)"}
+            </h3>
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  const blob = serverBlob || generatedBlob;
+                  const name = serverFilename || generatedFilename;
+                  if (!blob) return;
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = name;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+                className="px-3 py-1.5 bg-green-600 hover:bg-green-500 text-xs text-white rounded-lg transition-colors"
+              >
+                Download STL
+              </button>
+              {serverBlob && (
+                <button
+                  onClick={async () => {
+                    try {
+                      const res = await fetch(getDesignDownloadUrl(jobId!));
+                      const blob = await res.blob();
+                      const arrayBuffer = await blob.arrayBuffer();
+                      const uint8 = new Uint8Array(arrayBuffer);
+                      let binary = "";
+                      for (let i = 0; i < uint8.length; i++) binary += String.fromCharCode(uint8[i]);
+                      const base64 = btoa(binary);
+                      const dataUrl = `data:application/octet-stream;base64,${base64}`;
+                      const a = document.createElement("a");
+                      a.href = dataUrl;
+                      a.download = serverFilename;
+                      a.click();
+                    } catch (e) {
+                      console.error(e);
+                    }
+                  }}
+                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-xs text-white rounded-lg transition-colors"
+                >
+                  Open Externally
+                </button>
+              )}
+            </div>
+          </div>
+          <div className="h-[400px] rounded-lg overflow-hidden bg-neutral-950">
+            <STLViewer file={serverBlob ? new File([serverBlob], serverFilename) : generatedBlob ? new File([generatedBlob], generatedFilename) : null} />
+          </div>
         </div>
-        <div className="space-y-4">
-          <h3 className="text-sm font-medium text-neutral-200">3D Preview</h3>
-          <STLViewer file={generatedBlob ? new File([generatedBlob], generatedFilename) : null} />
-        </div>
+      )}
+
+      <div className="bg-neutral-900 rounded-xl border border-neutral-800 p-5 space-y-4">
+        <h3 className="text-sm font-medium text-neutral-200">Parametric Generator</h3>
+        <ParametricGenerator
+          instrumentKey={preset}
+          onGenerated={(blob, filename) => {
+            setGeneratedBlob(blob);
+            setGeneratedFilename(filename);
+          }}
+        />
       </div>
 
       <div className="space-y-4">

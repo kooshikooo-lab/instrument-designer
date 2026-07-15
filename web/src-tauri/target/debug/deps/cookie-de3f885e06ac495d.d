@@ -1,0 +1,12 @@
+C:\instrument-designer\web\src-tauri\target\debug\deps\cookie-de3f885e06ac495d.d: C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cookie-0.18.1\src\lib.rs C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cookie-0.18.1\src\builder.rs C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cookie-0.18.1\src\parse.rs C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cookie-0.18.1\src\jar.rs C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cookie-0.18.1\src\delta.rs C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cookie-0.18.1\src\same_site.rs C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cookie-0.18.1\src\expiration.rs C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cookie-0.18.1\src\prefix.rs
+
+C:\instrument-designer\web\src-tauri\target\debug\deps\libcookie-de3f885e06ac495d.rmeta: C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cookie-0.18.1\src\lib.rs C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cookie-0.18.1\src\builder.rs C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cookie-0.18.1\src\parse.rs C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cookie-0.18.1\src\jar.rs C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cookie-0.18.1\src\delta.rs C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cookie-0.18.1\src\same_site.rs C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cookie-0.18.1\src\expiration.rs C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cookie-0.18.1\src\prefix.rs
+
+C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cookie-0.18.1\src\lib.rs:
+C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cookie-0.18.1\src\builder.rs:
+C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cookie-0.18.1\src\parse.rs:
+C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cookie-0.18.1\src\jar.rs:
+C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cookie-0.18.1\src\delta.rs:
+C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cookie-0.18.1\src\same_site.rs:
+C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cookie-0.18.1\src\expiration.rs:
+C:\Users\koosh\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cookie-0.18.1\src\prefix.rs:
