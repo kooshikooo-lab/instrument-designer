@@ -115,6 +115,51 @@ export default function ImpedancePlot({
     ctx.fillStyle = gradient;
     ctx.fill();
 
+    const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+    const A4 = 440.0;
+
+    const peakIndices: number[] = [];
+    for (let i = 2; i < impedance.length - 2; i++) {
+      if (
+        impedance[i] > impedance[i - 1] && impedance[i] > impedance[i + 1] &&
+        impedance[i] > impedance[i - 2] && impedance[i] > impedance[i + 2] &&
+        impedance[i] > zMax * 0.15
+      ) {
+        peakIndices.push(i);
+      }
+    }
+
+    const sortedPeaks = [...peakIndices].sort((a, b) => impedance[b] - impedance[a]);
+    const topPeaks = sortedPeaks.slice(0, 8);
+
+    ctx.font = "9px monospace";
+    ctx.textAlign = "center";
+    for (const pi of topPeaks) {
+      const freq = frequencies[pi];
+      const x = pad.left + ((freq - fMin) / (fMax - fMin)) * plotW;
+      const y = pad.top + plotH - ((impedance[pi] - zMin) / (zMax - zMin)) * plotH;
+
+      const semitones = 12 * Math.log2(freq / A4);
+      const noteNum = Math.round(semitones) + 69;
+      const noteName = NOTE_NAMES[((noteNum % 12) + 12) % 12];
+      const octave = Math.floor(noteNum / 12) - 1;
+      const cents = Math.round((semitones - Math.round(semitones)) * 100);
+      const centsStr = cents === 0 ? "" : ` ${cents > 0 ? "+" : ""}${cents}`;
+
+      ctx.fillStyle = "#fbbf24";
+      ctx.beginPath();
+      ctx.arc(x, y, 3, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#fbbf24";
+      ctx.font = "bold 9px monospace";
+      ctx.fillText(`${noteName}${octave}${centsStr}`, x, y - 8);
+
+      ctx.fillStyle = "#92400e";
+      ctx.font = "8px monospace";
+      ctx.fillText(`${freq.toFixed(0)} Hz`, x, y - 18);
+    }
+
     if (measuredPitch && measuredPitch.frequency >= fMin && measuredPitch.frequency <= fMax) {
       const x = pad.left + ((measuredPitch.frequency - fMin) / (fMax - fMin)) * plotW;
 
