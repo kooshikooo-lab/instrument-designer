@@ -68,11 +68,35 @@
 | Didgeridoo, D5 Drone Flute | Drone & Others | Printables/MakerWorld | Done |
 | Mouthpieces, Barrels, Reeds, Ligatures, Tools | Parts & Accessories | Printables | Done |
 
-## 7. Known Issues & Next Steps
+## 7. Acoustic Simulation & Measurement — planned
 
+| Component | Status | Description |
+|---|---|---|
+| **Impedance Plot** | Done | Pre-computed Z(f) for 6 presets, canvas-based visualization |
+| **Peak Detection** | Done (Python) | `_find_peaks()` finds resonance frequencies from impedance data |
+| **Frequency-to-Note** | Done (Python) | `_freq_to_note()` converts Hz → note name + cents deviation |
+| **Sound Synthesizer** | Done (Python) | `synthesize_from_peaks()` generates audio from impedance peaks |
+| **Microphone Capture** | Not started | Web Audio API `getUserMedia` + `AnalyserNode` for browser mic input |
+| **Real-time FFT Display** | Not started | Canvas-based frequency spectrum visualization |
+| **Pitch Detection (HPS)** | Not started | Harmonic Product Spectrum algorithm in browser |
+| **Predicted vs Measured** | Not started | Overlay impedance peaks with measured frequency, show cents deviation |
+| **Audio Recording** | Not started | MediaRecorder API → save played notes as WAV |
+| **Backend Audio Analysis** | Not started | `POST /analyze/audio` — librosa-based spectral analysis |
+| **Sound Simulation** | Not started | `POST /simulate/sound` — OpenWInD time-domain waveform generation |
+| **Impedance Import** | Not started | CSV upload of measured Z(f) for direct comparison with predicted |
+| **Spectrogram Overlay** | Not started | Compare predicted vs measured time-frequency representations |
+| **DIY Impedance Probe Guide** | Not started | Documentation for building 2-microphone measurement setup |
+
+## 8. Known Issues & Next Steps
+
+- [ ] **Microphone capture** — add Web Audio API getUserMedia to browser for live frequency analysis
+- [ ] **Real-time FFT spectrum** — Canvas-based frequency display alongside impedance plot
+- [ ] **Pitch detection (HPS)** — Harmonic Product Spectrum algorithm for note identification
+- [ ] **Predicted vs measured comparison** — overlay impedance peaks with microphone frequency data
+- [ ] **Audio recording** — MediaRecorder API to save played notes as WAV files
+- [ ] **Backend audio analysis** — POST /analyze/audio endpoint using librosa
+- [ ] **OpenWInD sound simulation** — POST /simulate/sound to generate predicted waveform
+- [ ] **Impedance measurement import** — CSV upload for measured Z(f) comparison
 - [ ] **Deploy FastAPI server** to a VPS (DigitalOcean, Hetzner, or home server)
 - [ ] **Subprocess isolation** for server — each design runs in its own process for clean stdout
-- [ ] **Simulate tab** — integrate OpenWInD acoustic simulation
-- [ ] **3D Export tab** — integrate FreeCAD STL generation
-- [ ] **Quick Draft mode** — add checkbox to skip heavy demakein optimization for faster results
-- [ ] **Web frontend** — build a lightweight browser interface
+- [ ] **Web frontend** — build a lightweight browser interface (done: option-b-web-app branch)

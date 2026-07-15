@@ -13,6 +13,21 @@ A web-based parametric wind instrument design tool with integrated acoustic simu
 - Real-time input impedance computation powered by [OpenWInD](https://openwind.inria.fr/)
 - Pre-computed impedance data for 6 instrument presets (recorder, folk whistle, flute, reedpipe, shawm, didgeridoo)
 - Interactive impedance plot visualization with resonance peak identification
+- **Resonance peaks** correspond to playable notes — peak height indicates ease of playing
+- Impedance peaks for **flutes** = minima (low pressure, high flow); **reed instruments** = maxima
+
+### Predicted vs Measured Sound Comparison
+- **Microphone capture** via Web Audio API — record played sound directly in browser
+- **Real-time FFT spectrum analysis** — visualize frequency content of played notes
+- **Pitch detection** using Harmonic Product Spectrum (HPS) algorithm
+- **Side-by-side comparison** — predicted impedance peaks vs measured fundamental frequency
+- **Cents deviation display** — "Predicted: 523 Hz (C5) | Measured: 520 Hz | -10 cents"
+- **Audio recording** — save played notes as WAV for offline analysis
+- **Backend analysis** — upload recordings for Python-based spectral analysis (librosa)
+- **OpenWInD sound simulation** — generate predicted waveform from bore geometry
+- **Impedance measurement import** — compare measured Z(f) from DIY probes against predicted
+
+See [chat-logs/2026-07-12-acoustic-simulation-research.md](chat-logs/2026-07-12-acoustic-simulation-research.md) for full research.
 
 ### 3D Design and Export
 - **Bore Profile Modeling**: Parametric bore profiles with linear and Bessel interpolation
@@ -109,6 +124,8 @@ The frontend will be available at `http://localhost:3000` and the backend at `ht
 | POST | `/export/step` | Export bore as STEP file |
 | POST | `/impedance/compute` | Compute impedance using OpenWInD (live) |
 | GET | `/impedance/precomputed/{preset}` | Get pre-computed impedance data |
+| POST | `/analyze/audio` | Upload audio file for spectral analysis (librosa) |
+| POST | `/simulate/sound` | Generate predicted sound waveform from bore profile |
 
 ## Preset Instruments
 
@@ -153,6 +170,43 @@ Key components: posts/pillars (mounted on body), hinge rods (2mm stainless steel
 - [Lefebvre & Scavone (2013)](https://arxiv.org/abs/1207.5490) — External tonehole interactions in woodwind instruments
 - [Champ & Scavone (2025)](https://www.frontiersin.org/journals/signal-processing/articles/10.3389/frsip.2025.1519450/full) — Port-Hamiltonian system model of woodwind instruments
 - [Larry Wang, MIT (2019)](https://dspace.mit.edu/handle/1721.1/123116) — Algorithmic design of wind instrument shape via 3D FDTD and deep learning
+
+## Frequency Analysis & Acoustic Measurement
+
+### Browser-Based Tools (Frontend)
+| Tool | Purpose | Implementation |
+|------|---------|----------------|
+| Web Audio API `AnalyserNode` | Real-time FFT | Built into browser, configurable fftSize (512-16384) |
+| Harmonic Product Spectrum (HPS) | Pitch detection | Downsample-multiply algorithm, robust for harmonic instruments |
+| Canvas 2D | Spectrum/spectrogram display | Custom rendering, matches existing ImpedancePlot style |
+| MediaRecorder API | Audio capture | Save played notes as WAV/OGG for offline analysis |
+
+### Python Libraries (Backend)
+| Library | Purpose | Use Case |
+|---------|---------|----------|
+| [librosa](https://librosa.org/) | Audio analysis | STFT, MFCC, harmonic separation, pitch tracking |
+| [scipy.signal](https://docs.scipy.org/doc/scipy/reference/signal.html) | DSP primitives | FFT, filtering, windowing, spectral estimation |
+| [OpenWInD](https://openwind.inria.fr/) | Sound simulation | Time-domain waveform from bore + oscillator coupling |
+
+### Desktop Measurement Software
+| Software | Price | Best For |
+|----------|-------|----------|
+| [REW (Room EQ Wizard)](https://www.roomeqwizard.com/) | Free | Impedance measurement, frequency response, CSV export |
+| [ARTA](https://artalabs.com) | Free | Sweep recording, impulse response, impedance |
+| [Smaart v9](https://trueaudio.com) | $895 | Professional dual-channel FFT, real-time alignment |
+
+### Impedance Measurement Methods
+- **Two-Microphone Transfer Function (TMTF)**: Standard method (Gibiat & Laloë, 1990). Cylindrical cavity + 2 mics + speaker + chirp excitation → Z(f).
+- **Four-Microphone Four-Calibration (FMFC)**: For narrow-bore instruments (oboes, bassoons).
+- **DIY Approach**: Single microphone captures played sound → FFT → compare with predicted peaks. Sufficient for relative comparison without absolute impedance calibration.
+
+### Academic References
+- Gibiat & Laloë (1990) — "Acoustical impedance measurements by the TMTC method" — JASA 88(6):2533-2545
+- Wolfe (2018) — "The Acoustics of Woodwind Musical Instruments" — Acoustics Today
+- Chabassier & Ernoult (2020) — "The Virtual Workshop OpenWinD" — HAL hal-02984478
+- Eveno et al. (2012) — Impedance measurement of 45 historical serpents
+- Bowen et al. — Validated bore geometry → predicted pitch, intonation, and timbre
+- NEMUS Project — Digital revival of historical instruments via acoustic simulation
 
 ## License
 
