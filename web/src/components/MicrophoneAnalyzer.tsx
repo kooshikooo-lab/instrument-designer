@@ -3,7 +3,11 @@ import { useMicrophone } from "../hooks/useMicrophone";
 import { detectPitch, freqToNote, PitchResult } from "../utils/pitch";
 import SpectrumPlot from "./SpectrumPlot";
 
-export default function MicrophoneAnalyzer() {
+interface MicrophoneAnalyzerProps {
+  onPitch?: (pitch: PitchResult | null) => void;
+}
+
+export default function MicrophoneAnalyzer({ onPitch }: MicrophoneAnalyzerProps) {
   const { state, start, stop, getAnalyser, getAudioContext } = useMicrophone();
   const [pitch, setPitch] = useState<PitchResult | null>(null);
   const [peakFreq, setPeakFreq] = useState<number | null>(null);
@@ -16,6 +20,7 @@ export default function MicrophoneAnalyzer() {
 
     const p = detectPitch(analyser, audioCtx.sampleRate);
     setPitch(p);
+    onPitch?.(p);
 
     const bufferLength = analyser.frequencyBinCount;
     const dataArray = new Float32Array(bufferLength);
@@ -33,7 +38,7 @@ export default function MicrophoneAnalyzer() {
     setPeakFreq(maxIdx * binWidth);
 
     rafRef.current = requestAnimationFrame(analyze);
-  }, [getAnalyser, getAudioContext]);
+  }, [getAnalyser, getAudioContext, onPitch]);
 
   useEffect(() => {
     if (state.active) {
@@ -47,6 +52,7 @@ export default function MicrophoneAnalyzer() {
       stop();
       setPitch(null);
       setPeakFreq(null);
+      onPitch?.(null);
     } else {
       start();
     }

@@ -1,11 +1,14 @@
 import { useEffect, useRef } from "react";
 import { IMPEDANCE_DATA } from "../data/impedance-data";
+import { PitchResult } from "../utils/pitch";
 
 interface ImpedancePlotProps {
   preset?: string;
   frequencies?: number[];
   impedance?: number[];
   label?: string;
+  measuredPitch?: PitchResult | null;
+  predictedFrequencies?: number[];
 }
 
 export default function ImpedancePlot({
@@ -13,6 +16,8 @@ export default function ImpedancePlot({
   frequencies: propFrequencies,
   impedance: propImpedance,
   label: propLabel,
+  measuredPitch,
+  predictedFrequencies,
 }: ImpedancePlotProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -109,7 +114,44 @@ export default function ImpedancePlot({
     ctx.closePath();
     ctx.fillStyle = gradient;
     ctx.fill();
-  }, [frequencies, impedance, label]);
+
+    if (measuredPitch && measuredPitch.frequency >= fMin && measuredPitch.frequency <= fMax) {
+      const x = pad.left + ((measuredPitch.frequency - fMin) / (fMax - fMin)) * plotW;
+
+      ctx.setLineDash([4, 3]);
+      ctx.strokeStyle = "#22d3ee";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x, pad.top);
+      ctx.lineTo(x, pad.top + plotH);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = "#22d3ee";
+      ctx.font = "bold 11px monospace";
+      ctx.textAlign = "center";
+      ctx.fillText(`${measuredPitch.note}${measuredPitch.octave}`, x, pad.top - 4);
+      ctx.font = "10px monospace";
+      ctx.fillStyle = "#67e8f9";
+      ctx.fillText(`${measuredPitch.frequency.toFixed(0)} Hz`, x, pad.top - 16);
+    }
+
+    if (predictedFrequencies && predictedFrequencies.length > 0) {
+      ctx.setLineDash([2, 2]);
+      ctx.lineWidth = 1.5;
+      for (const pf of predictedFrequencies) {
+        if (pf < fMin || pf > fMax) continue;
+        const x = pad.left + ((pf - fMin) / (fMax - fMin)) * plotW;
+
+        ctx.strokeStyle = "#a78bfa";
+        ctx.beginPath();
+        ctx.moveTo(x, pad.top);
+        ctx.lineTo(x, pad.top + plotH);
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
+    }
+  }, [frequencies, impedance, label, measuredPitch, predictedFrequencies]);
 
   if (frequencies.length === 0) {
     return (

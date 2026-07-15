@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { DEMAKEIN_PRESETS } from "../data/instruments";
 import { checkHealth, startDesign, getDesignStatus, getDesignDownloadUrl, exportStep } from "../utils/api";
+import { PitchResult } from "../utils/pitch";
 import STLViewer from "./STLViewer";
 import ParametricGenerator from "./ParametricGenerator";
 import ImpedancePlot from "./ImpedancePlot";
@@ -26,6 +27,7 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
   const [stepExporting, setStepExporting] = useState(false);
   const [serverBlob, setServerBlob] = useState<Blob | null>(null);
   const [serverFilename, setServerFilename] = useState<string>("");
+  const [measuredPitch, setMeasuredPitch] = useState<PitchResult | null>(null);
 
   useEffect(() => {
     if (initialPreset) {
@@ -279,12 +281,12 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
 
       <div className="space-y-4">
         <h3 className="text-sm font-medium text-neutral-200">Acoustic Impedance</h3>
-        <ImpedancePlot preset={preset || undefined} />
+        <ImpedancePlot preset={preset || undefined} measuredPitch={measuredPitch} />
       </div>
 
       <div className="space-y-4">
         <h3 className="text-sm font-medium text-neutral-200">Live Measurement</h3>
-        <MicrophoneAnalyzer />
+        <MicrophoneAnalyzer onPitch={setMeasuredPitch} />
       </div>
 
       {preset && (
