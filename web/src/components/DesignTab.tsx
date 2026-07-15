@@ -104,7 +104,7 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
   };
 
   return (
-    <div className="p-6 max-w-4xl space-y-6">
+    <div className="p-6 max-w-6xl space-y-6">
       <div>
         <h2 className="text-lg font-semibold text-neutral-100">Design Instrument</h2>
         <p className="text-sm text-neutral-500">Configure and generate a 3D-printable instrument design</p>
@@ -269,38 +269,44 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
         </div>
       )}
 
-      {preset && <PresetInfo preset={preset} />}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="space-y-5">
+          <div className="bg-neutral-900 rounded-xl border border-neutral-800 p-5 space-y-4">
+            <h3 className="text-sm font-medium text-neutral-200">Acoustic Impedance</h3>
+            <ImpedancePlot preset={preset || undefined} measuredPitch={measuredPitch} />
+          </div>
 
-      <div className="bg-neutral-900 rounded-xl border border-neutral-800 p-5 space-y-4">
-        <h3 className="text-sm font-medium text-neutral-200">Parametric Generator</h3>
-        <ParametricGenerator
-          instrumentKey={preset}
-          onGenerated={(blob, filename) => {
-            setGeneratedBlob(blob);
-            setGeneratedFilename(filename);
-          }}
-        />
-      </div>
-
-      <div className="space-y-4">
-        <h3 className="text-sm font-medium text-neutral-200">Acoustic Impedance</h3>
-        <ImpedancePlot preset={preset || undefined} measuredPitch={measuredPitch} />
-      </div>
-
-      <div className="space-y-4">
-        <h3 className="text-sm font-medium text-neutral-200">Live Measurement</h3>
-        <MicrophoneAnalyzer onPitch={setMeasuredPitch} />
-      </div>
-
-      {preset && (
-        <div className="space-y-4">
-          <h3 className="text-sm font-medium text-neutral-200">Sound Preview</h3>
-          <TonePlayer
-            range={preset === "didgeridoo" ? "D2-D3" : preset === "ocarina" ? "C5-C7" : "C4-C6"}
-            instrumentName={DEMAKEIN_PRESETS[preset] || preset}
-          />
+          <div className="bg-neutral-900 rounded-xl border border-neutral-800 p-5 space-y-4">
+            <h3 className="text-sm font-medium text-neutral-200">Live Measurement</h3>
+            <MicrophoneAnalyzer onPitch={setMeasuredPitch} />
+          </div>
         </div>
-      )}
+
+        <div className="space-y-5">
+          {preset && <PresetInfo preset={preset} />}
+
+          {preset && (
+            <div className="space-y-4">
+              <h3 className="text-sm font-medium text-neutral-200">Sound Preview</h3>
+              <TonePlayer
+                range={preset === "didgeridoo" ? "D2-D3" : preset === "ocarina" ? "C5-C7" : "C4-C6"}
+                instrumentName={DEMAKEIN_PRESETS[preset] || preset}
+              />
+            </div>
+          )}
+
+          <div className="bg-neutral-900 rounded-xl border border-neutral-800 p-5 space-y-4">
+            <h3 className="text-sm font-medium text-neutral-200">Parametric Generator</h3>
+            <ParametricGenerator
+              instrumentKey={preset}
+              onGenerated={(blob, filename) => {
+                setGeneratedBlob(blob);
+                setGeneratedFilename(filename);
+              }}
+            />
+          </div>
+        </div>
+      </div>
 
       <div className="bg-neutral-900 rounded-xl border border-neutral-800 p-5">
         <h3 className="text-sm font-medium text-neutral-200 mb-3">How It Works</h3>
