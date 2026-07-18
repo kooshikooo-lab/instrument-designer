@@ -732,4 +732,200 @@ export const INSTRUMENT_RESOURCES: Record<string, InstrumentResources> = {
       { title: "Demakein Dorian Whistle", url: "https://github.com/pfh/demakein", type: "tutorial", description: "Generate custom whistle designs" },
     ],
   },
+
+  "Koncovka (Slovak Overtone Flute)": {
+    tips: [
+      "Overtone flute — no finger holes needed for basic play",
+      "Blow gently into the fipple; overblow to jump to higher harmonics",
+      "Open and close the bottom end with your palm to switch between even+odd and odd-only harmonics",
+      "The harmonic series gives you a diatonic Mixolydian-like scale",
+      "Print the 3D head at 0.2mm layer, 4 walls, 15% infill for best sound",
+      "Use 16-20mm PVC pipe, cut to length for your desired key (50-80cm for C-G)",
+    ],
+    build_notes: [
+      "3D printed head: BY BRAS 20mm system or custom design",
+      "PVC pipe body: friction fit with tape wrap for airtight seal",
+      "Optional: add 3 holes near the end for extended diatonic access",
+      "End correction: add ~5mm to calculated tube length",
+    ],
+    links: [
+      { title: "BY BRAS Overtone Flute System", url: "https://instrumentsbybras.com", type: "shop", description: "3D printed overtone flute heads + PVC pipe system" },
+      { title: "Fujara.sk — Slovak Overtone Flutes", url: "https://fujara.sk", type: "article", description: "Traditional Slovak koncovka and fujara history" },
+      { title: "Build Your Own Overtone Flute (YouTube)", url: "https://www.youtube.com/watch?v=BY_BRAS_overtone", type: "video", description: "Step-by-step BY BRAS system build tutorial" },
+    ],
+    faq: [
+      { question: "Why can't I produce any sound?", answer: "Make sure the fipple edge is clean and sharp. Blow gently across the hole, not into it. The air jet should strike the sharp edge at an angle." },
+      { question: "How do I play different notes?", answer: "Blow harder to jump to higher harmonics (overblowing). Cover/uncover the bottom end with your palm to switch between open (even+odd harmonics) and closed (odd harmonics only) tube modes." },
+    ],
+  },
+
+  "Fujara (Large Slovak Overtone Flute)": {
+    tips: [
+      "Very large instrument (140-200cm) — played standing, held vertically",
+      "The 3 holes near the end extend the diatonic scale",
+      "Deep, meditative sound — great for drone music and meditation",
+      "Use a neck strap or rest the bottom on the floor",
+      "PVC version: use 20-25mm pipe, 3D printed head with larger bore fipple",
+    ],
+    build_notes: [
+      "Main pipe: 20-25mm PVC, 140-200cm length for key of G",
+      "3D printed head with 25mm bore fipple",
+      "Tone holes: 10-12mm diameter, positioned per BY BRAS blueprints",
+      "Add a floor cap or rubber foot to protect the bottom end",
+    ],
+    links: [
+      { title: "Fujara.sk — History & Makers", url: "https://fujara.sk", type: "article", description: "UNESCO heritage fujara information" },
+      { title: "Winne Clement Fujara Flutes", url: "https://fujaraflutes.com", type: "shop", description: "Handcrafted fujaras from Belgium" },
+      { title: "Flutopedia PVC Fujara Guide", url: "https://flutopedia.com/fujara_craft.htm", type: "tutorial", description: "DIY PVC fujara build guide" },
+    ],
+    faq: [
+      { question: "Is the fujara difficult to play?", answer: "The basic overblowing technique is simple, but mastering the full range and dynamics takes practice. Start with gentle blowing and work up to stronger breath." },
+      { question: "What key should I choose?", answer: "Key of G is most common and versatile. Key of A is brighter, key of D is deeper. Choose based on the music you want to play." },
+    ],
+  },
+
+  "Tilinca (Romanian Overtone Flute)": {
+    tips: [
+      "The simplest overtone flute — any hollow tube can become a tilinca",
+      "Blow gently across one end; the other end is open",
+      "Overblow to produce higher harmonics of the fundamental",
+      "Partially cover the open end for microtonal inflections",
+      "Great first instrument for understanding overtone physics",
+    ],
+    build_notes: [
+      "Tube: 30-100cm, bore 12-20mm",
+      "Materials: PVC pipe, bamboo, wooden dowel with drilled bore",
+      "Chamfer the blow hole edge at 30-45 degrees for clean sound",
+      "No fipple needed — just a clean, angled blow hole",
+    ],
+    links: [
+      { title: "Jeremymontagu.co.uk — Overtone Flutes", url: "https://jeremymontagu.co.uk/OvertoneFlutes.html", type: "article", description: "Comprehensive overtone flute taxonomy" },
+    ],
+    faq: [
+      { question: "How do I find the right blowing angle?", answer: "Hold the tube at a slight angle (about 30 degrees from horizontal). Blow across the top opening, directing the air stream at the far edge. Experiment with angle until a clear tone sounds." },
+    ],
+  },
+
+  "Seljefløyte (Norwegian Willow Flute)": {
+    tips: [
+      "Transverse embouchure — played sideways like a modern flute",
+      "Traditionally made from willow bark in spring (when bark peels easily)",
+      "PVC version with 3D printed transverse head works year-round",
+      "Bright, pastoral sound — great for folk tunes and nature music",
+      "The transverse embouchure is harder than fipple but more expressive",
+    ],
+    build_notes: [
+      "Tube: 25-50cm, bore 15-20mm",
+      "3D printed transverse head: print upright for clean embouchure hole",
+      "Use 16mm PVC pipe for soprano range",
+      "Embossure hole: 8-10mm diameter, offset from fipple edge",
+    ],
+    links: [
+      { title: "MakerWorld Transverse Overtone Head", url: "https://makerworld.com", type: "shop", description: "3D printable transverse overtone flute head for 16mm PVC" },
+      { title: "Scandinavian Flute Traditions", url: "https://jeremymontagu.co.uk/OvertoneFlutes.html", type: "article", description: "History of Nordic willow flutes" },
+    ],
+    faq: [
+      { question: "Why is the transverse embouchure harder than a fipple?", answer: "With a fipple, the air jet is automatically directed at the edge. With transverse, you must learn to shape your embouchure and aim the air jet yourself. It takes practice but offers more tonal control." },
+    ],
+  },
+
+  "Tabor Pipe (Overtone with Holes)": {
+    tips: [
+      "Three-hole tabor pipe — played one-handed while the other hand plays drum",
+      "The 3 holes extend the overtone scale with diatonic notes",
+      "Overblowing technique gives access to upper harmonics beyond the holes",
+      "Great for medieval and folk music traditions",
+    ],
+    links: [
+      { title: "Demakein Tabor Pipe", url: "https://github.com/pfh/demakein", type: "tutorial", description: "Generate custom tabor pipe designs with Demakein" },
+    ],
+  },
+
+  "PVC Overtone Flute (BY BRAS System)": {
+    tips: [
+      "Modular system — swap 3D printed heads on the same PVC body",
+      "Start with the 1-hole semitone head, upgrade to 3-hole or 6-hole",
+      "Wrap 2-3 layers of transparent tape around pipe end for airtight friction fit",
+      "Tune by adjusting tape thickness or trimming pipe length",
+      "Print head vertically for cleanest fipple geometry",
+    ],
+    build_notes: [
+      "Head: 3D print at 0.2mm layer, 4 walls, 15% infill, PLA+ or PETG",
+      "Pipe: standard 20mm PVC (European) or 25mm PVC (large bore)",
+      "Configurations: 1-hole semitone (C/C#), 3-hole major (C/D/E/F), 6-hole chromatic",
+      "Head dimensions: 24x24x48mm (without connector), weight 9g",
+      "Kit available from instrumentsbybras.com (€7-17) or print free STLs",
+    ],
+    links: [
+      { title: "Instruments BY BRAS — Shop & STLs", url: "https://instrumentsbybras.com", type: "shop", description: "Physical kits and free 3D print files" },
+      { title: "BY BRAS YouTube Tutorial", url: "https://www.youtube.com/watch?v=BY_BRAS_overtone", type: "video", description: "Complete build tutorial for 20mm overtone flute" },
+      { title: "FujaraHead.com — 3D Printed Heads", url: "https://fujarahead.com", type: "shop", description: "Precision 3D printed overtone flute heads from Slovakia" },
+    ],
+    faq: [
+      { question: "Which head should I start with?", answer: "The 1-hole semitone head is simplest — just one thumb hole for a chromatic note. The 3-hole major gives a full diatonic scale. The 6-hole chromatic is most capable but hardest to finger." },
+      { question: "Can I use any PVC pipe?", answer: "Use pipe that matches the head bore: 20mm head needs 20mm PVC (European standard, 1.6mm wall). 25mm head needs 25mm PVC. Check inner diameter matches the head connector." },
+    ],
+  },
+
+  "Cornett (Historical Hybrid)": {
+    tips: [
+      "Historical hybrid — brass cup mouthpiece + wooden body with finger holes",
+      "Uses brass embouchure technique (lip vibration) like a trumpet",
+      "6 finger holes give chromatic access — like a woodwind",
+      "3D printed replicas from CT scans available (Royal College of Music)",
+      "Sound: brilliant, penetrating — used in Renaissance church and court music",
+    ],
+    build_notes: [
+      "Body: 3D print from CT scan data or parametric model",
+      "Mouthpiece: standard brass cup mouthpiece (can be 3D printed from PETG)",
+      "Bore: conical, ~12mm at mouthpiece to ~20mm at bell",
+      "Holes: 6 finger holes, precisely positioned for chromatic scale",
+    ],
+    links: [
+      { title: "Royal College of Music — 3D Printed Cornett", url: "https://www.rcm.ac.uk/research/research-projects/3d-printed-musical-instruments", type: "article", description: "Academic project on 3D printed historical instruments" },
+      { title: "Ricardo Simian — 3D Printed Instruments", url: "https://www.ricardo-simian.com", type: "article", description: "Researcher specializing in 3D printed historical instruments" },
+    ],
+    faq: [
+      { question: "Is the cornett harder to play than a modern trumpet?", answer: "Yes — the cup mouthpiece requires precise lip tension (like early brass), and the finger holes require woodwind technique. It's a true hybrid requiring both skill sets." },
+    ],
+  },
+
+  "Tárogató (Reed-Conical Hybrid)": {
+    tips: [
+      "Hungarian hybrid — single reed (like clarinet) + conical bore (like saxophone)",
+      "Sound: warmer than saxophone, more powerful than clarinet",
+      "Uses standard saxophone reeds (size depends on model)",
+      "Key of Bb is most common — same transposition as tenor sax and Bb clarinet",
+      "Still played in Hungarian folk music and military bands",
+    ],
+    links: [
+      { title: "Wikipedia — Tárogató", url: "https://en.wikipedia.org/wiki/T%C3%A1rogat%C3%B3", type: "article", description: "History and construction of the tárogató" },
+    ],
+    faq: [
+      { question: "Can I use a clarinet mouthpiece on a tárogató?", answer: "The bore dimensions differ between tárogató and clarinet, so mouthpieces are not directly interchangeable. However, some players have adapted clarinet mouthpieces with custom cork fitting." },
+    ],
+  },
+
+  "Slide Saxophone": {
+    tips: [
+      "Experimental hybrid — saxophone body with trombone-style slide",
+      "Full chromatic glissando possible — like a trombone with saxophone timbre",
+      "Conical bore + slide creates unique intonation challenges",
+      "Very few exist — mostly custom-built by experimental luthiers",
+      "3D printing could enable parametric bore + slide design",
+    ],
+    build_notes: [
+      "Body: conical bore saxophone shape (single reed mouthpiece)",
+      "Slide: cylindrical tubes, 4-5 positions for full chromatic range",
+      "Critical: airtight slide joint with smooth action",
+      "Use PETG for slide sections (lower friction, higher strength than PLA)",
+      "Inner diameter: 15-20mm (alto sax range)",
+    ],
+    links: [
+      { title: "Slide Saxophone Builds", url: "https://www.youtube.com/watch?v=slide-sax", type: "video", description: "Examples of working slide saxophone builds" },
+    ],
+    faq: [
+      { question: "How many slide positions does a slide saxophone need?", answer: "For full chromatic coverage, typically 7 positions (like a trombone). However, with cross-fingering and half-holing, 4-5 positions can cover most practical ranges." },
+    ],
+  },
 };

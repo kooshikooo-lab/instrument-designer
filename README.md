@@ -5,7 +5,7 @@ A web-based parametric wind instrument design tool with integrated acoustic simu
 ## Features
 
 ### Instrument Library
-- 58 pre-configured instruments across 10+ families: flutes, whistles, recorders, shawms, reedpipes, didgeridoos, PVC instruments, hybrid instruments, overtone flutes, and more
+- 67 pre-configured instruments across 12+ families: flutes, whistles, recorders, shawms, reedpipes, didgeridoos, PVC instruments, hybrid instruments, overtone flutes, brass, and more
 - Searchable and filterable by family, difficulty, range, and tags
 - Each instrument includes descriptions, fingering charts, and source attribution
 

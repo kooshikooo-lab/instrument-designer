@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { DEMAKEIN_PRESETS } from "../data/instruments";
 import { checkHealth, startDesign, getDesignStatus, getDesignDownloadUrl, exportStep } from "../utils/api";
 import type { PitchResult } from "../utils/pitch";
@@ -8,6 +8,47 @@ import ImpedancePlot from "./ImpedancePlot";
 import TonePlayer from "./TonePlayer";
 import MicrophoneAnalyzer from "./MicrophoneAnalyzer";
 import PresetInfo from "./PresetInfo";
+
+function CollapsibleSection({
+  title,
+  children,
+  defaultOpen = true,
+  badge,
+}: {
+  title: string;
+  children: ReactNode;
+  defaultOpen?: boolean;
+  badge?: string;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="bg-neutral-900 rounded-xl border border-neutral-800">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between p-5 text-left"
+      >
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-medium text-neutral-200">{title}</h3>
+          {badge && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-brand-600/20 text-brand-400 font-medium">
+              {badge}
+            </span>
+          )}
+        </div>
+        <svg
+          className={`w-4 h-4 text-neutral-500 transition-transform ${open ? "rotate-180" : ""}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {open && <div className="px-5 pb-5 space-y-4">{children}</div>}
+    </div>
+  );
+}
 
 interface DesignTabProps {
   initialPreset?: string;
@@ -140,8 +181,7 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
         </div>
       </div>
 
-      <div className="bg-neutral-900 rounded-xl border border-neutral-800 p-5 space-y-4">
-        <h3 className="text-sm font-medium text-neutral-200">Remote Server</h3>
+      <CollapsibleSection title="Remote Server" defaultOpen={false} badge={connected === true ? "Connected" : connected === false ? "Disconnected" : undefined}>
         <div className="flex gap-3 items-end">
           <div className="flex-1">
             <label className="text-xs text-neutral-500 block mb-1">Server URL</label>
@@ -165,7 +205,7 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
             {connected === true ? "Connected" : connected === false ? "Not connected" : "Not tested"}
           </span>
         </div>
-      </div>
+      </CollapsibleSection>
 
       <div className="flex gap-3">
         <button
@@ -271,22 +311,20 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-5">
-          <div className="bg-neutral-900 rounded-xl border border-neutral-800 p-5 space-y-4">
-            <h3 className="text-sm font-medium text-neutral-200">Acoustic Impedance</h3>
+          <CollapsibleSection title="Acoustic Impedance" defaultOpen={false} badge={preset ? "Data available" : undefined}>
             <ImpedancePlot preset={preset || undefined} measuredPitch={measuredPitch} />
-          </div>
+          </CollapsibleSection>
 
-          <div className="bg-neutral-900 rounded-xl border border-neutral-800 p-5 space-y-4">
-            <h3 className="text-sm font-medium text-neutral-200">Live Measurement</h3>
+          <CollapsibleSection title="Live Measurement" defaultOpen={false}>
             <MicrophoneAnalyzer onPitch={setMeasuredPitch} />
-          </div>
+          </CollapsibleSection>
         </div>
 
         <div className="space-y-5">
           {preset && <PresetInfo preset={preset} />}
 
           {preset && (
-            <div className="space-y-4">
+            <div className="bg-neutral-900 rounded-xl border border-neutral-800 p-5 space-y-4">
               <h3 className="text-sm font-medium text-neutral-200">Sound Preview</h3>
               <TonePlayer
                 range={preset === "didgeridoo" ? "D2-D3" : preset === "ocarina" ? "C5-C7" : "C4-C6"}
@@ -295,8 +333,7 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
             </div>
           )}
 
-          <div className="bg-neutral-900 rounded-xl border border-neutral-800 p-5 space-y-4">
-            <h3 className="text-sm font-medium text-neutral-200">Parametric Generator</h3>
+          <CollapsibleSection title="Parametric Generator" defaultOpen={false} badge="Expert">
             <ParametricGenerator
               instrumentKey={preset}
               onGenerated={(blob, filename) => {
@@ -304,12 +341,11 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
                 setGeneratedFilename(filename);
               }}
             />
-          </div>
+          </CollapsibleSection>
         </div>
       </div>
 
-      <div className="bg-neutral-900 rounded-xl border border-neutral-800 p-5">
-        <h3 className="text-sm font-medium text-neutral-200 mb-3">How It Works</h3>
+      <CollapsibleSection title="How It Works" defaultOpen={false}>
         <ol className="text-xs text-neutral-400 space-y-2 list-decimal list-inside">
           <li>Select a preset (e.g. Penny Whistle, Recorder, Reedpipe)</li>
           <li>Adjust transpose to change the instrument's key</li>
@@ -318,7 +354,7 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
           <li>Download the generated STL files for 3D printing</li>
           <li>Export STEP files via Build123d for CAD editing</li>
         </ol>
-      </div>
+      </CollapsibleSection>
     </div>
   );
 }
