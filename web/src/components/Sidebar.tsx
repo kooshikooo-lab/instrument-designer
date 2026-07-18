@@ -1,88 +1,52 @@
-import { useState } from "react";
+﻿import type { Tab } from "../App";
 
 interface SidebarProps {
-  activeTab: string;
-  onTabChange: (tab: string) => void;
+  active: Tab;
+  onNavigate: (tab: Tab) => void;
 }
 
-const NAV_ITEMS = [
-  {
-    id: "library",
-    label: "Library",
-    icon: (
-      <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-      </svg>
-    ),
-  },
-  {
-    id: "design",
-    label: "Design",
-    icon: (
-      <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M12 2L2 7l10 5 10-5-10-5z" />
-        <path d="M2 17l10 5 10-5" />
-        <path d="M2 12l10 5 10-5" />
-      </svg>
-    ),
-  },
-  {
-    id: "resources",
-    label: "Resources",
-    icon: (
-      <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2">
-        <circle cx="12" cy="12" r="10" />
-        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-        <path d="M12 17h.01" />
-      </svg>
-    ),
-  },
+const NAV: { id: Tab; label: string; icon: string }[] = [
+  { id: "library", label: "Library", icon: "M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" },
+  { id: "design", label: "Design", icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z" },
+  { id: "resources", label: "Resources", icon: "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" },
 ];
 
-export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
-  const [collapsed, setCollapsed] = useState(false);
-
+/**
+ * Left navigation sidebar with Library, Design, and Resources tabs.
+ *
+ * @param active - Currently active tab
+ * @param onNavigate - Callback when a nav item is clicked
+ */
+export function Sidebar({ active, onNavigate }: SidebarProps) {
   return (
-    <aside
-      className={`flex flex-col border-r border-neutral-800 bg-neutral-900/50 transition-all duration-200 ${
-        collapsed ? "w-16" : "w-48"
-      }`}
-    >
-      <div className="flex items-center gap-2 px-4 py-4 border-b border-neutral-800">
-        <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center text-white font-bold text-sm">
-          ID
-        </div>
-        {!collapsed && (
-          <span className="text-sm font-semibold text-neutral-200">
-            Instrument Designer
-          </span>
-        )}
+    <aside className="w-56 bg-neutral-900 border-r border-neutral-800 flex flex-col">
+      <div className="p-4 border-b border-neutral-800">
+        <div className="text-brand-400 font-bold text-sm tracking-wider uppercase">Instrument Designer</div>
+        <div className="text-neutral-500 text-xs mt-0.5">Pure Web App</div>
       </div>
-
-      <nav className="flex-1 py-3">
-        {NAV_ITEMS.map((item) => (
+      <nav className="flex-1 p-2 space-y-0.5">
+        {NAV.map((item) => (
           <button
             key={item.id}
-            onClick={() => onTabChange(item.id)}
-            className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
-              activeTab === item.id
-                ? "text-brand-400 bg-brand-950/50 border-r-2 border-brand-500"
-                : "text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/50"
+            onClick={() => onNavigate(item.id)}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+              active === item.id
+                ? "bg-brand-600/20 text-brand-400"
+                : "text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800"
             }`}
           >
-            {item.icon}
-            {!collapsed && <span>{item.label}</span>}
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d={item.icon} />
+            </svg>
+            {item.label}
           </button>
         ))}
       </nav>
-
-      <button
-        onClick={() => setCollapsed(!collapsed)}
-        className="px-4 py-3 border-t border-neutral-800 text-neutral-500 hover:text-neutral-300 text-xs"
-      >
-        {collapsed ? "»" : "«"}
-      </button>
+      <div className="p-3 border-t border-neutral-800">
+        <div className="text-xs text-neutral-600">
+          Built with React + Three.js + JSCAD
+        </div>
+      </div>
     </aside>
   );
 }

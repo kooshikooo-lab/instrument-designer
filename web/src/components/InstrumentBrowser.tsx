@@ -1,153 +1,94 @@
-import { useState, useMemo } from "react";
-import {
-  INSTRUMENTS,
-  SUBCATEGORIES,
-  TYPE_LABELS,
-  TAGS,
-  DIFFICULTIES,
-} from "../data/instruments";
-import { filterInstruments } from "../utils/filters";
+﻿import { useState, useMemo } from "react";
+import { SUBCATEGORIES, TYPE_LABELS, TAGS } from "../data/instruments";
+import type { Instrument } from "../data/instruments";
+import { filterInstruments, EMPTY_FILTERS } from "../utils/filters";
 
-interface InstrumentBrowserProps {
-  onSelect: (name: string) => void;
-  selectedName: string | null;
+interface Props {
+  instruments: Instrument[];
+  onSelect: (inst: Instrument) => void;
 }
 
-export function InstrumentBrowser({
-  onSelect,
-  selectedName,
-}: InstrumentBrowserProps) {
-  const [search, setSearch] = useState("");
-  const [subcategory, setSubcategory] = useState("");
-  const [typeLabel, setTypeLabel] = useState("");
-  const [difficulty, setDifficulty] = useState("");
-  const [tags, setTags] = useState<string[]>([]);
-
-  const filtered = useMemo(
-    () =>
-      filterInstruments(INSTRUMENTS, {
-        search,
-        subcategory,
-        typeLabel,
-        difficulty,
-        tags,
-      }),
-    [search, subcategory, typeLabel, difficulty, tags]
-  );
-
-  const toggleTag = (tag: string) => {
-    setTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    );
-  };
+export function InstrumentBrowser({ instruments, onSelect }: Props) {
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const filtered = useMemo(() => filterInstruments(instruments, filters), [instruments, filters]);
 
   return (
-    <div className="w-80 border-r border-neutral-800 flex flex-col bg-neutral-900/30">
-      <div className="p-3 border-b border-neutral-800 space-y-2">
-        <input
-          type="text"
-          placeholder="Search instruments..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-100 placeholder-neutral-500 focus:outline-none focus:border-brand-500"
-        />
-        <div className="grid grid-cols-2 gap-2">
-          <select
-            value={subcategory}
-            onChange={(e) => setSubcategory(e.target.value)}
-            className="bg-neutral-800 border border-neutral-700 rounded-lg px-2 py-1.5 text-xs text-neutral-100 focus:outline-none focus:border-brand-500"
-          >
-            <option value="">All Types</option>
-            {SUBCATEGORIES.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-          <select
-            value={typeLabel}
-            onChange={(e) => setTypeLabel(e.target.value)}
-            className="bg-neutral-800 border border-neutral-700 rounded-lg px-2 py-1.5 text-xs text-neutral-100 focus:outline-none focus:border-brand-500"
-          >
-            <option value="">All Families</option>
-            {Object.entries(TYPE_LABELS).map(([k, v]) => (
-              <option key={k} value={k}>
-                {v}
-              </option>
-            ))}
-          </select>
-          <select
-            value={difficulty}
-            onChange={(e) => setDifficulty(e.target.value)}
-            className="bg-neutral-800 border border-neutral-700 rounded-lg px-2 py-1.5 text-xs text-neutral-100 focus:outline-none focus:border-brand-500"
-          >
-            <option value="">All Levels</option>
-            {DIFFICULTIES.map((d) => (
-              <option key={d} value={d}>
-                {d}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="flex flex-wrap gap-1">
-          {TAGS.slice(0, 8).map((tag) => (
-            <button
-              key={tag}
-              onClick={() => toggleTag(tag)}
-              className={`px-2 py-0.5 rounded-full text-[10px] border transition-colors ${
-                tags.includes(tag)
-                  ? "bg-brand-600 border-brand-500 text-white"
-                  : "bg-neutral-800 border-neutral-700 text-neutral-400 hover:border-neutral-500"
-              }`}
-            >
-              {tag}
-            </button>
-          ))}
-        </div>
+    <div className="p-4 space-y-4">
+      <div>
+        <h2 className="text-lg font-semibold text-neutral-100 mb-1">Instrument Library</h2>
+        <p className="text-sm text-neutral-500">{filtered.length} instruments</p>
       </div>
 
-      <div className="flex-1 overflow-auto">
-        {filtered.length === 0 ? (
-          <div className="p-4 text-center text-neutral-500 text-sm">
-            No instruments match your filters.
-          </div>
-        ) : (
-          filtered.map((inst) => (
-            <button
-              key={inst.name}
-              onClick={() => onSelect(inst.name)}
-              className={`w-full text-left px-3 py-2.5 border-b border-neutral-800/50 hover:bg-neutral-800/50 transition-colors ${
-                selectedName === inst.name ? "bg-brand-950/30" : ""
-              }`}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-neutral-100 truncate">
-                    {inst.name}
-                  </div>
-                  <div className="text-xs text-neutral-500 mt-0.5">
-                    {inst.family} &middot; {inst.key}
-                  </div>
+      <input
+        type="text"
+        placeholder="Search instruments..."
+        value={filters.search}
+        onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
+        className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-100 placeholder:text-neutral-500 focus:outline-none focus:border-brand-500"
+      />
+
+      <div className="grid grid-cols-2 gap-2">
+        <select
+          value={filters.subcategory}
+          onChange={(e) => setFilters((f) => ({ ...f, subcategory: e.target.value }))}
+          className="bg-neutral-800 border border-neutral-700 rounded-lg px-2 py-1.5 text-xs text-neutral-100 focus:outline-none focus:border-brand-500"
+        >
+          <option value="">All Families</option>
+          {SUBCATEGORIES.map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+        <select
+          value={filters.typeLabel}
+          onChange={(e) => setFilters((f) => ({ ...f, typeLabel: e.target.value }))}
+          className="bg-neutral-800 border border-neutral-700 rounded-lg px-2 py-1.5 text-xs text-neutral-100 focus:outline-none focus:border-brand-500"
+        >
+          <option value="">All Types</option>
+          {TYPE_LABELS.map((t) => <option key={t} value={t}>{t}</option>)}
+        </select>
+        <select
+          value={filters.difficulty}
+          onChange={(e) => setFilters((f) => ({ ...f, difficulty: e.target.value }))}
+          className="bg-neutral-800 border border-neutral-700 rounded-lg px-2 py-1.5 text-xs text-neutral-100 focus:outline-none focus:border-brand-500"
+        >
+          <option value="">All Levels</option>
+          {["Beginner", "Intermediate", "Advanced", "Expert"].map((d) => <option key={d} value={d}>{d}</option>)}
+        </select>
+        <select
+          value={filters.tag}
+          onChange={(e) => setFilters((f) => ({ ...f, tag: e.target.value }))}
+          className="bg-neutral-800 border border-neutral-700 rounded-lg px-2 py-1.5 text-xs text-neutral-100 focus:outline-none focus:border-brand-500"
+        >
+          <option value="">All Tags</option>
+          {TAGS.map((t) => <option key={t} value={t}>{t}</option>)}
+        </select>
+      </div>
+
+      <div className="space-y-1">
+        {filtered.map((inst) => (
+          <button
+            key={inst.name}
+            onClick={() => onSelect(inst)}
+            className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-neutral-800 transition-colors group"
+          >
+            <div className="flex items-start gap-3">
+              {inst.image_url ? (
+                <img src={inst.image_url} alt="" className="w-10 h-10 rounded object-cover flex-shrink-0" />
+              ) : (
+                <div className="w-10 h-10 rounded bg-neutral-800 flex items-center justify-center text-neutral-600 text-xs flex-shrink-0">
+                  {inst.type_label.charAt(0)}
                 </div>
-                <span
-                  className={`px-1.5 py-0.5 rounded text-[10px] font-medium shrink-0 ${
-                    inst.difficulty === "beginner"
-                      ? "bg-green-900/50 text-green-400"
-                      : inst.difficulty === "intermediate"
-                      ? "bg-yellow-900/50 text-yellow-400"
-                      : "bg-red-900/50 text-red-400"
-                  }`}
-                >
-                  {inst.difficulty}
-                </span>
+              )}
+              <div className="min-w-0">
+                <div className="text-sm text-neutral-100 group-hover:text-brand-400 truncate">{inst.name}</div>
+                <div className="text-xs text-neutral-500 truncate">{inst.type_label} ┬À {inst.key}</div>
               </div>
-            </button>
-          ))
-        )}
-      </div>
-
-      <div className="px-3 py-2 border-t border-neutral-800 text-xs text-neutral-500">
-        {filtered.length} of {INSTRUMENTS.length} instruments
+              {inst.demakein_preset && (
+                <span className="ml-auto text-[10px] bg-brand-600/20 text-brand-400 px-1.5 py-0.5 rounded flex-shrink-0">
+                  AUTO
+                </span>
+              )}
+            </div>
+          </button>
+        ))}
       </div>
     </div>
   );

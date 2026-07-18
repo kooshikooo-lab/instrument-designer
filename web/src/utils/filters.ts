@@ -1,41 +1,32 @@
-import type { Instrument } from "../data/instruments";
+﻿import type { Instrument } from "../data/instruments";
 
-interface FilterState {
-  search: string;
+export interface Filters {
   subcategory: string;
   typeLabel: string;
   difficulty: string;
-  tags: string[];
+  tag: string;
+  search: string;
 }
 
-export function filterInstruments(
-  instruments: Instrument[],
-  filters: FilterState
-): Instrument[] {
-  return instruments.filter((inst) => {
-    if (
-      filters.search &&
-      !inst.name.toLowerCase().includes(filters.search.toLowerCase()) &&
-      !inst.description.toLowerCase().includes(filters.search.toLowerCase()) &&
-      !inst.family.toLowerCase().includes(filters.search.toLowerCase())
-    )
-      return false;
+export const EMPTY_FILTERS: Filters = {
+  subcategory: "",
+  typeLabel: "",
+  difficulty: "",
+  tag: "",
+  search: "",
+};
 
-    if (filters.subcategory && inst.subcategory !== filters.subcategory)
-      return false;
-
-    if (filters.typeLabel && inst.type_label !== filters.typeLabel)
-      return false;
-
-    if (filters.difficulty && inst.difficulty !== filters.difficulty)
-      return false;
-
-    if (
-      filters.tags.length > 0 &&
-      !filters.tags.some((t) => inst.tags.includes(t))
-    )
-      return false;
-
+export function filterInstruments(instruments: Instrument[], filters: Filters): Instrument[] {
+  return instruments.filter((i) => {
+    if (filters.subcategory && i.subcategory !== filters.subcategory) return false;
+    if (filters.typeLabel && i.type_label !== filters.typeLabel) return false;
+    if (filters.difficulty && i.difficulty !== filters.difficulty) return false;
+    if (filters.tag && !i.tags.includes(filters.tag)) return false;
+    if (filters.search) {
+      const q = filters.search.toLowerCase();
+      const haystack = `${i.name} ${i.description} ${i.tags.join(" ")} ${i.type_label} ${i.key}`.toLowerCase();
+      if (!haystack.includes(q)) return false;
+    }
     return true;
   });
 }
