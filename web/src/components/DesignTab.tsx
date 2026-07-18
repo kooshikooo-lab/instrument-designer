@@ -1,5 +1,6 @@
 import { useState, useEffect, type ReactNode } from "react";
 import { DEMAKEIN_PRESETS } from "../data/instruments";
+import { TUNING_PRESETS, TUNING_CATEGORIES, type TuningPreset } from "../data/tuning-presets";
 import { checkHealth, startDesign, getDesignStatus, getDesignDownloadUrl, exportStep } from "../utils/api";
 import type { PitchResult } from "../utils/pitch";
 import STLViewer from "./STLViewer";
@@ -70,6 +71,8 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
   const [serverBlob, setServerBlob] = useState<Blob | null>(null);
   const [serverFilename, setServerFilename] = useState<string>("");
   const [measuredPitch, setMeasuredPitch] = useState<PitchResult | null>(null);
+  const [tuningPreset, setTuningPreset] = useState<string>("");
+  const [tuningCategory, setTuningCategory] = useState<string>("");
 
   useEffect(() => {
     if (initialPreset) {
@@ -180,6 +183,58 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
           </div>
         </div>
       </div>
+
+      <CollapsibleSection title="Tuning System" defaultOpen={false} badge={tuningPreset ? TUNING_PRESETS.find(t => t.name === tuningPreset)?.category : undefined}>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-xs text-neutral-500 block mb-1">Category</label>
+            <select
+              value={tuningCategory}
+              onChange={(e) => { setTuningCategory(e.target.value); setTuningPreset(""); }}
+              className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-100 focus:outline-none focus:border-brand-500"
+            >
+              <option value="">All categories</option>
+              {TUNING_CATEGORIES.map((cat) => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-neutral-500 block mb-1">Tuning Preset</label>
+            <select
+              value={tuningPreset}
+              onChange={(e) => setTuningPreset(e.target.value)}
+              className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-100 focus:outline-none focus:border-brand-500"
+            >
+              <option value="">Select a tuning...</option>
+              {TUNING_PRESETS
+                .filter((t) => !tuningCategory || t.category === tuningCategory)
+                .map((t) => (
+                  <option key={t.name} value={t.name}>{t.name}</option>
+                ))}
+            </select>
+          </div>
+        </div>
+        {tuningPreset && (() => {
+          const t = TUNING_PRESETS.find((tp) => tp.name === tuningPreset);
+          if (!t) return null;
+          return (
+            <div className="bg-neutral-950 rounded-lg p-3 space-y-2">
+              <p className="text-xs text-neutral-400">{t.description}</p>
+              <div className="flex flex-wrap gap-1.5">
+                {t.labels.map((label, i) => (
+                  <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-300 font-mono">
+                    {label}
+                  </span>
+                ))}
+              </div>
+              <div className="text-[10px] text-neutral-500">
+                {t.notes_per_octave} notes/octave{t.cents_per_step !== null ? ` · ${t.cents_per_step.toFixed(1)} cents/step` : " · non-equal"}
+              </div>
+            </div>
+          );
+        })()}
+      </CollapsibleSection>
 
       <CollapsibleSection title="Remote Server" defaultOpen={false} badge={connected === true ? "Connected" : connected === false ? "Disconnected" : undefined}>
         <div className="flex gap-3 items-end">
