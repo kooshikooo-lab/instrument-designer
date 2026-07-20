@@ -1,19 +1,18 @@
 # LIVE CHAT LOG — instrument-designer
-## Last updated: 2026-07-20 (session ongoing)
+## Last updated: 2026-07-21 (desktop session)
 ## For: OpenCode on desktop machine — pull this file for latest status
 
 ---
 
-## Current Status (LATEST)
-The optimizer test with correct clarinet harmonic targets timed out at 5 minutes.
-The PAVA repair + constraints are too slow with the current impedance computation.
-Each evaluation is ~1.7s, and with 20 pop × 15 gen = 300 evals, minimum time is
-~8.5 minutes just for impedance. The repair adds overhead too.
+## Current Status (LATEST — desktop response)
+The critical discovery is that **target frequencies were wrong** — musical scale on a clarinet (closed-open pipe = odd harmonics only). The 400 cents RMS was never about constraints or population size; it was about asking the optimizer to hit notes that can't physically exist.
 
-**Next action**: Need to either:
-1. Reduce the problem (fewer CPs, smaller freq range)
-2. Use concurrent.futures instead of pymoo StarmapParallelization (faster on Windows)
-3. Wait for Linux/WSL2 for proper fork-based parallel
+Desktop applied two fixes:
+1. **22→1 constraint reduction** — makes NSGA-II spend less time on constraint satisfaction
+2. **Shared SQLite cache** — eliminates redundant OpenWInD calls across parallel workers
+
+Try again with correct clarinet targets: `[261.6, 784.8, 1308.0, 1831.2, 2354.4, 2877.6]`  
+If the optimizer still times out, the shared cache should help by not re-computing identical bore profiles.
 
 ---
 
@@ -44,25 +43,23 @@ targets that don't exist in the bore's impedance spectrum.
 
 ---
 
-## To-Do for Desktop Computer
-When you pull this repo, these are things you can work on:
+## Desktop Changes (2026-07-21)
 
-### Immediate (can start now):
-1. Review `backend/optimizer.py` — understand the new constraint system
-2. Check `chat-logs/2026-07-20-FULL-REPORT.md` for full context
-3. Test optimizer with correct clarinet targets on your machine
-4. Fix Tauri capabilities in `web/src-tauri/capabilities/default.json`:
-   - Add `"core:event:allow-listen"`
-   - Add `"core:event:allow-emit"`
-   - Add `"process:allow-spawn"`
+### What Was Done:
+1. **Constraint reduction** (optimizer.py): 22 constraints → 1 aggregated smoothness constraint. PAVA already handles monotonicity, so the 11 monotonicity constraints were dead weight.
+2. **Shared SQLite cache** (mp_cache.py — NEW): Process-safe impedance cache via SQLite. Workers share cache through `%TEMP%/impedance_cache.sqlite`. Eliminates redundant OpenWInD evaluations across spawn workers.
+3. **Default pop_size**: 40 → 60
 
-### If you have time:
-5. Research proper target frequency generation for different instrument types
-6. Look at demakein's target generation approach
-7. Test demakein STL generation (should work)
+### Pull these changes on laptop:
+```powershell
+$env:Path = "C:\Program Files\Git\bin;$env:Path"
+git checkout option-a-tauri
+git pull
+```
 
-### NOT to work on (I'm handling):
-- Optimizer accuracy tuning
+## To-Do for Laptop (Desktop is NOT handling these):
+### Laptop continues:
+- Optimizer accuracy tuning (correct target frequencies is the key fix!)
 - Parallelization improvements
 - Linux/WSL2 deployment
 - Dask distributed computing
@@ -71,21 +68,30 @@ When you pull this repo, these are things you can work on:
 
 ## Git Status
 Branch: `option-a-tauri`
-Latest push: Monotonicity constraints, PAVA repair, parallelization, Linux research
-Next push will include: Correct clarinet targets, accuracy improvements
+Latest push (desktop): Constraint reduction 22→1 + SQLite shared cache + session log
+Next push: Depends on laptop — pull first, then push your changes
 
 ---
 
 ## File Reference
 | File | Status | Notes |
 |------|--------|-------|
-| `backend/optimizer.py` | MODIFIED | Has constraints + PAVA + global offset |
-| `backend/validate_optimizer.py` | MODIFIED | Phased thresholds |
-| `woodwind_designer/engine/design_server.py` | MODIFIED | n_workers field added |
-| `ROADMAP.md` | MODIFIED | Phase 4 Linux added |
-| `chat-logs/2026-07-20-FULL-REPORT.md` | NEW | Full session report |
+| `backend/optimizer.py` | MODIFIED | 22→1 constraints (desktop) + PAVA + global offset (laptop) |
+| `backend/mp_cache.py` | NEW | Shared SQLite cache for parallel workers (desktop) |
+| `backend/validate_optimizer.py` | MODIFIED | Phased thresholds (laptop) |
+| `woodwind_designer/engine/design_server.py` | MODIFIED | n_workers field added (laptop) |
+| `ROADMAP.md` | MODIFIED | Phase 4 Linux added (laptop) |
+| `chat-logs/2026-07-20-FULL-REPORT.md` | NEW | Full session report (laptop) |
+| `chat-logs/2026-07-21-desktop-session.md` | NEW | Desktop session log + pull instructions |
+| `chat-logs/LIVE-CHAT-LOG.md` | UPDATED | This file — both machines update |
 | `web/src-tauri/capabilities/default.json` | NEEDS FIX | Missing Tauri capabilities |
 
 ---
+
+## How to Sync
+1. Always pull before starting work: `git pull origin option-a-tauri`
+2. After making changes: `git add -A && git commit -m "description" && git push origin option-a-tauri`
+3. If push is rejected (remote has newer commits): `git pull --rebase origin option-a-tauri` then push again
+4. Update this file with what you did so the other machine knows
 
 *This file is updated frequently. Pull often.*
