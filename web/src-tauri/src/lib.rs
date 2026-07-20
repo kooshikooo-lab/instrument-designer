@@ -12,17 +12,17 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_http::init())
         .invoke_handler(tauri::generate_handler![
-            demakein_design,
-            demakein_make,
-            openwind_simulate,
-            freecad_bore_to_step,
-            freecad_step_to_stl,
-            openscad_generate,
-            slice_stl,
-            read_stl_file,
-            save_stl_file,
+            server_start,
+            server_stop,
+            server_status,
+            http_get,
+            http_post,
+            save_file_dialog,
+            open_file_dialog,
+            save_stl_to_disk,
+            read_stl_from_disk,
             list_instruments,
-            check_server_health,
+            list_preset_groups,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

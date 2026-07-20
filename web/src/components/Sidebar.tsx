@@ -1,4 +1,5 @@
 ﻿import type { Tab } from "../App";
+import { isTauri } from "../utils/tauri";
 
 interface SidebarProps {
   active: Tab;
@@ -14,16 +15,17 @@ const NAV: { id: Tab; label: string; icon: string }[] = [
 
 /**
  * Left navigation sidebar with Library, Design, and Resources tabs.
- *
- * @param active - Currently active tab
- * @param onNavigate - Callback when a nav item is clicked
  */
 export function Sidebar({ active, onNavigate }: SidebarProps) {
+  const desktop = isTauri();
+
   return (
     <aside className="w-56 bg-neutral-900 border-r border-neutral-800 flex flex-col">
       <div className="p-4 border-b border-neutral-800">
         <div className="text-brand-400 font-bold text-sm tracking-wider uppercase">Instrument Designer</div>
-        <div className="text-neutral-500 text-xs mt-0.5">Pure Web App</div>
+        <div className="text-neutral-500 text-xs mt-0.5">
+          {desktop ? "Desktop App" : "Pure Web App"}
+        </div>
       </div>
       <nav className="flex-1 p-2 space-y-0.5">
         {NAV.map((item) => (
@@ -45,7 +47,7 @@ export function Sidebar({ active, onNavigate }: SidebarProps) {
       </nav>
       <div className="p-3 border-t border-neutral-800">
         <div className="text-xs text-neutral-600">
-          Built with React + Three.js + JSCAD
+          {desktop ? "Tauri + React + Three.js" : "Built with React + Three.js + JSCAD"}
         </div>
       </div>
     </aside>

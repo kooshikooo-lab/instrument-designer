@@ -1,4 +1,34 @@
-﻿const API_BASE = "http://localhost:8000";
+﻿import { isTauri, tauriHttpGet, tauriHttpPost } from "./tauri";
+
+const API_BASE = "http://localhost:8000";
+
+// ── Transport abstraction ────────────────────────────────────────────
+
+async function apiGet(path: string): Promise<Response> {
+  if (isTauri()) {
+    const json = await tauriHttpGet(`${API_BASE}${path}`);
+    return new Response(json, { status: 200, headers: { "Content-Type": "application/json" } });
+  }
+  return fetch(`${API_BASE}${path}`);
+}
+
+async function apiPost(path: string, body: unknown): Promise<Response> {
+  if (isTauri()) {
+    const json = await tauriHttpPost(`${API_BASE}${path}`, body);
+    return new Response(json, { status: 200, headers: { "Content-Type": "application/json" } });
+  }
+  return fetch(`${API_BASE}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
+export function apiDownloadUrl(path: string): string {
+  return `${API_BASE}${path}`;
+}
+
+// ── Types ────────────────────────────────────────────────────────────
 
 export interface DesignJob {
   job_id: string;
@@ -15,28 +45,30 @@ export interface StepExportParams {
   segments?: number;
 }
 
+// ── Health ───────────────────────────────────────────────────────────
+
 export async function checkHealth(): Promise<{ status: string; version: string }> {
-  const res = await fetch(`${API_BASE}/health`);
+  const res = await apiGet("/health");
   return res.json();
 }
 
+// ── Presets ──────────────────────────────────────────────────────────
+
 export async function getPresets(): Promise<Record<string, string>> {
-  const res = await fetch(`${API_BASE}/presets`);
+  const res = await apiGet("/presets");
   const data = await res.json();
   return data.presets;
 }
 
+// ── Design ───────────────────────────────────────────────────────────
+
 export async function startDesign(preset: string, transpose: number = 0, quick: boolean = false): Promise<{ job_id: string }> {
-  const res = await fetch(`${API_BASE}/design`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ preset, transpose, quick }),
-  });
+  const res = await apiPost("/design", { preset, transpose, quick });
   return res.json();
 }
 
 export async function getDesignStatus(jobId: string): Promise<DesignJob> {
-  const res = await fetch(`${API_BASE}/design/${jobId}/status`);
+  const res = await apiGet(`/design/${jobId}/status`);
   return res.json();
 }
 
@@ -44,15 +76,15 @@ export function getDesignDownloadUrl(jobId: string): string {
   return `${API_BASE}/design/${jobId}/download`;
 }
 
+// ── STEP Export ──────────────────────────────────────────────────────
+
 export async function exportStep(params: StepExportParams): Promise<Blob> {
-  const res = await fetch(`${API_BASE}/export/step`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(params),
-  });
+  const res = await apiPost("/export/step", params);
   if (!res.ok) throw new Error(`STEP export failed: ${res.statusText}`);
   return res.blob();
 }
+
+// ── Impedance ────────────────────────────────────────────────────────
 
 export async function computeImpedance(preset: string): Promise<{
   frequencies: number[];
@@ -60,11 +92,7 @@ export async function computeImpedance(preset: string): Promise<{
   impedanceReal: number[];
   impedanceImag: number[];
 }> {
-  const res = await fetch(`${API_BASE}/impedance/compute`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ preset }),
-  });
+  const res = await apiPost("/impedance/compute", { preset });
   if (!res.ok) throw new Error(`Impedance computation failed: ${res.statusText}`);
   return res.json();
 }
@@ -73,10 +101,12 @@ export async function getPrecomputedImpedance(preset: string): Promise<{
   frequencies: number[];
   impedance_magnitude: number[];
 }> {
-  const res = await fetch(`${API_BASE}/impedance/precomputed/${preset}`);
+  const res = await apiGet(`/impedance/precomputed/${preset}`);
   if (!res.ok) throw new Error(`Precomputed impedance not found: ${preset}`);
   return res.json();
 }
+
+// ── Sound Simulation ─────────────────────────────────────────────────
 
 export interface SimulateSoundParams {
   preset: string;
@@ -86,14 +116,12 @@ export interface SimulateSoundParams {
 }
 
 export async function simulateSound(params: SimulateSoundParams): Promise<Blob> {
-  const res = await fetch(`${API_BASE}/simulate/sound`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(params),
-  });
+  const res = await apiPost("/simulate/sound", params);
   if (!res.ok) throw new Error(`Sound simulation failed: ${res.statusText}`);
   return res.blob();
 }
+
+// ── Audio Analysis ───────────────────────────────────────────────────
 
 export interface ImpedancePeak {
   frequency: number;
@@ -111,11 +139,7 @@ export interface AnalyzeAudioResult {
 }
 
 export async function analyzeAudio(preset: string, topPeaks?: number): Promise<AnalyzeAudioResult> {
-  const res = await fetch(`${API_BASE}/analyze/audio`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ preset, top_peaks: topPeaks ?? 10 }),
-  });
+  const res = await apiPost("/analyze/audio", { preset, top_peaks: topPeaks ?? 10 });
   if (!res.ok) throw new Error(`Audio analysis failed: ${res.statusText}`);
   return res.json();
 }
@@ -180,17 +204,13 @@ export interface OptimizationPreset {
 }
 
 export async function startOptimization(req: OptimizeRequest): Promise<{ job_id: string }> {
-  const res = await fetch(`${API_BASE}/optimize/start`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(req),
-  });
+  const res = await apiPost("/optimize/start", req);
   if (!res.ok) throw new Error(`Optimization start failed: ${res.statusText}`);
   return res.json();
 }
 
 export async function getOptimizationStatus(jobId: string): Promise<OptimizationJob> {
-  const res = await fetch(`${API_BASE}/optimize/${jobId}/status`);
+  const res = await apiGet(`/optimize/${jobId}/status`);
   if (!res.ok) throw new Error(`Optimization status failed: ${res.statusText}`);
   return res.json();
 }
@@ -203,17 +223,13 @@ export async function evaluateBoreDesign(variables: number[], boreLength: number
   frequencies: number[];
   impedance_magnitude: number[];
 }> {
-  const res = await fetch(`${API_BASE}/optimize/evaluate`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ variables, bore_length: boreLength, target_frequencies: targetFrequencies, temperature }),
-  });
+  const res = await apiPost("/optimize/evaluate", { variables, bore_length: boreLength, target_frequencies: targetFrequencies, temperature });
   if (!res.ok) throw new Error(`Bore evaluation failed: ${res.statusText}`);
   return res.json();
 }
 
 export async function getOptimizationPresets(): Promise<Record<string, OptimizationPreset>> {
-  const res = await fetch(`${API_BASE}/optimize/presets`);
+  const res = await apiGet("/optimize/presets");
   if (!res.ok) throw new Error(`Failed to load optimization presets`);
   const data = await res.json();
   return data.presets;

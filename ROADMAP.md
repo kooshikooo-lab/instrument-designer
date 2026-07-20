@@ -63,6 +63,18 @@
 
 ## Low Priority — Future
 
+### Tauri Desktop App — Architecture
+- **Current approach (chosen):** Tauri + HTTP backend. Tauri spawns the Python FastAPI
+  server as a managed process. Frontend talks to it via localhost:8000. We get native
+  features (file dialogs, tray, auto-update) while keeping the proven Python backend.
+- **Alternative worth exploring:** Pure Rust with PyO3 bindings. Embed demakein's
+  optimizer directly in the Rust binary via PyO3/maturin. Eliminates the Python
+  dependency entirely, gives single-binary distribution, and could be significantly
+  faster (no process boundary, no GIL contention). The demakein optimizer is mostly
+  numpy/scipy under the hood — rewriting the hot path in Rust with ndarray could be
+  a 10-50x speedup. This is a bigger effort but could be transformative for the
+  project. Consider after the HTTP-based Tauri version is stable and shipping.
+
 ### Advanced Acoustics
 - [ ] Temperature sensitivity analysis (±X cents per °C)
 - [ ] Vocal tract coupling simulation
