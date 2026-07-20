@@ -1,0 +1,15 @@
+# Soprano Recorder (Baroque) - Reference Bore Profile
+# Based on standard Baroque soprano recorder dimensions
+# Total length: ~260mm, bore slightly tapered
+# Key of C, fundamental ~520 Hz (C5)
+# Format: position(m) radius(m)
+0.000 0.0065
+0.030 0.0065
+0.060 0.0066
+0.090 0.0067
+0.120 0.0068
+0.150 0.0070
+0.180 0.0072
+0.210 0.0074
+0.240 0.0076
+0.260 0.0078
