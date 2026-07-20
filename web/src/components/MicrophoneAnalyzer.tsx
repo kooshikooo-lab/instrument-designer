@@ -1,6 +1,6 @@
 ﻿import { useCallback, useEffect, useRef, useState } from "react";
 import { useMicrophone } from "../hooks/useMicrophone";
-import { detectPitch, freqToNote } from "../utils/pitch";
+import { detectPitch } from "../utils/pitch";
 import type { PitchResult } from "../utils/pitch";
 import SpectrumPlot from "./SpectrumPlot";
 
@@ -58,8 +58,6 @@ export default function MicrophoneAnalyzer({ onPitch }: MicrophoneAnalyzerProps)
       start();
     }
   };
-
-  const peakNote = peakFreq ? freqToNote(peakFreq) : null;
 
   return (
     <div className="bg-neutral-900 rounded-xl border border-neutral-800 overflow-hidden">

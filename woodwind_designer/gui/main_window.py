@@ -115,9 +115,9 @@ class MainWindow(QMainWindow):
         self.status_label.setText(f"Loaded preset: {preset} from library")
 
     def _on_design_succeeded(self, yaml_path: str):
-        if self.project_tab._current_project:
-            self.project_tab._capture_state_from_tabs()
-            self.project_tab._current_project.save()
+        if self.project_tab.current_project():
+            self.project_tab.capture_state()
+            self.project_tab.save()
 
     def _on_design_completed(self, yaml_path: str, target: str):
         if target == "simulate":
@@ -133,28 +133,33 @@ class MainWindow(QMainWindow):
         if preset:
             self.tabs.setCurrentWidget(self.design_tab)
             self.design_tab.select_preset(preset)
-        self.project_tab._restore_state_to_tabs()
-        self.status_label.setText(f"Project: {self.project_tab._current_project.name}")
+        self.project_tab.restore_state()
+        self.status_label.setText(f"Project: {self.project_tab.current_project().name}")
 
     def _new_project(self):
         self.tabs.setCurrentWidget(self.project_tab)
-        self.project_tab._new_project()
+        self.project_tab.new_project()
 
     def _open_project(self):
         self.tabs.setCurrentWidget(self.project_tab)
-        self.project_tab._open_project()
+        self.project_tab.open_project()
 
     def _save_project(self):
-        self.project_tab._save_project()
+        self.project_tab.save_project()
 
     def _save_project_as(self):
-        self.project_tab._save_project_as()
+        self.project_tab.save_project_as()
 
     def _open_workspace(self):
         path = str(Path.home() / "WoodwindProjects")
         Path(path).mkdir(parents=True, exist_ok=True)
-        import os
-        os.startfile(path)
+        import sys, subprocess
+        if sys.platform == "win32":
+            os.startfile(path)
+        elif sys.platform == "darwin":
+            subprocess.run(["open", path])
+        else:
+            subprocess.run(["xdg-open", path])
 
     def _show_about(self):
         QMessageBox.about(

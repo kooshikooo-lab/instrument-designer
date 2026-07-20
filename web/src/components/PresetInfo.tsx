@@ -69,7 +69,6 @@ export default function PresetInfo({ preset }: PresetInfoProps) {
 
   if (!specs) return null;
 
-  const fundamentalFreq = impedanceData?.frequencies[0] ?? 0;
   const peakFreqs: number[] = [];
   if (impedanceData) {
     const { frequencies, impedanceMagnitude } = impedanceData;

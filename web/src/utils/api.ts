@@ -26,11 +26,11 @@ export async function getPresets(): Promise<Record<string, string>> {
   return data.presets;
 }
 
-export async function startDesign(preset: string, transpose: number = 0): Promise<{ job_id: string }> {
+export async function startDesign(preset: string, transpose: number = 0, quick: boolean = false): Promise<{ job_id: string }> {
   const res = await fetch(`${API_BASE}/design`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ preset, transpose }),
+    body: JSON.stringify({ preset, transpose, quick }),
   });
   return res.json();
 }
@@ -118,4 +118,103 @@ export async function analyzeAudio(preset: string, topPeaks?: number): Promise<A
   });
   if (!res.ok) throw new Error(`Audio analysis failed: ${res.statusText}`);
   return res.json();
+}
+
+// ─── Optimization API ─────────────────────────────────────────────────────
+
+export interface OptimizeRequest {
+  target_frequencies: number[];
+  n_control_points?: number;
+  bore_length?: number | null;
+  min_radius?: number;
+  max_radius?: number;
+  pop_size?: number;
+  n_generations?: number;
+  temperature?: number;
+}
+
+export interface MatchedFrequency {
+  target: number;
+  actual: number;
+  error_hz: number;
+  error_cents: number;
+}
+
+export interface BoreProfilePoint {
+  position: number;
+  radius: number;
+}
+
+export interface OptimizationDesign {
+  bore_profile: BoreProfilePoint[];
+  objectives: {
+    frequency_accuracy: number;
+    scale_evenness: number;
+    projection: number;
+  };
+  matched_frequencies: MatchedFrequency[];
+  variables?: number[];
+}
+
+export interface OptimizationResult {
+  pareto_front: number[][];
+  designs: OptimizationDesign[];
+  best_candidates: OptimizationDesign[];
+  n_evaluations: number;
+  bore_length: number;
+  freq_range: number[];
+  seed: number;
+}
+
+export interface OptimizationJob {
+  job_id: string;
+  status: string;
+  progress: string[];
+  result?: OptimizationResult;
+  error?: string;
+}
+
+export interface OptimizationPreset {
+  name: string;
+  frequencies: number[];
+}
+
+export async function startOptimization(req: OptimizeRequest): Promise<{ job_id: string }> {
+  const res = await fetch(`${API_BASE}/optimize/start`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(req),
+  });
+  if (!res.ok) throw new Error(`Optimization start failed: ${res.statusText}`);
+  return res.json();
+}
+
+export async function getOptimizationStatus(jobId: string): Promise<OptimizationJob> {
+  const res = await fetch(`${API_BASE}/optimize/${jobId}/status`);
+  if (!res.ok) throw new Error(`Optimization status failed: ${res.statusText}`);
+  return res.json();
+}
+
+export async function evaluateBoreDesign(variables: number[], boreLength: number, targetFrequencies: number[], temperature?: number): Promise<{
+  bore_profile: BoreProfilePoint[];
+  matched_frequencies: MatchedFrequency[];
+  all_peak_frequencies: number[];
+  all_peak_magnitudes: number[];
+  frequencies: number[];
+  impedance_magnitude: number[];
+}> {
+  const res = await fetch(`${API_BASE}/optimize/evaluate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ variables, bore_length: boreLength, target_frequencies: targetFrequencies, temperature }),
+  });
+  if (!res.ok) throw new Error(`Bore evaluation failed: ${res.statusText}`);
+  return res.json();
+}
+
+export async function getOptimizationPresets(): Promise<Record<string, OptimizationPreset>> {
+  const res = await fetch(`${API_BASE}/optimize/presets`);
+  if (!res.ok) throw new Error(`Failed to load optimization presets`);
+  const data = await res.json();
+  return data.presets;
 }

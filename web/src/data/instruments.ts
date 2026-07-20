@@ -898,6 +898,34 @@ export const DEMAKEIN_PRESETS: Record<string, string> = {
   reed_drone: "Reed Drone",
 };
 
+export interface PresetGroup {
+  label: string;
+  presets: { key: string; name: string }[];
+}
+
+export const DEMAKEIN_PRESET_GROUPS: PresetGroup[] = [
+  {
+    label: "Flute",
+    presets: [
+      { key: "folk_whistle", name: "Penny Whistle (Tin Whistle)" },
+      { key: "folk_flute", name: "Folk Flute" },
+      { key: "recorder", name: "Soprano Recorder" },
+      { key: "dorian_whistle", name: "Dorian Whistle" },
+      { key: "pflute", name: "Pan Flute" },
+      { key: "three_hole_whistle", name: "Three-Hole Whistle (Tabor Pipe)" },
+    ],
+  },
+  {
+    label: "Woodwind (Reed)",
+    presets: [
+      { key: "reedpipe", name: "Reedpipe" },
+      { key: "folk_shawm", name: "Folk Shawm" },
+      { key: "shawm", name: "Shawm" },
+      { key: "reed_drone", name: "Reed Drone" },
+    ],
+  },
+];
+
 export const SUBCATEGORIES = [...new Set(INSTRUMENTS.map(i => i.subcategory))].sort();
 export const TYPE_LABELS = [...new Set(INSTRUMENTS.map(i => i.type_label))].sort();
 export const TAGS = [...new Set(INSTRUMENTS.flatMap(i => i.tags))].sort();

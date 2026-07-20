@@ -6,8 +6,22 @@
 - [x] Quadratic interpolation for peak finding
 - [x] Impedance caching for repeated evaluations
 - [x] Intonation accuracy research (documented in chat-logs/2026-07-18)
+- [x] CORS middleware added to FastAPI backend
+- [x] demakein installed and design pipeline working
+- [x] Preset dropdown grouped by category (Flute / Woodwind)
+- [x] SimulationWorker: renamed finished signal, added exception handling
+- [x] ProjectWidget: public methods, cross-platform folder open
+- [x] Cloned chalumier (Kotlin demakein rewrite) for evaluation
 
 ## High Priority — Next Sessions
+
+### Chalumier Integration
+- [ ] Install JDK 17+ (required to build/run chalumier)
+- [ ] Build chalumier JAR (`gradle shadowJar`)
+- [ ] Create chalumier wrapper (like demakein_wrapper.py) for the design server
+- [ ] Compare chalumier vs demakein output quality and speed
+- [ ] Add chalumier instrument types to preset list
+- [ ] Support `.chal` specification files in the web UI
 
 ### Optimizer Improvements
 - [ ] Reduce optimizer time (currently ~hours for 100 gen × 50 pop)
@@ -67,4 +81,4 @@
 
 ---
 
-*Last updated: 2026-07-18*
+*Last updated: 2026-07-20*

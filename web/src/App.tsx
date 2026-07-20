@@ -7,8 +7,9 @@ import { InstrumentBrowser } from "./components/InstrumentBrowser";
 import { InstrumentDetail } from "./components/InstrumentDetail";
 import { DesignTab } from "./components/DesignTab";
 import { ResourcesTab } from "./components/ResourcesTab";
+import { WikiTab } from "./components/wiki/WikiTab";
 
-export type Tab = "library" | "design" | "resources";
+export type Tab = "library" | "design" | "resources" | "wiki";
 
 function mergeResources(instruments: Instrument[]): Instrument[] {
   return instruments.map((inst) => {
@@ -69,6 +70,7 @@ export default function App() {
             />
           )}
           {tab === "resources" && <ResourcesTab />}
+          {tab === "wiki" && <WikiTab />}
         </div>
       </main>
     </div>

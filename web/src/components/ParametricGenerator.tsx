@@ -8,7 +8,7 @@ interface JSCADGeometry {
 /** Convert a JSCAD geometry object to a binary STL ArrayBuffer. */
 function geometryToSTL(geometry: JSCADGeometry): ArrayBuffer {
   const polygons = geometry.polygons || [];
-  const triangles: number[][] = [];
+  const triangles: number[][][] = [];
 
   for (const poly of polygons) {
     const verts = poly.vertices;

@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect, type ReactNode } from "react";
-import { DEMAKEIN_PRESETS } from "../data/instruments";
-import { TUNING_PRESETS, TUNING_CATEGORIES, type TuningPreset } from "../data/tuning-presets";
+import { DEMAKEIN_PRESETS, DEMAKEIN_PRESET_GROUPS } from "../data/instruments";
+import { TUNING_PRESETS, TUNING_CATEGORIES } from "../data/tuning-presets";
 import { checkHealth, startDesign, getDesignStatus, getDesignDownloadUrl, exportStep } from "../utils/api";
 import type { PitchResult } from "../utils/pitch";
 import STLViewer from "./STLViewer";
@@ -165,8 +165,12 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
               className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-100 focus:outline-none focus:border-brand-500"
             >
               <option value="">Select a preset...</option>
-              {Object.entries(DEMAKEIN_PRESETS).map(([key, name]) => (
-                <option key={key} value={key}>{name}</option>
+              {DEMAKEIN_PRESET_GROUPS.map((group) => (
+                <optgroup key={group.label} label={group.label}>
+                  {group.presets.map((p) => (
+                    <option key={p.key} value={p.key}>{p.name}</option>
+                  ))}
+                </optgroup>
               ))}
             </select>
           </div>

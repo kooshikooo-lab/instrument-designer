@@ -14,7 +14,7 @@ from ..engine.sound_synthesizer import generate_from_peaks
 
 
 class SimulationWorker(QThread):
-    finished = Signal(object)
+    simulationFinished = Signal(object)
     progress = Signal(str)
 
     def __init__(self, simulator, yaml_path, output_dir, f_min, f_max, n_points):
@@ -27,13 +27,18 @@ class SimulationWorker(QThread):
         self.n_points = n_points
 
     def run(self):
-        self.progress.emit("Running OpenWInD simulation...")
-        result = self.sim.simulate_from_yaml(
-            self.yaml_path, self.output_dir,
-            self.f_min, self.f_max, self.n_points
-        )
-        self.progress.emit("Simulation complete." if result.success else "Simulation failed.")
-        self.finished.emit(result)
+        try:
+            self.progress.emit("Running OpenWInD simulation...")
+            result = self.sim.simulate_from_yaml(
+                self.yaml_path, self.output_dir,
+                self.f_min, self.f_max, self.n_points
+            )
+            self.progress.emit("Simulation complete." if result.success else "Simulation failed.")
+            self.simulationFinished.emit(result)
+        except Exception as e:
+            self.progress.emit(f"Simulation error: {e}")
+            from ..engine.openwind_wrapper import SimulationResult
+            self.simulationFinished.emit(SimulationResult(success=False, log=str(e)))
 
 
 class SimulationWidget(QWidget):
@@ -173,7 +178,7 @@ class SimulationWidget(QWidget):
             self.n_points_spin.value()
         )
         self._worker.progress.connect(lambda msg: self.log_output.append(msg))
-        self._worker.finished.connect(self._on_sim_done)
+        self._worker.simulationFinished.connect(self._on_sim_done)
         self._worker.start()
 
     def _cancel(self):

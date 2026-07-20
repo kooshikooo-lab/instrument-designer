@@ -25,7 +25,6 @@ export function detectPitch(
   analyser: AnalyserNode,
   sampleRate: number
 ): PitchResult | null {
-  const bufferLength = analyser.frequencyBinCount;
   const timeData = new Float32Array(analyser.fftSize);
   analyser.getFloatTimeDomainData(timeData);
 

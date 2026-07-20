@@ -312,6 +312,32 @@ class ProjectWidget(QWidget):
     def current_project_path(self) -> str:
         return str(self._current_project.path) if self._current_project else ""
 
+    def current_project(self) -> "Project | None":
+        return self._current_project
+
+    def save(self):
+        if self._current_project:
+            self._capture_state_from_tabs()
+            self._current_project.save()
+
+    def new_project(self):
+        self._new_project()
+
+    def open_project(self):
+        self._open_project()
+
+    def save_project(self):
+        self._save_project()
+
+    def save_project_as(self):
+        self._save_project_as()
+
+    def capture_state(self):
+        self._capture_state_from_tabs()
+
+    def restore_state(self):
+        self._restore_state_to_tabs()
+
     def set_workspace(self, path: str):
         self._workspace = path
         self._refresh_list()
@@ -326,4 +352,11 @@ class ProjectWidget(QWidget):
 
     def _open_folder(self):
         if self._current_project and self._current_project.path.exists():
-            os.startfile(str(self._current_project.path))
+            import sys, subprocess
+            path = str(self._current_project.path)
+            if sys.platform == "win32":
+                os.startfile(path)
+            elif sys.platform == "darwin":
+                subprocess.run(["open", path])
+            else:
+                subprocess.run(["xdg-open", path])
