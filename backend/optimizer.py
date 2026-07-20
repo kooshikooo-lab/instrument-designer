@@ -20,8 +20,11 @@ import os
 import tempfile
 import hashlib
 import numpy as np
+from multiprocessing import Pool
 from scipy.signal import find_peaks
 from pymoo.core.problem import ElementwiseProblem
+from pymoo.core.repair import Repair
+from pymoo.parallelization import StarmapParallelization
 from pymoo.algorithms.moo.nsga2 import NSGA2
 from pymoo.operators.crossover.sbx import SBX
 from pymoo.operators.mutation.pm import PM
@@ -32,6 +35,44 @@ from pymoo.termination import get_termination
 
 
 _IMPEDANCE_CACHE = {}
+
+
+class MonotonicRepair(Repair):
+    """Enforce monotonicity using Pool Adjacent Violators Algorithm (PAVA)."""
+    def _do(self, problem, X, **kwargs):
+        for i in range(len(X)):
+            x = np.clip(X[i].astype(float), problem.xl, problem.xu)
+            X[i] = _pava_isotonic(x)
+        return X
+
+
+def _pava_isotonic(x):
+    """Find the closest monotonically non-decreasing sequence via PAVA. O(n)."""
+    n = len(x)
+    vals = [float(x[j]) for j in range(n)]
+    sizes = [1] * n
+    count = n
+    i = 0
+    while i < count - 1:
+        if vals[i] <= vals[i + 1]:
+            i += 1
+        else:
+            merged_val = (vals[i] * sizes[i] + vals[i + 1] * sizes[i + 1]) / (sizes[i] + sizes[i + 1])
+            merged_size = sizes[i] + sizes[i + 1]
+            vals[i] = merged_val
+            sizes[i] = merged_size
+            vals.pop(i + 1)
+            sizes.pop(i + 1)
+            count -= 1
+            if i > 0:
+                i -= 1
+    result = np.empty(n, dtype=float)
+    idx = 0
+    for b in range(count):
+        for _ in range(sizes[b]):
+            result[idx] = vals[b]
+            idx += 1
+    return result
 
 
 def _compute_impedance_from_bore(bore_points, freq_range=(100, 3000), n_freqs=5000, temperature=20.0):
@@ -142,15 +183,16 @@ class BoreOptimizationProblem(ElementwiseProblem):
     pymoo problem for optimizing a wind instrument bore profile.
     
     Design variables:
-        - control_point_radii: radius at each control point
+        - control_point_radii: radius at each control point (monotonically non-decreasing)
     
     Objectives:
-        1. Frequency accuracy: RMS error of matched peaks vs targets (in cents)
+        1. Frequency accuracy: RMS error of matched peaks vs targets (in cents, after global offset correction)
         2. Scale evenness: std of frequency ratios between consecutive matched peaks
         3. Projection: negative average impedance peak magnitude
     
     Constraints:
-        - Monotonically non-decreasing bore (bell >= mouthpiece at each point)
+        - Monotonically non-decreasing bore: x[i+1] >= x[i]
+        - Smoothness: penalize large radius jumps between adjacent points
     """
     
     def __init__(
@@ -163,6 +205,8 @@ class BoreOptimizationProblem(ElementwiseProblem):
         temperature=20.0,
         freq_range=(100, 3000),
         n_freqs=5000,
+        elementwise_runner=None,
+        max_radius_jump=None,
     ):
         self.target_freqs = np.array(sorted(target_frequencies))
         self.bore_length = bore_length
@@ -173,15 +217,24 @@ class BoreOptimizationProblem(ElementwiseProblem):
         self.n_freqs = n_freqs
         self.n_cp = n_control_points
         
-        # n_ieq_constr: gentle penalty for non-monotonic bore
-        # We allow some non-monotonicity but penalize large violations
-        super().__init__(
+        if max_radius_jump is None:
+            self.max_radius_jump = (max_radius - min_radius) * 0.3
+        else:
+            self.max_radius_jump = max_radius_jump
+        
+        n_monotonicity = n_control_points - 1
+        n_smoothness = n_control_points - 1
+        
+        super_kwargs = dict(
             n_var=n_control_points,
             n_obj=3,
-            n_ieq_constr=0,
+            n_ieq_constr=n_monotonicity + n_smoothness,
             xl=np.full(n_control_points, min_radius),
             xu=np.full(n_control_points, max_radius),
         )
+        if elementwise_runner is not None:
+            super_kwargs["elementwise_runner"] = elementwise_runner
+        super().__init__(**super_kwargs)
     
     def _bore_from_variables(self, x):
         """Convert design variables to bore profile points."""
@@ -201,6 +254,7 @@ class BoreOptimizationProblem(ElementwiseProblem):
             )
         except Exception:
             out["F"] = [1e10, 1e10, 1e10]
+            out["G"] = np.ones(self.n_ieq_constr) * 1e10
             return
         
         peak_freqs = result["peak_frequencies"]
@@ -208,22 +262,23 @@ class BoreOptimizationProblem(ElementwiseProblem):
         
         if len(peak_freqs) < 2:
             out["F"] = [1e10, 1e10, 1e10]
+            out["G"] = np.ones(self.n_ieq_constr) * 1e10
             return
         
         n_targets = len(self.target_freqs)
         n_peaks = len(peak_freqs)
         
-        # Objective 1: Frequency accuracy (RMS of cents error)
         matched = _match_peaks_to_targets(peak_freqs, self.target_freqs)
         cents_errors = np.array([abs(m[3]) for m in matched])
-        freq_accuracy = np.sqrt(np.mean(cents_errors ** 2))
         
-        # Objective 2: Scale evenness
-        # How uniform are the ratios between consecutive matched peaks?
+        raw_cents = np.array([m[3] for m in matched])
+        global_offset = np.median(raw_cents)
+        corrected_errors = np.abs(raw_cents - global_offset)
+        freq_accuracy = np.sqrt(np.mean(corrected_errors ** 2))
+        
         if n_peaks >= n_targets:
             matched_peak_vals = np.array([m[1] for m in matched])
             if len(matched_peak_vals) > 1:
-                # Normalized differences
                 diffs = np.diff(matched_peak_vals)
                 mean_diff = np.mean(diffs)
                 if mean_diff > 0:
@@ -233,10 +288,8 @@ class BoreOptimizationProblem(ElementwiseProblem):
             else:
                 evenness = 1e10
         else:
-            # Penalty for not having enough peaks
             evenness = 1e10 * (1 + (n_targets - n_peaks) / n_targets)
         
-        # Objective 3: Projection (negated for maximization)
         n_use = min(n_targets, n_peaks)
         if n_use > 0:
             projection = -np.mean(peak_mags[:n_use]) / 1e6
@@ -244,6 +297,11 @@ class BoreOptimizationProblem(ElementwiseProblem):
             projection = 1e10
         
         out["F"] = [freq_accuracy, evenness, projection]
+        
+        radii = np.asarray(x, dtype=float)
+        monotonicity_violations = np.maximum(0, radii[:-1] - radii[1:])
+        smoothness_violations = np.maximum(0, np.abs(np.diff(radii)) - self.max_radius_jump)
+        out["G"] = np.concatenate([monotonicity_violations, smoothness_violations])
 
 
 class BoreOptimizer:
@@ -272,6 +330,7 @@ class BoreOptimizer:
         n_generations=50,
         temperature=20.0,
         seed=None,
+        n_workers=None,
     ):
         self.target_frequencies = target_frequencies
         self.n_control_points = n_control_points
@@ -281,6 +340,7 @@ class BoreOptimizer:
         self.n_generations = n_generations
         self.temperature = temperature
         self.seed = seed or np.random.randint(0, 10000)
+        self.n_workers = n_workers
         
         # Auto-calculate bore length from fundamental
         if bore_length is None:
@@ -295,6 +355,15 @@ class BoreOptimizer:
         max_freq = max(target_frequencies) * 3.5
         self.freq_range = (min_freq, max_freq)
         
+        # Set up parallelization if requested
+        self._pool = None
+        runner = None
+        if n_workers is None:
+            n_workers = min(os.cpu_count() or 1, 8)  # auto-detect, cap at 8
+        if n_workers > 1:
+            self._pool = Pool(n_workers)
+            runner = StarmapParallelization(self._pool.starmap)
+        
         self._problem = BoreOptimizationProblem(
             target_frequencies=target_frequencies,
             n_control_points=n_control_points,
@@ -303,6 +372,7 @@ class BoreOptimizer:
             max_radius=max_radius,
             temperature=temperature,
             freq_range=self.freq_range,
+            elementwise_runner=runner,
         )
         
         self._algorithm = NSGA2(
@@ -311,6 +381,7 @@ class BoreOptimizer:
             sampling=FloatRandomSampling(),
             crossover=SBX(prob=0.9, eta=15),
             mutation=PM(eta=20, prob=1.0 / n_control_points),
+            repair=MonotonicRepair(),
             eliminate_duplicates=True,
         )
         
@@ -336,14 +407,20 @@ class BoreOptimizer:
                 - freq_range: used frequency range
                 - seed: random seed used
         """
-        self._result = minimize(
-            self._problem,
-            self._algorithm,
-            self._termination,
-            seed=self.seed,
-            save_history=True,
-            verbose=verbose,
-        )
+        try:
+            self._result = minimize(
+                self._problem,
+                self._algorithm,
+                self._termination,
+                seed=self.seed,
+                save_history=True,
+                verbose=verbose,
+            )
+        finally:
+            if self._pool:
+                self._pool.close()
+                self._pool.join()
+                self._pool = None
         
         X = self._result.X
         F = self._result.F

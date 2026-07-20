@@ -6,9 +6,16 @@ For each reference instrument:
 2. Feed those peaks as targets to the optimizer
 3. Compare the optimized bore to the original
 4. Report accuracy metrics
+
+Intonation targets (phased):
+- Phase 1: <20 cents (achievable now)
+- Phase 2: <10 cents (with good SLA printing)
+- Phase 3: <5 cents (Noreland-level, excellent SLA + calibration)
+- Phase 4: <3 cents (stretch goal, best-case everything)
 """
 import sys
-sys.path.insert(0, r"C:\instrument-designer")
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import os
 import numpy as np
@@ -16,7 +23,7 @@ from scipy.signal import find_peaks
 from backend.optimizer import _compute_impedance_from_bore, BoreOptimizer
 
 
-REFERENCE_DIR = r"C:\instrument-designer\backend\reference_instruments"
+REFERENCE_DIR = Path(__file__).parent / "reference_instruments"
 
 
 def load_bore_csv(filepath):
@@ -103,7 +110,7 @@ def validate_instrument(name, bore, target_note_count=8):
     for match in detailed["matched_frequencies"]:
         error_cents = match["error_cents"]
         total_error_cents += abs(error_cents)
-        status = "OK" if abs(error_cents) < 50 else "WARN"
+        status = "OK" if abs(error_cents) < 20 else "WARN"
         print(f"    {match['target']:7.1f} Hz -> {match['actual']:7.1f} Hz  "
               f"(error: {error_cents:+6.1f} cents) [{status}]")
     
@@ -141,13 +148,18 @@ def validate_instrument(name, bore, target_note_count=8):
 def main():
     print("INSTRUMENT DESIGN VALIDATION")
     print("Testing optimizer against known reference instruments")
+    print("\nIntonation targets:")
+    print("  Phase 1: <20 cents (achievable now)")
+    print("  Phase 2: <10 cents (with good SLA printing)")
+    print("  Phase 3: <5 cents (Noreland-level, excellent SLA + calibration)")
+    print("  Phase 4: <3 cents (stretch goal, best-case everything)")
     
     results = []
     
     for filename in sorted(os.listdir(REFERENCE_DIR)):
         if filename.endswith(".csv"):
             name = filename.replace(".csv", "").replace("_", " ").title()
-            bore = load_bore_csv(os.path.join(REFERENCE_DIR, filename))
+            bore = load_bore_csv(REFERENCE_DIR / filename)
             if len(bore) >= 3:
                 r = validate_instrument(name, bore)
                 results.append(r)
@@ -161,11 +173,30 @@ def main():
     for r in results:
         print(f"  {r['name']:<25} {r['avg_error_cents']:>10.1f} {r['max_radius_error_mm']:>12.2f} {r['avg_radius_error_mm']:>12.2f}")
     
-    # Pass/fail criteria
-    print(f"\n  Pass criteria: avg error < 50 cents, max radius error < 1mm")
+    # Pass/fail criteria with phased targets
+    print(f"\n  Pass criteria:")
+    print(f"    Phase 1: avg error < 20 cents, max radius error < 1mm")
+    print(f"    Phase 2: avg error < 10 cents, max radius error < 0.5mm")
+    print(f"    Phase 3: avg error < 5 cents, max radius error < 0.25mm")
+    print(f"    Phase 4: avg error < 3 cents, max radius error < 0.1mm")
+    
     for r in results:
-        passed = r["avg_error_cents"] < 50 and r["max_radius_error_mm"] < 1.0
-        status = "PASS" if passed else "FAIL"
+        passed_p1 = r["avg_error_cents"] < 20 and r["max_radius_error_mm"] < 1.0
+        passed_p2 = r["avg_error_cents"] < 10 and r["max_radius_error_mm"] < 0.5
+        passed_p3 = r["avg_error_cents"] < 5 and r["max_radius_error_mm"] < 0.25
+        passed_p4 = r["avg_error_cents"] < 3 and r["max_radius_error_mm"] < 0.1
+        
+        if passed_p4:
+            status = "PASS (Phase 4 - 3 cents)"
+        elif passed_p3:
+            status = "PASS (Phase 3 - 5 cents)"
+        elif passed_p2:
+            status = "PASS (Phase 2 - 10 cents)"
+        elif passed_p1:
+            status = "PASS (Phase 1 - 20 cents)"
+        else:
+            status = "FAIL"
+        
         print(f"  {r['name']}: {status}")
 
 

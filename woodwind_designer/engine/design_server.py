@@ -47,6 +47,7 @@ class OptimizeRequest(BaseModel):
     pop_size: int = 30
     n_generations: int = 20
     temperature: float = 20.0
+    n_workers: Optional[int] = None  # None = auto-detect CPU count
 
 
 class EvaluateRequest(BaseModel):
@@ -191,13 +192,15 @@ def _run_optimization(job_id: str, req: OptimizeRequest):
             pop_size=req.pop_size,
             n_generations=req.n_generations,
             temperature=req.temperature,
+            n_workers=req.n_workers,
         )
 
         with _lock:
             _jobs[job_id]["progress"].append(
                 f"Config: {req.pop_size} pop x {req.n_generations} gen, "
                 f"{req.n_control_points} control points, "
-                f"bore {optimizer.bore_length:.3f}m"
+                f"bore {optimizer.bore_length:.3f}m, "
+                f"workers: {req.n_workers or 'auto'}"
             )
 
         result = optimizer.run(verbose=False)
