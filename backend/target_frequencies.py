@@ -118,17 +118,19 @@ def _generate_n_notes(fundamental: float, instrument_type: str, n: int) -> list[
 def _generate_in_range(
     fundamental: float, instrument_type: str, low: float, high: float
 ) -> list[float]:
-    """Generate all target frequencies within [low, high] Hz range."""
+    """Generate all target frequencies within [low - eps, high] Hz range."""
     targets = []
     harmonic_idx = 1
+    eps_low = 0.05
+    eps_high = 0.5
     while True:
         if instrument_type == "closed-open":
             freq = fundamental * (2 * harmonic_idx - 1)
         else:
             freq = fundamental * harmonic_idx
-        if freq > high:
+        if freq > high + eps_high:
             break
-        if freq >= low:
+        if freq >= low - eps_low:
             targets.append(round(freq, 1))
         harmonic_idx += 1
     return targets
@@ -193,10 +195,12 @@ def get_preset_info(preset: str) -> dict | None:
     if preset in PRESET_TARGETS:
         info = PRESET_TARGETS[preset].copy()
         info["preset"] = preset
+        fundamental = freq_from_note(info["note"])
+        info["fundamental"] = round(fundamental, 1)
         low, high = info["range"]
         targets = get_targets(
             preset,
-            fundamental=info["fundamental"],
+            fundamental=fundamental,
             note_range=(low, high),
         )
         info["targets"] = targets
