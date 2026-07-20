@@ -325,8 +325,10 @@ class DemakeinDesigner:
                          "chimney_height": round(h, 4)}
                         for p, d, h in zip(inst.hole_positions, inst.hole_diameters, inst.hole_lengths)
                     ]
+                    bore_length_mm = round(inst.length, 4)
                     yaml_cfg = {
-                        "bore_length": round(inst.length / 1000.0, 4),
+                        "bore_length": bore_length_mm,
+                        "bore_length_unit": "mm",
                         "bore_profile": bore_profile,
                         "tone_holes": tone_holes,
                     }

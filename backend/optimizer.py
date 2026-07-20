@@ -47,8 +47,8 @@ def _compute_impedance_from_bore(bore_points, freq_range=(100, 3000), n_freqs=50
     Returns:
         dict with keys: frequencies, impedance_magnitude, peak_frequencies, peak_magnitudes
     """
-    cache_key = (tuple(bore_points), freq_range, n_freqs, temperature)
-    cache_hash = hashlib.md5(str(cache_key).encode()).hexdigest()
+    cache_key = (tuple(round(x, 12) for pt in bore_points for x in pt), freq_range, n_freqs, temperature)
+    cache_hash = hashlib.md5(repr(cache_key).encode()).hexdigest()
 
     if cache_hash in _IMPEDANCE_CACHE:
         return _IMPEDANCE_CACHE[cache_hash]

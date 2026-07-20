@@ -99,8 +99,20 @@ def generate_instrument(
             )
 
         stdout_text = proc.stdout.strip()
-        first_line = stdout_text.split("\n")[0] if stdout_text else ""
-        result = json.loads(first_line)
+        result = None
+        for line in stdout_text.split("\n"):
+            line = line.strip()
+            if line.startswith("{"):
+                try:
+                    result = json.loads(line)
+                    break
+                except json.JSONDecodeError:
+                    continue
+        if result is None:
+            return FreeCADResult(
+                log=f"No JSON found in FreeCAD output:\n{stdout_text[:500]}",
+                success=False,
+            )
         return FreeCADResult(
             files=result.get("files", []),
             bore_length=result.get("bore_length", 0),

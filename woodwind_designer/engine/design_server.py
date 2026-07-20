@@ -68,23 +68,38 @@ def _run_design(job_id: str, preset: str, transpose: int, quick: bool):
             progress_log.append(msg)
             _jobs[job_id]["progress"] = list(progress_log)
 
-    out_dir = os.path.join(tempfile.gettempdir(), f"remote_{job_id}")
-    designer = DemakeinDesigner()
-    result = designer.design(preset, transpose, out_dir, on_progress, quick=quick)
+    try:
+        out_dir = os.path.join(tempfile.gettempdir(), f"remote_{job_id}")
+        designer = DemakeinDesigner()
+        result = designer.design(preset, transpose, out_dir, on_progress, quick=quick)
 
-    stl_basenames = [os.path.basename(p) for p in result.stl_files]
-    with _lock:
-        _jobs[job_id].update(
-            status="completed" if result.success else "failed",
-            result={
-                "success": result.success,
-                "log": result.log,
-                "ident": result.ident,
-                "stl_files": stl_basenames,
-                "output_dir": out_dir,
-            },
-            progress=list(progress_log),
-        )
+        stl_basenames = [os.path.basename(p) for p in result.stl_files]
+        with _lock:
+            _jobs[job_id].update(
+                status="completed" if result.success else "failed",
+                result={
+                    "success": result.success,
+                    "log": result.log,
+                    "ident": result.ident,
+                    "stl_files": stl_basenames,
+                    "output_dir": out_dir,
+                },
+                progress=list(progress_log),
+            )
+    except Exception as e:
+        with _lock:
+            _jobs[job_id].update(
+                status="failed",
+                error=str(e),
+                result={
+                    "success": False,
+                    "log": f"Design failed: {e}",
+                    "ident": "",
+                    "stl_files": [],
+                    "output_dir": "",
+                },
+                progress=list(progress_log) + [f"Error: {e}"],
+            )
 
 
 @app.post("/design", response_model=dict)
