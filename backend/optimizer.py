@@ -34,9 +34,6 @@ from pymoo.optimize import minimize
 from pymoo.termination import get_termination
 
 
-_IMPEDANCE_CACHE = {}
-
-
 class MonotonicRepair(Repair):
     """Enforce monotonicity using Pool Adjacent Violators Algorithm (PAVA)."""
     def _do(self, problem, X, **kwargs):
@@ -91,8 +88,11 @@ def _compute_impedance_from_bore(bore_points, freq_range=(100, 3000), n_freqs=50
     cache_key = (tuple(round(x, 12) for pt in bore_points for x in pt), freq_range, n_freqs, temperature)
     cache_hash = hashlib.md5(repr(cache_key).encode()).hexdigest()
 
-    if cache_hash in _IMPEDANCE_CACHE:
-        return _IMPEDANCE_CACHE[cache_hash]
+    from .mp_cache import cache_get, cache_set
+
+    cached = cache_get(cache_hash)
+    if cached is not None:
+        return cached
 
     from openwind import ImpedanceComputation
 
@@ -151,8 +151,7 @@ def _compute_impedance_from_bore(bore_points, freq_range=(100, 3000), n_freqs=50
             "peak_magnitudes": np.array(peak_mags),
         }
 
-        if len(_IMPEDANCE_CACHE) < 2000:
-            _IMPEDANCE_CACHE[cache_hash] = result
+        cache_set(cache_hash, result)
 
         return result
     finally:
@@ -183,7 +182,7 @@ class BoreOptimizationProblem(ElementwiseProblem):
     pymoo problem for optimizing a wind instrument bore profile.
     
     Design variables:
-        - control_point_radii: radius at each control point (monotonically non-decreasing)
+        - control_point_radii: radius at each control point
     
     Objectives:
         1. Frequency accuracy: RMS error of matched peaks vs targets (in cents, after global offset correction)
@@ -191,8 +190,8 @@ class BoreOptimizationProblem(ElementwiseProblem):
         3. Projection: negative average impedance peak magnitude
     
     Constraints:
-        - Monotonically non-decreasing bore: x[i+1] >= x[i]
-        - Smoothness: penalize large radius jumps between adjacent points
+        - Smoothness: total sum of radius jumps exceeding max_radius_jump (aggregated)
+          Monotonicity is enforced by PAVA repair, not as a constraint.
     """
     
     def __init__(
@@ -222,13 +221,11 @@ class BoreOptimizationProblem(ElementwiseProblem):
         else:
             self.max_radius_jump = max_radius_jump
         
-        n_monotonicity = n_control_points - 1
-        n_smoothness = n_control_points - 1
-        
+        # Single aggregated smoothness constraint (PAVA handles monotonicity)
         super_kwargs = dict(
             n_var=n_control_points,
             n_obj=3,
-            n_ieq_constr=n_monotonicity + n_smoothness,
+            n_ieq_constr=1,
             xl=np.full(n_control_points, min_radius),
             xu=np.full(n_control_points, max_radius),
         )
@@ -254,7 +251,7 @@ class BoreOptimizationProblem(ElementwiseProblem):
             )
         except Exception:
             out["F"] = [1e10, 1e10, 1e10]
-            out["G"] = np.ones(self.n_ieq_constr) * 1e10
+            out["G"] = [1e10]
             return
         
         peak_freqs = result["peak_frequencies"]
@@ -262,7 +259,7 @@ class BoreOptimizationProblem(ElementwiseProblem):
         
         if len(peak_freqs) < 2:
             out["F"] = [1e10, 1e10, 1e10]
-            out["G"] = np.ones(self.n_ieq_constr) * 1e10
+            out["G"] = [1e10]
             return
         
         n_targets = len(self.target_freqs)
@@ -299,9 +296,8 @@ class BoreOptimizationProblem(ElementwiseProblem):
         out["F"] = [freq_accuracy, evenness, projection]
         
         radii = np.asarray(x, dtype=float)
-        monotonicity_violations = np.maximum(0, radii[:-1] - radii[1:])
         smoothness_violations = np.maximum(0, np.abs(np.diff(radii)) - self.max_radius_jump)
-        out["G"] = np.concatenate([monotonicity_violations, smoothness_violations])
+        out["G"] = [np.sum(smoothness_violations)]
 
 
 class BoreOptimizer:
@@ -326,11 +322,12 @@ class BoreOptimizer:
         bore_length=None,
         min_radius=0.003,
         max_radius=0.025,
-        pop_size=40,
+        pop_size=60,
         n_generations=50,
         temperature=20.0,
         seed=None,
         n_workers=None,
+        max_radius_jump=None,
     ):
         self.target_frequencies = target_frequencies
         self.n_control_points = n_control_points
@@ -341,6 +338,7 @@ class BoreOptimizer:
         self.temperature = temperature
         self.seed = seed or np.random.randint(0, 10000)
         self.n_workers = n_workers
+        self.max_radius_jump = max_radius_jump
         
         # Auto-calculate bore length from fundamental
         if bore_length is None:
@@ -373,6 +371,7 @@ class BoreOptimizer:
             temperature=temperature,
             freq_range=self.freq_range,
             elementwise_runner=runner,
+            max_radius_jump=max_radius_jump,
         )
         
         self._algorithm = NSGA2(
