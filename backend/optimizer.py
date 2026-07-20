@@ -43,6 +43,19 @@ class MonotonicRepair(Repair):
         return X
 
 
+class MonotonicSampling:
+    """Generate monotonic bore profiles for initial population."""
+    def __call__(self, problem, n_samples, **kwargs):
+        xl = np.asarray(problem.xl)
+        xu = np.asarray(problem.xu)
+        n_var = problem.n_var
+        X = np.empty((n_samples, n_var))
+        for i in range(n_samples):
+            raw = np.random.uniform(xl, xu, n_var)
+            X[i] = _pava_isotonic(raw)
+        return X
+
+
 def _pava_isotonic(x):
     """Find the closest monotonically non-decreasing sequence via PAVA. O(n)."""
     n = len(x)
@@ -167,6 +180,7 @@ def _match_peaks_to_targets(peak_freqs, target_freqs):
     Match each target frequency to its nearest impedance peak.
     Returns list of (target, matched_peak, error_hz, error_cents).
     """
+    peak_freqs = np.asarray(peak_freqs, dtype=float)
     matched = []
     for tf in target_freqs:
         idx = np.argmin(np.abs(peak_freqs - tf))
