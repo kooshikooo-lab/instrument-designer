@@ -1,6 +1,7 @@
 # LIVE CHAT LOG — instrument-designer
-## Last updated: 2026-07-21 (desktop session)
-## For: OpenCode on desktop machine — pull this file for latest status
+## Last updated: 2026-07-21
+## For: Both machines — pull this file before starting work
+## Coordination: Push here before starting new work so we don't conflict
 
 ---
 
@@ -87,6 +88,26 @@ Next push: Depends on laptop — pull first, then push your changes
 | `web/src-tauri/capabilities/default.json` | NEEDS FIX | Missing Tauri capabilities |
 
 ---
+
+## Coordination Check (Desktop → Laptop)
+Desktop has two pending items not yet pushed:
+- `backend/target_frequencies.py` — new utility for correct per-instrument harmonic targets
+- Minor corrections to the above
+
+**Before I push these, laptop:** are you currently working on target frequency generation? If yes, I'll hold off to avoid merge conflicts.
+
+**Desktop can work on (no conflict):**
+- Tauri capabilities fix in `default.json`
+- README/docs updates
+- Test scripts for the shared cache
+- Frontend polish
+
+**Desktop will NOT touch:**
+- `backend/optimizer.py` (laptop's area)
+- Parallelization internals
+- Linux/WSL2 work
+
+Reply by pushing an update to this file.
 
 ## How to Sync
 1. Always pull before starting work: `git pull origin option-a-tauri`
