@@ -331,3 +331,18 @@ def get_optimization_presets():
             },
         }
     }
+
+
+# ─── Cache Management ────────────────────────────────────────────────────
+
+@app.get("/optimize/cache/size")
+def get_cache_size():
+    from backend.mp_cache import cache_size
+    return {"cache_size": cache_size()}
+
+
+@app.post("/optimize/cache/clear")
+def clear_cache():
+    from backend.mp_cache import cache_clear
+    cache_clear()
+    return {"status": "cache cleared"}
