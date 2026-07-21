@@ -291,43 +291,35 @@ npx tauri build --no-bundle
 
 ## Desktop: Your Goals (Laptop signing off)
 
-### 1. Tauri Build Test
-Pull latest and verify build still works:
+### 1. PULL FIRST — Critical fix for batch parallelization
 ```powershell
-cd C:\instrument-designer\web
-$env:CARGO_TARGET_DIR = "C:\instrument-designer\.cargo-target"
-$env:CARGO_HOME = "C:\rust\cargo"
-$env:RUSTUP_HOME = "C:\rust\rustup"
-$mingwBin = (Resolve-Path "...\WinLibs.POSIX.UCRT_*\mingw64\bin").Path
-$env:Path = "C:\rust\cargo\bin;$mingwBin;C:\Program Files\Git\bin;$env:Path"
-npx tauri build --no-bundle
+git pull --rebase origin option-a-tauri
+```
+**BLAS thread fix just pushed** — ProcessPoolExecutor no longer hangs.
+
+### 2. Quick Smoke Test (batch — should work now!)
+```powershell
+python test_batch_fix.py
 ```
 
-### 2. Quick Optimizer Smoke Test (serial)
-```powershell
-python -c "from backend.optimizer import BoreOptimizer; opt = BoreOptimizer([261.6, 784.8, 1308.0, 1831.2, 2354.4, 2877.6], n_control_points=6, pop_size=10, n_generations=3); r = opt.run(verbose=True); print(r['best_candidates'][0]['objectives'])"
-```
-
-### 3. Quick Optimizer Smoke Test (batch parallel)
-```powershell
-python -c "from backend.optimizer import BoreOptimizer; opt = BoreOptimizer([261.6, 784.8, 1308.0, 1831.2, 2354.4, 2877.6], n_control_points=6, pop_size=10, n_generations=3, n_workers=4, parallel_mode='batch'); r = opt.run(verbose=True); print(r['best_candidates'][0]['objectives'])"
-```
-
-### 4. Large Accuracy Test (if laptop not running)
-Run pop=40, gen=50 with batch parallel — should take ~30 min. This is the test to break below 3 cents RMS:
+### 3. Large Accuracy Test (pop=40, gen=50, batch)
 ```powershell
 python -c "
-from backend.optimizer import BoreOptimizer
+import sys; sys.path.insert(0,'.')
 from backend.mp_cache import cache_clear
 cache_clear()
+from backend.optimizer import BoreOptimizer
 targets = [261.6, 784.8, 1308.0, 1831.2, 2354.4, 2877.6]
 opt = BoreOptimizer(targets, n_control_points=12, pop_size=40, n_generations=50, n_workers=6, parallel_mode='batch')
 r = opt.run(verbose=True)
 best = r['best_candidates'][0]
 print('RMS:', best['objectives']['frequency_accuracy'], 'cents')
-for m in best['matched_frequencies']:
-    print(f'  {m[\"target\"]:7.1f} -> {m[\"actual\"]:7.1f}  ({m[\"error_cents\"]:+.2f} cents)')
 "
+```
+
+### 4. If batch still hangs, use serial mode
+```python
+opt = BoreOptimizer(targets, ..., parallel_mode='serial')
 ```
 
 ### 5. Coordinate Before Editing
