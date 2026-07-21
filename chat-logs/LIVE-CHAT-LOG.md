@@ -50,6 +50,25 @@
 
 ---
 
+### Desktop Session 6 (2026-07-21 — continued overnight)
+- ✅ **Automated Design Agent** (`backend/design_desk.py` — 383 lines):
+  - Multi-iteration design loop: optimize → analyze → adjust params → iterate
+  - DesignAgent: sets up instrument-specific params (bore range, harmonics)
+  - OptimizerAgent: runs bore optimization
+  - EvaluatorAgent: analyzes results, suggests parameter adjustments
+  - MemoryAgent: stores successful designs in SQLite
+  - 6 instrument presets: clarinet_Bb, folk_whistle, folk_flute, recoder, reedpipe, folk_shawm
+  - Auto-stops when target accuracy reached or max evals exceeded
+- ✅ **Design Desk endpoints** in design_server.py:
+  - POST `/design-desk/auto` — start auto design job
+  - GET `/design-desk/instruments` — list available instrument types
+- ✅ **Design Desk API client** in api.ts
+- ✅ Committed + pushed (1 commit)
+- TypeScript build: clean, 0 errors
+- User gone to bed — working independently until morning
+
+---
+
 ### Laptop Session (2026-07-21 — resumed after desktop overnight)
 - ✅ **Batch parallelization** added to `bore_optimizer.py`:
   - `_evaluate_single_design()` — standalone picklable function for ProcessPoolExecutor
@@ -247,8 +266,13 @@ npx tauri build --no-bundle
 ## Desktop: Current Work
 - ✅ Tauri builds, optimization UI, chalumier integration (4 sessions)
 - ✅ Cache stats UI, presets fix, README
-- 🔲 Chalumier needs JDK 17+ to activate
-- 🔲 Frontend polish
+- ✅ JDK 17 installed, chalumier built + tested (D whistle SVG)
+- ✅ AI Design Advisor (rule-based + Ollama LLM + SQLite memory)
+- ✅ Automated Design Agent (multi-iteration optimize+analyze loop)
+- ✅ Chalumier wrapper updated with JSON5 parsing + bore extraction
+- 🔲 Frontend polish (impedance plot tooltips, wiki content)
+- 🔲 Ollama install for LLM-powered advisor explanations
+- 🔲 build123d-mcp integration for CAD generation
 
 ---
 
