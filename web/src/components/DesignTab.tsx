@@ -1,8 +1,9 @@
 ﻿import { useState, useEffect, type ReactNode } from "react";
 import { DEMAKEIN_PRESETS, DEMAKEIN_PRESET_GROUPS } from "../data/instruments";
 import { TUNING_PRESETS, TUNING_CATEGORIES } from "../data/tuning-presets";
-import { checkHealth, startDesign, getDesignStatus, getDesignDownloadUrl, exportStep } from "../utils/api";
+import { checkHealth, startDesign, getDesignStatus, getDesignDownloadUrl, exportStep, startOptimization, getOptimizationStatus, getOptimizationPresets } from "../utils/api";
 import type { PitchResult } from "../utils/pitch";
+import type { OptimizationResult, OptimizationPreset } from "../utils/api";
 import STLViewer from "./STLViewer";
 import ParametricGenerator from "./ParametricGenerator";
 import ImpedancePlot from "./ImpedancePlot";
@@ -74,6 +75,22 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
   const [tuningPreset, setTuningPreset] = useState<string>("");
   const [tuningCategory, setTuningCategory] = useState<string>("");
 
+  const [optPresets, setOptPresets] = useState<Record<string, OptimizationPreset>>({});
+  const [optTargetKey, setOptTargetKey] = useState<string>("");
+  const [optManualFreqs, setOptManualFreqs] = useState("");
+  const [optPopSize, setOptPopSize] = useState(30);
+  const [optGen, setOptGen] = useState(20);
+  const [optCP, setOptCP] = useState(12);
+  const [optRunning, setOptRunning] = useState(false);
+  const [_optJobId, setOptJobId] = useState<string | null>(null);
+  const [optStatus, setOptStatus] = useState("");
+  const [optProgress, setOptProgress] = useState<string[]>([]);
+  const [optResult, setOptResult] = useState<OptimizationResult | null>(null);
+
+  useEffect(() => {
+    getOptimizationPresets().then((p) => setOptPresets(p)).catch(() => {});
+  }, []);
+
   useEffect(() => {
     if (initialPreset) {
       setPreset(initialPreset);
@@ -144,6 +161,54 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
       console.error("STEP export failed:", e);
     } finally {
       setStepExporting(false);
+    }
+  };
+
+  const parsedManualFreqs = (): number[] => {
+    return optManualFreqs.split(",").map((s) => parseFloat(s.trim())).filter((n) => !isNaN(n) && n > 0);
+  };
+
+  const getTargetFrequencies = (): number[] => {
+    if (optTargetKey && optPresets[optTargetKey]) {
+      return optPresets[optTargetKey].frequencies;
+    }
+    if (optManualFreqs.trim()) {
+      return parsedManualFreqs();
+    }
+    return [];
+  };
+
+  const runOptimization = async () => {
+    const targets = getTargetFrequencies();
+    if (targets.length < 2) return;
+    setOptRunning(true);
+    setOptProgress([]);
+    setOptResult(null);
+    setOptStatus("Starting optimization...");
+    try {
+      const { job_id } = await startOptimization({
+        target_frequencies: targets,
+        pop_size: optPopSize,
+        n_generations: optGen,
+        n_control_points: optCP,
+      });
+      setOptJobId(job_id);
+      setOptStatus(`Job ${job_id} started`);
+      const poll = setInterval(async () => {
+        const result = await getOptimizationStatus(job_id);
+        setOptProgress(result.progress);
+        setOptStatus(result.status);
+        if (result.status === "completed" || result.status === "failed") {
+          clearInterval(poll);
+          setOptRunning(false);
+          if (result.status === "completed" && result.result) {
+            setOptResult(result.result);
+          }
+        }
+      }, 1000);
+    } catch (e) {
+      setOptStatus(`Error: ${e}`);
+      setOptRunning(false);
     }
   };
 
@@ -367,6 +432,160 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
           </div>
         </div>
       )}
+
+      <CollapsibleSection title="Bore Optimization (NSGA-II)" defaultOpen={false} badge="Evolutionary">
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs text-neutral-500 block mb-1">Target Frequency Preset</label>
+              <select
+                value={optTargetKey}
+                onChange={(e) => setOptTargetKey(e.target.value)}
+                className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-100 focus:outline-none focus:border-brand-500"
+              >
+                <option value="">Manual entry...</option>
+                {Object.entries(optPresets).map(([key, p]) => (
+                  <option key={key} value={key}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-neutral-500 block mb-1">Manual Frequencies (Hz, comma-separated)</label>
+              <input
+                type="text"
+                value={optManualFreqs}
+                onChange={(e) => setOptManualFreqs(e.target.value)}
+                placeholder="261.6, 784.8, 1308.0..."
+                className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-100 focus:outline-none focus:border-brand-500"
+              />
+            </div>
+          </div>
+          {optTargetKey && optPresets[optTargetKey] && (
+            <div className="flex flex-wrap gap-1.5">
+              {optPresets[optTargetKey].frequencies.map((f, i) => (
+                <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-300 font-mono">
+                  {f.toFixed(1)} Hz
+                </span>
+              ))}
+            </div>
+          )}
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="text-xs text-neutral-500 block mb-1">Population</label>
+              <input
+                type="number" min={4} max={200}
+                value={optPopSize}
+                onChange={(e) => setOptPopSize(Number(e.target.value))}
+                className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-100 focus:outline-none focus:border-brand-500"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-neutral-500 block mb-1">Generations</label>
+              <input
+                type="number" min={1} max={500}
+                value={optGen}
+                onChange={(e) => setOptGen(Number(e.target.value))}
+                className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-100 focus:outline-none focus:border-brand-500"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-neutral-500 block mb-1">Control Points</label>
+              <input
+                type="number" min={4} max={30}
+                value={optCP}
+                onChange={(e) => setOptCP(Number(e.target.value))}
+                className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-100 focus:outline-none focus:border-brand-500"
+              />
+            </div>
+          </div>
+          <button
+            onClick={runOptimization}
+            disabled={optRunning || getTargetFrequencies().length < 2}
+            className="px-6 py-2.5 bg-purple-600 hover:bg-purple-500 disabled:bg-neutral-800 disabled:text-neutral-600 text-sm text-white rounded-lg transition-colors font-medium"
+          >
+            {optRunning ? "Optimizing..." : "Run Optimization"}
+          </button>
+          {(optProgress.length > 0 || optStatus) && (
+            <div>
+              <div className="text-xs text-neutral-400 mb-1">Status: {optStatus}</div>
+              <div className="bg-neutral-950 rounded-lg p-3 max-h-40 overflow-auto font-mono text-xs text-neutral-400 space-y-0.5">
+                {optProgress.map((line, i) => (<div key={i}>{line}</div>))}
+              </div>
+            </div>
+          )}
+          {optResult && (
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium text-neutral-200">Results</h4>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-neutral-950 rounded-lg p-3">
+                  <div className="text-[10px] text-neutral-500">Frequency Accuracy</div>
+                  <div className="text-sm text-neutral-100 font-mono">
+                    {optResult.best_candidates[0]?.objectives?.frequency_accuracy?.toFixed(2) ?? "?"}¢
+                  </div>
+                </div>
+                <div className="bg-neutral-950 rounded-lg p-3">
+                  <div className="text-[10px] text-neutral-500">Evaluations</div>
+                  <div className="text-sm text-neutral-100 font-mono">{optResult.n_evaluations}</div>
+                </div>
+                <div className="bg-neutral-950 rounded-lg p-3">
+                  <div className="text-[10px] text-neutral-500">Bore Length</div>
+                  <div className="text-sm text-neutral-100 font-mono">{(optResult.bore_length * 1000).toFixed(0)} mm</div>
+                </div>
+              </div>
+              {optResult.best_candidates[0]?.bore_profile && (
+                <div>
+                  <h5 className="text-xs text-neutral-500 mb-1">Bore Profile</h5>
+                  <div className="bg-neutral-950 rounded-lg p-3 overflow-x-auto">
+                    <table className="w-full text-[10px] font-mono text-neutral-300">
+                      <thead>
+                        <tr className="text-neutral-500">
+                          <th className="text-left pr-4">Position (mm)</th>
+                          <th className="text-left pr-4">Radius (mm)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {optResult.best_candidates[0].bore_profile.map((p, i) => (
+                          <tr key={i}>
+                            <td className="pr-4">{(p.position * 1000).toFixed(1)}</td>
+                            <td className="pr-4">{(p.radius * 1000).toFixed(2)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+              {optResult.best_candidates[0]?.matched_frequencies && (
+                <div>
+                  <h5 className="text-xs text-neutral-500 mb-1">Matched Frequencies</h5>
+                  <div className="bg-neutral-950 rounded-lg p-3 overflow-x-auto">
+                    <table className="w-full text-[10px] font-mono text-neutral-300">
+                      <thead>
+                        <tr className="text-neutral-500">
+                          <th className="text-left pr-4">Target (Hz)</th>
+                          <th className="text-left pr-4">Actual (Hz)</th>
+                          <th className="text-left pr-4">Error (cents)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {optResult.best_candidates[0].matched_frequencies.map((m, i) => (
+                          <tr key={i}>
+                            <td className="pr-4">{m.target.toFixed(1)}</td>
+                            <td className="pr-4">{m.actual.toFixed(1)}</td>
+                            <td className={`pr-4 ${Math.abs(m.error_cents) > 20 ? "text-red-400" : Math.abs(m.error_cents) > 5 ? "text-yellow-400" : "text-green-400"}`}>
+                              {m.error_cents.toFixed(1)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </CollapsibleSection>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-5">

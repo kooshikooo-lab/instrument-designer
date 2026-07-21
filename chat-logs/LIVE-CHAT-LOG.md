@@ -1,5 +1,5 @@
 # LIVE CHAT LOG — instrument-designer
-## Last updated: 2026-07-21 (shutting down — laptop overheating)
+## Last updated: 2026-07-21 (Desktop session 3; laptop shut down for overheating)
 ## For: Both machines — pull this file before starting work
 ## Branch: option-a-tauri
 
@@ -100,11 +100,26 @@ Clarinet (closed-open pipe) only produces odd harmonics: f, 3f, 5f, 7f...
 - WRONG targets: [261.6, 293.7, 329.6, 349.2, 392.0, 440.0, 493.9, 523.3] → 400+ cents
 - RIGHT targets: [261.6, 784.8, 1308.0, 1831.2, 2354.4, 2877.6] → 3.11 cents
 
-### Desktop Changes (2026-07-21)
+### Desktop Changes (2026-07-21 — Session 1)
 1. Constraint reduction: 22 → 1 aggregated smoothness
 2. SQLite shared cache for parallel workers
 3. `backend/target_frequencies.py` — per-instrument harmonic target generator
 4. Default pop_size: 40 → 60
+
+### Desktop Changes (2026-07-21 — Session 2)
+1. Rust 1.97.1 + Cargo installed (Bitdefender blocked `optimizer.py` filename)
+2. `optimizer.py` → `bore_optimizer.py` + `optimizer/__init__.py` package wrapper
+3. `cache_size` / `cache_clear` endpoints added to `design_server.py`
+4. Pushed to GitHub (commit eedd9aa)
+
+### Desktop Changes (2026-07-21 — Session 3)
+1. Optimization UI panel in DesignTab — preset selector, params (pop_size, gen, CP), run/stop, progress polling, results table
+2. WikiTab stub component created (unblocks wiki tab in sidebar)
+3. `npm run build` works from **both** junction and real path (fixed Vite root with `__dirname`)
+4. **Full Tauri build succeeds** — `npx tauri build --no-bundle` with `instrument-designer.exe` at `C:\instrument-designer\.cargo-target\release\` (33 MB)
+5. Key build fix: `CARGO_TARGET_DIR` must point to a path **without spaces** (avoids windres crash on `Woodwind design automation`)
+6. Old target dir deleted (freed ~3.5 GB on C:)
+7. Cargo check passes with zero errors (MSVC→GNU, WinLibs MinGW, junction for spaces)
 
 ### Laptop Changes (2026-07-20)
 1. PAVA repair operator (monotonicity enforcement)
@@ -118,24 +133,49 @@ Clarinet (closed-open pipe) only produces odd harmonics: f, 3f, 5f, 7f...
 ## File Reference
 | File | Owner | Notes |
 |------|-------|-------|
-| `backend/optimizer.py` | Laptop | PAVA + constraints + parallelization |
+| `backend/bore_optimizer.py` | Laptop | PAVA + constraints + parallelization (renamed from `optimizer.py`) |
+| `backend/optimizer/__init__.py` | Desktop | Package wrapper re-exporting from `bore_optimizer` |
 | `backend/mp_cache.py` | Desktop | SQLite shared cache |
 | `backend/target_frequencies.py` | Desktop | Per-instrument harmonic targets |
 | `backend/validate_optimizer.py` | Laptop | Phased thresholds |
-| `woodwind_designer/engine/design_server.py` | Shared | n_workers field |
-| `web/src-tauri/capabilities/default.json` | Desktop | NEEDS FIX — 3 missing capabilities |
+| `woodwind_designer/engine/design_server.py` | Shared | cache_size/cache_clear endpoints added |
+| `web/src-tauri/capabilities/default.json` | Desktop | Fixed — all capabilities present |
 | `ROADMAP.md` | Laptop | Phase 4 Linux added |
 | `chat-logs/LIVE-CHAT-LOG.md` | Both | THIS FILE |
 
 ---
 
-## Desktop: Your Next Task
-1. Pull latest: `git pull origin option-a-tauri`
-2. Fix `web/src-tauri/capabilities/default.json` — add:
-   - `"core:event:allow-listen"`
-   - `"core:event:allow-emit"`
-   - `"process:allow-spawn"`
-3. Test: `python -c "from backend.optimizer import BoreOptimizer; opt = BoreOptimizer([261.6, 784.8, 1308.0, 1831.2, 2354.4, 2877.6], n_control_points=6, pop_size=10, n_generations=3); r = opt.run(); print(r['best_candidates'][0]['objectives'])"`
-4. Push results
+## Desktop: Current Work
+- ✅ Rust/Cargo installed and building
+- ✅ `bore_optimizer.py` + `optimizer/__init__.py` package wrapper
+- ✅ `cache_size`/`cache_clear` endpoints added
+- ✅ Optimization UI panel in DesignTab (presets, params, run, results, progress)
+- ✅ WikiTab stub component created
+- ✅ Frontend builds (TypeScript + Vite) — zero errors
+- ✅ Python backend server starts and responds
+- ✅ Cargo check passes — zero errors
+- ✅ Full Tauri build succeeds — binary at `C:\instrument-designer\.cargo-target\release\instrument-designer.exe`
+- 🔲 ImpedancePlot tooltip showing cached vs computed eval count
+- 🔲 README/docs updates
+
+## Tauri Build (Desktop)
+Run from junction `C:\instrument-designer\web`:
+```powershell
+$env:CARGO_TARGET_DIR = "C:\instrument-designer\.cargo-target"
+$env:CARGO_HOME = "C:\rust\cargo"
+$env:RUSTUP_HOME = "C:\rust\rustup"
+$mingwBin = (Resolve-Path "...\WinLibs.POSIX.UCRT_*\mingw64\bin").Path
+$env:Path = "C:\rust\cargo\bin;$mingwBin;C:\Program Files\Git\bin;$env:Path"
+npx tauri build --no-bundle
+```
+- Binary: `C:\instrument-designer\.cargo-target\release\instrument-designer.exe`
+- `CARGO_TARGET_DIR` must be space-free (windres crashes on spaces)
+- `vite.config.ts` has explicit `root: __dirname` to prevent rolldown junction errors
+
+## Laptop: Next Steps
+1. Pull latest: `git pull origin option-a-tauri` — note `optimizer.py` renamed to `bore_optimizer.py` with `optimizer/__init__.py` wrapper
+2. If `git pull` complains about deleted `optimizer.py`, run: `git rm backend/optimizer.py && git pull`
+3. Continue optimizer accuracy tuning (<3 cents stretch goal)
+4. Research Chalumier/Kotlin (low priority)
 
 *This file is updated frequently. Pull often.*

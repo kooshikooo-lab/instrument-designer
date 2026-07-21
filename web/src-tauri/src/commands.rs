@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
-use tauri::Manager;
+use tokio::sync::oneshot;
 
 static SERVER_CHILD: Mutex<Option<Child>> = Mutex::new(None);
 
@@ -46,7 +46,7 @@ pub async fn server_start(port: u16) -> Result<String, String> {
 pub async fn server_stop() -> Result<String, String> {
     let mut child = SERVER_CHILD.lock().map_err(|e| e.to_string())?;
 
-    if let Some(c) = child.take() {
+    if let Some(mut c) = child.take() {
         drop(c.kill().map_err(|e| format!("Failed to stop server: {}", e)));
         Ok("Server stopped".into())
     } else {
@@ -95,16 +95,19 @@ pub async fn save_file_dialog(
     filter_name: String,
     filter_ext: String,
 ) -> Result<Option<String>, String> {
-    use tauri_plugin_dialog::DialogExt;
+    use tauri_plugin_dialog::{DialogExt, FilePath};
 
-    let path = app
-        .dialog()
+    let (tx, rx) = oneshot::channel::<Option<FilePath>>();
+
+    app.dialog()
         .file()
         .add_filter(&filter_name, &[&filter_ext])
         .set_file_name(&default_name)
-        .save_file()
-        .await;
+        .save_file(move |path| {
+            let _ = tx.send(path);
+        });
 
+    let path = rx.await.map_err(|_| "Dialog cancelled".to_string())?;
     Ok(path.map(|p| p.to_string()))
 }
 
@@ -114,15 +117,18 @@ pub async fn open_file_dialog(
     filter_name: String,
     filter_ext: String,
 ) -> Result<Option<String>, String> {
-    use tauri_plugin_dialog::DialogExt;
+    use tauri_plugin_dialog::{DialogExt, FilePath};
 
-    let path = app
-        .dialog()
+    let (tx, rx) = oneshot::channel::<Option<FilePath>>();
+
+    app.dialog()
         .file()
         .add_filter(&filter_name, &[&filter_ext])
-        .pick_file()
-        .await;
+        .pick_file(move |path| {
+            let _ = tx.send(path);
+        });
 
+    let path = rx.await.map_err(|_| "Dialog cancelled".to_string())?;
     Ok(path.map(|p| p.to_string()))
 }
 
