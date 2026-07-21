@@ -489,6 +489,7 @@ def _run_auto_design(job_id: str, req: AutoDesignRequest):
 @app.post("/design-desk/auto")
 def start_auto_design(req: AutoDesignRequest):
     """Start an automated multi-iteration design loop."""
+    from backend.design_desk import INSTRUMENT_CONFIGS
     if req.instrument_type not in INSTRUMENT_CONFIGS:
         raise HTTPException(400, f"Unknown instrument type: {req.instrument_type}. Available: {list(INSTRUMENT_CONFIGS.keys())}")
     job_id = uuid.uuid4().hex[:12]

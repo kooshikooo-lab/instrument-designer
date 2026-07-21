@@ -71,29 +71,22 @@ class MonotonicSampling:
 def _pava_isotonic(x):
     """Find the closest monotonically non-decreasing sequence via PAVA. O(n)."""
     n = len(x)
-    vals = [float(x[j]) for j in range(n)]
-    sizes = [1] * n
-    count = n
-    i = 0
-    while i < count - 1:
-        if vals[i] <= vals[i + 1]:
-            i += 1
-        else:
-            merged_val = (vals[i] * sizes[i] + vals[i + 1] * sizes[i + 1]) / (sizes[i] + sizes[i + 1])
-            merged_size = sizes[i] + sizes[i + 1]
-            vals[i] = merged_val
-            sizes[i] = merged_size
-            vals.pop(i + 1)
-            sizes.pop(i + 1)
-            count -= 1
-            if i > 0:
-                i -= 1
+    vals = []
+    sizes = []
+    for v in x:
+        vals.append(float(v))
+        sizes.append(1)
+        while len(vals) > 1 and vals[-2] > vals[-1]:
+            merged = (vals[-2] * sizes[-2] + vals[-1] * sizes[-1]) / (sizes[-2] + sizes[-1])
+            vals[-2] = merged
+            sizes[-2] += sizes[-1]
+            vals.pop()
+            sizes.pop()
     result = np.empty(n, dtype=float)
     idx = 0
-    for b in range(count):
-        for _ in range(sizes[b]):
-            result[idx] = vals[b]
-            idx += 1
+    for v, s in zip(vals, sizes):
+        result[idx:idx + s] = v
+        idx += s
     return result
 
 
@@ -276,23 +269,22 @@ class BoreOptimizationProblem(ElementwiseProblem):
                 temperature=self.temperature,
             )
         except Exception:
-            out["F"] = [1e10, 1e10, 1e10]
-            out["G"] = [1e10]
+            out["F"] = [np.inf, np.inf, np.inf]
+            out["G"] = [np.inf]
             return
         
         peak_freqs = result["peak_frequencies"]
         peak_mags = result["peak_magnitudes"]
         
         if len(peak_freqs) < 2:
-            out["F"] = [1e10, 1e10, 1e10]
-            out["G"] = [1e10]
+            out["F"] = [np.inf, np.inf, np.inf]
+            out["G"] = [np.inf]
             return
         
         n_targets = len(self.target_freqs)
         n_peaks = len(peak_freqs)
         
         matched = _match_peaks_to_targets(peak_freqs, self.target_freqs)
-        cents_errors = np.array([abs(m[3]) for m in matched])
         
         raw_cents = np.array([m[3] for m in matched])
         global_offset = np.median(raw_cents)
@@ -304,7 +296,7 @@ class BoreOptimizationProblem(ElementwiseProblem):
             if len(matched_peak_vals) > 1:
                 diffs = np.diff(matched_peak_vals)
                 mean_diff = np.mean(diffs)
-                if mean_diff > 0:
+                if mean_diff > 1e-6:
                     evenness = np.std(diffs / mean_diff)
                 else:
                     evenness = 1e10
@@ -374,13 +366,13 @@ def _evaluate_single_design(x):
             bore, freq_range=freq_range, n_freqs=n_freqs, temperature=temperature,
         )
     except Exception:
-        return [1e10, 1e10, 1e10], [1e10]
+        return [np.inf, np.inf, np.inf], [np.inf]
     
     peak_freqs = result["peak_frequencies"]
     peak_mags = result["peak_magnitudes"]
     
     if len(peak_freqs) < 2:
-        return [1e10, 1e10, 1e10], [1e10]
+        return [np.inf, np.inf, np.inf], [np.inf]
     
     matched = _match_peaks_to_targets(peak_freqs, target_freqs)
     
@@ -397,7 +389,7 @@ def _evaluate_single_design(x):
         if len(matched_peak_vals) > 1:
             diffs = np.diff(matched_peak_vals)
             mean_diff = np.mean(diffs)
-            evenness = float(np.std(diffs / mean_diff)) if mean_diff > 0 else 1e10
+            evenness = float(np.std(diffs / mean_diff)) if mean_diff > 1e-6 else 1e10
         else:
             evenness = 1e10
     else:
@@ -493,7 +485,9 @@ class BatchBoreOptimizationProblem(Problem):
         executor = self._get_executor()
         
         # Only send design vectors — config is in worker's _worker_config
-        results = list(executor.map(_evaluate_single_design, X))
+        n = len(X)
+        chunksize = max(1, n // (self._workers * 4)) if self._workers else 1
+        results = list(executor.map(_evaluate_single_design, X, chunksize=chunksize))
         
         F = np.array([r[0] for r in results])
         G = np.array([r[1] for r in results])
