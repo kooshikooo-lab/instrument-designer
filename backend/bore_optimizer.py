@@ -37,6 +37,14 @@ from pymoo.operators.repair.rounding import RoundingRepair
 from pymoo.optimize import minimize
 from pymoo.termination import get_termination
 
+# BLAS thread limits MUST be set before numpy/scipy import in worker processes.
+# Without this, each ProcessPoolExecutor worker spawns N BLAS threads (where N
+# = CPU core count), causing massive thread oversubscription that deadlocks
+# inside scipy.sparse.linalg.spsolve() used by OpenWInD.
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("MKL_NUM_THREADS", "1")
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+
 
 class MonotonicRepair(Repair):
     """Enforce monotonicity using Pool Adjacent Violators Algorithm (PAVA)."""
@@ -318,13 +326,44 @@ class BoreOptimizationProblem(ElementwiseProblem):
         out["G"] = [np.sum(smoothness_violations)]
 
 
-def _evaluate_single_design(args):
+def _worker_init(config):
+    """
+    ProcessPoolExecutor worker initializer.
+    
+    1. Sets BLAS thread limits to 1 to prevent thread oversubscription.
+       Each worker re-imports numpy/scipy/openwind after spawn, and without
+       these limits, scipy.sparse.linalg.spsolve() inside OpenWInD spawns
+       N threads (= CPU cores), causing deadlocks with 6+ workers.
+    2. Stores optimization config in module-level dict so _evaluate_single_design
+       only needs to receive the design vector X per task (not constants).
+    """
+    os.environ["OMP_NUM_THREADS"] = "1"
+    os.environ["MKL_NUM_THREADS"] = "1"
+    os.environ["OPENBLAS_NUM_THREADS"] = "1"
+    global _worker_config
+    _worker_config = config
+
+
+# Module-level shared config for worker processes (set by _worker_init).
+_worker_config = {}
+
+
+def _evaluate_single_design(x):
     """
     Standalone picklable function for evaluating one bore design.
     Used by BatchBoreOptimizationProblem with ProcessPoolExecutor.
+    
+    Receives only the design vector X; reads config from module-level
+    _worker_config dict to avoid pickling constants 40 times per generation.
     """
-    (x, bore_length, n_cp, target_freqs, min_radius, max_radius,
-     temperature, freq_range, n_freqs, max_radius_jump) = args
+    cfg = _worker_config
+    bore_length = cfg["bore_length"]
+    n_cp = cfg["n_cp"]
+    target_freqs = cfg["target_freqs"]
+    temperature = cfg["temperature"]
+    freq_range = cfg["freq_range"]
+    n_freqs = cfg["n_freqs"]
+    max_radius_jump = cfg["max_radius_jump"]
     
     positions = np.linspace(0, bore_length, n_cp)
     radii = np.asarray(x, dtype=float)
@@ -434,20 +473,27 @@ class BatchBoreOptimizationProblem(Problem):
     
     def _get_executor(self):
         if self._executor is None:
-            self._executor = ProcessPoolExecutor(max_workers=self.n_workers)
+            config = {
+                "bore_length": self.bore_length,
+                "n_cp": self.n_cp,
+                "target_freqs": self.target_freqs,
+                "temperature": self.temperature,
+                "freq_range": self.freq_range,
+                "n_freqs": self.n_freqs,
+                "max_radius_jump": self.max_radius_jump,
+            }
+            self._executor = ProcessPoolExecutor(
+                max_workers=self.n_workers,
+                initializer=_worker_init,
+                initargs=(config,),
+            )
         return self._executor
     
     def _evaluate(self, X, out, *args, **kwargs):
         executor = self._get_executor()
         
-        task_args = [
-            (X[i], self.bore_length, self.n_cp, self.target_freqs,
-             self.min_radius, self.max_radius, self.temperature,
-             self.freq_range, self.n_freqs, self.max_radius_jump)
-            for i in range(len(X))
-        ]
-        
-        results = list(executor.map(_evaluate_single_design, task_args))
+        # Only send design vectors — config is in worker's _worker_config
+        results = list(executor.map(_evaluate_single_design, X))
         
         F = np.array([r[0] for r in results])
         G = np.array([r[1] for r in results])
@@ -457,7 +503,7 @@ class BatchBoreOptimizationProblem(Problem):
     
     def shutdown(self):
         if self._executor is not None:
-            self._executor.shutdown(wait=False)
+            self._executor.shutdown(wait=True, cancel_futures=True)
             self._executor = None
 
 

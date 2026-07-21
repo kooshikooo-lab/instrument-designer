@@ -1,5 +1,5 @@
 # LIVE CHAT LOG — instrument-designer
-## Last updated: 2026-07-21 (laptop shutdown — batch parallelization pushed)
+## Last updated: 2026-07-21 (laptop — BLAS thread fix + batch parallelization)
 ## For: Both machines — pull this file before starting work
 ## Branch: option-a-tauri
 
@@ -82,6 +82,19 @@
 - ✅ Pulled desktop's 7 new commits (Tauri build, UI, chalumier, presets, README)
 - ✅ All committed and pushed to GitHub
 - ⚠️ Laptop overheating, shutting down — next session run pop=40/gen=50 batch test
+
+---
+
+### Laptop Session (2026-07-21 — BLAS thread fix)
+- **ROOT CAUSE FOUND**: ProcessPoolExecutor hangs caused by BLAS thread oversubscription
+  - Each worker initializes NumPy/SciPy BLAS with N threads (= CPU cores)
+  - 6 workers × N BLAS threads → deadlock inside `scipy.sparse.linalg.spsolve()` (OpenWInD)
+- **FIX 1**: Set `OMP_NUM_THREADS=1`, `MKL_NUM_THREADS=1`, `OPENBLAS_NUM_THREADS=1` at module level + worker initializer
+- **FIX 2**: Worker initializer passes config via `initargs` instead of pickling 40x per generation
+- **FIX 3**: `shutdown(wait=True, cancel_futures=True)` instead of `wait=False`
+- **FIX 4**: Test scripts require `if __name__ == '__main__':` guard (Windows spawn requirement)
+- Test passed: pop=10, gen=3, 4 workers → 40.2s, 4.68 cents RMS
+- Desktop can now safely run batch tests without hanging
 
 ---
 
