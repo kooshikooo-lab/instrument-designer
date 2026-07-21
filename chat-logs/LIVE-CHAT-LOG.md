@@ -1,7 +1,14 @@
 # LIVE CHAT LOG — instrument-designer
-## Last updated: 2026-07-21 (Desktop session 3; laptop shut down for overheating)
+## Last updated: 2026-07-21 (Desktop session 4 — independent overnight session)
 ## For: Both machines — pull this file before starting work
 ## Branch: option-a-tauri
+
+---
+
+### Desktop Session 4 (2026-07-21 — overnight independent)
+- Pulled latest: clean, up to date with origin
+- Working on: ImpedancePlot cache tooltip, fixing optimization presets, README
+- User gone to bed — working independently until morning
 
 ---
 
