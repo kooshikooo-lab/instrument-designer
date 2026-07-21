@@ -1,5 +1,5 @@
 # LIVE CHAT LOG — instrument-designer
-## Last updated: 2026-07-21 (laptop session — batch parallelization added)
+## Last updated: 2026-07-21 (laptop shutdown — batch parallelization pushed)
 ## For: Both machines — pull this file before starting work
 ## Branch: option-a-tauri
 
@@ -39,7 +39,9 @@
 - ✅ Updated `test_large.py` and `test_parallel_benchmark.py` for new API
 - ✅ Comprehensive desktop session restore doc created (for deleted session recovery)
 - ✅ LIVE-CHAT-LOG updated with all changes
-- Desktop session was deleted — wrote `chat-logs/2026-07-21-desktop-session-restore.md` with full context
+- ✅ Pulled desktop's 7 new commits (Tauri build, UI, chalumier, presets, README)
+- ✅ All committed and pushed to GitHub
+- ⚠️ Laptop overheating, shutting down — next session run pop=40/gen=50 batch test
 
 ---
 
@@ -217,7 +219,8 @@ npx tauri build --no-bundle
 - ✅ Batch parallelization implemented and benchmarked (1.80x speedup)
 - ✅ `parallel_mode` parameter: "serial", "starmap", "batch", "auto"
 - ✅ Desktop session restore doc written
-- 🔲 Run pop=40/gen=50 with batch to break below 3 cents (was killed before, need to re-run)
+- ✅ All pushed to GitHub
+- 🔲 Run pop=40/gen=50 with batch to break below 3 cents (next session)
 - 🔲 Validate against demakein reference instruments
 
 ## Desktop: Current Work
