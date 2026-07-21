@@ -45,7 +45,7 @@ def speed_of_sound(temp_c: float = 20.0) -> float:
 
 
 # ============================================================================
-# PVC FLUTE TONE HOLE CALCULATOR
+# PVC FLUTE TONE HOLE CALCULATOR (Flutomat/Benade model)
 # ============================================================================
 
 def pvc_flute_holes(
@@ -60,7 +60,14 @@ def pvc_flute_holes(
     scale: str = "chromatic",
 ) -> Dict:
     """
-    Calculate tone hole positions for a PVC flute.
+    Calculate tone hole positions for a PVC flute using Flutomat/Benade model.
+    
+    Uses Benade's impedance-matching equations with quadratic solutions for
+    accurate hole positions. Accounts for:
+    - End correction: C_end = 0.6133 * bore_radius
+    - Closed hole correction: C_c = 0.25 * wall * (hole_d / bore_d)^2
+    - Effective hole height: t_e = wall + 0.75 * hole_d
+    - Embouchure correction: C_emb = (bore/Demb)^2 * 10.84 * wall * Demb / (bore + 2*wall)
     
     Args:
         bore_diameter_mm: Inner diameter of PVC pipe (e.g., 20.9 for 3/4" Sch40)
@@ -75,33 +82,29 @@ def pvc_flute_holes(
     
     Returns dict with bore_length, hole_positions, hole_diameters, etc.
     """
-    c = speed_of_sound(temperature_c)
-    bore_r = bore_diameter_mm / 2.0
-    bore_m = bore_diameter_mm / 1000.0
+    # Convert to cm for Flutomat's internal units
+    bore = bore_diameter_mm / 10.0  # cm
+    wall = wall_thickness_mm / 10.0  # cm
+    emb_d = embouchure_diameter_mm / 10.0  # cm
+    sos = speed_of_sound(temperature_c) * 100  # cm/s
     
-    # Calculate bore length from fundamental (open pipe)
+    # Constants (from Flutomat NG)
+    END_CORRECTION_FACTOR = 0.6133
+    HOLE_HEIGHT_FACTOR = 0.75
+    
+    # Generate scale notes
     f0 = note_to_freq(fundamental_note, fundamental_octave)
-    end_correction = 0.6 * bore_r  # mm, each open end
-    # For transverse flute: embouchure end has correction, open end has correction
-    # Total effective length = physical length + end corrections
-    L_eff = c / (2.0 * f0) * 1000.0  # mm
-    # Physical length = effective length - end corrections at both ends
-    bore_length = L_eff - 2 * end_correction
+    note_idx = NOTE_NAMES.index(fundamental_note)
     
-    # Generate scale notes (what each hole should produce)
     if scale == "chromatic":
-        # Chromatic from fundamental up
-        note_idx = NOTE_NAMES.index(fundamental_note)
         holes = []
         for i in range(n_holes):
-            semitones = i + 1  # each hole raises by 1 semitone
+            semitones = i + 1
             hole_note_idx = (note_idx + semitones) % 12
             hole_octave = fundamental_octave + (note_idx + semitones) // 12
             holes.append((NOTE_NAMES[hole_note_idx], hole_octave))
-    elif scale == "diatonic" or scale == "major":
-        # Major scale from fundamental
-        major_intervals = [2, 2, 1, 2, 2, 2, 1]  # semitones
-        note_idx = NOTE_NAMES.index(fundamental_note)
+    elif scale in ("diatonic", "major"):
+        major_intervals = [2, 2, 1, 2, 2, 2, 1]
         holes = []
         cumulative = 0
         for i in range(min(n_holes, 7)):
@@ -111,7 +114,6 @@ def pvc_flute_holes(
             holes.append((NOTE_NAMES[hole_note_idx], hole_octave))
     elif scale == "minor":
         minor_intervals = [2, 1, 2, 2, 1, 2, 2]
-        note_idx = NOTE_NAMES.index(fundamental_note)
         holes = []
         cumulative = 0
         for i in range(min(n_holes, 7)):
@@ -122,43 +124,84 @@ def pvc_flute_holes(
     else:
         raise ValueError(f"Unknown scale: {scale}")
     
-    # Calculate hole positions
-    # For each hole, the effective length when that hole is open:
-    # L_eff_hole = c / (2 * f_hole)
-    # Distance from open end = L_eff_hole - end_correction(open end)
-    # Distance from embouchure = bore_length - distance_from_open_end
+    # Calculate hole frequencies and diameters
+    hole_freqs = [note_to_freq(n, o) for n, o in holes]
+    hole_ds = [bore * 0.7] * n_holes  # 70% of bore diameter
     
-    embouchure_correction = embouchure_offset_mm  # approximate
-    tone_hole_correction = 0.4 * bore_r  # mm, for open tone hole
+    # --- Flutomat/Benade quadratic position calculation ---
     
-    hole_positions = []
-    hole_diams = []
-    hole_freqs = []
-    hole_cents = []
+    # 1. Calculate corrections
+    end_correction = END_CORRECTION_FACTOR * (bore / 2.0)
     
-    for note_name, note_octave in holes:
-        f_hole = note_to_freq(note_name, note_octave)
-        L_eff_hole = c / (2.0 * f_hole) * 1000.0  # mm
-        # Distance from open end (bell end)
-        dist_from_open = L_eff_hole - end_correction - tone_hole_correction
-        # Distance from embouchure center
-        dist_from_emb = bore_length - dist_from_open
+    closed_hole_corrections = []
+    for i in range(n_holes):
+        ratio = hole_ds[i] / bore
+        cc = 0.25 * wall * ratio * ratio
+        closed_hole_corrections.append(cc)
+    
+    # 2. Calculate effective acoustic end (Xend)
+    target_L_end = sos * 0.5 / f0
+    acoustic_end_x = target_L_end - end_correction
+    for cc in closed_hole_corrections:
+        acoustic_end_x -= cc
+    
+    # 3. Calculate first hole position (quadratic)
+    te_1 = wall + HOLE_HEIGHT_FACTOR * hole_ds[0]
+    L1 = sos * 0.5 / hole_freqs[0]
+    for i in range(1, n_holes):
+        L1 -= closed_hole_corrections[i]
+    
+    d1_ratio_sq = (hole_ds[0] / bore) ** 2
+    a1 = d1_ratio_sq
+    b1 = -(acoustic_end_x + L1) * d1_ratio_sq
+    c1 = acoustic_end_x * L1 * d1_ratio_sq + te_1 * (L1 - acoustic_end_x)
+    
+    disc1 = b1 * b1 - 4 * a1 * c1
+    if disc1 < 0:
+        raise ValueError(f"Discriminant negative for hole 1: {disc1}")
+    
+    xf1 = (-b1 - np.sqrt(disc1)) / (2 * a1)
+    
+    # 4. Calculate subsequent holes
+    acoustic_positions = [xf1]
+    for n in range(1, n_holes):
+        te_n = wall + HOLE_HEIGHT_FACTOR * hole_ds[n]
+        L_n = sos * 0.5 / hole_freqs[n]
+        for i in range(n + 1, n_holes):
+            L_n -= closed_hole_corrections[i]
         
-        # Clamp to valid range
-        dist_from_emb = max(embouchure_offset_mm + 20, min(dist_from_emb, bore_length - 10))
+        prev_pos = acoustic_positions[n - 1]
+        bore_d_ratio_sq = (bore / hole_ds[n]) ** 2
         
-        # Hole diameter: typically 60-80% of bore diameter
-        hole_d = bore_diameter_mm * 0.7
+        a_n = 2.0
+        b_n = -prev_pos - 3.0 * L_n + te_n * bore_d_ratio_sq
+        c_n = prev_pos * (L_n - te_n * bore_d_ratio_sq) + L_n * L_n
         
-        hole_positions.append(round(dist_from_emb, 1))
-        hole_diams.append(round(hole_d, 1))
-        hole_freqs.append(round(f_hole, 1))
-        hole_cents.append(0)  # reference, will be calculated relative to equal temperament
+        disc_n = b_n * b_n - 4.0 * a_n * c_n
+        if disc_n < 0:
+            raise ValueError(f"Discriminant negative for hole {n+1}: {disc_n}")
+        
+        xf_n = (-b_n - np.sqrt(disc_n)) / (2.0 * a_n)
+        acoustic_positions.append(xf_n)
     
-    # Theoretical cents errors (all 0 for equal temperament calculation)
-    for i, (pos, f_target) in enumerate(zip(hole_positions, hole_freqs)):
-        # Actual frequency depends on which holes are open - this is simplified
-        hole_cents[i] = 0  # Perfect ET assumed for layout
+    # 5. Embouchure position
+    bore_demb_ratio_sq = (bore / emb_d) ** 2
+    emb_correction = bore_demb_ratio_sq * 10.84 * wall * emb_d / (bore + 2.0 * wall)
+    embouchure_pos_cm = acoustic_end_x - emb_correction
+    
+    # 6. Physical positions from open end (convert to mm)
+    hole_positions_from_open = [(acoustic_end_x - xf) * 10 for xf in acoustic_positions]
+    embouchure_pos_mm = embouchure_pos_cm * 10
+    
+    # 7. Convert to positions from embouchure center
+    # Holes are between embouchure and open end, so distance from embouchure = embouchure_pos - hole_pos
+    hole_positions_from_emb = [embouchure_pos_mm - pos for pos in hole_positions_from_open]
+    
+    # 8. Bore length
+    bore_length = embouchure_pos_mm + embouchure_offset_mm
+    
+    # 9. Build result
+    hole_diams = [d * 10 for d in hole_ds]  # back to mm
     
     return {
         "bore_diameter_mm": bore_diameter_mm,
@@ -167,27 +210,28 @@ def pvc_flute_holes(
         "bore_length_m": round(bore_length / 1000, 4),
         "fundamental": f"{fundamental_note}{fundamental_octave}",
         "fundamental_hz": round(f0, 1),
-        "speed_of_sound_ms": round(c, 1),
-        "end_correction_mm": round(end_correction, 1),
+        "speed_of_sound_ms": round(sos / 100, 1),
+        "end_correction_mm": round(end_correction * 10, 1),
         "embouchure": {
             "diameter_mm": embouchure_diameter_mm,
-            "offset_from_end_mm": embouchure_offset_mm,
+            "position_from_open_mm": round(embouchure_pos_mm, 1),
+            "position_from_embouchure_mm": embouchure_offset_mm,
         },
         "wall_thickness_mm": wall_thickness_mm,
         "scale": scale,
+        "algorithm": "Flutomat/Benade (quadratic impedance matching)",
         "holes": [
             {
                 "number": i + 1,
-                "note": f"{note}{oct}",
-                "frequency_hz": f,
-                "position_from_embouchure_mm": pos,
-                "position_from_embouchure_cm": round(pos / 10, 1),
-                "diameter_mm": d,
-                "cents_from_et": c,
+                "note": f"{holes[i][0]}{holes[i][1]}",
+                "frequency_hz": round(hole_freqs[i], 1),
+                "position_from_open_mm": round(hole_positions_from_open[i], 1),
+                "position_from_embouchure_mm": round(hole_positions_from_emb[i], 1),
+                "position_from_embouchure_cm": round(hole_positions_from_emb[i] / 10, 1),
+                "diameter_mm": round(hole_diams[i], 1),
+                "cents_from_et": 0,
             }
-            for i, ((note, oct), pos, d, f, c) in enumerate(
-                zip(holes, hole_positions, hole_diams, hole_freqs, hole_cents)
-            )
+            for i in range(n_holes)
         ],
         "pvc_specs": pvc_pipe_specs(bore_diameter_mm),
     }
