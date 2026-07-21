@@ -17,3 +17,5 @@ target/
 *.dll
 *.lib
 *.exp
+
+design_memory.db
