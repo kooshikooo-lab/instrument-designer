@@ -18,6 +18,12 @@
 - ✅ Committed + pushed all changes (4 commits)
 - ✅ Created experiment-staged-optimization branch with Noreland 3-stage optimizer
 - ✅ Created experiment-processpoolexecutor branch with parallel benchmark
+- ✅ **Chalumier Integration** (experiment-chalumier-integration branch, 4 commits):
+  - Backend: /chalumier/status, /chalumier/presets, /chalumier/design, /chalumier/build endpoints
+  - Frontend: Chalumier Engine section with availability indicator, build button, preset selector
+  - BoreProfileView SVG renderer: cross-section visualization with hole positions (cyan markers)
+  - Used in both chalumier results AND optimization results (replaces old tables)
+  - Requires JDK 17+ and gradlew.bat shadowJar to activate
 - ✅ TypeScript build: clean, 0 errors
 - User gone to bed — working independently until morning
 
