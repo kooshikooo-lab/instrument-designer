@@ -269,16 +269,16 @@ class BoreOptimizationProblem(ElementwiseProblem):
                 temperature=self.temperature,
             )
         except Exception:
-            out["F"] = [np.inf, np.inf, np.inf]
-            out["G"] = [np.inf]
+            out["F"] = [1e10, 1e10, 1e10]
+            out["G"] = [1e10]
             return
         
         peak_freqs = result["peak_frequencies"]
         peak_mags = result["peak_magnitudes"]
         
         if len(peak_freqs) < 2:
-            out["F"] = [np.inf, np.inf, np.inf]
-            out["G"] = [np.inf]
+            out["F"] = [1e10, 1e10, 1e10]
+            out["G"] = [1e10]
             return
         
         n_targets = len(self.target_freqs)
@@ -366,13 +366,13 @@ def _evaluate_single_design(x):
             bore, freq_range=freq_range, n_freqs=n_freqs, temperature=temperature,
         )
     except Exception:
-        return [np.inf, np.inf, np.inf], [np.inf]
+        return [1e10, 1e10, 1e10], [1e10]
     
     peak_freqs = result["peak_frequencies"]
     peak_mags = result["peak_magnitudes"]
     
     if len(peak_freqs) < 2:
-        return [np.inf, np.inf, np.inf], [np.inf]
+        return [1e10, 1e10, 1e10], [1e10]
     
     matched = _match_peaks_to_targets(peak_freqs, target_freqs)
     
