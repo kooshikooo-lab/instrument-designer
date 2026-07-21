@@ -1,9 +1,9 @@
 ﻿import { useState, useEffect, type ReactNode } from "react";
 import { DEMAKEIN_PRESETS, DEMAKEIN_PRESET_GROUPS } from "../data/instruments";
 import { TUNING_PRESETS, TUNING_CATEGORIES } from "../data/tuning-presets";
-import { checkHealth, startDesign, getDesignStatus, getDesignDownloadUrl, exportStep, startOptimization, getOptimizationStatus, getOptimizationPresets, getCacheStats, clearCache } from "../utils/api";
+import { checkHealth, startDesign, getDesignStatus, getDesignDownloadUrl, exportStep, startOptimization, getOptimizationStatus, getOptimizationPresets, getCacheStats, clearCache, getChalumierStatus, getChalumierPresets, getChalumierChalContent, startChalumierDesign, getChalumierDesignStatus } from "../utils/api";
 import type { PitchResult } from "../utils/pitch";
-import type { OptimizationResult, OptimizationPreset } from "../utils/api";
+import type { OptimizationResult, OptimizationPreset, ChalumierDesignResult } from "../utils/api";
 import STLViewer from "./STLViewer";
 import ParametricGenerator from "./ParametricGenerator";
 import ImpedancePlot from "./ImpedancePlot";
@@ -88,10 +88,34 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
   const [optResult, setOptResult] = useState<OptimizationResult | null>(null);
   const [cacheSize, setCacheSize] = useState<number | null>(null);
 
+  const [chalAvailable, setChalAvailable] = useState<boolean | null>(null);
+  const [chalPresets, setChalPresets] = useState<Record<string, string>>({});
+  const [chalSelectedPreset, setChalSelectedPreset] = useState<string>("");
+  const [chalChalContent, setChalChalContent] = useState<string>("");
+  const [chalRunning, setChalRunning] = useState(false);
+  const [_chalJobId, setChalJobId] = useState<string | null>(null);
+  const [chalStatus, setChalStatus] = useState("");
+  const [chalProgress, setChalProgress] = useState<string[]>([]);
+  const [chalResult, setChalResult] = useState<ChalumierDesignResult | null>(null);
+
   useEffect(() => {
     getOptimizationPresets().then((p) => setOptPresets(p)).catch(() => {});
     getCacheStats().then((s) => setCacheSize(s.cache_size)).catch(() => {});
+    getChalumierStatus().then((s) => {
+      setChalAvailable(s.available);
+      if (s.available) {
+        getChalumierPresets().then((p) => setChalPresets(p)).catch(() => {});
+      }
+    }).catch(() => setChalAvailable(false));
   }, []);
+
+  useEffect(() => {
+    if (chalSelectedPreset) {
+      getChalumierChalContent(chalSelectedPreset)
+        .then((data) => setChalChalContent(data.content))
+        .catch(() => setChalChalContent(""));
+    }
+  }, [chalSelectedPreset]);
 
   useEffect(() => {
     if (initialPreset) {
@@ -212,6 +236,34 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
     } catch (e) {
       setOptStatus(`Error: ${e}`);
       setOptRunning(false);
+    }
+  };
+
+  const runChalumierDesign = async () => {
+    if (!chalSelectedPreset) return;
+    setChalRunning(true);
+    setChalProgress([]);
+    setChalResult(null);
+    setChalStatus("Starting chalumier design...");
+    try {
+      const { job_id } = await startChalumierDesign(chalSelectedPreset);
+      setChalJobId(job_id);
+      setChalStatus(`Job ${job_id} started`);
+      const poll = setInterval(async () => {
+        const result = await getChalumierDesignStatus(job_id);
+        setChalProgress(result.progress);
+        setChalStatus(result.status);
+        if (result.status === "completed" || result.status === "failed") {
+          clearInterval(poll);
+          setChalRunning(false);
+          if (result.status === "completed" && result.result) {
+            setChalResult(result.result);
+          }
+        }
+      }, 1000);
+    } catch (e) {
+      setChalStatus(`Error: ${e}`);
+      setChalRunning(false);
     }
   };
 
@@ -609,6 +661,132 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
                         ))}
                       </tbody>
                     </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Chalumier Engine" defaultOpen={false} badge={chalAvailable === true ? "Available" : chalAvailable === false ? "Unavailable" : "Checking..."}>
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${chalAvailable === true ? "bg-green-500" : chalAvailable === false ? "bg-red-500" : "bg-yellow-500 animate-pulse"}`} />
+            <span className="text-xs text-neutral-400">
+              {chalAvailable === true ? "Chalumier available (JDK 17+ detected)" : chalAvailable === false ? "Not available — install JDK 17+ and build with gradlew.bat shadowJar" : "Checking chalumier availability..."}
+            </span>
+          </div>
+          {chalAvailable && (
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs text-neutral-500 block mb-1">Instrument Preset</label>
+                  <select
+                    value={chalSelectedPreset}
+                    onChange={(e) => setChalSelectedPreset(e.target.value)}
+                    className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-100 focus:outline-none focus:border-brand-500"
+                  >
+                    <option value="">Select a preset...</option>
+                    {Object.entries(chalPresets).map(([key, name]) => (
+                      <option key={key} value={key}>{name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-end">
+                  <button
+                    onClick={runChalumierDesign}
+                    disabled={chalRunning || !chalSelectedPreset}
+                    className="px-6 py-2 bg-brand-600 hover:bg-brand-500 disabled:bg-neutral-800 disabled:text-neutral-600 text-sm text-white rounded-lg transition-colors font-medium"
+                  >
+                    {chalRunning ? "Designing..." : "Run Chalumier Design"}
+                  </button>
+                </div>
+              </div>
+              {chalChalContent && (
+                <div>
+                  <h5 className="text-xs text-neutral-500 mb-1">Specification (.chal)</h5>
+                  <pre className="bg-neutral-950 rounded-lg p-3 overflow-auto max-h-48 font-mono text-[10px] text-neutral-400 whitespace-pre-wrap">{chalChalContent}</pre>
+                </div>
+              )}
+            </>
+          )}
+          {(chalProgress.length > 0 || chalStatus) && (
+            <div>
+              <div className="text-xs text-neutral-400 mb-1">Status: {chalStatus}</div>
+              <div className="bg-neutral-950 rounded-lg p-3 max-h-40 overflow-auto font-mono text-xs text-neutral-400 space-y-0.5">
+                {chalProgress.map((line, i) => (<div key={i}>{line}</div>))}
+              </div>
+            </div>
+          )}
+          {chalResult && (
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium text-neutral-200">Chalumier Results</h4>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-neutral-950 rounded-lg p-3">
+                  <div className="text-[10px] text-neutral-500">Bore Length</div>
+                  <div className="text-sm text-neutral-100 font-mono">{chalResult.length > 0 ? `${(chalResult.length * 1000).toFixed(0)} mm` : "—"}</div>
+                </div>
+                <div className="bg-neutral-950 rounded-lg p-3">
+                  <div className="text-[10px] text-neutral-500">Holes</div>
+                  <div className="text-sm text-neutral-100 font-mono">{chalResult.hole_positions.length}</div>
+                </div>
+                <div className="bg-neutral-950 rounded-lg p-3">
+                  <div className="text-[10px] text-neutral-500">Bore Points</div>
+                  <div className="text-sm text-neutral-100 font-mono">{chalResult.bore_profile.length}</div>
+                </div>
+              </div>
+              {chalResult.bore_profile.length > 0 && (
+                <div>
+                  <h5 className="text-xs text-neutral-500 mb-1">Bore Profile</h5>
+                  <div className="bg-neutral-950 rounded-lg p-3 overflow-x-auto">
+                    <table className="w-full text-[10px] font-mono text-neutral-300">
+                      <thead>
+                        <tr className="text-neutral-500">
+                          <th className="text-left pr-4">Position (mm)</th>
+                          <th className="text-left pr-4">Radius (mm)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {chalResult.bore_profile.map((p: number[], i: number) => (
+                          <tr key={i}>
+                            <td className="pr-4">{p[0] !== undefined ? `${(p[0] * 1000).toFixed(1)}` : "—"}</td>
+                            <td className="pr-4">{p[1] !== undefined ? `${(p[1] * 1000).toFixed(2)}` : "—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+              {chalResult.hole_positions.length > 0 && (
+                <div>
+                  <h5 className="text-xs text-neutral-500 mb-1">Hole Positions</h5>
+                  <div className="bg-neutral-950 rounded-lg p-3 overflow-x-auto">
+                    <table className="w-full text-[10px] font-mono text-neutral-300">
+                      <thead>
+                        <tr className="text-neutral-500">
+                          <th className="text-left pr-4">Position (mm)</th>
+                          <th className="text-left pr-4">Diameter (mm)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {chalResult.hole_positions.map((pos: number, i: number) => (
+                          <tr key={i}>
+                            <td className="pr-4">{(pos * 1000).toFixed(1)}</td>
+                            <td className="pr-4">{chalResult.hole_diameters[i] !== undefined ? `${(chalResult.hole_diameters[i] * 1000).toFixed(1)}` : "—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+              {chalResult.svg_path && (
+                <div>
+                  <h5 className="text-xs text-neutral-500 mb-1">Design Diagram</h5>
+                  <div className="bg-neutral-950 rounded-lg p-3 text-xs text-neutral-400">
+                    SVG saved at: <span className="font-mono text-neutral-300">{chalResult.svg_path}</span>
                   </div>
                 </div>
               )}

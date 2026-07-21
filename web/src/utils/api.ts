@@ -251,3 +251,63 @@ export async function clearCache(): Promise<{ status: string }> {
   if (!res.ok) throw new Error(`Cache clear failed`);
   return res.json();
 }
+
+// ─── Chalumier API ──────────────────────────────────────────────────────
+
+export interface ChalumierStatus {
+  available: boolean;
+  jar_path: string | null;
+  chalumier_dir: string;
+  examples_exist: boolean;
+}
+
+export interface ChalumierDesignResult {
+  success: boolean;
+  log: string;
+  bore_profile: number[][];
+  hole_positions: number[];
+  hole_diameters: number[];
+  length: number;
+  svg_path: string;
+  json_path: string;
+  output_dir: string;
+}
+
+export interface ChalumierDesignJob {
+  job_id: string;
+  status: string;
+  progress: string[];
+  result?: ChalumierDesignResult;
+  error?: string;
+}
+
+export async function getChalumierStatus(): Promise<ChalumierStatus> {
+  const res = await apiGet("/chalumier/status");
+  if (!res.ok) throw new Error("Failed to get chalumier status");
+  return res.json();
+}
+
+export async function getChalumierPresets(): Promise<Record<string, string>> {
+  const res = await apiGet("/chalumier/presets");
+  if (!res.ok) throw new Error("Failed to get chalumier presets");
+  const data = await res.json();
+  return data.presets;
+}
+
+export async function getChalumierChalContent(presetKey: string): Promise<{ preset: string; filename: string; content: string }> {
+  const res = await apiGet(`/chalumier/presets/${presetKey}/chal`);
+  if (!res.ok) throw new Error("Failed to get .chal content");
+  return res.json();
+}
+
+export async function startChalumierDesign(preset: string): Promise<{ job_id: string }> {
+  const res = await apiPost("/chalumier/design", { preset });
+  if (!res.ok) throw new Error(`Chalumier design start failed: ${res.statusText}`);
+  return res.json();
+}
+
+export async function getChalumierDesignStatus(jobId: string): Promise<ChalumierDesignJob> {
+  const res = await apiGet(`/chalumier/design/${jobId}/status`);
+  if (!res.ok) throw new Error("Chalumier design status failed");
+  return res.json();
+}

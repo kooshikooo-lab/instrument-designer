@@ -19,6 +19,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from .demakein_wrapper import DemakeinDesigner
+from .chalumier_wrapper import ChalumierDesigner
 
 app = FastAPI(title="Instrument Designer Server", version="1.1.0")
 app.add_middleware(
@@ -348,3 +349,112 @@ def clear_cache():
 def get_cache_stats():
     from backend.mp_cache import cache_size
     return {"cache_size": cache_size(), "status": "ok"}
+
+
+# ─── Chalumier Integration ──────────────────────────────────────────────
+
+class ChalumierDesignRequest(BaseModel):
+    preset: str
+
+
+def _run_chalumier_design(job_id: str, preset_key: str):
+    """Run chalumier design in a background thread."""
+    progress_log = []
+    def on_progress(msg):
+        with _lock:
+            progress_log.append(msg)
+            _jobs[job_id]["progress"] = list(progress_log)
+
+    try:
+        out_dir = os.path.join(tempfile.gettempdir(), f"chalumier_{job_id}")
+        designer = ChalumierDesigner()
+        result = designer.design(preset_key, output_dir=out_dir, on_progress=on_progress)
+
+        with _lock:
+            _jobs[job_id].update(
+                status="completed" if result.success else "failed",
+                result={
+                    "success": result.success,
+                    "log": result.log,
+                    "bore_profile": result.bore_profile,
+                    "hole_positions": result.hole_positions,
+                    "hole_diameters": result.hole_diameters,
+                    "length": result.length,
+                    "svg_path": result.svg_path,
+                    "json_path": result.json_path,
+                    "output_dir": result.output_dir,
+                },
+                progress=list(progress_log),
+            )
+    except Exception as e:
+        with _lock:
+            _jobs[job_id].update(
+                status="failed",
+                error=str(e),
+                result={"success": False, "log": f"Chalumier design failed: {e}"},
+                progress=list(progress_log) + [f"Error: {e}"],
+            )
+
+
+@app.get("/chalumier/status")
+def chalumier_status():
+    """Check if chalumier is available (JDK + built JAR)."""
+    designer = ChalumierDesigner()
+    available = designer.is_available()
+    jar_path = str(designer._find_jar()) if designer._find_jar() else None
+    return {
+        "available": available,
+        "jar_path": jar_path,
+        "chalumier_dir": str(designer.chalumier_dir),
+        "examples_exist": designer.examples_dir.exists(),
+    }
+
+
+@app.get("/chalumier/presets")
+def chalumier_presets():
+    """List available chalumier presets."""
+    designer = ChalumierDesigner()
+    presets = designer.list_presets()
+    return {"presets": presets}
+
+
+@app.get("/chalumier/presets/{preset_key}/chal")
+def chalumier_get_chal(preset_key: str):
+    """Get the .chal file content for a preset."""
+    designer = ChalumierDesigner()
+    content = designer.get_chal_content(preset_key)
+    if not content:
+        raise HTTPException(404, f"Preset not found: {preset_key}")
+    filename = designer.PRESET_FILES.get(preset_key, "")
+    return {"preset": preset_key, "filename": filename, "content": content}
+
+
+@app.post("/chalumier/design")
+def start_chalumier_design(req: ChalumierDesignRequest):
+    """Start a chalumier design job."""
+    designer = ChalumierDesigner()
+    if not designer.is_available():
+        raise HTTPException(503, "Chalumier not available. Install JDK 17+ and build with gradlew.bat shadowJar")
+
+    job_id = uuid.uuid4().hex[:12]
+    with _lock:
+        _jobs[job_id] = {"status": "queued", "progress": [], "result": None}
+    t = threading.Thread(target=_run_chalumier_design, args=(job_id, req.preset), daemon=True)
+    t.start()
+    return {"job_id": job_id}
+
+
+@app.get("/chalumier/design/{job_id}/status")
+def get_chalumier_design_status(job_id: str):
+    """Poll chalumier design job status."""
+    with _lock:
+        job = _jobs.get(job_id)
+    if not job:
+        raise HTTPException(404, "Job not found")
+    return {
+        "job_id": job_id,
+        "status": job["status"],
+        "progress": job.get("progress", []),
+        "result": job.get("result"),
+        "error": job.get("error"),
+    }
