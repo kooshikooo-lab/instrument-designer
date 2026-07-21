@@ -504,3 +504,34 @@ def list_design_desk_instruments():
     """List available instrument types for auto-design."""
     from backend.design_desk import INSTRUMENT_CONFIGS
     return {"instruments": {k: v["description"] for k, v in INSTRUMENT_CONFIGS.items()}}
+
+
+# ─── SVG Export ─────────────────────────────────────────────────────────
+
+class SvgExportRequest(BaseModel):
+    bore_profile: list[list[float]]
+    title: str = "Instrument Bore Profile"
+    hole_positions: Optional[list[float]] = None
+    hole_diameters: Optional[list[float]] = None
+    bore_length: Optional[float] = None
+    view: str = "side"
+
+
+@app.post("/export/svg")
+def export_svg(req: SvgExportRequest):
+    """Generate SVG from bore profile data."""
+    import sys
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+    from backend.svg_export import bore_to_svg, bore_to_cross_section_svg
+
+    if req.view == "cross":
+        svg = bore_to_cross_section_svg(
+            req.bore_profile, req.title, req.hole_positions,
+        )
+    else:
+        svg = bore_to_svg(
+            req.bore_profile, req.title, req.hole_positions,
+            req.hole_diameters, req.bore_length,
+        )
+    from fastapi.responses import HTMLResponse
+    return HTMLResponse(content=svg, media_type="image/svg+xml")

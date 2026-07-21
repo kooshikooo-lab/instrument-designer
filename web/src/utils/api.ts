@@ -388,3 +388,37 @@ export async function getDesignDeskInstruments(): Promise<Record<string, string>
   const data = await res.json();
   return data.instruments;
 }
+
+// ─── SVG Export ─────────────────────────────────────────────────────────
+
+export async function exportBoreSvg(
+  boreProfile: [number, number][],
+  title?: string,
+  holePositions?: number[],
+  holeDiameters?: number[],
+  boreLength?: number,
+  view?: "side" | "cross",
+): Promise<string> {
+  const res = await apiPost("/export/svg", {
+    bore_profile: boreProfile,
+    title: title ?? "Instrument Bore Profile",
+    hole_positions: holePositions,
+    hole_diameters: holeDiameters,
+    bore_length: boreLength,
+    view: view ?? "side",
+  });
+  if (!res.ok) throw new Error("SVG export failed");
+  return res.text();
+}
+
+export function downloadSvg(svgContent: string, filename: string) {
+  const blob = new Blob([svgContent], { type: "image/svg+xml" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
