@@ -38,6 +38,7 @@ This report documents the design, development, and evaluation of a computational
 12. Lessons Learned
 13. Future Directions
 14. References
+15. Flute & Overtone Flute Research
 
 ---
 
@@ -802,6 +803,124 @@ GTOL = 1e-5
 
 ---
 
-*This report was last updated: 2026-07-21 (Desktop Session 8)*
+# 15. Flute & Overtone Flute Research
 
-*Next update expected: After scipy.gradient benchmark results*
+## 15.1 Flute Acoustics
+
+Flutes are open-open pipes (both ends open), producing all harmonics (1f, 2f, 3f, 4f, ...). This contrasts with clarinets (closed-open pipes) which produce only odd harmonics. The fundamental frequency for an open pipe is:
+
+```
+f = c / (2L)
+```
+
+where c = speed of sound (~343 m/s at 20°C) and L = effective bore length.
+
+**Key differences from clarinet:**
+- Open-open bore → all harmonics (clarinet: closed-open → odd harmonics only)
+- Embouchure hole acts as impedance discontinuity (clarinet: reed mouthpiece)
+- Tone holes create shortcuts for the air column (clarinet: register key + tone holes)
+
+## 15.2 PVC Flute Design
+
+PVC pipes are popular for DIY flutes due to:
+- Standardized dimensions (Schedule 40)
+- Low cost (~$2-5 per flute)
+- Easy to machine/drill
+- Stable dimensions (no moisture absorption)
+
+**PVC pipe dimensions (Schedule 40):**
+
+| Size | ID (mm) | OD (mm) | Wall (mm) |
+|------|---------|---------|-----------|
+| 1/2" | 15.8 | 21.3 | 2.8 |
+| 3/4" | 20.9 | 26.7 | 2.9 |
+| 1" | 26.1 | 33.4 | 3.4 |
+| 1-1/4" | 34.5 | 42.2 | 3.6 |
+
+**Sweet spot:** 3/4" Schedule 40 (20.9mm ID) for D/C/Bb flutes. Bore:length ratio ≈ 1:21.
+
+## 15.3 Overtone Flutes
+
+Overtone flutes have no tone holes. Different notes are produced by overblowing the harmonic series:
+- **Closed pipe** (one end blocked): odd harmonics only (1f, 3f, 5f, 7f, ...)
+- **Open pipe** (both ends open): all harmonics (1f, 2f, 3f, 4f, ...)
+
+**Types of overtone flutes:**
+- **Seljeflöyte** (Norwegian willow flute): closed pipe, 16-20mm ID, 40-80cm
+- **Koncovka** (Slovak): closed pipe, 16-20mm ID, 60-80cm
+- **Fujara** (Slovak bass flute): closed pipe, 20mm ID, 160-200cm
+- **Kalyuka** (Bulgarian): closed pipe with finger holes
+- **Tilinca** (Romanian): closed pipe, 15-18mm ID
+
+**Overtone flute length formula (closed pipe):**
+```
+L = c / (4f) - end_correction
+```
+
+## 15.4 Membrane Flutes
+
+Membrane flutes use a thin membrane (typically rice paper) over a hole to create buzzing timbre:
+- **Dizi** (Chinese): bamboo, membrane (dimo), keyed
+- **Daegeum** (Korean): large bamboo, thick membrane
+- **Bawu** (Chinese): free reed + membrane
+- **Hulusi** (Chinese): gourd + free reeds
+
+The membrane acts as a Duffing oscillator, shifting resonances 20-70 cents and creating odd-harmonic predominance.
+
+## 15.5 Hybrid Instruments
+
+- **Duduk** (Armenian): cylindrical bore + double reed (oboe reed + clarinet bore)
+- **Balaban** (Azerbaijani/Iranian): similar to duduk
+- **Mey** (Turkish): similar to duduk
+- **Guanzi** (Chinese): double reed + conical bore
+
+Maugeais & Dalmont (2024): low reed resonance creates dark timbre in duduk.
+
+## 15.6 Software Tools for Flute Design
+
+| Tool | Language | Type | Notes |
+|------|----------|------|-------|
+| Flutomat NG | JavaScript | Calculator | Quick tone hole layout |
+| Bracker Calculator | JavaScript | Calculator | Bore + tone holes |
+| CMUSE | Web | Acoustic sim | Impedance + sound |
+| DidgeLab | Python | Inverse design | Didgeridoo focus |
+| build123d | Python | Parametric CAD | 3D printable bodies |
+| Flutes.jl | Julia | SCAD export | OpenSCAD integration |
+| Flutomat | Python | Calculator | Original Flutomat |
+| demakein | Python | Measurement | Bore measurement |
+| Seljeflöyte Calc | JavaScript | Calculator | Overtone flute specific |
+
+**Key URLs:**
+- Flutomat NG: https://www.kosology.de/flutomat/
+- Bracker Calculator: https://www.bracker.com/calculator/
+- CMUSE: https://www.hcu-hamburg.de/cmuse/
+- UNSW Impedance DB: https://newt.phys.unsw.edu.au/music/
+- demakein designs: https://www.thingiverse.com/thing:2752251
+- Seljeflöyte calculator: https://blasemaker.no/flute/
+- Koncovka key data: https://www.koncovka.com/keys
+
+## 15.7 Flute Calculator Implementation
+
+The `flute_calculator.py` module provides:
+1. **PVC flute tone hole calculator**: computes bore length and hole positions for diatonic/chromatic scales
+2. **Overtone flute length calculator**: computes tube length for closed/open pipes
+3. **OpenWInD validation**: verifies impedance peaks against expected harmonics
+
+**Validated against known designs:**
+- Koncovka in C: calculated 65.2cm vs reference 63cm (3.5% error, acceptable)
+- Fujara in G: calculated 174.6cm vs reference 160-200cm (within range)
+- OpenWInD impedance peaks match expected odd harmonics within 1-4 Hz
+
+## 15.8 OpenWInD on Flute Bore
+
+OpenWInD successfully computes impedance for flute bores:
+- Closed pipe (koncovka-style): 8 peaks detected, all odd harmonics matched
+- Peak frequencies: 290.2, 877.1, 1466.4, 2053.3, 2642.6, 3232.0, 3821.3, 4410.7 Hz
+- Expected (odd harmonics of 293.7 Hz): 293.7, 881.1, 1468.5, 2055.9, 2643.3, 3230.7 Hz
+- Maximum error: 4.0 Hz (0.14%), well within acceptable range
+
+---
+
+*This report was last updated: 2026-07-21 (Desktop Session 9)*
+
+*Next update expected: After flute validation with real PVC builds*
