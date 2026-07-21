@@ -326,3 +326,65 @@ export async function getDesignHistory(limit?: number): Promise<{ designs: Recor
   if (!res.ok) throw new Error("Failed to get design history");
   return res.json();
 }
+
+// ─── Automated Design Agent (Design Desk) ───────────────────────────────
+
+export interface AutoDesignIteration {
+  iteration: number;
+  pop_size: number;
+  n_generations: number;
+  n_control_points: number;
+  frequency_accuracy: number;
+  n_evaluations: number;
+  bore_length: number;
+  suggestions: string[];
+}
+
+export interface AutoDesignResult {
+  instrument_type: string;
+  target_frequencies: number[];
+  best_accuracy: number;
+  iterations: AutoDesignIteration[];
+  total_evaluations: number;
+  final_bore_profile: unknown[];
+  final_bore_length: number;
+  success: boolean;
+  log: string[];
+}
+
+export interface AutoDesignJob {
+  job_id: string;
+  status: string;
+  progress: string[];
+  result?: AutoDesignResult;
+  error?: string;
+}
+
+export async function startAutoDesign(
+  instrumentType: string,
+  maxIterations?: number,
+  targetAccuracy?: number,
+): Promise<{ job_id: string }> {
+  const res = await apiPost("/design-desk/auto", {
+    instrument_type: instrumentType,
+    max_iterations: maxIterations ?? 3,
+    target_accuracy: targetAccuracy ?? 3.0,
+  });
+  if (!res.ok) throw new Error(`Auto design start failed: ${res.statusText}`);
+  return res.json();
+}
+
+export async function getAutoDesignStatus(jobId: string): Promise<AutoDesignJob> {
+  const res = await apiGet(`/design-desk/instruments`);
+  if (!res.ok) throw new Error("Auto design status check failed");
+  const statusRes = await apiGet(`/optimize/${jobId}/status`);
+  if (!statusRes.ok) throw new Error("Auto design status failed");
+  return statusRes.json();
+}
+
+export async function getDesignDeskInstruments(): Promise<Record<string, string>> {
+  const res = await apiGet("/design-desk/instruments");
+  if (!res.ok) throw new Error("Failed to get design desk instruments");
+  const data = await res.json();
+  return data.instruments;
+}

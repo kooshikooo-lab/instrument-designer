@@ -441,3 +441,66 @@ def advisor_history(limit: int = 20):
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
     from backend.ai_advisor import get_design_history
     return {"designs": get_design_history(limit)}
+
+
+# ─── Automated Design Agent ─────────────────────────────────────────────
+
+class AutoDesignRequest(BaseModel):
+    instrument_type: str
+    max_iterations: int = 3
+    target_accuracy: float = 3.0
+    target_frequencies: Optional[list[float]] = None
+
+
+def _run_auto_design(job_id: str, req: AutoDesignRequest):
+    """Run the automated design loop in a background thread."""
+    progress_log = []
+    def on_progress(msg):
+        with _lock:
+            progress_log.append(msg)
+            _jobs[job_id]["progress"] = list(progress_log)
+
+    try:
+        import sys
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+        from backend.design_desk import run_auto_design
+
+        result = run_auto_design(
+            req.instrument_type,
+            max_iterations=req.max_iterations,
+            on_progress=on_progress,
+        )
+
+        with _lock:
+            _jobs[job_id].update(
+                status="completed",
+                result=result,
+                progress=list(progress_log),
+            )
+    except Exception as e:
+        with _lock:
+            _jobs[job_id].update(
+                status="failed",
+                error=str(e),
+                progress=list(progress_log) + [f"Error: {e}"],
+            )
+
+
+@app.post("/design-desk/auto")
+def start_auto_design(req: AutoDesignRequest):
+    """Start an automated multi-iteration design loop."""
+    if req.instrument_type not in INSTRUMENT_CONFIGS:
+        raise HTTPException(400, f"Unknown instrument type: {req.instrument_type}. Available: {list(INSTRUMENT_CONFIGS.keys())}")
+    job_id = uuid.uuid4().hex[:12]
+    with _lock:
+        _jobs[job_id] = {"status": "queued", "progress": [], "result": None}
+    t = threading.Thread(target=_run_auto_design, args=(job_id, req), daemon=True)
+    t.start()
+    return {"job_id": job_id}
+
+
+@app.get("/design-desk/instruments")
+def list_design_desk_instruments():
+    """List available instrument types for auto-design."""
+    from backend.design_desk import INSTRUMENT_CONFIGS
+    return {"instruments": {k: v["description"] for k, v in INSTRUMENT_CONFIGS.items()}}
