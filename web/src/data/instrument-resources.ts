@@ -406,6 +406,81 @@ export const INSTRUMENT_RESOURCES: Record<string, InstrumentResources> = {
     ],
   },
 
+  "Classical Oboe (Lohner Copy / Yamamoto 2025)": {
+    tips: [
+      "Oboe is a CONICAL bore instrument — our current TMM optimizer only supports cylindrical bores",
+      "The Yamamoto paper is the key reference: CT scan → 3D model → FDM print → validated acoustically",
+      "FDM printer accuracy: finger hole diameter error <2.7%, inner bore diameter error ~1.3%",
+      "Harmonic damping ratio error vs original: <0.2% — barely affects timbre",
+      "Blind listening tests: subjects could NOT distinguish PLA replicas from original on short tones",
+      "Material (PLA vs woody-PLA) made no significant difference — bore geometry dominates",
+      "Key lesson: manufacturing tolerance is the bottleneck, not material physics",
+    ],
+    build_notes: [
+      "YAMAMOTO CASE STUDY (2025): 'Reproduction of classical oboe using additive manufacturing and timbre evaluation'",
+      "DOI: https://doi.org/10.1250/ast.e24.92  |  Journal: Acoustical Science & Technology 46(4)",
+      "Original instrument: Johann Andreas Lohner (Nürnberg, c.1800), housed in Japanese museum collection",
+      "Method: X-ray CT scan → Autodesk Fusion360 3D model → QIDI X-MAX FDM printer",
+      "Two filament types tested: PLA (Mutoh Industries) and woody PLA (40% wood fiber composite)",
+      "No significant timbre difference between PLA and woody-PLA — bore geometry is what matters",
+      "HARMONIC ANALYSIS: Compared amplitude and damping ratio across multiple notes",
+      "  - Amplitude of harmonics matched original at most notes",
+      "  - Harmonic damping ratio error <0.2% vs original",
+      "LISTENING TESTS: One-pair comparison, general one-tailed test",
+      "  - Short tones: subjects could NOT distinguish replicas from original (p>0.05)",
+      "  - Short musical phrases: experienced wind players COULD distinguish (p<0.05)",
+      "  - Non-musicians could not distinguish even in phrases",
+      "PRINTING SPECS: QIDI X-MAX FDM, output accuracy: finger hole Ø error <2.7%, bore Ø error ~1.3%",
+      "RELATED: Coltman (referenced in paper) found same result with flutes — plastic head joints indistinguishable from silver/wood",
+      "RELATED: RCM London project scanned/printed clarinets, recorders, cornetts from museum collection",
+      "RELATED: Ricardo Simian (Oslo) — AM twin copies enable double-blind testing, color strongly influences perceived timbre",
+      "IMPLICATION FOR US: Bore geometry dominates over material. Our optimizer needs to get geometry right to ±1.3% (FDM) or ±0.5% (SLA)",
+      "IMPLICATION FOR US: Conical bore TMM is needed before we can optimize oboe designs",
+      "JDWoodwinds (jdwoodwind.com) sells STL files for Denner-copy bass oboe — only commercial oboe STL I found",
+      "Oboe dimensions: ~65cm total length, bore starts ~6mm (top) expanding conically to ~57mm at bell",
+    ],
+    links: [
+      { title: "Yamamoto et al. (2025) — Full Paper", url: "https://doi.org/10.1250/ast.e24.92", type: "article", description: "Primary reference: CT scan → 3D print → acoustic validation of classical oboe" },
+      { title: "J-STAGE PDF", url: "https://www.jstage.jst.go.jp/article/ast/46/4/46_e24.92/_pdf", type: "article", description: "Full paper PDF (Open Access, CC BY-ND 4.0)" },
+      { title: "ResearchGate", url: "https://www.researchgate.net/publication/389795393", type: "article", description: "ResearchGate page with figures and citations" },
+      { title: "RCM 3D Printed Musical Instruments Project", url: "https://www.rcm.ac.uk/research/projects/3dprintedmusicalinstruments/", type: "article", description: "Royal College of Music — CT scanning and printing historical instruments (clarinets, recorders, cornetts)" },
+      { title: "Ricardo Simian — Tackling Complexity with AM (2025)", url: "https://journals.sagepub.com/doi/10.1177/20592043251387639", type: "article", description: "AM twin copies for double-blind testing, bore complexity analysis" },
+      { title: "JDWoodwinds — Bass Oboe STL Files", url: "https://jdwoodwind.com/shop/p/bass-oboe", type: "shop", description: "Commercial STL files for Denner-copy bass oboe (A=440Hz)" },
+      { title: "Oboe Dimensions Guide", url: "https://www.dimensionsguide.com/oboe-dimensions", type: "other", description: "Baroque, Classical, Viennese, Modern oboe dimensions" },
+      { title: "Kreedo — Oboe Cane Shape Dimensions", url: "https://www.kreedo.de/en/oboe/oboe-shape-dimensions/", type: "other", description: "Detailed cane/shape dimensions for oboe family" },
+    ],
+    faq: [
+      { question: "Why can't we optimize oboe designs yet?", answer: "The oboe has a CONICAL bore. Our current TMM (tmm_acoustics.py) only handles cylindrical bores (open-open and closed-open pipes). Conical bores require different wave equation solutions — the resonance modes follow a harmonic series (f, 2f, 3f...) like open-open cylindrical, but the impedance calculation is different. We need to implement conical bore TMM before oboe optimization is possible." },
+      { question: "What did the Yamamoto paper actually prove?", answer: "Three things: (1) CT scanning can capture bore geometry accurate enough for acoustic replication (~1.3% bore error). (2) FDM 3D printing preserves harmonic structure (damping ratio error <0.2%). (3) Listeners cannot distinguish PLA replicas from originals in short tones — bore geometry dominates over material. The limitation: they didn't OPTIMIZE the design, they REPLICATED an existing one." },
+      { question: "What manufacturing accuracy do we need?", answer: "Yamamoto achieved ~1.3% bore error with FDM and got acoustically valid instruments. SLA printing typically achieves ±0.05-0.1mm, which for a 6mm oboe bore is ~0.8-1.7% error. For our <3 cents computational target, we need manufacturing error below ~0.5% (achievable with calibrated SLA + shrinkage compensation)." },
+    ],
+  },
+
+  "Modern Conservatory Oboe": {
+    tips: [
+      "The modern oboe has a CONICAL bore — requires conical bore TMM support (not yet implemented)",
+      "Range: Bb3 to A6 (~2.5 octaves), key of C (soprano)",
+      "25-34 keys on conservatory system, semi-automatic octave mechanism",
+      "Tuning note A440 is traditionally provided by the oboist",
+    ],
+    links: [
+      { title: "Oboe at Organology.net", url: "https://organology.net/instrument/oboe/", type: "other", description: "Comprehensive oboe overview with history and acoustics" },
+    ],
+  },
+
+  "Baroque Oboe (Hautbois)": {
+    tips: [
+      "Baroque oboe has a CONICAL bore — requires conical bore TMM support",
+      "3 sections: top joint, bottom joint, bell — held together with cork tenons",
+      "Only 2-3 keys; chromatic notes via cross-fingerings (darker, less uniform tone)",
+      "Reed: 88mm total (blades + staple). Staple: 63mm long, bottom Ø5.5mm",
+      "Modern copies exist from museum CT scans (RCM London project)",
+    ],
+    links: [
+      { title: "RCM 3D Printed Musical Instruments", url: "https://www.rcm.ac.uk/research/projects/3dprintedmusicalinstruments/", type: "article", description: "CT scanning and printing historical instruments including oboes" },
+    ],
+  },
+
   "Rackett (Sausage Bassoon)": {
     tips: [
       "Renaissance-era double reed instrument in a compact body",

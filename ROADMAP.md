@@ -24,6 +24,9 @@
 
 ## Phase 1: Computational Accuracy & Speed (CURRENT FOCUS)
 
+> **Before starting work here:** Check the "Periodic Research Review" section
+> below for new papers or tool updates that may change the approach.
+
 Everything here is software-only — no printing required. The goal is a fast,
 accurate optimizer that matches or exceeds demakein/chalumier on reference instruments.
 
@@ -230,6 +233,95 @@ This is safer (avoids fork's thread-safety issues) while maintaining fast startu
 
 ---
 
+## Ongoing: Periodic Research Review
+
+New research in instrument acoustics, computational modeling, and 3D printing
+appears constantly. New papers, tools, and techniques may emerge that directly
+impact our design pipeline, cost functions, or accuracy targets. Schedule a
+research review every 2–4 weeks, or before starting a new phase.
+
+**What to check:**
+- New papers on bore optimization, tone hole modeling, mouthpiece acoustics
+- Updates to existing tools (OpenWInD, WIDesigner, Flutomat NG, chalumier)
+- New 3D printing materials or post-processing techniques for acoustic parts
+- Maker community breakthroughs (new successfully printed instruments)
+- Changes to accuracy benchmarks in the literature
+
+### Primary Journals & Proceedings
+| Source | URL | Why It Matters |
+|--------|-----|----------------|
+| **JASA** (Journal of the Acoustical Society of America) | https://asa.scitation.org/journal/jas | Premier journal, wind instrument acoustics |
+| **JASA Express Letters** | Same domain | Rapid communications, early results |
+| **Acta Acustica** | https://acta-acustica.edpsciences.org/ | European, Diamond Open Access since 2025 |
+| **POMA** (Proceedings of Meetings on Acoustics) | https://asa.scitation.org/journal/pom | ASA conference proceedings |
+| **Archives of Acoustics** | http://acoustics.ippt.gov.pl/index.php/aa | Open access, includes music acoustics section |
+| **Acoustics (MDPI)** | https://www.mdpi.com/journal/acoustics | Open access, IF 1.2 |
+| **Music & Science** | https://journals.sagepub.com/home/msc | Interdisciplinary, publishes 3D-printed instrument studies |
+| **Frontiers in Acoustics** | https://www.frontiersin.org/journals/acoustics | Newer (est. 2024), Volume 4 in 2026 |
+
+### Preprint Servers (Check Weekly)
+| Server | URL | Focus |
+|--------|-----|-------|
+| **arXiv cs.SD** | https://arxiv.org/list/cs.SD/recent | Computational acoustics, physical modeling |
+| **arXiv eess.AS** | https://arxiv.org/list/eess.AS/recent | Audio and speech processing |
+| **HAL** | https://hal.science/ | French archive, IRCAM/INRIA/CNRS heavy, OpenWind papers |
+
+### Active Research Labs (Follow Their Publications)
+| Lab | URL | Focus |
+|-----|-----|-------|
+| **CAML — McGill** | https://caml.music.mcgill.ca/ | Physical modeling, instrument measurement, FDTD |
+| **CCRMA — Stanford** | https://ccrma.stanford.edu/ | Digital waveguides, JUCE |
+| **IRCAM / INRIA** | https://www.ircam.fr/ / https://www.inria.fr/ | OpenWind, heritage instrument digitization |
+| **NESS — Edinburgh** | https://www.ness.music.ed.ac.uk/ | Next Gen Sound Synthesis (ERC-funded), C++/CUDA |
+| **Chalmers SMC** | https://research.chalmers.se/en/groups/sound-and-music-computing/ | Neuralacoustics framework, deep learning for acoustics |
+| **Aalto Acoustics Lab** | https://www.aalto.fi/en/aalto-acoustics-lab | DAFx best papers 2023–2025 |
+| **Stuttgart ITM** | https://www.itm.uni-stuttgart.de/en/research/analysis-of-musical-instruments/ | FEM/BEM for instruments, very active 2021–2025 |
+| **Politecnico di Milano ISPG** | https://www.deib.polimi.it/ | Audio signal processing, violin acoustics |
+
+### Conferences (Submit / Attend Annually)
+| Conference | Cycle | Notes |
+|------------|-------|-------|
+| **ISMA** (International Symposium on Musical Acoustics) | ~2 years | ISMA 2026: Helsinki, Jun 15–17 |
+| **ISMRA** (International Symposium on Musical and Room Acoustics) | Annual | ISMRA 2025 was May 25–27 New Orleans |
+| **ASA Meetings** | Biannual | Major venue, POMA proceedings |
+| **Forum Acusticum** | ~3 years | European Acoustics Association |
+| **SMAC** (Stockholm Music Acoustics Conference) | ~4 years | Prestigious, focused |
+| **DAFx** (Digital Audio Effects) | Annual | Physical modeling, sound synthesis |
+| **NIME** (New Interfaces for Musical Expression) | Annual | Novel instruments, 3D-printed |
+
+### Expert Forums & Communities (Browse Monthly)
+| Community | URL | Focus |
+|-----------|-----|-------|
+| **Chiff & Fipple** | https://www.chiffandfipple.com/ | Flutes, whistles, world winds, 25+ years of archived knowledge |
+| **MIMF** (Musical Instrument Makers Forum) | https://www.mimf.com/ | All types, 10,000+ archived discussions |
+| **Reddit r/clarinet** | https://www.reddit.com/r/Clarinet/ | Reed instrument acoustics |
+| **Reddit r/Luthier** | https://www.reddit.com/r/Luthier/ | Instrument builders |
+| **ASA Forums** | https://acousticalsociety.org/ | Professional society discussions |
+
+### Active GitHub Repos (Monitor for Updates)
+| Repo | URL | Description |
+|------|-----|-------------|
+| **Neuralacoustics** | https://github.com/ktatar/neuralacoustics | Deep learning for musical acoustics (Chalmers) |
+| **NESS** | https://github.com/Edinburgh-Acoustics-and-Audio-Group/ness | C++/CUDA physical modeling |
+| **Resonarium** | https://github.com/gabrielsoule/resonarium | MPE physical modeling waveguide synth (341 stars) |
+| **RipplerX** | https://github.com/tiagolr/ripplerx | Physical modeling synth, 9 resonator models (569 stars) |
+| **VIBRA** | https://github.com/MOPT-UFSC/VIBRA | Open-source FEM vibroacoustic analysis (Python) |
+| **ParallelFDTD** | https://github.com/AaltoRSE/ParallelFDTD/ | CUDA-accelerated FDTD room acoustics (Aalto) |
+| **torch-fdtd-string** | https://github.com/jin-woo-lee/torch-fdtd-string | PyTorch FDTD + differentiable modal synthesis |
+| **WIDesigner** | https://github.com/edwardkort/WWIDesigner | TMM wind instrument optimizer (Java) |
+| **OpenWind** | https://inria.hal.science/ | Python wind instrument acoustics (Inria) |
+
+### Blogs & Channels (Occasional)
+| Source | URL | Description |
+|--------|-----|-------------|
+| **Martin Schleske Research** | https://www.schleske.de/en/research.html | Extraordinary violin acoustics resource |
+| **Kemp Strings** | https://www.youtube.com/@kempstrings | String inharmonicity research demos |
+
+### Key Observation
+There is no dedicated acoustics preprint server. Researchers use **arXiv** (cs.SD, eess.AS) and **HAL** (dominated by IRCAM/INRIA/CNRS). For 3D-printed instruments specifically, *Music & Science*, *Acta Acustica*, *Polymers (MDPI)*, and *Rapid Prototyping Journal* are the most active venues.
+
+---
+
 ## Low Priority — Future
 
 ### Advanced Acoustics
@@ -250,4 +342,4 @@ This is safer (avoids fork's thread-safety issues) while maintaining fast startu
 
 ---
 
-*Last updated: 2026-07-20*
+*Last updated: 2026-07-22*

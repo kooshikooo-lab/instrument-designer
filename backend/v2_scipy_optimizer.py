@@ -256,28 +256,27 @@ class ScipyBoreOptimizer:
         else:
             self.max_radius_jump = max_radius_jump
     
-    def _make_initial_guess(self, method: str = "cylindrical") -> np.ndarray:
+    def _make_initial_guess(self, method: str = "flat") -> np.ndarray:
         """
         Create initial guess for optimization.
         
         Methods:
-        - "cylindrical": uniform radius (Buffet R13-like: 14.8mm = 0.0074m radius)
+        - "flat": uniform radius at midpoint of bounds (best for cylindrical instruments)
+        - "cylindrical": Buffet R13 clarinet bore (~14.8mm diameter)
         - "known_good": Buffet R13 clarinet bore profile
-        - "random": random monotonic profile (current approach)
+        - "random": random monotonic profile
         """
-        if method == "cylindrical":
-            # Buffet R13 clarinet: bore ~14.8mm diameter = 7.4mm radius
+        if method == "flat":
+            midpoint = (self.min_radius + self.max_radius) / 2.0
+            return np.full(self.n_cp, midpoint)
+        
+        elif method == "cylindrical":
             return np.full(self.n_cp, 0.0074)
         
         elif method == "known_good":
-            # Buffet R13 approximate bore profile (from research)
-            # Entry: 14.8mm, Throat: ~14.3mm (narrowest), Exit: 15mm
-            positions = np.linspace(0, self.bore_length, self.n_cp)
-            # Linear interpolation with slight narrowing at throat
             radii = np.full(self.n_cp, 0.0074)
-            # Add slight narrowing at 1/3 length (throat)
             throat_idx = self.n_cp // 3
-            radii[throat_idx] = 0.00715  # 14.3mm diameter
+            radii[throat_idx] = 0.00715
             radii = _pava_isotonic(radii)
             return radii
         
@@ -293,8 +292,9 @@ class ScipyBoreOptimizer:
         verbose: bool = True,
         method: str = "L-BFGS-B",
         maxiter: int = 200,
-        initial_guess: str = "cylindrical",
+        initial_guess: str = "flat",
         seed: Optional[int] = None,
+        known_good_radii: Optional[np.ndarray] = None,
     ) -> Dict:
         """
         Run gradient-based optimization.
@@ -303,8 +303,9 @@ class ScipyBoreOptimizer:
             verbose: print progress
             method: scipy.optimize method ("L-BFGS-B", "Nelder-Mead", "Powell")
             maxiter: maximum iterations
-            initial_guess: "cylindrical", "known_good", or "random"
+            initial_guess: "flat", "cylindrical", "known_good", or "random"
             seed: random seed
+            known_good_radii: if provided, use as initial guess instead of initial_guess param
         
         Returns dict with: best_bore, best_objective, iterations, wall_time, etc.
         """
@@ -318,8 +319,13 @@ class ScipyBoreOptimizer:
             print(f"  Target harmonics: {len(self.target_freqs)}")
             print(f"  Freq range: {self.freq_range}")
         
-        # Initial guess
-        x0 = self._make_initial_guess(initial_guess)
+        # Initial guess: known_good_radii takes precedence
+        if known_good_radii is not None:
+            x0 = np.array(known_good_radii, dtype=float)
+            if verbose:
+                print(f"  Using seeded initial guess from Phase 1")
+        else:
+            x0 = self._make_initial_guess(initial_guess)
         
         # Bounds (from PAVA, radii are already sorted, but bounds enforce during optimization)
         bounds = [(self.min_radius, self.max_radius)] * self.n_cp
@@ -432,6 +438,7 @@ def run_two_phase(
     bore_length: Optional[float] = None,
     temperature: float = 20.0,
     verbose: bool = True,
+    initial_guess: str = "flat",
 ) -> Dict:
     """
     Two-phase optimization following Noreland (2013).
@@ -449,7 +456,7 @@ def run_two_phase(
         print("=" * 60)
     
     # Phase 1: 1st register only (first 3 harmonics)
-    phase1_targets = target_freqs[:3]
+    phase1_targets = target_freqs[:min(3, len(target_freqs))]
     
     if verbose:
         print(f"\n--- Phase 1: 1st Register ({len(phase1_targets)} harmonics) ---")
@@ -462,7 +469,7 @@ def run_two_phase(
         temperature=temperature,
     )
     
-    result1 = opt1.run(verbose=verbose, method="L-BFGS-B", maxiter=150, initial_guess="cylindrical")
+    result1 = opt1.run(verbose=verbose, method="L-BFGS-B", maxiter=150, initial_guess=initial_guess)
     
     # Phase 2: Full instrument (seeded from Phase 1)
     if verbose:
@@ -476,13 +483,28 @@ def run_two_phase(
         temperature=temperature,
     )
     
-    # Seed Phase 2 with Phase 1 result (interpolate to same control points)
+    # Seed Phase 2 with Phase 1 result
     phase1_radii = np.array(result1["best_radii"])
-    x0_phase2 = phase1_radii.copy()
     
-    result2 = opt2.run(verbose=verbose, method="L-BFGS-B", maxiter=200, initial_guess="cylindrical")
+    if verbose:
+        print(f"  Phase 1 seed: entry={phase1_radii[0]*1000:.2f}mm exit={phase1_radii[-1]*1000:.2f}mm")
     
-    # Override with Phase 1 seed if it's better
+    result2 = opt2.run(
+        verbose=verbose, method="L-BFGS-B", maxiter=200,
+        initial_guess=initial_guess,
+        known_good_radii=phase1_radii,
+    )
+    
+    # Log Phase 1 -> Phase 2 delta
+    phase2_radii = np.array(result2["best_radii"])
+    l2_delta = float(np.sqrt(np.mean((phase1_radii - phase2_radii) ** 2)) * 1000)
+    
+    if verbose:
+        print(f"\n  Phase 1 -> Phase 2 L2 delta: {l2_delta:.3f}mm")
+        if l2_delta > 1.0:
+            print(f"  WARNING: Large delta — Phase 1 may not be providing useful seed")
+    
+    # Override with Phase 1 result if it's better
     if result1["final_rms_cents"] < result2["final_rms_cents"]:
         if verbose:
             print(f"\n  Phase 1 result ({result1['final_rms_cents']:.2f} cents) "
