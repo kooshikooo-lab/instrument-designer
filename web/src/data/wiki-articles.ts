@@ -5,7 +5,7 @@
   | "Design"
   | "Tuning";
 
-export type Difficulty = "Beginner" | "Intermediate" | "Expert";
+export type Difficulty = "Beginner" | "Intermediate" | "Advanced" | "Expert";
 
 export interface WikiArticle {
   id: string;
