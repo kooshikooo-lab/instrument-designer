@@ -1,5 +1,5 @@
 # LIVE CHAT LOG — instrument-designer
-## Last updated: 2026-07-21 (Desktop session 4 — independent overnight session)
+## Last updated: 2026-07-21 (Desktop session 4 — overnight independent, completed)
 ## For: Both machines — pull this file before starting work
 ## Branch: option-a-tauri
 
@@ -7,7 +7,18 @@
 
 ### Desktop Session 4 (2026-07-21 — overnight independent)
 - Pulled latest: clean, up to date with origin
-- Working on: ImpedancePlot cache tooltip, fixing optimization presets, README
+- ✅ Added `/optimize/cache/stats` endpoint to design_server.py
+- ✅ Added `getCacheStats()` + `clearCache()` to web API client
+- ✅ DesignTab now shows cache entries count + "Clear Cache" button
+- ✅ Fixed optimization presets: now use `target_frequencies.py` for correct harmonics (Bb clarinet odd-harmonics: 233.1, 699.3, ...)
+- ✅ Fixed TS error: added "Advanced" to Difficulty type
+- ✅ Added `n_generations` to API type and result passthrough
+- ✅ Preset UI now shows instrument type (odd/all harmonics) + fundamental frequency
+- ✅ Wrote comprehensive README.md
+- ✅ Committed + pushed all changes (4 commits)
+- ✅ Created experiment-staged-optimization branch with Noreland 3-stage optimizer
+- ✅ Created experiment-processpoolexecutor branch with parallel benchmark
+- ✅ TypeScript build: clean, 0 errors
 - User gone to bed — working independently until morning
 
 ---
