@@ -1,0 +1,429 @@
+{
+  "pvc_flute_d": {
+    "bore_diameter_mm": 20.9,
+    "bore_length_mm": 572.2,
+    "bore_length_cm": 57.2,
+    "bore_length_m": 0.5722,
+    "fundamental": "D4",
+    "fundamental_hz": 293.7,
+    "speed_of_sound_ms": 343.4,
+    "end_correction_mm": 6.3,
+    "embouchure": {
+      "diameter_mm": 9.5,
+      "offset_from_end_mm": 22.0
+    },
+    "wall_thickness_mm": 2.9,
+    "scale": "diatonic",
+    "holes": [
+      {
+        "number": 1,
+        "note": "E4",
+        "frequency_hz": 329.6,
+        "position_from_embouchure_mm": 61.7,
+        "position_from_embouchure_cm": 6.2,
+        "diameter_mm": 14.6,
+        "cents_from_et": 0
+      },
+      {
+        "number": 2,
+        "note": "F#4",
+        "frequency_hz": 370.0,
+        "position_from_embouchure_mm": 118.5,
+        "position_from_embouchure_cm": 11.8,
+        "diameter_mm": 14.6,
+        "cents_from_et": 0
+      },
+      {
+        "number": 3,
+        "note": "G4",
+        "frequency_hz": 392.0,
+        "position_from_embouchure_mm": 144.6,
+        "position_from_embouchure_cm": 14.5,
+        "diameter_mm": 14.6,
+        "cents_from_et": 0
+      },
+      {
+        "number": 4,
+        "note": "A4",
+        "frequency_hz": 440.0,
+        "position_from_embouchure_mm": 192.4,
+        "position_from_embouchure_cm": 19.2,
+        "diameter_mm": 14.6,
+        "cents_from_et": 0
+      },
+      {
+        "number": 5,
+        "note": "B4",
+        "frequency_hz": 493.9,
+        "position_from_embouchure_mm": 235.0,
+        "position_from_embouchure_cm": 23.5,
+        "diameter_mm": 14.6,
+        "cents_from_et": 0
+      },
+      {
+        "number": 6,
+        "note": "C#5",
+        "frequency_hz": 554.4,
+        "position_from_embouchure_mm": 272.9,
+        "position_from_embouchure_cm": 27.3,
+        "diameter_mm": 14.6,
+        "cents_from_et": 0
+      }
+    ],
+    "pvc_specs": {
+      "closest_match": "3/4\" Sch40",
+      "name": "3/4\" Sch40",
+      "id_mm": 20.9,
+      "od_mm": 26.7,
+      "wall_mm": 2.9
+    }
+  },
+  "overtone_flute_g": {
+    "fundamental": "G4",
+    "fundamental_hz": 392.0,
+    "end_type": "closed",
+    "bore_diameter_mm": 16.0,
+    "bore_radius_mm": 8.0,
+    "end_correction_mm": 4.8,
+    "effective_length_mm": 219.0,
+    "physical_length_mm": 214.2,
+    "physical_length_cm": 21.4,
+    "physical_length_m": 0.214,
+    "speed_of_sound_ms": 343.4,
+    "temperature_c": 20.0,
+    "harmonics_available": 13,
+    "playable_notes": [
+      {
+        "harmonic": 1,
+        "frequency_hz": 392.0,
+        "note": "G4",
+        "note_name": "G",
+        "octave": 4
+      },
+      {
+        "harmonic": 3,
+        "frequency_hz": 1176.0,
+        "note": "D6",
+        "note_name": "D",
+        "octave": 6
+      },
+      {
+        "harmonic": 5,
+        "frequency_hz": 1960.0,
+        "note": "B6",
+        "note_name": "B",
+        "octave": 6
+      },
+      {
+        "harmonic": 7,
+        "frequency_hz": 2744.0,
+        "note": "F7",
+        "note_name": "F",
+        "octave": 7
+      },
+      {
+        "harmonic": 9,
+        "frequency_hz": 3528.0,
+        "note": "A7",
+        "note_name": "A",
+        "octave": 7
+      },
+      {
+        "harmonic": 11,
+        "frequency_hz": 4311.9,
+        "note": "C#8",
+        "note_name": "C#",
+        "octave": 8
+      },
+      {
+        "harmonic": 13,
+        "frequency_hz": 5095.9,
+        "note": "Eb8",
+        "note_name": "Eb",
+        "octave": 8
+      },
+      {
+        "harmonic": 15,
+        "frequency_hz": 5879.9,
+        "note": "F#8",
+        "note_name": "F#",
+        "octave": 8
+      },
+      {
+        "harmonic": 17,
+        "frequency_hz": 6663.9,
+        "note": "Ab8",
+        "note_name": "Ab",
+        "octave": 8
+      },
+      {
+        "harmonic": 19,
+        "frequency_hz": 7447.9,
+        "note": "Bb8",
+        "note_name": "Bb",
+        "octave": 8
+      },
+      {
+        "harmonic": 21,
+        "frequency_hz": 8231.9,
+        "note": "C9",
+        "note_name": "C",
+        "octave": 9
+      },
+      {
+        "harmonic": 23,
+        "frequency_hz": 9015.9,
+        "note": "C#9",
+        "note_name": "C#",
+        "octave": 9
+      },
+      {
+        "harmonic": 25,
+        "frequency_hz": 9799.9,
+        "note": "Eb9",
+        "note_name": "Eb",
+        "octave": 9
+      }
+    ],
+    "max_note": "Eb9",
+    "pvc_specs": {
+      "closest_match": "1/2\" Sch40",
+      "name": "1/2\" Sch40",
+      "id_mm": 15.8,
+      "od_mm": 21.3,
+      "wall_mm": 2.8
+    }
+  },
+  "koncovka_c": {
+    "fundamental": "C3",
+    "fundamental_hz": 130.8,
+    "end_type": "closed",
+    "bore_diameter_mm": 16.0,
+    "bore_radius_mm": 8.0,
+    "end_correction_mm": 4.8,
+    "effective_length_mm": 656.3,
+    "physical_length_mm": 651.5,
+    "physical_length_cm": 65.2,
+    "physical_length_m": 0.652,
+    "speed_of_sound_ms": 343.4,
+    "temperature_c": 20.0,
+    "harmonics_available": 13,
+    "playable_notes": [
+      {
+        "harmonic": 1,
+        "frequency_hz": 130.8,
+        "note": "C3",
+        "note_name": "C",
+        "octave": 3
+      },
+      {
+        "harmonic": 3,
+        "frequency_hz": 392.4,
+        "note": "G4",
+        "note_name": "G",
+        "octave": 4
+      },
+      {
+        "harmonic": 5,
+        "frequency_hz": 654.1,
+        "note": "E5",
+        "note_name": "E",
+        "octave": 5
+      },
+      {
+        "harmonic": 7,
+        "frequency_hz": 915.7,
+        "note": "Bb5",
+        "note_name": "Bb",
+        "octave": 5
+      },
+      {
+        "harmonic": 9,
+        "frequency_hz": 1177.3,
+        "note": "D6",
+        "note_name": "D",
+        "octave": 6
+      },
+      {
+        "harmonic": 11,
+        "frequency_hz": 1438.9,
+        "note": "F#6",
+        "note_name": "F#",
+        "octave": 6
+      },
+      {
+        "harmonic": 13,
+        "frequency_hz": 1700.6,
+        "note": "Ab6",
+        "note_name": "Ab",
+        "octave": 6
+      },
+      {
+        "harmonic": 15,
+        "frequency_hz": 1962.2,
+        "note": "B6",
+        "note_name": "B",
+        "octave": 6
+      },
+      {
+        "harmonic": 17,
+        "frequency_hz": 2223.8,
+        "note": "C#7",
+        "note_name": "C#",
+        "octave": 7
+      },
+      {
+        "harmonic": 19,
+        "frequency_hz": 2485.4,
+        "note": "Eb7",
+        "note_name": "Eb",
+        "octave": 7
+      },
+      {
+        "harmonic": 21,
+        "frequency_hz": 2747.1,
+        "note": "F7",
+        "note_name": "F",
+        "octave": 7
+      },
+      {
+        "harmonic": 23,
+        "frequency_hz": 3008.7,
+        "note": "F#7",
+        "note_name": "F#",
+        "octave": 7
+      },
+      {
+        "harmonic": 25,
+        "frequency_hz": 3270.3,
+        "note": "Ab7",
+        "note_name": "Ab",
+        "octave": 7
+      }
+    ],
+    "max_note": "Ab7",
+    "pvc_specs": {
+      "closest_match": "1/2\" Sch40",
+      "name": "1/2\" Sch40",
+      "id_mm": 15.8,
+      "od_mm": 21.3,
+      "wall_mm": 2.8
+    }
+  },
+  "fujara_g": {
+    "fundamental": "G1",
+    "fundamental_hz": 49.0,
+    "end_type": "closed",
+    "bore_diameter_mm": 20.0,
+    "bore_radius_mm": 10.0,
+    "end_correction_mm": 6.0,
+    "effective_length_mm": 1752.2,
+    "physical_length_mm": 1746.2,
+    "physical_length_cm": 174.6,
+    "physical_length_m": 1.746,
+    "speed_of_sound_ms": 343.4,
+    "temperature_c": 20.0,
+    "harmonics_available": 13,
+    "playable_notes": [
+      {
+        "harmonic": 1,
+        "frequency_hz": 49.0,
+        "note": "G1",
+        "note_name": "G",
+        "octave": 1
+      },
+      {
+        "harmonic": 3,
+        "frequency_hz": 147.0,
+        "note": "D3",
+        "note_name": "D",
+        "octave": 3
+      },
+      {
+        "harmonic": 5,
+        "frequency_hz": 245.0,
+        "note": "B3",
+        "note_name": "B",
+        "octave": 3
+      },
+      {
+        "harmonic": 7,
+        "frequency_hz": 343.0,
+        "note": "F4",
+        "note_name": "F",
+        "octave": 4
+      },
+      {
+        "harmonic": 9,
+        "frequency_hz": 441.0,
+        "note": "A4",
+        "note_name": "A",
+        "octave": 4
+      },
+      {
+        "harmonic": 11,
+        "frequency_hz": 539.0,
+        "note": "C#5",
+        "note_name": "C#",
+        "octave": 5
+      },
+      {
+        "harmonic": 13,
+        "frequency_hz": 637.0,
+        "note": "Eb5",
+        "note_name": "Eb",
+        "octave": 5
+      },
+      {
+        "harmonic": 15,
+        "frequency_hz": 735.0,
+        "note": "F#5",
+        "note_name": "F#",
+        "octave": 5
+      },
+      {
+        "harmonic": 17,
+        "frequency_hz": 833.0,
+        "note": "Ab5",
+        "note_name": "Ab",
+        "octave": 5
+      },
+      {
+        "harmonic": 19,
+        "frequency_hz": 931.0,
+        "note": "Bb5",
+        "note_name": "Bb",
+        "octave": 5
+      },
+      {
+        "harmonic": 21,
+        "frequency_hz": 1029.0,
+        "note": "C6",
+        "note_name": "C",
+        "octave": 6
+      },
+      {
+        "harmonic": 23,
+        "frequency_hz": 1127.0,
+        "note": "C#6",
+        "note_name": "C#",
+        "octave": 6
+      },
+      {
+        "harmonic": 25,
+        "frequency_hz": 1225.0,
+        "note": "Eb6",
+        "note_name": "Eb",
+        "octave": 6
+      }
+    ],
+    "max_note": "Eb6",
+    "pvc_specs": {
+      "closest_match": "3/4\" Sch40",
+      "name": "3/4\" Sch40",
+      "id_mm": 20.9,
+      "od_mm": 26.7,
+      "wall_mm": 2.9
+    }
+  }
+}
