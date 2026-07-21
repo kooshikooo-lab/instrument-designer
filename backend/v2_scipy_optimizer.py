@@ -224,7 +224,7 @@ class ScipyBoreOptimizer:
         max_radius: float = 0.025,
         temperature: float = 20.0,
         freq_range: Optional[Tuple[float, float]] = None,
-        n_freqs: int = 5000,
+        n_freqs: int = 1000,
         max_radius_jump: Optional[float] = None,
     ):
         self.target_freqs = np.array(sorted(target_frequencies))
@@ -379,7 +379,13 @@ class ScipyBoreOptimizer:
         )
         
         peak_freqs = final_result["peak_frequencies"]
-        matched = _match_peaks_to_targets(peak_freqs, self.target_freqs)
+        if isinstance(peak_freqs, np.ndarray):
+            peak_freqs = peak_freqs.tolist()
+        peak_mags = final_result["peak_magnitudes"]
+        if isinstance(peak_mags, np.ndarray):
+            peak_mags = peak_mags.tolist()
+        
+        matched = _match_peaks_to_targets(np.array(peak_freqs), self.target_freqs)
         
         # Final metrics
         raw_cents = np.array([m[3] for m in matched])
@@ -408,8 +414,8 @@ class ScipyBoreOptimizer:
                 {"target": m[0], "actual": m[1], "error_hz": m[2], "error_cents": m[3]}
                 for m in matched
             ],
-            "all_peak_frequencies": peak_freqs.tolist(),
-            "all_peak_magnitudes": final_result["peak_magnitudes"].tolist(),
+            "all_peak_frequencies": peak_freqs,
+            "all_peak_magnitudes": peak_mags,
             "iterations": result.nit,
             "function_evaluations": result.nfev,
             "wall_time": wall_time,

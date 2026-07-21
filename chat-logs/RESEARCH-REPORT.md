@@ -706,6 +706,71 @@ SQLite database stores:
 
 ---
 
+# 13. Computation Requirements Analysis
+
+## 13.1 OpenWInD Evaluation Time
+
+| n_freqs | Evaluation Time | Peak Detection Quality |
+|---------|----------------|----------------------|
+| 1000 | 1.3-1.9s | Identical (40 peaks, same RMS) |
+| 2000 | 2.7s | Identical |
+| 3000 | 4.1s | Identical |
+| 5000 | 6.6s | Identical |
+
+**Key finding:** n_freqs=1000 gives 5x speedup with zero accuracy loss for peak detection. The bottleneck is the FEM matrix assembly, not the frequency sweep.
+
+## 13.2 Gradient Computation Cost
+
+With 12 control points, L-BFGS-B needs 25 function evaluations per iteration (forward finite differences):
+
+```
+Per iteration: 25 evals × 1.9s = 47.5s
+10 iterations: 475s (8 min)
+50 iterations: 2375s (40 min)
+```
+
+## 13.3 Initialization Quality vs Compute Budget
+
+The most critical finding: **initialization matters more than algorithm choice.**
+
+| Starting Point | Cost (raw) | RMS (corrected) |
+|---------------|------------|-----------------|
+| Cylindrical (uniform) | 438 | ~350 cents |
+| Buffet R13 bore | ~50 | ~30 cents |
+
+A good initial guess (Buffet R13 dimensions) places the optimizer in the right basin of attraction, requiring far fewer evaluations to converge.
+
+## 13.4 Algorithm Comparison
+
+| Algorithm | Evals/Iter | Convergence | Best For |
+|-----------|-----------|-------------|----------|
+| L-BFGS-B | 25 | Linear | Smooth cost, good init |
+| Nelder-Mead | 13-26 | Slow | Derivative-free, noisy |
+| Powell | 13-26 | Superlinear | No bounds needed |
+| Differential Evolution | pop_size | Global | Poor initialization |
+| NSGA-II | pop_size | Evolutionary | Multi-objective |
+
+## 13.5 Compute Budget Table
+
+| Budget | Max Evals | L-BFGS-B Iters | Expected Accuracy |
+|--------|----------|----------------|-------------------|
+| 30s | 15 | 0 | ~350 cents |
+| 60s | 31 | 1 | ~200 cents |
+| 120s | 63 | 2 | ~100 cents |
+| 300s | 157 | 6 | ~20 cents |
+| 600s | 315 | 12 | ~5-10 cents |
+| 1200s | 630 | 25 | ~3 cents (target) |
+
+## 13.6 Conclusions
+
+1. **OpenWInD is fast enough** — 1.9s per evaluation is acceptable for gradient-based optimization
+2. **Initialization is critical** — starting from known-good bore (R13) reduces compute by 10-100x
+3. **<3 cents RMS is achievable** in ~20 minutes with L-BFGS-B from good initialization
+4. **<60 seconds target is too aggressive** for gradient-based methods — needs surrogate model or precomputation
+5. **NSGA-II at 3.11 cents in 250s** is already competitive — the bottleneck is the last 0.11 cents
+
+---
+
 # Appendix A: Configuration
 
 ## A.1 Clarinet Bb Configuration
