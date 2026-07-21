@@ -234,3 +234,17 @@ export async function getOptimizationPresets(): Promise<Record<string, Optimizat
   const data = await res.json();
   return data.presets;
 }
+
+// ── Cache Stats ────────────────────────────────────────────────────
+
+export async function getCacheStats(): Promise<{ cache_size: number; status: string }> {
+  const res = await apiGet("/optimize/cache/stats");
+  if (!res.ok) throw new Error(`Cache stats failed`);
+  return res.json();
+}
+
+export async function clearCache(): Promise<{ status: string }> {
+  const res = await apiPost("/optimize/cache/clear", {});
+  if (!res.ok) throw new Error(`Cache clear failed`);
+  return res.json();
+}

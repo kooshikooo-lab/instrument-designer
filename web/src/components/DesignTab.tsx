@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect, type ReactNode } from "react";
 import { DEMAKEIN_PRESETS, DEMAKEIN_PRESET_GROUPS } from "../data/instruments";
 import { TUNING_PRESETS, TUNING_CATEGORIES } from "../data/tuning-presets";
-import { checkHealth, startDesign, getDesignStatus, getDesignDownloadUrl, exportStep, startOptimization, getOptimizationStatus, getOptimizationPresets } from "../utils/api";
+import { checkHealth, startDesign, getDesignStatus, getDesignDownloadUrl, exportStep, startOptimization, getOptimizationStatus, getOptimizationPresets, getCacheStats, clearCache } from "../utils/api";
 import type { PitchResult } from "../utils/pitch";
 import type { OptimizationResult, OptimizationPreset } from "../utils/api";
 import STLViewer from "./STLViewer";
@@ -86,9 +86,11 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
   const [optStatus, setOptStatus] = useState("");
   const [optProgress, setOptProgress] = useState<string[]>([]);
   const [optResult, setOptResult] = useState<OptimizationResult | null>(null);
+  const [cacheSize, setCacheSize] = useState<number | null>(null);
 
   useEffect(() => {
     getOptimizationPresets().then((p) => setOptPresets(p)).catch(() => {});
+    getCacheStats().then((s) => setCacheSize(s.cache_size)).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -203,6 +205,7 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
           setOptRunning(false);
           if (result.status === "completed" && result.result) {
             setOptResult(result.result);
+            getCacheStats().then((s) => setCacheSize(s.cache_size)).catch(() => {});
           }
         }
       }, 1000);
@@ -498,13 +501,22 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
               />
             </div>
           </div>
-          <button
-            onClick={runOptimization}
-            disabled={optRunning || getTargetFrequencies().length < 2}
-            className="px-6 py-2.5 bg-purple-600 hover:bg-purple-500 disabled:bg-neutral-800 disabled:text-neutral-600 text-sm text-white rounded-lg transition-colors font-medium"
-          >
-            {optRunning ? "Optimizing..." : "Run Optimization"}
-          </button>
+          <div className="flex gap-3 items-center">
+            <button
+              onClick={runOptimization}
+              disabled={optRunning || getTargetFrequencies().length < 2}
+              className="px-6 py-2.5 bg-purple-600 hover:bg-purple-500 disabled:bg-neutral-800 disabled:text-neutral-600 text-sm text-white rounded-lg transition-colors font-medium"
+            >
+              {optRunning ? "Optimizing..." : "Run Optimization"}
+            </button>
+            <button
+              onClick={async () => { await clearCache(); setCacheSize(0); }}
+              disabled={optRunning}
+              className="px-4 py-2.5 bg-neutral-800 hover:bg-neutral-700 disabled:bg-neutral-800 disabled:text-neutral-600 text-sm text-neutral-300 rounded-lg transition-colors"
+            >
+              Clear Cache
+            </button>
+          </div>
           {(optProgress.length > 0 || optStatus) && (
             <div>
               <div className="text-xs text-neutral-400 mb-1">Status: {optStatus}</div>
@@ -516,7 +528,7 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
           {optResult && (
             <div className="space-y-3">
               <h4 className="text-sm font-medium text-neutral-200">Results</h4>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-4 gap-3">
                 <div className="bg-neutral-950 rounded-lg p-3">
                   <div className="text-[10px] text-neutral-500">Frequency Accuracy</div>
                   <div className="text-sm text-neutral-100 font-mono">
@@ -530,6 +542,10 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
                 <div className="bg-neutral-950 rounded-lg p-3">
                   <div className="text-[10px] text-neutral-500">Bore Length</div>
                   <div className="text-sm text-neutral-100 font-mono">{(optResult.bore_length * 1000).toFixed(0)} mm</div>
+                </div>
+                <div className="bg-neutral-950 rounded-lg p-3">
+                  <div className="text-[10px] text-neutral-500">Cache Entries</div>
+                  <div className="text-sm text-neutral-100 font-mono">{cacheSize ?? "—"}</div>
                 </div>
               </div>
               {optResult.best_candidates[0]?.bore_profile && (

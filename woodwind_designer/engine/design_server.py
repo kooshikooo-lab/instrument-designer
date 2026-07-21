@@ -294,43 +294,38 @@ def evaluate_single(req: EvaluateRequest):
 
 @app.get("/optimize/presets")
 def get_optimization_presets():
-    """Return common optimization presets (scales/target frequencies)."""
-    return {
-        "presets": {
-            "c_major": {
-                "name": "C Major (C4-C5)",
-                "frequencies": [261.6, 293.7, 329.6, 349.2, 392.0, 440.0, 493.9, 523.3],
+    """Return optimization presets with correct target frequencies per instrument type."""
+    try:
+        import sys
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+        from backend.target_frequencies import get_preset_info
+
+        presets = {}
+        for preset_key in ["folk_whistle", "folk_flute", "recorder", "reedpipe", "folk_shawm", "clarinet_Bb", "reed_drone"]:
+            info = get_preset_info(preset_key)
+            if info:
+                presets[preset_key] = {
+                    "name": info["description"],
+                    "frequencies": info["targets"],
+                    "type": info["type"],
+                    "fundamental": info["fundamental"],
+                }
+        return {"presets": presets}
+    except Exception:
+        return {"presets": {
+            "clarinet_Bb": {
+                "name": "Bb Clarinet (odd harmonics)",
+                "frequencies": [233.1, 699.3, 1165.5, 1631.7, 2097.9, 2564.1],
             },
-            "g_major": {
-                "name": "G Major (G3-G4)",
-                "frequencies": [196.0, 220.0, 246.9, 261.6, 293.7, 329.6, 370.0, 392.0],
-            },
-            "d_major": {
-                "name": "D Major (D4-D5)",
-                "frequencies": [293.7, 329.6, 370.0, 392.0, 440.0, 493.9, 554.4, 587.3],
-            },
-            "bb_major": {
-                "name": "Bb Major (Bb3-Bb4)",
-                "frequencies": [233.1, 261.6, 293.7, 311.1, 349.2, 392.0, 440.0, 466.2],
-            },
-            "chromatic_one_octave": {
-                "name": "Chromatic (C4-C5)",
-                "frequencies": [261.6, 277.2, 293.7, 311.1, 329.6, 349.2, 370.0, 392.0, 415.3, 440.0, 466.2, 493.9, 523.3],
-            },
-            "clarinet_overtones": {
-                "name": "Clarinet Harmonics (odd)",
-                "frequencies": [130.8, 392.4, 654.0, 915.6, 1177.2, 1438.8],
-            },
-            "recorder_soprano": {
-                "name": "Soprano Recorder (C5-C6)",
-                "frequencies": [523.3, 587.3, 659.3, 698.5, 784.0, 880.0, 987.8, 1046.5],
-            },
-            "penny_whistle_d": {
+            "folk_whistle": {
                 "name": "Penny Whistle D (D5-D6)",
-                "frequencies": [587.3, 659.3, 740.0, 784.0, 880.0, 987.8, 1108.7, 1174.7],
+                "frequencies": [587.3, 1174.7, 1762.0, 2349.3, 2936.6, 3523.9],
             },
-        }
-    }
+            "recorder": {
+                "name": "Soprano Recorder (C5-C6)",
+                "frequencies": [523.3, 1046.5, 1569.8, 2093.0, 2616.3, 3139.6],
+            },
+        }}
 
 
 # ─── Cache Management ────────────────────────────────────────────────────
@@ -346,3 +341,9 @@ def clear_cache():
     from backend.mp_cache import cache_clear
     cache_clear()
     return {"status": "cache cleared"}
+
+
+@app.get("/optimize/cache/stats")
+def get_cache_stats():
+    from backend.mp_cache import cache_size
+    return {"cache_size": cache_size(), "status": "ok"}
