@@ -185,6 +185,7 @@ export interface OptimizationResult {
   designs: OptimizationDesign[];
   best_candidates: OptimizationDesign[];
   n_evaluations: number;
+  n_generations?: number;
   bore_length: number;
   freq_range: number[];
   seed: number;
@@ -201,6 +202,8 @@ export interface OptimizationJob {
 export interface OptimizationPreset {
   name: string;
   frequencies: number[];
+  type?: string;
+  fundamental?: number;
 }
 
 export async function startOptimization(req: OptimizeRequest): Promise<{ job_id: string }> {

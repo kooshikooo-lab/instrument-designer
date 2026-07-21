@@ -464,12 +464,26 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
             </div>
           </div>
           {optTargetKey && optPresets[optTargetKey] && (
-            <div className="flex flex-wrap gap-1.5">
-              {optPresets[optTargetKey].frequencies.map((f, i) => (
-                <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-300 font-mono">
-                  {f.toFixed(1)} Hz
-                </span>
-              ))}
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2">
+                {optPresets[optTargetKey].type && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-neutral-800 text-brand-400 font-mono">
+                    {optPresets[optTargetKey].type === "closed-open" ? "Odd harmonics" : "All harmonics"}
+                  </span>
+                )}
+                {optPresets[optTargetKey].fundamental && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400 font-mono">
+                    f0 = {optPresets[optTargetKey].fundamental} Hz
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {optPresets[optTargetKey].frequencies.map((f, i) => (
+                  <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-300 font-mono">
+                    {f.toFixed(1)} Hz
+                  </span>
+                ))}
+              </div>
             </div>
           )}
           <div className="grid grid-cols-3 gap-4">

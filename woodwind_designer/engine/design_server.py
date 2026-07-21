@@ -231,6 +231,7 @@ def _run_optimization(job_id: str, req: OptimizeRequest):
                     "designs": slim_designs,
                     "best_candidates": slim_best,
                     "n_evaluations": result.get("n_evaluations", 0),
+                    "n_generations": result.get("n_generations", 0),
                     "bore_length": result.get("bore_length", 0),
                     "freq_range": result.get("freq_range", []),
                     "seed": result.get("seed", 0),
