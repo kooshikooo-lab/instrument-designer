@@ -311,3 +311,9 @@ export async function getChalumierDesignStatus(jobId: string): Promise<Chalumier
   if (!res.ok) throw new Error("Chalumier design status failed");
   return res.json();
 }
+
+export async function buildChalumier(): Promise<{ success: boolean; log: string }> {
+  const res = await apiPost("/chalumier/build", {});
+  if (!res.ok) throw new Error("Chalumier build request failed");
+  return res.json();
+}

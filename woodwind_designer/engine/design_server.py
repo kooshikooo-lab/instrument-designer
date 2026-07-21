@@ -410,6 +410,14 @@ def chalumier_status():
     }
 
 
+@app.post("/chalumier/build")
+def build_chalumier():
+    """Build chalumier from source (runs gradlew.bat shadowJar)."""
+    designer = ChalumierDesigner()
+    success, log = designer.build()
+    return {"success": success, "log": log}
+
+
 @app.get("/chalumier/presets")
 def chalumier_presets():
     """List available chalumier presets."""

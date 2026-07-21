@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect, type ReactNode } from "react";
 import { DEMAKEIN_PRESETS, DEMAKEIN_PRESET_GROUPS } from "../data/instruments";
 import { TUNING_PRESETS, TUNING_CATEGORIES } from "../data/tuning-presets";
-import { checkHealth, startDesign, getDesignStatus, getDesignDownloadUrl, exportStep, startOptimization, getOptimizationStatus, getOptimizationPresets, getCacheStats, clearCache, getChalumierStatus, getChalumierPresets, getChalumierChalContent, startChalumierDesign, getChalumierDesignStatus } from "../utils/api";
+import { checkHealth, startDesign, getDesignStatus, getDesignDownloadUrl, exportStep, startOptimization, getOptimizationStatus, getOptimizationPresets, getCacheStats, clearCache, getChalumierStatus, getChalumierPresets, getChalumierChalContent, startChalumierDesign, getChalumierDesignStatus, buildChalumier } from "../utils/api";
 import type { PitchResult } from "../utils/pitch";
 import type { OptimizationResult, OptimizationPreset, ChalumierDesignResult } from "../utils/api";
 import STLViewer from "./STLViewer";
@@ -97,6 +97,8 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
   const [chalStatus, setChalStatus] = useState("");
   const [chalProgress, setChalProgress] = useState<string[]>([]);
   const [chalResult, setChalResult] = useState<ChalumierDesignResult | null>(null);
+  const [chalBuilding, setChalBuilding] = useState(false);
+  const [chalBuildLog, setChalBuildLog] = useState<string[]>([]);
 
   useEffect(() => {
     getOptimizationPresets().then((p) => setOptPresets(p)).catch(() => {});
@@ -264,6 +266,23 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
     } catch (e) {
       setChalStatus(`Error: ${e}`);
       setChalRunning(false);
+    }
+  };
+
+  const handleBuildChalumier = async () => {
+    setChalBuilding(true);
+    setChalBuildLog(["Building chalumier... (may take several minutes)"]);
+    try {
+      const result = await buildChalumier();
+      setChalBuildLog(result.log.split("\n").filter(Boolean));
+      if (result.success) {
+        setChalAvailable(true);
+        getChalumierPresets().then((p) => setChalPresets(p)).catch(() => {});
+      }
+    } catch (e) {
+      setChalBuildLog([`Build failed: ${e}`]);
+    } finally {
+      setChalBuilding(false);
     }
   };
 
@@ -674,9 +693,23 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
           <div className="flex items-center gap-2">
             <div className={`w-2 h-2 rounded-full ${chalAvailable === true ? "bg-green-500" : chalAvailable === false ? "bg-red-500" : "bg-yellow-500 animate-pulse"}`} />
             <span className="text-xs text-neutral-400">
-              {chalAvailable === true ? "Chalumier available (JDK 17+ detected)" : chalAvailable === false ? "Not available — install JDK 17+ and build with gradlew.bat shadowJar" : "Checking chalumier availability..."}
+              {chalAvailable === true ? "Chalumier available (JDK 17+ detected)" : chalAvailable === false ? "Not available — install JDK 17+ and build" : "Checking chalumier availability..."}
             </span>
           </div>
+          {chalAvailable === false && (
+            <div className="space-y-2">
+              <button
+                onClick={handleBuildChalumier}
+                disabled={chalBuilding}
+                className="px-4 py-2 bg-brand-600 hover:bg-brand-500 disabled:bg-neutral-800 disabled:text-neutral-600 text-xs text-white rounded-lg transition-colors"
+              >
+                {chalBuilding ? "Building..." : "Build Chalumier (gradlew shadowJar)"}
+              </button>
+              {chalBuildLog.length > 0 && (
+                <pre className="bg-neutral-950 rounded-lg p-3 max-h-40 overflow-auto font-mono text-[10px] text-neutral-400 whitespace-pre-wrap">{chalBuildLog.join("\n")}</pre>
+              )}
+            </div>
+          )}
           {chalAvailable && (
             <>
               <div className="grid grid-cols-2 gap-4">
