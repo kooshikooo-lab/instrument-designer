@@ -71,6 +71,27 @@
 - **Broad woodwind acoustics**: Benade fundamentals, tone hole lattice, chalumier/demakein/WWIDesigner, 3D printing validation, reed dynamics, recent ML approaches
 - Full findings written to `chat-logs/2026-07-21-deep-research-findings.md` (20 sources)
 
+### Laptop Session (2026-07-21 — regression fix + research review)
+- ✅ **ROOT CAUSE CONFIRMED**: `np.inf` corrupts pymoo's crowding distance computation
+  - `max(F) - min(F)` with inf → NaN → all crowding distances = 0 → selection random
+  - Reverted all 4 `np.inf` → `1e10` penalty values in bore_optimizer.py
+  - Committed: `dab7308`
+- ✅ Read desktop's deep research findings (20 sources, outstanding quality)
+- **KEY INSIGHT from research**: Every successful instrument optimizer uses gradient-based methods
+  - Noreland: Levenberg-Marquardt (<5 cents, Acta Acustica 2013)
+  - Ernoult: SQP + adjoint gradients (sub-cent, JASA 2020)
+  - Our NSGA-II is the wrong algorithm for this problem
+- **KEY INSIGHT**: Bore length for Bb clarinet should be ~650-670mm, not default 328mm
+  - Barrel entry 14.8-15.2mm, exit 14.6-14.9mm, total acoustic length ~650mm
+- **KEY INSIGHT**: Two-phase optimization critical (Noreland: "little success omitting Phase 1")
+  - Phase 1: simple objective, coarse optimization
+  - Phase 2: full objective, refine from Phase 1 seed
+- **NEXT STEPS** (coordinate before proceeding):
+  1. Desktop: Pull fix (`dab7308`), re-run pop=40/gen=50 test — should now work
+  2. Both: Discuss whether to switch from NSGA-II to gradient-based (L-BFGS-B or CMA-ES)
+  3. Both: Set bore_length=0.66 for clarinet tests
+  4. Both: Consider two-phase approach
+
 ---
 
 ### Desktop Session 6 (2026-07-21 — continued overnight)
