@@ -230,8 +230,10 @@ class DesignDesk:
     def __init__(self, on_progress: Optional[Callable[[str], None]] = None):
         self.on_progress = on_progress or (lambda msg: None)
 
-    def _log(self, msg: str):
+    def _log(self, msg: str, result: Optional[DesignDeskResult] = None):
         self.on_progress(msg)
+        if result is not None:
+            result.log.append(msg)
 
     def auto_design(self, instrument_type: str, max_iterations: int = 3,
                     target_accuracy: float = 3.0,
@@ -285,11 +287,11 @@ class DesignDesk:
         )
 
         for iteration in range(1, max_iterations + 1):
-            self._log(f"\n=== Iteration {iteration}/{max_iterations} ===")
-            self._log(f"Params: pop={params['pop_size']}, gen={params['n_generations']}, cp={params['n_control_points']}")
+            self._log(f"\n=== Iteration {iteration}/{max_iterations} ===", result)
+            self._log(f"Params: pop={params['pop_size']}, gen={params['n_generations']}, cp={params['n_control_points']}", result)
 
             if result.total_evaluations >= max_total_evals:
-                self._log(f"Reached max total evaluations ({max_total_evals}). Stopping.")
+                self._log(f"Reached max total evaluations ({max_total_evals}). Stopping.", result)
                 break
 
             try:
@@ -312,8 +314,8 @@ class DesignDesk:
                 evaluation = evaluator.evaluate(opt_result, targets)
                 accuracy = evaluation["score"]
 
-                self._log(f"Accuracy: {evaluation['grade']} ({accuracy:.2f}/100)")
-                self._log(f"Analysis: {evaluation['analysis']}")
+                self._log(f"Accuracy: {evaluation['grade']} ({accuracy:.2f}/100)", result)
+                self._log(f"Analysis: {evaluation['analysis']}", result)
 
                 best_design = opt_result.get("best_candidates", [{}])[0] if opt_result.get("best_candidates") else {}
                 bore = best_design.get("bore_profile", [])
@@ -337,26 +339,26 @@ class DesignDesk:
                     result.best_accuracy = acc
                     result.final_bore_profile = bore
                     result.final_bore_length = iteration_data.bore_length
-                    self._log(f"New best: {acc:.2f} cents RMS")
+                    self._log(f"New best: {acc:.2f} cents RMS", result)
 
                 if acc <= target_accuracy:
-                    self._log(f"Target reached! {acc:.2f} <= {target_accuracy} cents")
+                    self._log(f"Target reached! {acc:.2f} <= {target_accuracy} cents", result)
                     result.success = True
                     break
 
                 if evaluation["suggested_params"]:
                     for k, v in evaluation["suggested_params"].items():
                         if k in params:
-                            self._log(f"Adjusting {k}: {params[k]} -> {v}")
+                            self._log(f"Adjusting {k}: {params[k]} -> {v}", result)
                             params[k] = v
 
             except Exception as e:
-                self._log(f"Error in iteration {iteration}: {e}")
+                self._log(f"Error in iteration {iteration}: {e}", result)
                 break
 
         memory.store(result)
-        self._log(f"\nDesign complete. Best accuracy: {result.best_accuracy:.2f} cents RMS")
-        self._log(f"Total evaluations: {result.total_evaluations}")
+        self._log(f"\nDesign complete. Best accuracy: {result.best_accuracy:.2f} cents RMS", result)
+        self._log(f"Total evaluations: {result.total_evaluations}", result)
 
         return result
 
