@@ -637,24 +637,7 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
               {optResult.best_candidates[0]?.bore_profile && (
                 <div>
                   <h5 className="text-xs text-neutral-500 mb-1">Bore Profile</h5>
-                  <div className="bg-neutral-950 rounded-lg p-3 overflow-x-auto">
-                    <table className="w-full text-[10px] font-mono text-neutral-300">
-                      <thead>
-                        <tr className="text-neutral-500">
-                          <th className="text-left pr-4">Position (mm)</th>
-                          <th className="text-left pr-4">Radius (mm)</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {optResult.best_candidates[0].bore_profile.map((p, i) => (
-                          <tr key={i}>
-                            <td className="pr-4">{(p.position * 1000).toFixed(1)}</td>
-                            <td className="pr-4">{(p.radius * 1000).toFixed(2)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                  <BoreProfileView boreProfile={optResult.best_candidates[0].bore_profile.map((p) => [p.position, p.radius])} />
                 </div>
               )}
               {optResult.best_candidates[0]?.matched_frequencies && (
