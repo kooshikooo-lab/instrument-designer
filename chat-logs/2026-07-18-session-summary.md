@@ -7,11 +7,17 @@
 - Analyzed two separate areas: (1) matching verified well-intonated designs, (2) 3D print accuracy effects
 - Ran diagnostic tests on our impedance solver resolution
 
-### Optimizer Fixes (This Session)
+### Optimizer Fixes
 - Increased default frequency resolution: 800 → 5000 points
 - Added quadratic interpolation for peak finding (sub-bin accuracy)
 - Added impedance caching (2000 entry LRU, instant repeated calls)
 - Created ROADMAP.md with prioritized tasks
+
+### Code Review Fixes (Claude's feedback)
+- Renamed `finished` → `simulationFinished` in SimulationWorker (avoids QThread signal shadowing)
+- Added try/except in SimulationWorker.run() (prevents stuck UI on exception)
+- Added public methods to ProjectWidget (fixes encapsulation violation)
+- Fixed os.startfile for cross-platform (Windows/macOS/Linux)
 
 ## Key Findings
 - **<10 cents IS achievable** — Noreland 2013 achieved 0.5 cents RMS computationally
@@ -28,7 +34,11 @@
 - `chat-logs/2026-07-18-intonation-accuracy-research.md` — full research document
 - `chat-logs/2026-07-18-session-summary.md` — this file
 - `backend/optimizer.py` — fixed resolution, interpolation, caching
+- `woodwind_designer/gui/simulation_widget.py` — fixed signal naming, exception handling
+- `woodwind_designer/gui/project_widget.py` — added public methods, cross-platform folder open
+- `woodwind_designer/gui/main_window.py` — uses public methods, cross-platform folder open
 - `ROADMAP.md` — prioritized task list
+- `instrument-designer-share.zip` — updated with all fixes
 
 ## Next Session
 - Test optimizer end-to-end with small target set

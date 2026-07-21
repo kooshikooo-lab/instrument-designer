@@ -1,5 +1,5 @@
 # LIVE CHAT LOG — instrument-designer
-## Last updated: 2026-07-21
+## Last updated: 2026-07-21 (shutting down — laptop overheating)
 ## For: Both machines — pull this file before starting work
 ## Branch: option-a-tauri
 
@@ -85,6 +85,11 @@ git push origin option-a-tauri
 
 **Next**: Run with pop=40, gen=50 (2000 evals) to push below 3 cents.
 With parallel + SQLite cache, this should take ~7-10 min instead of ~56 min serial.
+
+### Shutdown 2026-07-21
+- Large test (pop=40, gen=50) killed due to laptop overheating — no results captured
+- Was working on: `concurrent.futures.ProcessPoolExecutor` as alternative to StarmapParallelization (better Windows perf)
+- Next session: re-run large test, implement ProcessPoolExecutor approach
 
 ---
 
