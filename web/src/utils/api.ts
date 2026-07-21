@@ -251,3 +251,78 @@ export async function clearCache(): Promise<{ status: string }> {
   if (!res.ok) throw new Error(`Cache clear failed`);
   return res.json();
 }
+
+// ─── AI Design Advisor API ──────────────────────────────────────────────
+
+export interface AdvisorSuggestion {
+  category: string;
+  priority: string;
+  title: string;
+  description: string;
+  action: string;
+  impact: string;
+}
+
+export interface AdvisorResult {
+  score: number;
+  grade: string;
+  analysis: string;
+  suggestions: AdvisorSuggestion[];
+  comparison: Record<string, string>;
+  llm_analysis: string | null;
+}
+
+export interface AdvisorStatus {
+  rule_based: boolean;
+  llm_available: boolean;
+  llm_models: string[];
+  ollama_url: string;
+  memory_designs: number;
+}
+
+export async function getAdvisorStatus(): Promise<AdvisorStatus> {
+  const res = await apiGet("/advisor/status");
+  if (!res.ok) throw new Error("Failed to get advisor status");
+  return res.json();
+}
+
+export async function analyzeDesign(
+  optimizationResult: Record<string, unknown>,
+  targetFrequencies: number[],
+  useLlm?: boolean,
+  llmModel?: string,
+): Promise<AdvisorResult> {
+  const res = await apiPost("/advisor/analyze", {
+    optimization_result: optimizationResult,
+    target_frequencies: targetFrequencies,
+    use_llm: useLlm ?? false,
+    llm_model: llmModel ?? "llama3.2",
+  });
+  if (!res.ok) throw new Error("Advisor analysis failed");
+  return res.json();
+}
+
+export async function storeDesignInMemory(params: {
+  instrument_type?: string;
+  target_frequencies?: number[];
+  bore_profile?: unknown[];
+  n_control_points?: number;
+  pop_size?: number;
+  n_generations?: number;
+  frequency_accuracy?: number;
+  scale_evenness?: number;
+  projection?: number;
+  n_evaluations?: number;
+  bore_length?: number;
+  notes?: string;
+}): Promise<{ status: string }> {
+  const res = await apiPost("/advisor/store", params);
+  if (!res.ok) throw new Error("Failed to store design");
+  return res.json();
+}
+
+export async function getDesignHistory(limit?: number): Promise<{ designs: Record<string, unknown>[] }> {
+  const res = await apiGet(`/advisor/history${limit ? `?limit=${limit}` : ""}`);
+  if (!res.ok) throw new Error("Failed to get design history");
+  return res.json();
+}

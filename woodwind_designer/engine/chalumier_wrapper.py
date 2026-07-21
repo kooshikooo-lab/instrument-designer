@@ -92,17 +92,38 @@ class ChalumierDesigner:
                 return f
         return None
 
+    def _find_java(self) -> Optional[str]:
+        """Find a Java 17+ executable. Checks JAVA_HOME, known JDK path, then system PATH."""
+        import re as _re
+        # 1. Check JAVA_HOME
+        java_home = os.environ.get("JAVA_HOME", "")
+        if java_home:
+            candidate = os.path.join(java_home, "bin", "java.exe")
+            if os.path.isfile(candidate):
+                return candidate
+        # 2. Check known JDK location
+        known_jdk = str(Path(__file__).parent.parent.parent / ".." / "jdk-17.0.13+11" / "bin" / "java.exe")
+        if os.path.isfile(known_jdk):
+            return known_jdk
+        # 3. Try system java
+        return "java"
+
     def is_available(self) -> bool:
-        """Check if chalumier is built and JDK is available."""
+        """Check if chalumier is built and JDK 17+ is available."""
         jar = self._find_jar()
         if jar is None:
             return False
+        java_cmd = self._find_java()
         try:
             result = subprocess.run(
-                ["java", "-version"],
-                capture_output=True, timeout=5
+                [java_cmd, "-version"],
+                capture_output=True, text=True, timeout=5
             )
-            return result.returncode == 0
+            version_str = result.stderr  # java -version outputs to stderr
+            match = _re.search(r'version "(\d+)', version_str)
+            if match and int(match.group(1)) >= 17:
+                return True
+            return False
         except (FileNotFoundError, subprocess.TimeoutExpired):
             return False
 
@@ -187,9 +208,10 @@ class ChalumierDesigner:
         if on_progress:
             on_progress(f"Running chalumier design: {chal_path.name}")
 
+        java_cmd = self._find_java()
         try:
             result = subprocess.run(
-                ["java", "-jar", str(jar), "design",
+                [java_cmd, "-jar", str(jar), "design",
                  "--output-dir", output_dir, str(chal_path)],
                 capture_output=True, text=True, timeout=600
             )
@@ -198,7 +220,7 @@ class ChalumierDesigner:
 
             # Find output files
             svg_files = list(Path(output_dir).glob("*.svg"))
-            json_files = list(Path(output_dir).glob("*-parameters.json"))
+            json_files = list(Path(output_dir).glob("*-parameters.json*"))
 
             bore_profile = []
             hole_positions = []
@@ -207,17 +229,30 @@ class ChalumierDesigner:
 
             if json_files:
                 try:
-                    with open(json_files[0]) as f:
-                        params = json.load(f)
-                    # Extract bore profile if available
-                    if "bore" in params:
-                        bore_profile = params["bore"]
-                    if "holes" in params:
-                        hole_positions = [h.get("position", 0) for h in params["holes"]]
-                        hole_diameters = [h.get("diameter", 0) for h in params["holes"]]
+                    raw = json_files[0].read_text()
+                    # JSON5 uses unquoted keys and trailing commas — strip them
+                    import re
+                    cleaned = re.sub(r'//.*?$', '', raw, flags=re.MULTILINE)
+                    cleaned = re.sub(r'/\*.*?\*/', '', cleaned, flags=re.DOTALL)
+                    cleaned = re.sub(r'(?<=[{,\n])\s*(\w+)\s*:', r'"\1":', cleaned)
+                    cleaned = re.sub(r',\s*([}\]])', r'\1', cleaned)
+                    params = json.loads(cleaned)
+                    # Extract bore profile from inner.pos / inner.low
+                    if "inner" in params:
+                        inner = params["inner"]
+                        pos = inner.get("pos", [])
+                        low = inner.get("low", [])
+                        high = inner.get("high", [])
+                        radii = [(l + h) / 2.0 for l, h in zip(low, high)]
+                        bore_profile = [[p / 1000.0, r / 2000.0] for p, r in zip(pos, radii)]
+                    if "holePositions" in params:
+                        hp = params["holePositions"]
+                        hd = params.get("holeDiameters", [])
+                        hole_positions = [p / 1000.0 for p in hp]
+                        hole_diameters = [d / 1000.0 for d in hd]
                     if "length" in params:
-                        length = params["length"]
-                except (json.JSONDecodeError, KeyError):
+                        length = params["length"] / 1000.0  # mm to m
+                except (json.JSONDecodeError, KeyError, Exception):
                     pass
 
             success = result.returncode == 0 and (svg_files or json_files)

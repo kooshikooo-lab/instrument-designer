@@ -1,9 +1,9 @@
 ﻿import { useState, useEffect, type ReactNode } from "react";
 import { DEMAKEIN_PRESETS, DEMAKEIN_PRESET_GROUPS } from "../data/instruments";
 import { TUNING_PRESETS, TUNING_CATEGORIES } from "../data/tuning-presets";
-import { checkHealth, startDesign, getDesignStatus, getDesignDownloadUrl, exportStep, startOptimization, getOptimizationStatus, getOptimizationPresets, getCacheStats, clearCache } from "../utils/api";
+import { checkHealth, startDesign, getDesignStatus, getDesignDownloadUrl, exportStep, startOptimization, getOptimizationStatus, getOptimizationPresets, getCacheStats, clearCache, getAdvisorStatus, analyzeDesign, storeDesignInMemory } from "../utils/api";
 import type { PitchResult } from "../utils/pitch";
-import type { OptimizationResult, OptimizationPreset } from "../utils/api";
+import type { OptimizationResult, OptimizationPreset, AdvisorResult, AdvisorSuggestion } from "../utils/api";
 import STLViewer from "./STLViewer";
 import ParametricGenerator from "./ParametricGenerator";
 import ImpedancePlot from "./ImpedancePlot";
@@ -88,9 +88,19 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
   const [optResult, setOptResult] = useState<OptimizationResult | null>(null);
   const [cacheSize, setCacheSize] = useState<number | null>(null);
 
+  const [advisorAvailable, setAdvisorAvailable] = useState<boolean | null>(null);
+  const [advisorLlmAvailable, setAdvisorLlmAvailable] = useState(false);
+  const [advisorResult, setAdvisorResult] = useState<AdvisorResult | null>(null);
+  const [advisorAnalyzing, setAdvisorAnalyzing] = useState(false);
+  const [advisorUseLlm, setAdvisorUseLlm] = useState(false);
+
   useEffect(() => {
     getOptimizationPresets().then((p) => setOptPresets(p)).catch(() => {});
     getCacheStats().then((s) => setCacheSize(s.cache_size)).catch(() => {});
+    getAdvisorStatus().then((s) => {
+      setAdvisorAvailable(true);
+      setAdvisorLlmAvailable(s.llm_available);
+    }).catch(() => setAdvisorAvailable(false));
   }, []);
 
   useEffect(() => {
@@ -212,6 +222,45 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
     } catch (e) {
       setOptStatus(`Error: ${e}`);
       setOptRunning(false);
+    }
+  };
+
+  const runAdvisorAnalysis = async () => {
+    if (!optResult || getTargetFrequencies().length === 0) return;
+    setAdvisorAnalyzing(true);
+    setAdvisorResult(null);
+    try {
+      const result = await analyzeDesign(
+        optResult as unknown as Record<string, unknown>,
+        getTargetFrequencies(),
+        advisorUseLlm,
+      );
+      setAdvisorResult(result);
+    } catch (e) {
+      console.error("Advisor analysis failed:", e);
+    } finally {
+      setAdvisorAnalyzing(false);
+    }
+  };
+
+  const storeCurrentDesign = async () => {
+    if (!optResult || !optResult.best_candidates[0]) return;
+    const best = optResult.best_candidates[0];
+    try {
+      await storeDesignInMemory({
+        instrument_type: optTargetKey || "custom",
+        target_frequencies: getTargetFrequencies(),
+        bore_profile: best.bore_profile,
+        n_control_points: optCP,
+        pop_size: optPopSize,
+        n_generations: optGen,
+        frequency_accuracy: best.objectives?.frequency_accuracy,
+        scale_evenness: best.objectives?.scale_evenness,
+        n_evaluations: optResult.n_evaluations,
+        bore_length: optResult.bore_length,
+      });
+    } catch (e) {
+      console.error("Store failed:", e);
     }
   };
 
@@ -652,6 +701,109 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
           </CollapsibleSection>
         </div>
       </div>
+
+      <CollapsibleSection title="AI Design Advisor" defaultOpen={false} badge={advisorAvailable === true ? (advisorLlmAvailable ? "LLM Ready" : "Rule-Based") : "Checking..."}>
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${advisorAvailable === true ? "bg-green-500" : advisorAvailable === false ? "bg-red-500" : "bg-yellow-500 animate-pulse"}`} />
+            <span className="text-xs text-neutral-400">
+              {advisorAvailable === true
+                ? advisorLlmAvailable
+                  ? "Ollama connected — rule-based + LLM analysis available"
+                  : "Rule-based analysis available — start Ollama for natural language explanations"
+                : "Advisor not available"}
+            </span>
+          </div>
+
+          {advisorAvailable && (
+            <>
+              <div className="flex gap-3 items-center">
+                <button
+                  onClick={runAdvisorAnalysis}
+                  disabled={advisorAnalyzing || !optResult}
+                  className="px-5 py-2 bg-brand-600 hover:bg-brand-500 disabled:bg-neutral-800 disabled:text-neutral-600 text-sm text-white rounded-lg transition-colors font-medium"
+                >
+                  {advisorAnalyzing ? "Analyzing..." : "Analyze Results"}
+                </button>
+                {optResult && (
+                  <button
+                    onClick={storeCurrentDesign}
+                    className="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-sm text-neutral-300 rounded-lg transition-colors"
+                  >
+                    Save to Memory
+                  </button>
+                )}
+                {advisorLlmAvailable && (
+                  <label className="flex items-center gap-2 text-xs text-neutral-400 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={advisorUseLlm}
+                      onChange={(e) => setAdvisorUseLlm(e.target.checked)}
+                      className="rounded bg-neutral-800 border-neutral-700"
+                    />
+                    Use LLM (slower, more detailed)
+                  </label>
+                )}
+              </div>
+
+              {!optResult && (
+                <div className="text-xs text-neutral-500 italic">
+                  Run an optimization first, then analyze the results here.
+                </div>
+              )}
+            </>
+          )}
+
+          {advisorResult && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-4">
+                <div className="bg-neutral-950 rounded-lg px-4 py-2 text-center">
+                  <div className="text-2xl font-bold text-neutral-100">{advisorResult.grade}</div>
+                  <div className="text-[10px] text-neutral-500">{advisorResult.score.toFixed(0)}/100</div>
+                </div>
+                <div className="flex-1 text-xs text-neutral-400">{advisorResult.analysis}</div>
+              </div>
+
+              {advisorResult.comparison.improvement && (
+                <div className="bg-green-950/30 border border-green-900/50 rounded-lg p-2 text-xs text-green-400">
+                  Improvement over previous best: {advisorResult.comparison.improvement}
+                </div>
+              )}
+
+              {advisorResult.suggestions.length > 0 && (
+                <div className="space-y-2">
+                  <h5 className="text-xs text-neutral-500 font-medium">Suggestions</h5>
+                  {advisorResult.suggestions.map((s: AdvisorSuggestion, i: number) => (
+                    <div key={i} className={`bg-neutral-950 rounded-lg p-3 border-l-2 ${
+                      s.priority === "high" ? "border-red-500" : s.priority === "medium" ? "border-yellow-500" : "border-neutral-700"
+                    }`}>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                          s.category === "warning" ? "bg-red-900/50 text-red-400" :
+                          s.category === "geometry" ? "bg-blue-900/50 text-blue-400" :
+                          s.category === "parameter" ? "bg-purple-900/50 text-purple-400" :
+                          "bg-neutral-800 text-neutral-400"
+                        }`}>{s.category}</span>
+                        <span className="text-sm text-neutral-200 font-medium">{s.title}</span>
+                      </div>
+                      <p className="text-xs text-neutral-400 mb-1">{s.description}</p>
+                      <p className="text-xs text-brand-400">{s.action}</p>
+                      <p className="text-[10px] text-neutral-600 mt-1">Expected impact: {s.impact}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {advisorResult.llm_analysis && (
+                <div>
+                  <h5 className="text-xs text-neutral-500 font-medium mb-1">LLM Analysis</h5>
+                  <pre className="bg-neutral-950 rounded-lg p-3 text-xs text-neutral-300 whitespace-pre-wrap font-mono max-h-60 overflow-auto">{advisorResult.llm_analysis}</pre>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </CollapsibleSection>
 
       <CollapsibleSection title="How It Works" defaultOpen={false}>
         <ol className="text-xs text-neutral-400 space-y-2 list-decimal list-inside">

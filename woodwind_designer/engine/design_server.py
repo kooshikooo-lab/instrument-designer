@@ -348,3 +348,96 @@ def clear_cache():
 def get_cache_stats():
     from backend.mp_cache import cache_size
     return {"cache_size": cache_size(), "status": "ok"}
+
+
+# ─── AI Design Advisor ───────────────────────────────────────────────────
+
+class AdvisorAnalyzeRequest(BaseModel):
+    optimization_result: dict
+    target_frequencies: list[float]
+    use_llm: bool = False
+    llm_model: str = "llama3.2"
+
+
+class AdvisorStoreRequest(BaseModel):
+    instrument_type: str = ""
+    target_frequencies: list[float] = []
+    bore_profile: list = []
+    n_control_points: int = 0
+    pop_size: int = 0
+    n_generations: int = 0
+    frequency_accuracy: float = 0
+    scale_evenness: float = 0
+    projection: float = 0
+    n_evaluations: int = 0
+    bore_length: float = 0
+    notes: str = ""
+
+
+@app.get("/advisor/status")
+def advisor_status():
+    """Check AI advisor capabilities."""
+    import sys
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+    from backend.ai_advisor import get_advisor_status
+    return get_advisor_status()
+
+
+@app.post("/advisor/analyze")
+def advisor_analyze(req: AdvisorAnalyzeRequest):
+    """Analyze an optimization result and return suggestions."""
+    import sys
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+    from backend.ai_advisor import analyze_optimization_result, get_llm_suggestion
+
+    result = analyze_optimization_result(req.optimization_result, req.target_frequencies)
+
+    response = {
+        "score": result.score,
+        "grade": result.grade,
+        "analysis": result.analysis,
+        "suggestions": [asdict(s) for s in result.suggestions],
+        "comparison": result.comparison,
+        "llm_analysis": None,
+    }
+
+    if req.use_llm:
+        llm_text = get_llm_suggestion(
+            req.optimization_result, req.target_frequencies, req.llm_model
+        )
+        response["llm_analysis"] = llm_text
+
+    return response
+
+
+@app.post("/advisor/store")
+def advisor_store(req: AdvisorStoreRequest):
+    """Store a design in the advisor's memory for future reference."""
+    import sys
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+    from backend.ai_advisor import store_design
+
+    store_design({
+        "instrument_type": req.instrument_type,
+        "target_frequencies": req.target_frequencies,
+        "bore_profile": req.bore_profile,
+        "n_control_points": req.n_control_points,
+        "pop_size": req.pop_size,
+        "n_generations": req.n_generations,
+        "frequency_accuracy": req.frequency_accuracy,
+        "scale_evenness": req.scale_evenness,
+        "projection": req.projection,
+        "n_evaluations": req.n_evaluations,
+        "bore_length": req.bore_length,
+        "notes": req.notes,
+    })
+    return {"status": "stored"}
+
+
+@app.get("/advisor/history")
+def advisor_history(limit: int = 20):
+    """Get design history from advisor memory."""
+    import sys
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+    from backend.ai_advisor import get_design_history
+    return {"designs": get_design_history(limit)}
