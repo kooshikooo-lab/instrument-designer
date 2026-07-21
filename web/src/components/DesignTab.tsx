@@ -10,6 +10,7 @@ import ImpedancePlot from "./ImpedancePlot";
 import TonePlayer from "./TonePlayer";
 import MicrophoneAnalyzer from "./MicrophoneAnalyzer";
 import PresetInfo from "./PresetInfo";
+import BoreProfileView from "./BoreProfileView";
 
 function CollapsibleSection({
   title,
@@ -772,24 +773,11 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
               {chalResult.bore_profile.length > 0 && (
                 <div>
                   <h5 className="text-xs text-neutral-500 mb-1">Bore Profile</h5>
-                  <div className="bg-neutral-950 rounded-lg p-3 overflow-x-auto">
-                    <table className="w-full text-[10px] font-mono text-neutral-300">
-                      <thead>
-                        <tr className="text-neutral-500">
-                          <th className="text-left pr-4">Position (mm)</th>
-                          <th className="text-left pr-4">Radius (mm)</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {chalResult.bore_profile.map((p: number[], i: number) => (
-                          <tr key={i}>
-                            <td className="pr-4">{p[0] !== undefined ? `${(p[0] * 1000).toFixed(1)}` : "—"}</td>
-                            <td className="pr-4">{p[1] !== undefined ? `${(p[1] * 1000).toFixed(2)}` : "—"}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                  <BoreProfileView
+                    boreProfile={chalResult.bore_profile}
+                    holePositions={chalResult.hole_positions}
+                    holeDiameters={chalResult.hole_diameters}
+                  />
                 </div>
               )}
               {chalResult.hole_positions.length > 0 && (
