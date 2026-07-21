@@ -229,4 +229,52 @@ npx tauri build --no-bundle
 - 🔲 Chalumier needs JDK 17+ to activate
 - 🔲 Frontend polish
 
+---
+
+## Desktop: Your Goals (Laptop signing off)
+
+### 1. Tauri Build Test
+Pull latest and verify build still works:
+```powershell
+cd C:\instrument-designer\web
+$env:CARGO_TARGET_DIR = "C:\instrument-designer\.cargo-target"
+$env:CARGO_HOME = "C:\rust\cargo"
+$env:RUSTUP_HOME = "C:\rust\rustup"
+$mingwBin = (Resolve-Path "...\WinLibs.POSIX.UCRT_*\mingw64\bin").Path
+$env:Path = "C:\rust\cargo\bin;$mingwBin;C:\Program Files\Git\bin;$env:Path"
+npx tauri build --no-bundle
+```
+
+### 2. Quick Optimizer Smoke Test (serial)
+```powershell
+python -c "from backend.optimizer import BoreOptimizer; opt = BoreOptimizer([261.6, 784.8, 1308.0, 1831.2, 2354.4, 2877.6], n_control_points=6, pop_size=10, n_generations=3); r = opt.run(verbose=True); print(r['best_candidates'][0]['objectives'])"
+```
+
+### 3. Quick Optimizer Smoke Test (batch parallel)
+```powershell
+python -c "from backend.optimizer import BoreOptimizer; opt = BoreOptimizer([261.6, 784.8, 1308.0, 1831.2, 2354.4, 2877.6], n_control_points=6, pop_size=10, n_generations=3, n_workers=4, parallel_mode='batch'); r = opt.run(verbose=True); print(r['best_candidates'][0]['objectives'])"
+```
+
+### 4. Large Accuracy Test (if laptop not running)
+Run pop=40, gen=50 with batch parallel — should take ~30 min. This is the test to break below 3 cents RMS:
+```powershell
+python -c "
+from backend.optimizer import BoreOptimizer
+from backend.mp_cache import cache_clear
+cache_clear()
+targets = [261.6, 784.8, 1308.0, 1831.2, 2354.4, 2877.6]
+opt = BoreOptimizer(targets, n_control_points=12, pop_size=40, n_generations=50, n_workers=6, parallel_mode='batch')
+r = opt.run(verbose=True)
+best = r['best_candidates'][0]
+print('RMS:', best['objectives']['frequency_accuracy'], 'cents')
+for m in best['matched_frequencies']:
+    print(f'  {m[\"target\"]:7.1f} -> {m[\"actual\"]:7.1f}  ({m[\"error_cents\"]:+.2f} cents)')
+"
+```
+
+### 5. Coordinate Before Editing
+- `backend/bore_optimizer.py` = laptop owns, DO NOT EDIT without updating LIVE-CHAT-LOG
+- Everything else = desktop can edit freely
+- Update this log after any changes
+
 *This file is updated frequently. Pull often.*
