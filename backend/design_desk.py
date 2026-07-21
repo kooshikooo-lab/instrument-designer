@@ -136,10 +136,18 @@ class DesignAgent:
             return self.custom_targets
         try:
             sys.path.insert(0, str(Path(__file__).parent.parent))
-            from backend.target_frequencies import get_preset_info
-            info = get_preset_info(self.instrument_type)
-            if info:
-                return info["targets"]
+            from backend.target_frequencies import get_targets
+            instrument_type = self.instrument_type
+            if instrument_type in ("clarinet_Bb", "reedpipe", "reed_drone", "chalumeau"):
+                return get_targets(instrument_type, fundamental=233.1, n_notes=6)
+            elif instrument_type == "folk_whistle":
+                return get_targets(instrument_type, fundamental=293.7, n_notes=6)
+            elif instrument_type == "folk_flute":
+                return get_targets(instrument_type, fundamental=293.7, n_notes=6)
+            elif instrument_type == "recorder":
+                return get_targets(instrument_type, fundamental=261.6, n_notes=6)
+            else:
+                return get_targets(instrument_type, fundamental=261.6, n_notes=6)
         except ImportError:
             pass
         return []
