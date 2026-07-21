@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect, type ReactNode } from "react";
 import { DEMAKEIN_PRESETS, DEMAKEIN_PRESET_GROUPS } from "../data/instruments";
 import { TUNING_PRESETS, TUNING_CATEGORIES } from "../data/tuning-presets";
-import { checkHealth, startDesign, getDesignStatus, getDesignDownloadUrl, exportStep, startOptimization, getOptimizationStatus, getOptimizationPresets, getCacheStats, clearCache, getAdvisorStatus, analyzeDesign, storeDesignInMemory } from "../utils/api";
+import { checkHealth, startDesign, getDesignStatus, getDesignDownloadUrl, exportStep, startOptimization, getOptimizationStatus, getOptimizationPresets, getCacheStats, clearCache, getAdvisorStatus, analyzeDesign, storeDesignInMemory, exportBoreSvg, downloadSvg } from "../utils/api";
 import type { PitchResult } from "../utils/pitch";
 import type { OptimizationResult, OptimizationPreset, AdvisorResult, AdvisorSuggestion } from "../utils/api";
 import STLViewer from "./STLViewer";
@@ -661,6 +661,29 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
                   </div>
                 </div>
               )}
+              <div className="flex gap-2">
+                <button
+                  onClick={async () => {
+                    const best = optResult?.best_candidates?.[0];
+                    if (!best?.bore_profile) return;
+                    try {
+                      const profile: [number, number][] = best.bore_profile.map((p: { position: number; radius: number }) => [p.position, p.radius]);
+                      const svg = await exportBoreSvg(profile, "Optimized Bore Profile");
+                      downloadSvg(svg, "bore-profile.svg");
+                    } catch (e) {
+                      console.error("SVG export failed:", e);
+                    }
+                  }}
+                  className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs rounded-lg border border-neutral-700 transition-colors"
+                >
+                  Export SVG
+                </button>
+                {advisorResult && (
+                  <span className="self-center text-[10px] text-neutral-500">
+                    Advisor Score: {advisorResult.score}/100 ({advisorResult.grade})
+                  </span>
+                )}
+              </div>
             </div>
           )}
         </div>
