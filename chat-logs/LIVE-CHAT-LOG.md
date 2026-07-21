@@ -29,6 +29,27 @@
 
 ---
 
+### Desktop Session 5 (2026-07-21 — continued)
+- ✅ **JDK 17 installed**: Downloaded Adoptium Temurin 17.0.13, extracted to `..\jdk-17.0.13+11`
+- ✅ **Chalumier built**: Created stub classes for missing `ProgressMonitor`, `BoundedTranscript`, `MakerState`
+  - Chalumier JAR: 27MB at `chalumier/app/build/libs/chalumier-0.0.1.jar`
+  - Test design SUCCESS: D whistle — SVG + JSON5 parameters output
+  - Bore profile: 253mm, 6 holes, inner/outer profiles, kink points
+- ✅ **Chalumier wrapper updated**: Auto-finds JDK 17+, parses JSON5 output, extracts bore/holes
+- ✅ **AI Design Advisor** (`backend/ai_advisor.py` — 442 lines):
+  - Rule-based analysis: frequency accuracy, bore geometry, optimization params
+  - Score/grade system (A+ to F) based on RMS cents error
+  - Systematic offset detection (all harmonics sharp/flat)
+  - Monotonicity check, bore radius range analysis
+  - Design memory: SQLite `design_memory.db` for optimization results + history
+  - LLM mode: Ollama integration for natural language explanations
+  - Endpoints: /advisor/status, /advisor/analyze, /advisor/store, /advisor/history
+- ✅ **AI Advisor UI panel** in DesignTab: score/grade, suggestion cards, save to memory, LLM toggle
+- ✅ Committed + pushed (1 commit, 815 lines added)
+- TypeScript build: clean, 0 errors
+
+---
+
 ### Laptop Session (2026-07-21 — resumed after desktop overnight)
 - ✅ **Batch parallelization** added to `bore_optimizer.py`:
   - `_evaluate_single_design()` — standalone picklable function for ProcessPoolExecutor
