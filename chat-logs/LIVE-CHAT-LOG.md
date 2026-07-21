@@ -173,7 +173,11 @@ Both machines use the same project name and branch.
 | Machine | Project Root | Git Branch |
 |---------|-------------|------------|
 | Laptop | `C:\instrument-designer\` | `option-a-tauri` |
-| Desktop | Check with: `git rev-parse --show-toplevel` | `option-a-tauri` |
+| Desktop | `C:\Users\Admin\Desktop\Woodwind design automation\woodwind-designer` | `option-a-tauri` / `experiment/v2-scipy-gradient` |
+
+**Research Report (PDF):** `chat-logs/RESEARCH-REPORT.pdf` (101 KB, styled with DejaVu fonts)
+**Research Report (Markdown):** `chat-logs/RESEARCH-REPORT.md`
+**Rebuild Plan:** `chat-logs/REBUILD-PLAN.md`
 
 **Key**: Both must be on branch `option-a-tauri`. If you're on `main`, run:
 ```
@@ -220,20 +224,49 @@ With parallel + SQLite cache, this should take ~7-10 min instead of ~56 min seri
 
 ## Priority Next Steps
 
+### Desktop Session 8 (2026-07-21 — rebuild plan + report)
+- ✅ **Rebuild plan created** (`chat-logs/REBUILD-PLAN.md`):
+  - Core principle: integrate proven tools, don't reinvent the wheel
+  - Replace NSGA-II with scipy.optimize (L-BFGS-B, gradient-based)
+  - Add Ernoult phase-based resonance detection
+  - Add Noreland two-phase optimization workflow
+  - Start from known-good bore (Buffet R13) instead of random
+  - Branch strategy: `experiment/v2-scipy-gradient`, `v2-phase-detection`, `v2-two-phase`, `v2-cmaes`
+- ✅ **LIVE-CHAT-LOG updated** with rebuild plan and branch strategy
+- ✅ **Research report created** (`chat-logs/RESEARCH-REPORT.md` — 14 sections):
+  - Architecture, OpenWInD integration, optimization approaches
+  - np.inf bug analysis, bore representation, frequency targets
+  - Literature review (Noreland, Ernoult, WWIDesigner, chalumier)
+  - 3D printing, AI advisor, lessons learned
+  - References (15 papers/tools)
+- ✅ **PDF report generated** (`chat-logs/RESEARCH-REPORT.pdf` — 101 KB):
+  - DejaVu Unicode fonts, styled layout, tables, code blocks
+  - Title page, page numbers, headers/footers
+- ✅ **experiment/v2-scipy-gradient branch created**:
+  - `backend/v2_scipy_optimizer.py` — scipy.optimize wrapper with PAVA, L-BFGS-B
+  - `test_scipy_vs_nsga.py` — comparison test (NSGA-II vs L-BFGS-B vs Two-Phase)
+  - Initial test timed out (5 min limit) — L-BFGS-B needs tuning for OpenWInD call time
+  - Added progress callback (prints every 10 iterations)
+  - Fixed `target_freqs` NameError bug
+
+---
+
 ### Immediate (next session)
-1. **Desktop**: Pull latest code review fixes (`git pull --rebase origin option-a-tauri`)
-2. **Desktop**: Run `python test_batch_fix.py` to verify BLAS fix + PAVA fix
-3. **Desktop**: Run pop=40/gen=50 batch test — target <3 cents RMS
-4. **Laptop**: Fix `validate_optimizer.py` to use odd-harmonic targets for clarinet
+1. **Desktop**: Create `experiment/v2-scipy-gradient` branch
+2. **Desktop**: Implement scipy.optimize wrapper with OpenWInD
+3. **Desktop**: Test on clarinet Bb with known-good initialization
+4. **Laptop**: Review plan, suggest priority adjustments
+5. **Both**: Fix np.inf → 1e10 revert in bore_optimizer.py (laptop's domain)
 
 ### This Week
-5. Validate against demakein reference instruments
-6. Consider surrogate model approach (neural net on 500-1000 OpenWInD evaluations → ms optimization)
-7. 3D print test instrument (SLA recommended: min wall 0.5mm, ±0.1mm tolerance)
+6. Validate scipy gradient approach vs current NSGA-II
+7. Implement phase-based resonance detection (v2-phase-detection branch)
+8. Test two-phase workflow (v2-two-phase branch)
+9. Integrate validated experiments into `option-a-tauri`
 
 ### Blocked
 - **BIOS virtualization disabled** — Intel VT-x must be enabled for WSL2/Linux
-- **Chalumier integration** — needs JDK 17+ (desktop has it, test with design agent)
+- **np.inf bug** — laptop needs to revert `np.inf` → `1e10` in bore_optimizer.py
 
 ---
 
