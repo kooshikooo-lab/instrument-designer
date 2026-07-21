@@ -50,6 +50,23 @@
 
 ---
 
+### Desktop Session 7 (2026-07-21 — batch test + investigation)
+- ✅ Pulled laptop's BLAS fix + code review fixes
+- ✅ Fixed `self._workers` → `self.n_workers` bug in BatchBoreOptimizationProblem (line 489)
+- ✅ **Smoke test PASSES**: pop=10/gen=3 batch → 2.00 cents RMS, 23s
+- ❌ **Large test FAILS**: pop=40/gen=50 batch → **38.78 cents RMS**, 620s
+  - Bore profile is WRONG: entry 3.5mm, exit 11.5mm (expanding cone, not clarinet)
+  - All errors are positive (+15 to +130 cents) — actual frequencies too high
+  - Same code as smoke test, just larger population — should converge better, not worse
+- **Possible causes** (need laptop to investigate):
+  1. `np.inf` penalty might cause NSGA-II population collapse at large pop sizes
+  2. PAVA stack rewrite may have subtle bug at scale (12 CP vs 8 CP)
+  3. Bore length 328mm is short for clarinet — optimizer might need bore_length=None (auto)
+  4. Seed or population diversity issue at pop=40
+- Will wait for laptop response before proceeding
+
+---
+
 ### Desktop Session 6 (2026-07-21 — continued overnight)
 - ✅ **Automated Design Agent** (`backend/design_desk.py` — 383 lines):
   - Multi-iteration design loop: optimize → analyze → adjust params → iterate

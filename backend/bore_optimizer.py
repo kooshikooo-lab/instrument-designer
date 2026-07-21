@@ -486,7 +486,7 @@ class BatchBoreOptimizationProblem(Problem):
         
         # Only send design vectors — config is in worker's _worker_config
         n = len(X)
-        chunksize = max(1, n // (self._workers * 4)) if self._workers else 1
+        chunksize = max(1, n // (self.n_workers * 4)) if self.n_workers else 1
         results = list(executor.map(_evaluate_single_design, X, chunksize=chunksize))
         
         F = np.array([r[0] for r in results])
