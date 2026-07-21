@@ -65,6 +65,12 @@
   4. Seed or population diversity issue at pop=40
 - Will wait for laptop response before proceeding
 
+### Research completed (3 parallel tasks):
+- **Noreland deep dive**: Full methodology, two-phase strategy, objective function, results
+- **Acoustic simulation**: OpenWInD internals, impedance peak detection, perturbation theory
+- **Broad woodwind acoustics**: Benade fundamentals, tone hole lattice, chalumier/demakein/WWIDesigner, 3D printing validation, reed dynamics, recent ML approaches
+- Full findings written to `chat-logs/2026-07-21-deep-research-findings.md` (20 sources)
+
 ---
 
 ### Desktop Session 6 (2026-07-21 — continued overnight)
