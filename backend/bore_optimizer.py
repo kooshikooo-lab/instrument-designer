@@ -17,12 +17,16 @@ Usage:
 """
 
 import os
+import time
+import copy
 import tempfile
 import hashlib
 import numpy as np
+from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import Pool
 from scipy.signal import find_peaks
 from pymoo.core.problem import ElementwiseProblem
+from pymoo.core.problem import Problem
 from pymoo.core.repair import Repair
 from pymoo.parallelization import StarmapParallelization
 from pymoo.algorithms.moo.nsga2 import NSGA2
@@ -314,16 +318,164 @@ class BoreOptimizationProblem(ElementwiseProblem):
         out["G"] = [np.sum(smoothness_violations)]
 
 
+def _evaluate_single_design(args):
+    """
+    Standalone picklable function for evaluating one bore design.
+    Used by BatchBoreOptimizationProblem with ProcessPoolExecutor.
+    """
+    (x, bore_length, n_cp, target_freqs, min_radius, max_radius,
+     temperature, freq_range, n_freqs, max_radius_jump) = args
+    
+    positions = np.linspace(0, bore_length, n_cp)
+    radii = np.asarray(x, dtype=float)
+    bore = list(zip(positions.tolist(), radii.tolist()))
+    
+    try:
+        result = _compute_impedance_from_bore(
+            bore, freq_range=freq_range, n_freqs=n_freqs, temperature=temperature,
+        )
+    except Exception:
+        return [1e10, 1e10, 1e10], [1e10]
+    
+    peak_freqs = result["peak_frequencies"]
+    peak_mags = result["peak_magnitudes"]
+    
+    if len(peak_freqs) < 2:
+        return [1e10, 1e10, 1e10], [1e10]
+    
+    matched = _match_peaks_to_targets(peak_freqs, target_freqs)
+    
+    raw_cents = np.array([m[3] for m in matched])
+    global_offset = np.median(raw_cents)
+    corrected_errors = np.abs(raw_cents - global_offset)
+    freq_accuracy = float(np.sqrt(np.mean(corrected_errors ** 2)))
+    
+    n_targets = len(target_freqs)
+    n_peaks = len(peak_freqs)
+    
+    if n_peaks >= n_targets:
+        matched_peak_vals = np.array([m[1] for m in matched])
+        if len(matched_peak_vals) > 1:
+            diffs = np.diff(matched_peak_vals)
+            mean_diff = np.mean(diffs)
+            evenness = float(np.std(diffs / mean_diff)) if mean_diff > 0 else 1e10
+        else:
+            evenness = 1e10
+    else:
+        evenness = 1e10 * (1 + (n_targets - n_peaks) / n_targets)
+    
+    n_use = min(n_targets, n_peaks)
+    projection = float(-np.mean(peak_mags[:n_use]) / 1e6) if n_use > 0 else 1e10
+    
+    smoothness_violations = np.maximum(0, np.abs(np.diff(radii)) - max_radius_jump)
+    constraint = float(np.sum(smoothness_violations))
+    
+    return [freq_accuracy, evenness, projection], [constraint]
+
+
+class BatchBoreOptimizationProblem(Problem):
+    """
+    Batch-mode bore optimization using ProcessPoolExecutor.
+    
+    Evaluates the full population in one _evaluate call, dispatching to
+    persistent workers. Avoids per-task pickle overhead of StarmapParallelization.
+    """
+    
+    def __init__(
+        self,
+        target_frequencies,
+        n_control_points=12,
+        bore_length=0.5,
+        min_radius=0.003,
+        max_radius=0.025,
+        temperature=20.0,
+        freq_range=(100, 3000),
+        n_freqs=5000,
+        n_workers=None,
+        max_radius_jump=None,
+    ):
+        self.target_freqs = np.array(sorted(target_frequencies))
+        self.bore_length = bore_length
+        self.min_radius = min_radius
+        self.max_radius = max_radius
+        self.temperature = temperature
+        self.freq_range = freq_range
+        self.n_freqs = n_freqs
+        self.n_cp = n_control_points
+        
+        if max_radius_jump is None:
+            self.max_radius_jump = (max_radius - min_radius) * 0.3
+        else:
+            self.max_radius_jump = max_radius_jump
+        
+        if n_workers is None:
+            n_workers = min(os.cpu_count() or 1, 8)
+        self.n_workers = n_workers
+        self._executor = None
+        
+        super().__init__(
+            n_var=n_control_points,
+            n_obj=3,
+            n_ieq_constr=1,
+            xl=np.full(n_control_points, min_radius),
+            xu=np.full(n_control_points, max_radius),
+        )
+    
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            if k == "_executor":
+                setattr(result, k, None)
+            else:
+                setattr(result, k, copy.deepcopy(v, memo))
+        return result
+    
+    def _get_executor(self):
+        if self._executor is None:
+            self._executor = ProcessPoolExecutor(max_workers=self.n_workers)
+        return self._executor
+    
+    def _evaluate(self, X, out, *args, **kwargs):
+        executor = self._get_executor()
+        
+        task_args = [
+            (X[i], self.bore_length, self.n_cp, self.target_freqs,
+             self.min_radius, self.max_radius, self.temperature,
+             self.freq_range, self.n_freqs, self.max_radius_jump)
+            for i in range(len(X))
+        ]
+        
+        results = list(executor.map(_evaluate_single_design, task_args))
+        
+        F = np.array([r[0] for r in results])
+        G = np.array([r[1] for r in results])
+        
+        out["F"] = F
+        out["G"] = G
+    
+    def shutdown(self):
+        if self._executor is not None:
+            self._executor.shutdown(wait=False)
+            self._executor = None
+
+
 class BoreOptimizer:
     """
     High-level interface for evolutionary bore optimization.
     
+    Parallel modes (parallel_mode parameter):
+        "serial"   — single-process
+        "starmap"  — pymoo StarmapParallelization
+        "batch"    — ProcessPoolExecutor batch evaluation (recommended on Windows)
+        "auto"     — batch if n_workers > 1, else serial
+    
     Example:
         optimizer = BoreOptimizer(
-            target_frequencies=[261.6, 293.7, 329.6, 349.2, 392.0, 440.0, 493.9, 523.3],
-            n_control_points=12,
-            pop_size=40,
-            n_generations=50,
+            target_frequencies=[261.6, 784.8, 1308.0, 1831.2, 2354.4, 2877.6],
+            n_control_points=12, pop_size=40, n_generations=50,
+            n_workers=6, parallel_mode="batch",
         )
         result = optimizer.run()
         print(result["best_candidates"])
@@ -342,6 +494,7 @@ class BoreOptimizer:
         seed=None,
         n_workers=None,
         max_radius_jump=None,
+        parallel_mode="auto",
     ):
         self.target_frequencies = target_frequencies
         self.n_control_points = n_control_points
@@ -351,8 +504,8 @@ class BoreOptimizer:
         self.n_generations = n_generations
         self.temperature = temperature
         self.seed = seed or np.random.randint(0, 10000)
-        self.n_workers = n_workers
         self.max_radius_jump = max_radius_jump
+        self.parallel_mode = parallel_mode
         
         # Auto-calculate bore length from fundamental
         if bore_length is None:
@@ -367,26 +520,50 @@ class BoreOptimizer:
         max_freq = max(target_frequencies) * 3.5
         self.freq_range = (min_freq, max_freq)
         
-        # Set up parallelization if requested
-        self._pool = None
-        runner = None
+        # Resolve parallel mode
         if n_workers is None:
-            n_workers = min(os.cpu_count() or 1, 8)  # auto-detect, cap at 8
-        if n_workers > 1:
-            self._pool = Pool(n_workers)
-            runner = StarmapParallelization(self._pool.starmap)
+            n_workers = min(os.cpu_count() or 1, 8)
+        self.n_workers = n_workers
         
-        self._problem = BoreOptimizationProblem(
-            target_frequencies=target_frequencies,
-            n_control_points=n_control_points,
-            bore_length=self.bore_length,
-            min_radius=min_radius,
-            max_radius=max_radius,
-            temperature=temperature,
-            freq_range=self.freq_range,
-            elementwise_runner=runner,
-            max_radius_jump=max_radius_jump,
-        )
+        if parallel_mode == "auto":
+            parallel_mode = "batch" if n_workers > 1 else "serial"
+        self._resolved_mode = parallel_mode
+        
+        self._pool = None
+        self._batch_problem = None
+        
+        if parallel_mode == "batch" and n_workers > 1:
+            self._batch_problem = BatchBoreOptimizationProblem(
+                target_frequencies=target_frequencies,
+                n_control_points=n_control_points,
+                bore_length=self.bore_length,
+                min_radius=min_radius,
+                max_radius=max_radius,
+                temperature=temperature,
+                freq_range=self.freq_range,
+                n_freqs=5000,
+                n_workers=n_workers,
+                max_radius_jump=max_radius_jump,
+            )
+            self._problem = self._batch_problem
+        else:
+            runner = None
+            if parallel_mode == "starmap" and n_workers > 1:
+                self._pool = Pool(n_workers)
+                runner = StarmapParallelization(self._pool.starmap)
+            
+            self._problem = BoreOptimizationProblem(
+                target_frequencies=target_frequencies,
+                n_control_points=n_control_points,
+                bore_length=self.bore_length,
+                min_radius=min_radius,
+                max_radius=max_radius,
+                temperature=temperature,
+                freq_range=self.freq_range,
+                n_freqs=5000,
+                elementwise_runner=runner,
+                max_radius_jump=max_radius_jump,
+            )
         
         self._algorithm = NSGA2(
             pop_size=pop_size,
@@ -405,21 +582,13 @@ class BoreOptimizer:
         """
         Run the optimization.
         
-        Args:
-            verbose: print progress information
-            callback: optional callback(generation, best_fitness) called each generation
-        
-        Returns:
-            dict with keys:
-                - pareto_front: list of objective vectors
-                - designs: list of all design dicts
-                - best_candidates: top 5 designs closest to ideal point
-                - n_evaluations: total function evaluations
-                - n_generations: number of generations
-                - bore_length: used bore length in meters
-                - freq_range: used frequency range
-                - seed: random seed used
+        Returns dict with: pareto_front, designs, best_candidates, n_evaluations,
+        n_generations, bore_length, freq_range, seed, parallel_mode, wall_time
         """
+        if verbose:
+            print(f"  Parallel mode: {self._resolved_mode} ({self.n_workers} workers)")
+        
+        t0 = time.time()
         try:
             self._result = minimize(
                 self._problem,
@@ -434,6 +603,13 @@ class BoreOptimizer:
                 self._pool.close()
                 self._pool.join()
                 self._pool = None
+            if self._batch_problem:
+                self._batch_problem.shutdown()
+                self._batch_problem = None
+        
+        wall_time = time.time() - t0
+        if verbose:
+            print(f"  Wall time: {wall_time:.1f}s")
         
         X = self._result.X
         F = self._result.F
@@ -484,6 +660,8 @@ class BoreOptimizer:
             "bore_length": self.bore_length,
             "freq_range": list(self.freq_range),
             "seed": self.seed,
+            "parallel_mode": self._resolved_mode,
+            "wall_time": wall_time,
         }
     
     def _bore_from_variables(self, x):

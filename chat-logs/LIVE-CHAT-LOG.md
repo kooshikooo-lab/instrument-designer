@@ -1,5 +1,5 @@
 # LIVE CHAT LOG — instrument-designer
-## Last updated: 2026-07-21 (Desktop session 4 — overnight independent, completed)
+## Last updated: 2026-07-21 (laptop session — batch parallelization added)
 ## For: Both machines — pull this file before starting work
 ## Branch: option-a-tauri
 
@@ -26,6 +26,20 @@
   - Requires JDK 17+ and gradlew.bat shadowJar to activate
 - ✅ TypeScript build: clean, 0 errors
 - User gone to bed — working independently until morning
+
+---
+
+### Laptop Session (2026-07-21 — resumed after desktop overnight)
+- ✅ **Batch parallelization** added to `bore_optimizer.py`:
+  - `_evaluate_single_design()` — standalone picklable function for ProcessPoolExecutor
+  - `BatchBoreOptimizationProblem(Problem)` — evaluates full population at once
+  - `BoreOptimizer` now accepts `parallel_mode` parameter: "serial", "starmap", "batch", "auto"
+  - `__deepcopy__` override to handle pymoo's `save_history=True`
+  - Benchmark: **1.80x speedup** (serial 67.6s → batch 37.5s for 30 evals, pop=10 gen=3)
+- ✅ Updated `test_large.py` and `test_parallel_benchmark.py` for new API
+- ✅ Comprehensive desktop session restore doc created (for deleted session recovery)
+- ✅ LIVE-CHAT-LOG updated with all changes
+- Desktop session was deleted — wrote `chat-logs/2026-07-21-desktop-session-restore.md` with full context
 
 ---
 
@@ -157,13 +171,16 @@ Clarinet (closed-open pipe) only produces odd harmonics: f, 3f, 5f, 7f...
 ## File Reference
 | File | Owner | Notes |
 |------|-------|-------|
-| `backend/bore_optimizer.py` | Laptop | PAVA + constraints + parallelization (renamed from `optimizer.py`) |
+| `backend/bore_optimizer.py` | Laptop | PAVA + constraints + **batch parallelization just added** |
 | `backend/optimizer/__init__.py` | Desktop | Package wrapper re-exporting from `bore_optimizer` |
 | `backend/mp_cache.py` | Desktop | SQLite shared cache |
 | `backend/target_frequencies.py` | Desktop | Per-instrument harmonic targets |
 | `backend/validate_optimizer.py` | Laptop | Phased thresholds |
-| `woodwind_designer/engine/design_server.py` | Shared | cache_size/cache_clear endpoints added |
-| `web/src-tauri/capabilities/default.json` | Desktop | Fixed — all capabilities present |
+| `woodwind_designer/engine/design_server.py` | Shared | cache_size/cache_clear endpoints |
+| `web/src-tauri/capabilities/default.json` | Desktop | Fixed |
+| `test_parallel_benchmark.py` | Laptop | Serial vs batch timing comparison |
+| `test_large.py` | Laptop | pop=40/gen=50 serial vs batch test |
+| `chat-logs/2026-07-21-desktop-session-restore.md` | Laptop | Full context for desktop's deleted session |
 | `ROADMAP.md` | Laptop | Phase 4 Linux added |
 | `chat-logs/LIVE-CHAT-LOG.md` | Both | THIS FILE |
 
@@ -196,10 +213,17 @@ npx tauri build --no-bundle
 - `CARGO_TARGET_DIR` must be space-free (windres crashes on spaces)
 - `vite.config.ts` has explicit `root: __dirname` to prevent rolldown junction errors
 
-## Laptop: Next Steps
-1. Pull latest: `git pull origin option-a-tauri` — note `optimizer.py` renamed to `bore_optimizer.py` with `optimizer/__init__.py` wrapper
-2. If `git pull` complains about deleted `optimizer.py`, run: `git rm backend/optimizer.py && git pull`
-3. Continue optimizer accuracy tuning (<3 cents stretch goal)
-4. Research Chalumier/Kotlin (low priority)
+## Laptop: Current Work
+- ✅ Batch parallelization implemented and benchmarked (1.80x speedup)
+- ✅ `parallel_mode` parameter: "serial", "starmap", "batch", "auto"
+- ✅ Desktop session restore doc written
+- 🔲 Run pop=40/gen=50 with batch to break below 3 cents (was killed before, need to re-run)
+- 🔲 Validate against demakein reference instruments
+
+## Desktop: Current Work
+- ✅ Tauri builds, optimization UI, chalumier integration (4 sessions)
+- ✅ Cache stats UI, presets fix, README
+- 🔲 Chalumier needs JDK 17+ to activate
+- 🔲 Frontend polish
 
 *This file is updated frequently. Pull often.*
