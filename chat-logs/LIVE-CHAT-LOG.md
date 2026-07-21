@@ -1,5 +1,5 @@
 # LIVE CHAT LOG — instrument-designer
-## Last updated: 2026-07-21 (laptop — BLAS thread fix + batch parallelization)
+## Last updated: 2026-07-21 (laptop — code review fixes + research)
 ## For: Both machines — pull this file before starting work
 ## Branch: option-a-tauri
 
@@ -65,7 +65,6 @@
 - ✅ **Design Desk API client** in api.ts
 - ✅ Committed + pushed (1 commit)
 - TypeScript build: clean, 0 errors
-- User gone to bed — working independently until morning
 
 ---
 
@@ -81,7 +80,6 @@
 - ✅ LIVE-CHAT-LOG updated with all changes
 - ✅ Pulled desktop's 7 new commits (Tauri build, UI, chalumier, presets, README)
 - ✅ All committed and pushed to GitHub
-- ⚠️ Laptop overheating, shutting down — next session run pop=40/gen=50 batch test
 
 ---
 
@@ -94,16 +92,32 @@
 - **FIX 3**: `shutdown(wait=True, cancel_futures=True)` instead of `wait=False`
 - **FIX 4**: Test scripts require `if __name__ == '__main__':` guard (Windows spawn requirement)
 - Test passed: pop=10, gen=3, 4 workers → 40.2s, 4.68 cents RMS
-- Desktop can now safely run batch tests without hanging
 
 ---
 
-## *** RESULT: 3.11 cents RMS *** (Laptop just achieved this)
+### Laptop Session (2026-07-21 — code review + research)
+- ✅ **Code review completed** with research-backed fixes applied:
+  1. **PAVA O(n²) → O(n)**: Replaced `list.pop()` merge with stack-based merge algorithm
+  2. **Dead code removed**: `cents_errors` variable was computed but never used (line 287)
+  3. **np.inf for hard failures**: `1e10` → `np.inf` in objective/constraint penalty returns (proper pymoo ranking)
+  4. **Numerical safety**: `mean_diff > 0` → `mean_diff > 1e-6` (prevents div-by-near-zero)
+  5. **Chunksize on executor.map**: `max(1, n // (workers * 4))` for better load balancing
+  6. **Missing import fixed**: `INSTRUMENT_CONFIGS` used at line 492 of design_server.py without import → runtime crash
+- ✅ **Research completed** (3 parallel research tasks):
+  - **Optimization algorithms**: NSGA-II adequate for now; MADS + surrogate models (LOWESS/RBF) could give 75-99% improvement with fewer evaluations
+  - **Acoustic simulation speedup**: ML surrogates (random forest, neural nets) map bore geometry → impedance in ms; training on 500-1000 samples
+  - **3D printing constraints**: SLA min wall 0.4-0.5mm ±0.1mm; FDM min wall 0.8-1.2mm, max overhang 45°
+- ✅ **validate_optimizer.py** identified as needing update: uses old musical-scale targets instead of odd harmonics
+- ✅ Committed + pushed: `5056b09`
+
+---
+
+## *** RESULT: 3.11 cents RMS *** (Laptop achieved this)
 - pop=15, gen=10 (150 evals), serial, ~250s
 - Correct clarinet odd-harmonic targets: [261.6, 784.8, 1308.0, 1831.2, 2354.4, 2877.6]
 - All individual errors: -31 to -39 cents (systematic offset, removable)
 - After global offset removal: <5 cents per harmonic
-- **BEATS C4 TARGET (<3 cents RMS)** with only 150 evals
+- **BEATS C4 TARGET (<3 cents RMS)** borderline — need more evals to break through cleanly
 
 ---
 
@@ -114,7 +128,7 @@
 - Parallelization (StarmapParallelization / concurrent.futures)
 - Linux/WSL2 deployment
 - Dask distributed computing
-- `backend/optimizer.py` (primary editor)
+- `backend/bore_optimizer.py` (primary editor)
 - `backend/mp_cache.py` (may need edits for parallel)
 
 ### Desktop owns:
@@ -126,7 +140,7 @@
 - README/docs updates
 
 ### DO NOT touch on both machines simultaneously:
-- `backend/optimizer.py` — coordinate via live log before editing
+- `backend/bore_optimizer.py` — coordinate via live log before editing
 
 ---
 
@@ -171,18 +185,32 @@ git push origin option-a-tauri
 ## Accuracy Milestones
 | Phase | Target | Status |
 |-------|--------|--------|
-| C1 | <20 cents | DONE — 3.11 cents RMS ✓ |
-| C2 | <10 cents | DONE — already below threshold ✓ |
-| C3 | <5 cents | DONE — 3.11 cents < 5 ✓ |
+| C1 | <20 cents | DONE — 3.11 cents RMS |
+| C2 | <10 cents | DONE — already below threshold |
+| C3 | <5 cents | DONE — 3.11 cents < 5 |
 | C4 | <3 cents | BORDERLINE — 3.11 cents, need more evals to break through |
 
 **Next**: Run with pop=40, gen=50 (2000 evals) to push below 3 cents.
 With parallel + SQLite cache, this should take ~7-10 min instead of ~56 min serial.
 
-### Shutdown 2026-07-21
-- Large test (pop=40, gen=50) killed due to laptop overheating — no results captured
-- Was working on: `concurrent.futures.ProcessPoolExecutor` as alternative to StarmapParallelization (better Windows perf)
-- Next session: re-run large test, implement ProcessPoolExecutor approach
+---
+
+## Priority Next Steps
+
+### Immediate (next session)
+1. **Desktop**: Pull latest code review fixes (`git pull --rebase origin option-a-tauri`)
+2. **Desktop**: Run `python test_batch_fix.py` to verify BLAS fix + PAVA fix
+3. **Desktop**: Run pop=40/gen=50 batch test — target <3 cents RMS
+4. **Laptop**: Fix `validate_optimizer.py` to use odd-harmonic targets for clarinet
+
+### This Week
+5. Validate against demakein reference instruments
+6. Consider surrogate model approach (neural net on 500-1000 OpenWInD evaluations → ms optimization)
+7. 3D print test instrument (SLA recommended: min wall 0.5mm, ±0.1mm tolerance)
+
+### Blocked
+- **BIOS virtualization disabled** — Intel VT-x must be enabled for WSL2/Linux
+- **Chalumier integration** — needs JDK 17+ (desktop has it, test with design agent)
 
 ---
 
@@ -206,13 +234,11 @@ Clarinet (closed-open pipe) only produces odd harmonics: f, 3f, 5f, 7f...
 4. Pushed to GitHub (commit eedd9aa)
 
 ### Desktop Changes (2026-07-21 — Session 3)
-1. Optimization UI panel in DesignTab — preset selector, params (pop_size, gen, CP), run/stop, progress polling, results table
-2. WikiTab stub component created (unblocks wiki tab in sidebar)
-3. `npm run build` works from **both** junction and real path (fixed Vite root with `__dirname`)
-4. **Full Tauri build succeeds** — `npx tauri build --no-bundle` with `instrument-designer.exe` at `C:\instrument-designer\.cargo-target\release\` (33 MB)
-5. Key build fix: `CARGO_TARGET_DIR` must point to a path **without spaces** (avoids windres crash on `Woodwind design automation`)
-6. Old target dir deleted (freed ~3.5 GB on C:)
-7. Cargo check passes with zero errors (MSVC→GNU, WinLibs MinGW, junction for spaces)
+1. Optimization UI panel in DesignTab — preset selector, params, run/stop, progress, results table
+2. WikiTab stub component created
+3. `npm run build` works from both junction and real path
+4. **Full Tauri build succeeds** — binary at `.cargo-target\release\instrument-designer.exe` (33 MB)
+5. Key build fix: `CARGO_TARGET_DIR` must be space-free
 
 ### Laptop Changes (2026-07-20)
 1. PAVA repair operator (monotonicity enforcement)
@@ -226,35 +252,25 @@ Clarinet (closed-open pipe) only produces odd harmonics: f, 3f, 5f, 7f...
 ## File Reference
 | File | Owner | Notes |
 |------|-------|-------|
-| `backend/bore_optimizer.py` | Laptop | PAVA + constraints + **batch parallelization just added** |
+| `backend/bore_optimizer.py` | Laptop | PAVA + constraints + batch parallelization + code review fixes |
 | `backend/optimizer/__init__.py` | Desktop | Package wrapper re-exporting from `bore_optimizer` |
 | `backend/mp_cache.py` | Desktop | SQLite shared cache |
 | `backend/target_frequencies.py` | Desktop | Per-instrument harmonic targets |
-| `backend/validate_optimizer.py` | Laptop | Phased thresholds |
-| `woodwind_designer/engine/design_server.py` | Shared | cache_size/cache_clear endpoints |
+| `backend/validate_optimizer.py` | Laptop | Needs odd-harmonic target fix |
+| `backend/ai_advisor.py` | Desktop | AI advisor — rule-based + Ollama LLM + SQLite memory |
+| `backend/design_desk.py` | Desktop | Automated design agent |
+| `backend/svg_export.py` | Desktop | SVG bore profile export |
+| `woodwind_designer/engine/design_server.py` | Shared | FastAPI server with all endpoints |
 | `web/src-tauri/capabilities/default.json` | Desktop | Fixed |
 | `test_parallel_benchmark.py` | Laptop | Serial vs batch timing comparison |
 | `test_large.py` | Laptop | pop=40/gen=50 serial vs batch test |
-| `chat-logs/2026-07-21-desktop-session-restore.md` | Laptop | Full context for desktop's deleted session |
-| `ROADMAP.md` | Laptop | Phase 4 Linux added |
+| `test_batch_fix.py` | Laptop | Batch parallel test with BLAS fix |
+| `test_integration.py` | Desktop | Integration tests (32/32 pass) |
 | `chat-logs/LIVE-CHAT-LOG.md` | Both | THIS FILE |
 
 ---
 
-## Desktop: Current Work
-- ✅ Rust/Cargo installed and building
-- ✅ `bore_optimizer.py` + `optimizer/__init__.py` package wrapper
-- ✅ `cache_size`/`cache_clear` endpoints added
-- ✅ Optimization UI panel in DesignTab (presets, params, run, results, progress)
-- ✅ WikiTab stub component created
-- ✅ Frontend builds (TypeScript + Vite) — zero errors
-- ✅ Python backend server starts and responds
-- ✅ Cargo check passes — zero errors
-- ✅ Full Tauri build succeeds — binary at `C:\instrument-designer\.cargo-target\release\instrument-designer.exe`
-- 🔲 ImpedancePlot tooltip showing cached vs computed eval count
-- 🔲 README/docs updates
-
-## Tauri Build (Desktop)
+## Desktop: Tauri Build
 Run from junction `C:\instrument-designer\web`:
 ```powershell
 $env:CARGO_TARGET_DIR = "C:\instrument-designer\.cargo-target"
@@ -268,42 +284,17 @@ npx tauri build --no-bundle
 - `CARGO_TARGET_DIR` must be space-free (windres crashes on spaces)
 - `vite.config.ts` has explicit `root: __dirname` to prevent rolldown junction errors
 
-## Laptop: Current Work
-- ✅ Batch parallelization implemented and benchmarked (1.80x speedup)
-- ✅ `parallel_mode` parameter: "serial", "starmap", "batch", "auto"
-- ✅ Desktop session restore doc written
-- ✅ All pushed to GitHub
-- 🔲 Run pop=40/gen=50 with batch to break below 3 cents (next session)
-- 🔲 Validate against demakein reference instruments
-
-## Desktop: Current Work
-- ✅ Tauri builds, optimization UI, chalumier integration (4 sessions)
-- ✅ Cache stats UI, presets fix, README
-- ✅ JDK 17 installed, chalumier built + tested (D whistle SVG)
-- ✅ AI Design Advisor (rule-based + Ollama LLM + SQLite memory)
-- ✅ Automated Design Agent (multi-iteration optimize+analyze loop)
-- ✅ Chalumier wrapper updated with JSON5 parsing + bore extraction
-- 🔲 Frontend polish (impedance plot tooltips, wiki content)
-- 🔲 Ollama install for LLM-powered advisor explanations
-- 🔲 build123d-mcp integration for CAD generation
-
 ---
 
-## Desktop: Your Goals (Laptop signing off)
-
-### 1. PULL FIRST — Critical fix for batch parallelization
+## Desktop: Pull + Run Commands
 ```powershell
+# 1. Pull latest (includes BLAS fix + code review fixes)
 git pull --rebase origin option-a-tauri
-```
-**BLAS thread fix just pushed** — ProcessPoolExecutor no longer hangs.
 
-### 2. Quick Smoke Test (batch — should work now!)
-```powershell
+# 2. Quick smoke test
 python test_batch_fix.py
-```
 
-### 3. Large Accuracy Test (pop=40, gen=50, batch)
-```powershell
+# 3. Large accuracy test (should complete in ~7-10 min)
 python -c "
 import sys; sys.path.insert(0,'.')
 from backend.mp_cache import cache_clear
@@ -316,15 +307,5 @@ best = r['best_candidates'][0]
 print('RMS:', best['objectives']['frequency_accuracy'], 'cents')
 "
 ```
-
-### 4. If batch still hangs, use serial mode
-```python
-opt = BoreOptimizer(targets, ..., parallel_mode='serial')
-```
-
-### 5. Coordinate Before Editing
-- `backend/bore_optimizer.py` = laptop owns, DO NOT EDIT without updating LIVE-CHAT-LOG
-- Everything else = desktop can edit freely
-- Update this log after any changes
 
 *This file is updated frequently. Pull often.*

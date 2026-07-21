@@ -1,58 +1,99 @@
-# Desktop Session — 2026-07-21
+# Desktop Session Restore — 2026-07-21
 ## Branch: option-a-tauri
 ## Machine: Desktop (Windows)
+## Status: ACTIVE — continue from here
 
 ---
 
-## What Was Done
+## What Happened (Summary)
 
-### 1. Constraint Reduction (optimizer.py)
-**Problem**: Optimizer converged to 400 cents RMS with pop=20, gen=15 — 22 inequality constraints (11 monotonicity + 11 smoothness) were starving NSGA-II. Even though PAVA repair guaranteed monotonicity, the 11 monotonicity constraints still counted toward NSGA-II's constraint domination principle.
+### 9 Commits on Desktop (overnight sessions 4-6)
+1. Optimization UI, cache stats, presets fix, README
+2. experiment-staged-optimization + experiment-processpoolexecutor branches
+3. Chalumier integration (JDK 17 built, 27MB JAR, D whistle test)
+4. AI Design Advisor (442 lines: rule-based + Ollama LLM + SQLite memory)
+5. Automated Design Agent (design_desk.py, 6 presets, multi-iteration loop)
+6. SVG export, BoreProfileView component, frontend polish
+7. Integration tests (32/32 pass), TypeScript clean build
+8. Tauri build success (binary at .cargo-target\release\instrument-designer.exe)
 
-**Fix**: Reduced from 22 constraints to 1 aggregated smoothness constraint:
-- Removed all 11 monotonicity constraints (PAVA repair already ensures this)
-- Combined 11 smoothness constraints into 1: `sum(max(0, |Δr| - max_jump))`
-- `n_ieq_constr: 22 → 1`
-
-**Expected effect**: NSGA-II spends far fewer generations on constraint satisfaction → converges to accurate solutions faster.
-
-### 2. Shared SQLite Cache (mp_cache.py — NEW FILE)
-**Problem**: With `StarmapParallelization` on Windows (`spawn`), each worker process gets its own fresh Python environment with an empty `_IMPEDANCE_CACHE` dict. The same bore profile gets evaluated N times, each paying full OpenWInD cost (~1.7s).
-
-**Fix**: Process-safe SQLite cache in `%TEMP%/impedance_cache.sqlite`:
-- `backend/mp_cache.py` — standalone module with `cache_get()`, `cache_set()`, `cache_size()`, `cache_clear()`
-- Integrated into `_compute_impedance_from_bore()` — checks cache before computing, stores after
-- SQLite handles concurrent read/write from multiple worker processes
-- JSON serialization with numpy array → list conversion
-- No extra Manager process or IPC overhead
-
-### 3. Default pop_size increased (40 → 60)
-Better exploration with the reduced constraint count.
+### 5 Commits on Laptop (BLAS fix + code review)
+1. BLAS thread oversubscription fix (OMP/MKL/OPENBLAS_NUM_THREADS=1)
+2. Worker config factorization (initargs instead of pickle)
+3. Batch parallelization (1.80x speedup measured)
+4. PAVA O(n²) → O(n) stack-based merge
+5. Code review fixes (np.inf, chunksize, missing import, dead code removal)
+6. Research: surrogate models, MADS, 3D printing constraints
 
 ---
 
-## How to Pull on Laptop
+## Current Best Result
+- **3.11 cents RMS** (pop=15, gen=10, serial, ~250s)
+- Targets: [261.6, 784.8, 1308.0, 1831.2, 2354.4, 2877.6] (clarinet odd harmonics)
+- Borderline C4 (<3 cents) — need pop=40/gen=50 batch test to break through
 
+---
+
+## Known Issues Fixed (Pull Required)
+If you see ProcessPoolExecutor hangs or BLAS deadlocks:
 ```powershell
-$env:Path = "C:\Program Files\Git\bin;$env:Path"
-cd C:\Users\...\woodwind-designer
-git checkout option-a-tauri
-git pull
+git pull --rebase origin option-a-tauri
+```
+This includes: BLAS thread fix, PAVA O(n), np.inf penalties, chunksize, INSTRUMENT_CONFIGS import fix.
+
+---
+
+## Quick Start
+```powershell
+# Pull latest
+git pull --rebase origin option-a-tauri
+
+# Smoke test
+python test_batch_fix.py
+
+# Full test
+python -c "
+import sys; sys.path.insert(0,'.')
+from backend.mp_cache import cache_clear
+cache_clear()
+from backend.optimizer import BoreOptimizer
+targets = [261.6, 784.8, 1308.0, 1831.2, 2354.4, 2877.6]
+opt = BoreOptimizer(targets, n_control_points=12, pop_size=40, n_generations=50, n_workers=6, parallel_mode='batch')
+r = opt.run(verbose=True)
+best = r['best_candidates'][0]
+print('RMS:', best['objectives']['frequency_accuracy'], 'cents')
+"
 ```
 
-After pulling:
-1. Test optimizer: `python -c "import sys; sys.path.insert(0, '.'); from backend.optimizer import BoreOptimizer; opt = BoreOptimizer([261.6, 293.7, 329.6, 349.2, 392.0, 440.0, 493.9, 523.3], n_control_points=6, pop_size=10, n_generations=5); r = opt.run(); print(r['best_candidates'][0]['objectives'])"`
-2. Test parallel with shared cache: use `n_workers=4` and verify cache hits reduce redundant evaluations
-3. Run validate_optimizer.py to benchmark
+---
+
+## What to Work On Next
+1. Run pop=40/gen=50 batch test (should complete ~7-10 min)
+2. Fix validate_optimizer.py (uses old musical-scale targets, needs odd harmonics)
+3. Frontend polish (impedance plot tooltips, wiki content)
+4. Ollama install for LLM-powered advisor
+5. 3D print test instrument
 
 ---
 
-## Next Steps (Non-Conflicting Areas)
-These are areas that DON'T overlap with existing work:
+## Architecture Notes
+- OpenWInD bottleneck: ~1.7s per impedance evaluation
+- BLAS thread fix: OMP/MKL/OPENBLAS_NUM_THREADS=1 prevents deadlock
+- SQLite shared cache: %TEMP%/impedance_cache.sqlite (process-safe)
+- PAVA: stack-based O(n) monotonicity repair
+- Batch parallelization: ProcessPoolExecutor, 1.80x speedup measured
+- pymoo: NSGA-II with 3 objectives (frequency accuracy, evenness, projection) + 1 constraint (smoothness)
 
-- **Test scripts**: `test_parallel.py` — add cache hit ratio reporting
-- **design_server.py**: add `cache_size` and `cache_clear` endpoints
-- **Frontend**: ImpedancePlot tooltip showing cached vs computed evaluations
-- **Documentation**: Add cache architecture to ROADMAP.md
+---
 
-Avoid editing `backend/optimizer.py` on both machines simultaneously to prevent merge conflicts. If you need to modify it, push first or coordinate.
+## File Quick Reference
+| File | Description |
+|------|-------------|
+| `backend/bore_optimizer.py` | Main optimizer (PAVA, batch parallel, BLAS fix) |
+| `backend/ai_advisor.py` | AI advisor (rule-based + Ollama + SQLite) |
+| `backend/design_desk.py` | Automated design agent (6 presets) |
+| `backend/target_frequencies.py` | Per-instrument harmonic targets |
+| `backend/mp_cache.py` | SQLite shared cache |
+| `backend/svg_export.py` | SVG bore profile export |
+| `woodwind_designer/engine/design_server.py` | FastAPI server |
+| `chat-logs/LIVE-CHAT-LOG.md` | Coordination file (pull before working) |
