@@ -1,5 +1,5 @@
 # LIVE CHAT LOG — instrument-designer
-## Last updated: 2026-07-21 (laptop — code review fixes + research)
+## Last updated: 2026-07-21 (desktop — session 9: flute calculator)
 ## For: Both machines — pull this file before starting work
 ## Branch: option-a-tauri
 
@@ -327,6 +327,23 @@ npx tauri build --no-bundle
 - Binary: `C:\instrument-designer\.cargo-target\release\instrument-designer.exe`
 - `CARGO_TARGET_DIR` must be space-free (windres crashes on spaces)
 - `vite.config.ts` has explicit `root: __dirname` to prevent rolldown junction errors
+
+---
+
+### Desktop Session 9 (2026-07-21 — flute research + calculator)
+- Created `experiment/flute-pvc` branch from `option-a-tauri` (latest, includes laptop's np.inf fix)
+- Completed 5 parallel research tasks on flute acoustics, tools, and resources
+- Found key resources: Flutomat NG, Bracker calculator, CMUSE, demakein designs
+- Created `FLUTE-RESEARCH.md` — comprehensive reference (15 instrument types, 9 software tools)
+- Created `backend/flute_calculator.py`:
+  - PVC flute tone hole calculator (diatonic/chromatic scales)
+  - Overtone flute length calculator (seljeflöyte, koncovka, fujara)
+  - OpenWInD impedance validation integrated
+- Validated calculations against known designs:
+  - Koncovka C: 65.2cm (ref 63cm) ✓
+  - Fujara G: 174.6cm (ref 160-200cm) ✓
+  - OpenWInD peaks match expected odd harmonics within 1-4 Hz ✓
+- Committed + pushed to `experiment/flute-pvc` (commit 0a20417)
 
 ---
 
