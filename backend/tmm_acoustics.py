@@ -336,10 +336,11 @@ class TMMInstrument:
         step_cents: float = 1.0,
         step_increase: float = 1.05,
         max_steps: int = 100,
+        target_register: int = 1,
     ) -> float:
         """
         Find the nearest resonant wavelength to the given guess.
-        Uses linear interpolation to find where phase crosses an integer.
+        Uses linear interpolation to find where phase crosses target_register.
 
         Port of Instrument.wavelengthNear() from chalumier.
         """
@@ -348,7 +349,7 @@ class TMMInstrument:
 
         def scorer(w):
             p = self.resonance_phase(w, fingerings)
-            return ((p + 0.5) % 1.0) - 0.5
+            return p - target_register
 
         probes = [wavelength / half_step, wavelength * half_step]
         scores = [scorer(probes[0]), scorer(probes[1])]
@@ -401,10 +402,7 @@ class TMMInstrument:
             fingerings: list of 'open' or 'closed' for each hole
             n_register: register number (1 = fundamental, 2 = first overtone, etc.)
         """
-        def scorer(w):
-            return self.resonance_phase(w, fingerings) - n_register
-
-        return self.wavelength_near(wavelength_near, fingerings)
+        return self.wavelength_near(wavelength_near, fingerings, target_register=n_register)
 
     def frequency_from_wavelength(self, wavelength_mm: float) -> float:
         """Convert wavelength (mm) to frequency (Hz)."""
@@ -439,6 +437,83 @@ class TMMInstrument:
             freq = self.frequency_from_wavelength(wl)
             freqs.append(freq)
         return freqs
+
+    def phase_cost(
+        self,
+        target_frequencies: List[float],
+        fingering_sets: List[List[str]],
+        n_register: int = 1,
+    ) -> float:
+        """
+        Phase-based cost function (Ernoult 2020).
+
+        Evaluates how well the bore's resonance structure matches target frequencies.
+        For each target, computes the phase at the target wavelength and measures
+        deviation from integer (resonance condition). This is SMOOTHER than
+        peak-matching because phase is continuous even when peaks merge/split.
+
+        Args:
+            target_frequencies: list of target frequencies in Hz
+            fingering_sets: list of fingering configurations (one per target)
+            n_register: which register to target
+
+        Returns:
+            Cost value (0.0 = perfect match)
+        """
+        costs = []
+        for target_freq, fingerings in zip(target_frequencies, fingering_sets):
+            target_wl = self.speed_of_sound / target_freq
+            try:
+                phase = self.resonance_phase(target_wl, fingerings)
+                # Phase should be integer at resonance (n_register)
+                # Distance from nearest integer register
+                deviation = phase - n_register
+                # Use sinusoidal cost: 0 at integer, peaks at half-integer
+                # This is smooth and differentiable everywhere
+                costs.append(math.sin(math.pi * deviation) ** 2)
+            except Exception:
+                costs.append(1.0)
+        return float(np.mean(costs))
+
+    def phase_cost_with_offset(
+        self,
+        target_frequencies: List[float],
+        fingering_sets: List[List[str]],
+        n_register: int = 1,
+    ) -> float:
+        """
+        Phase-based cost with global offset correction.
+
+        Like phase_cost(), but first computes and removes the median phase
+        error (global tuning offset). This isolates scale evenness from
+        overall pitch.
+
+        Args:
+            target_frequencies: list of target frequencies in Hz
+            fingering_sets: list of fingering configurations (one per target)
+            n_register: which register to target
+
+        Returns:
+            Cost value (0.0 = perfect evenness)
+        """
+        deviations = []
+        for target_freq, fingerings in zip(target_frequencies, fingering_sets):
+            target_wl = self.speed_of_sound / target_freq
+            try:
+                phase = self.resonance_phase(target_wl, fingerings)
+                deviations.append(phase - n_register)
+            except Exception:
+                deviations.append(0.0)
+
+        if not deviations:
+            return 1.0
+
+        # Remove global offset (median)
+        median_dev = np.median(deviations)
+        corrected = [d - median_dev for d in deviations]
+
+        # Cost: mean squared deviation from integer
+        return float(np.mean([math.sin(math.pi * d) ** 2 for d in corrected]))
 
 
 # ============================================================================
