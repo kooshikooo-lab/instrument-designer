@@ -63,8 +63,40 @@ Completed all 5 recommended next steps in order:
 - `backend/tmm_optimizer_multi.py` — NEW: Multi-start optimizer
 - `backend/printability.py` — NEW: 3D printability validator
 
+## UI Design Branches (2026-07-22)
+
+Three UI design branches created for human evaluation:
+
+### ui/card-design
+- Modern card-based resource layout with hover effects
+- Hero header with image overlay and gradient
+- Timeline-style build notes
+- Gallery with overlay captions
+- Categorized resource cards with gradient accents
+- AI illustrations (Pollinations.ai), sound player, spectrum analyzer, impedance viz
+
+### ui/magazine-design
+- Editorial magazine-style layout
+- Hero images with overlay gradients
+- Numbered expert tips with gradient accents
+- Table-based resource links
+- Code-comment section labels
+
+### ui/wiki-design
+- Minimal wiki-style with monospace font
+- Collapsible numbered sections with table of contents
+- Table-based resource links
+- Code-comment section labels (// section name)
+- Utilitarian action buttons
+
+### New Components (on all 3 branches)
+- `AIInstrumentArt.tsx` — Pollinations.ai generative illustrations (no API key)
+- `InstrumentSoundPlayer.tsx` — Web Audio API synthesized demo tones
+- `SpectrumAnalyzer.tsx` — Real-time microphone frequency analysis
+- `ImpedanceVisualization.tsx` — D3.js impedance curves with peak markers
+
 ## Next Steps
+- Human evaluation of the 3 UI design branches
 - Integrate printability checker into the optimizer (post-optimization validation)
 - Add printability score to the frontend UI
 - Test multi-start optimizer on real instruments
-- Save chat log and push to GitHub
