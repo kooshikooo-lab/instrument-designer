@@ -232,12 +232,14 @@ def sequential_refined(cfg):
                bounds=[(L*0.85, L*1.15)], options={"maxiter": 100, "ftol": 1e-8})
     L = r.x[0]
 
-    # Stage 2: Bore-radii only (n_cp variables, Nelder-Mead)
+    # Stage 2: Bore-radii only (n_cp variables, L-BFGS-B)
     if n_cp > 0:
+        rad_bounds = [(3.0, 15.0)] * n_cp
         def obj_radii(x):
             return eval_all(np.maximum(x, 3.0), L, hp, hd, hl, cfg)
-        r = sp_min(obj_radii, radii, method='Nelder-Mead',
-                    options={"maxiter": 200, "xatol": 0.01, "fatol": 1e-6})
+        r = sp_min(obj_radii, radii, method='L-BFGS-B',
+                    bounds=rad_bounds,
+                    options={"maxiter": 200, "ftol": 1e-8})
         radii = np.maximum(r.x, 3.0)
 
     # Stage 3: Hole positions only (n_h variables, L-BFGS-B with ordering)
