@@ -58,6 +58,23 @@ INSTRUMENTS = {
             ["open", "open", "open", "open", "open", "open", "closed"],
         ],
     },
+    "xaphoon_C": {
+        "desc": "Xaphoon in C (open-open, cylindrical)",
+        "closed_top": False,
+        "targets": [261.6, 293.7, 329.6, 349.2, 392.0, 440.0, 493.9],
+        "names": ["C4", "D4", "E4", "F4", "G4", "A4", "B4"],
+        "bore_radius": 7.0, "outer_diameter": 20.0,
+        "hole_diameter": 6.5, "hole_length": 3.0,
+        "fingerings": [
+            ["closed"] * 7,
+            ["open", "closed", "closed", "closed", "closed", "closed", "closed"],
+            ["open", "open", "closed", "closed", "closed", "closed", "closed"],
+            ["open", "open", "open", "closed", "closed", "closed", "closed"],
+            ["open", "open", "open", "open", "closed", "closed", "closed"],
+            ["open", "open", "open", "open", "open", "closed", "closed"],
+            ["open", "open", "open", "open", "open", "open", "closed"],
+        ],
+    },
     "alto_sax_Eb": {
         "desc": "Alto sax in Eb (open-open)",
         "closed_top": False,
