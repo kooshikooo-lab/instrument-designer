@@ -3,9 +3,11 @@ Lightweight LAN chat over Tailscale.
 Usage:
   Desktop (server):  python lan_chat.py server
   Laptop (client):   python lan_chat.py client 100.69.113.41
+  One-shot send:     python lan_chat.py send "message" [host]
   
 Server listens on port 9123. Client connects and exchanges messages.
 Type messages and press Enter. Type 'quit' to exit.
+'send' mode sends one message, waits 2s for reply, then exits.
 """
 import sys, socket, threading, json, time
 
@@ -77,9 +79,30 @@ def client(host):
     
     sock.close()
 
+def send(text, host, wait=2.0):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(wait + 1)
+    sock.connect((host, PORT))
+    msg = json.dumps({"from": "laptop", "text": text}) + "\n"
+    sock.sendall(msg.encode("utf-8"))
+    replies = []
+    try:
+        while True:
+            data = sock.recv(4096).decode("utf-8")
+            if not data:
+                break
+            for line in data.strip().split("\n"):
+                if line:
+                    r = json.loads(line)
+                    replies.append(r)
+    except socket.timeout:
+        pass
+    sock.close()
+    return replies
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python lan_chat.py server|client [host]")
+        print("Usage: python lan_chat.py server|client|send [host|message]")
         sys.exit(1)
     
     if sys.argv[1] == "server":
@@ -87,3 +110,14 @@ if __name__ == "__main__":
     elif sys.argv[1] == "client":
         host = sys.argv[2] if len(sys.argv) > 2 else "100.69.113.41"
         client(host)
+    elif sys.argv[1] == "send":
+        text = sys.argv[2] if len(sys.argv) > 2 else ""
+        host = sys.argv[3] if len(sys.argv) > 3 else "100.69.113.41"
+        replies = send(text, host)
+        for r in replies:
+            print(f"[{r['from']}] {r['text']}")
+        if not replies:
+            print("[no reply]")
+    else:
+        print(f"Unknown command: {sys.argv[1]}")
+        sys.exit(1)
