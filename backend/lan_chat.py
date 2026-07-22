@@ -6,6 +6,7 @@ Server is headless (no input()), auto-ACKs every message.
 
 Usage:
   python lan_chat.py server                  # Start headless server on 9123
+  python lan_chat.py client <host> [port]    # Persistent client connection
   python lan_chat.py send <msg> <host> [port]  # One-shot send, get ACK
 """
 import sys, socket, threading, json, time, os
@@ -108,9 +109,81 @@ def send(text, host, port=DEFAULT_PORT, wait=5.0):
         return []
 
 
+# Persistent message queue for sending from background threads
+_msg_queue = []
+_queue_lock = threading.Lock()
+
+
+def _enqueue(text, host, port=DEFAULT_PORT):
+    """Queue a message to be sent by the client thread."""
+    with _queue_lock:
+        _msg_queue.append((text, host, port))
+
+
+def client(host, port=DEFAULT_PORT):
+    """Persistent client: connects to host server, stays open, sends queued messages."""
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(1.0)
+    try:
+        sock.connect((host, port))
+        print(f"[CLIENT] Connected to {host}:{port}")
+    except Exception as e:
+        print(f"[CLIENT] Failed to connect: {e}")
+        return
+
+    connected = True
+
+    def recv_loop():
+        nonlocal connected
+        buf = ""
+        while connected:
+            try:
+                chunk = sock.recv(4096).decode("utf-8")
+                if not chunk:
+                    break
+                buf += chunk
+                while "\n" in buf:
+                    line, buf = buf.split("\n", 1)
+                    if line.strip():
+                        try:
+                            r = json.loads(line)
+                            print(f"[{r.get('from', '?')}] {r.get('text', '')}")
+                        except json.JSONDecodeError:
+                            pass
+            except socket.timeout:
+                continue
+            except (ConnectionResetError, OSError):
+                break
+        connected = False
+        print("[CLIENT] Disconnected from server")
+
+    t = threading.Thread(target=recv_loop, daemon=True)
+    t.start()
+
+    while connected:
+        msg = None
+        with _queue_lock:
+            if _msg_queue:
+                msg = _msg_queue.pop(0)
+        if msg:
+            text, target_host, target_port = msg
+            try:
+                payload = json.dumps({"from": MY_NAME, "text": text}) + "\n"
+                sock.sendall(payload.encode("utf-8"))
+                print(f"[SENT] {text[:60]}...")
+            except (ConnectionResetError, OSError):
+                print("[CLIENT] Send failed - disconnected")
+                break
+        else:
+            time.sleep(0.1)
+
+    sock.close()
+
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print(f"Usage: python lan_chat.py server [port]")
+        print(f"       python lan_chat.py client <host> [port]")
         print(f"       python lan_chat.py send <msg> <host> [port]")
         sys.exit(1)
 
@@ -119,6 +192,10 @@ if __name__ == "__main__":
     if cmd == "server":
         port = int(sys.argv[2]) if len(sys.argv) > 2 else DEFAULT_PORT
         server(port)
+    elif cmd == "client":
+        host = sys.argv[2] if len(sys.argv) > 2 else "100.69.113.41"
+        port = int(sys.argv[3]) if len(sys.argv) > 3 else DEFAULT_PORT
+        client(host, port)
     elif cmd == "send":
         text = sys.argv[2] if len(sys.argv) > 2 else ""
         host = sys.argv[3] if len(sys.argv) > 3 else "100.69.113.41"
