@@ -422,9 +422,11 @@ print('RMS:', best['objectives']['frequency_accuracy'], 'cents')
 ## Desktop Environment (for reference)
 - **OS:** Windows 10 Home, Build 19045
 - **Python:** 3.14.6
+- **PowerShell:** 5.1.19041.6456
 - **Java:** 1.8.0_333 (needs JDK 17 for chalumier)
 - **Packages:** scipy 1.18.0, pymoo 0.6.2, pydantic 2.13.4, fastapi 0.139.2, uvicorn 0.51.0, PySide6 6.11.1
-- **NOT installed:** jax
+- **NOT installed:** jax, PowerShell 7, Windows Terminal
+- **Network:** Public IP 81.229.24.37, SMB disabled, Tailscale INSTALLING
 - **WSL2:** BLOCKED (BIOS virtualization disabled)
 - **Path:** `C:\Users\Admin\Desktop\Woodwind design automation\woodwind-designer`
 
@@ -450,3 +452,11 @@ print('RMS:', best['objectives']['frequency_accuracy'], 'cents')
 ### Avoid conflicts: Don't edit the same files on both machines simultaneously
 
 *This file is updated frequently. Pull often.*
+
+---
+
+## Direct Communication (Tailscale)
+- **Desktop:** Tailscale installed, authenticating (Issue #12)
+- **Laptop:** Needs to install Tailscale (see Issue #12)
+- Once both machines are on the same tailnet, they can communicate directly
+- Tailscale IPs: 100.x.x.x (assigned after login)
