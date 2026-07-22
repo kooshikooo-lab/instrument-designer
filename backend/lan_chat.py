@@ -22,8 +22,10 @@ def server():
     
     def handle_client(conn, addr):
         print(f"[SERVER] Client connected from {addr}")
+        sender_name = "unknown"
         
         def recv_loop():
+            nonlocal sender_name
             while True:
                 try:
                     data = conn.recv(4096).decode("utf-8")
@@ -32,7 +34,13 @@ def server():
                     for line in data.strip().split("\n"):
                         if line:
                             msg = json.loads(line)
+                            sender_name = msg.get('from', 'unknown')
                             print(f"\n[{msg['from']}] {msg['text']}")
+                            try:
+                                ack = json.dumps({"from": "server", "text": f"ACK: {msg['text'][:60]}"}) + "\n"
+                                conn.sendall(ack.encode("utf-8"))
+                            except:
+                                pass
                 except:
                     break
             print(f"[SERVER] Client {addr} disconnected.")
@@ -45,7 +53,7 @@ def server():
                 text = input("[You] ")
                 if text == "quit":
                     break
-                reply = json.dumps({"from": "desktop", "text": text}) + "\n"
+                reply = json.dumps({"from": "laptop", "text": text}) + "\n"
                 conn.sendall(reply.encode("utf-8"))
             except:
                 break
