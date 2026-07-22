@@ -10,6 +10,7 @@ import ImpedancePlot from "./ImpedancePlot";
 import TonePlayer from "./TonePlayer";
 import MicrophoneAnalyzer from "./MicrophoneAnalyzer";
 import PresetInfo from "./PresetInfo";
+import BoreVisualization from "./BoreVisualization";
 
 function CollapsibleSection({
   title,
@@ -614,6 +615,9 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
               {optResult.best_candidates[0]?.bore_profile && (
                 <div>
                   <h5 className="text-xs text-neutral-500 mb-1">Bore Profile</h5>
+                  <div className="mb-3">
+                    <BoreVisualization boreProfile={optResult.best_candidates[0].bore_profile} />
+                  </div>
                   <div className="bg-neutral-950 rounded-lg p-3 overflow-x-auto">
                     <table className="w-full text-[10px] font-mono text-neutral-300">
                       <thead>
