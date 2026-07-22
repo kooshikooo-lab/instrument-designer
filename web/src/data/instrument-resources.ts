@@ -1,4 +1,4 @@
-﻿import type { InstrumentResources } from "./instruments";
+﻿import type { InstrumentResources, ResourceLink } from "./instruments";
 
 export const INSTRUMENT_RESOURCES: Record<string, InstrumentResources> = {
   "Penny Whistle (Tin Whistle)": {
