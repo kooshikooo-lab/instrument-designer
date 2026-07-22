@@ -6,209 +6,240 @@ interface Props {
   instrumentName: string;
 }
 
-const LINK_TYPE_ICONS: Record<string, string> = {
-  video: "ÔûÂ",
-  book: "­ƒôû",
-  tutorial: "­ƒöº",
-  article: "­ƒôä",
-  forum: "­ƒÆ¼",
-  shop: "­ƒøÆ",
-  other: "­ƒöù",
-};
-
-const LINK_TYPE_COLORS: Record<string, string> = {
-  video: "bg-red-600/20 text-red-400",
-  book: "bg-blue-600/20 text-blue-400",
-  tutorial: "bg-green-600/20 text-green-400",
-  article: "bg-yellow-600/20 text-yellow-400",
-  forum: "bg-purple-600/20 text-purple-400",
-  shop: "bg-orange-600/20 text-orange-400",
-  other: "bg-neutral-600/20 text-neutral-400",
-};
-
 export default function ResourcePage({ resources, instrumentName }: Props) {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const [feedbackName, setFeedbackName] = useState("");
   const [feedbackText, setFeedbackText] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    tips: true,
+    build_notes: true,
+    gallery: false,
+    links: true,
+    faq: false,
+    feedback: false,
+  });
+
+  const toggle = (key: string) => setOpenSections((s) => ({ ...s, [key]: !s[key] }));
 
   const handleSubmitFeedback = () => {
     if (!feedbackText.trim()) return;
     setSubmitted(true);
-    setFeedbackName("");
     setFeedbackText("");
     setTimeout(() => setSubmitted(false), 3000);
   };
 
   return (
-    <div className="space-y-6">
-      {/* Tips */}
+    <div className="space-y-0 text-sm">
+      {/* Table of Contents */}
+      <div className="border border-neutral-700 rounded bg-neutral-900/50 p-4 mb-6">
+        <div className="text-xs font-mono text-neutral-400 uppercase tracking-wider mb-2">Contents</div>
+        <div className="space-y-1 font-mono text-xs">
+          {resources.tips && resources.tips.length > 0 && (
+            <div className="text-brand-400 hover:underline cursor-pointer" onClick={() => { toggle("tips"); document.getElementById("wiki-tips")?.scrollIntoView({ behavior: "smooth" }); }}>
+              1. Tips
+            </div>
+          )}
+          {resources.build_notes && resources.build_notes.length > 0 && (
+            <div className="text-brand-400 hover:underline cursor-pointer" onClick={() => { toggle("build_notes"); document.getElementById("wiki-build")?.scrollIntoView({ behavior: "smooth" }); }}>
+              2. Build Notes
+            </div>
+          )}
+          {resources.illustrations && resources.illustrations.length > 0 && (
+            <div className="text-brand-400 hover:underline cursor-pointer" onClick={() => { toggle("gallery"); document.getElementById("wiki-gallery")?.scrollIntoView({ behavior: "smooth" }); }}>
+              3. Gallery
+            </div>
+          )}
+          {resources.links && resources.links.length > 0 && (
+            <div className="text-brand-400 hover:underline cursor-pointer" onClick={() => { toggle("links"); document.getElementById("wiki-links")?.scrollIntoView({ behavior: "smooth" }); }}>
+              4. External Resources
+            </div>
+          )}
+          {resources.faq && resources.faq.length > 0 && (
+            <div className="text-brand-400 hover:underline cursor-pointer" onClick={() => { toggle("faq"); document.getElementById("wiki-faq")?.scrollIntoView({ behavior: "smooth" }); }}>
+              5. FAQ
+            </div>
+          )}
+          <div className="text-brand-400 hover:underline cursor-pointer" onClick={() => { toggle("feedback"); document.getElementById("wiki-feedback")?.scrollIntoView({ behavior: "smooth" }); }}>
+            6. Community Notes
+          </div>
+        </div>
+      </div>
+
+      {/* 1. Tips */}
       {resources.tips && resources.tips.length > 0 && (
-        <section>
-          <h3 className="text-sm font-semibold text-neutral-200 uppercase tracking-wider mb-3 flex items-center gap-2">
-            <span className="text-yellow-500">­ƒÆí</span> Tips &amp; Tricks
-          </h3>
-          <div className="space-y-2">
-            {resources.tips.map((tip, idx) => (
-              <div key={idx} className="bg-yellow-600/5 border border-yellow-600/10 rounded-lg px-4 py-3 text-sm text-neutral-300">
-                {tip}
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Build Notes */}
-      {resources.build_notes && resources.build_notes.length > 0 && (
-        <section>
-          <h3 className="text-sm font-semibold text-neutral-200 uppercase tracking-wider mb-3 flex items-center gap-2">
-            <span className="text-blue-500">­ƒö¿</span> Build Notes
-          </h3>
-          <div className="space-y-2">
-            {resources.build_notes.map((note, idx) => (
-              <div key={idx} className="bg-blue-600/5 border border-blue-600/10 rounded-lg px-4 py-3 text-sm text-neutral-300">
-                {note}
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Illustrations */}
-      {resources.illustrations && resources.illustrations.length > 0 && (
-        <section>
-          <h3 className="text-sm font-semibold text-neutral-200 uppercase tracking-wider mb-3 flex items-center gap-2">
-            <span className="text-green-500">­ƒû╝</span> Illustrations
-          </h3>
-          <div className="grid grid-cols-2 gap-3">
-            {resources.illustrations.map((ill, idx) => (
-              <a
-                key={idx}
-                href={ill.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group block rounded-lg overflow-hidden border border-neutral-800 hover:border-neutral-600 transition-colors"
-              >
-                <img
-                  src={ill.url}
-                  alt={ill.alt}
-                  className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-200"
-                />
-                <div className="px-3 py-2 bg-neutral-800/50">
-                  <p className="text-xs text-neutral-400">{ill.caption}</p>
+        <section id="wiki-tips" className="scroll-mt-4">
+          <button onClick={() => toggle("tips")} className="w-full flex items-center gap-2 py-2 border-b border-neutral-700 hover:border-neutral-500 transition-colors group">
+            <span className="text-xs font-mono text-neutral-500 group-hover:text-brand-400 transition-colors">{openSections.tips ? "▼" : "▶"}</span>
+            <span className="font-mono text-sm text-neutral-200 group-hover:text-white">1. Tips</span>
+            <span className="text-xs text-neutral-600 font-mono ml-auto">{resources.tips.length} items</span>
+          </button>
+          {openSections.tips && (
+            <div className="pl-4 border-l border-neutral-800 py-3 space-y-2">
+              {resources.tips.map((tip, idx) => (
+                <div key={idx} className="flex gap-3 font-mono text-xs leading-relaxed text-neutral-400">
+                  <span className="text-neutral-600 flex-shrink-0">{idx + 1}.</span>
+                  <span>{tip}</span>
                 </div>
-              </a>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </section>
       )}
 
-      {/* Links */}
+      {/* 2. Build Notes */}
+      {resources.build_notes && resources.build_notes.length > 0 && (
+        <section id="wiki-build" className="scroll-mt-4">
+          <button onClick={() => toggle("build_notes")} className="w-full flex items-center gap-2 py-2 border-b border-neutral-700 hover:border-neutral-500 transition-colors group">
+            <span className="text-xs font-mono text-neutral-500 group-hover:text-brand-400 transition-colors">{openSections.build_notes ? "▼" : "▶"}</span>
+            <span className="font-mono text-sm text-neutral-200 group-hover:text-white">2. Build Notes</span>
+            <span className="text-xs text-neutral-600 font-mono ml-auto">{resources.build_notes.length} entries</span>
+          </button>
+          {openSections.build_notes && (
+            <div className="pl-4 border-l border-neutral-800 py-3 space-y-3">
+              {resources.build_notes.map((note, idx) => (
+                <div key={idx} className="font-mono text-xs leading-relaxed text-neutral-400 bg-neutral-900/50 border border-neutral-800 rounded p-3">
+                  {note}
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* 3. Gallery */}
+      {resources.illustrations && resources.illustrations.length > 0 && (
+        <section id="wiki-gallery" className="scroll-mt-4">
+          <button onClick={() => toggle("gallery")} className="w-full flex items-center gap-2 py-2 border-b border-neutral-700 hover:border-neutral-500 transition-colors group">
+            <span className="text-xs font-mono text-neutral-500 group-hover:text-brand-400 transition-colors">{openSections.gallery ? "▼" : "▶"}</span>
+            <span className="font-mono text-sm text-neutral-200 group-hover:text-white">3. Gallery</span>
+            <span className="text-xs text-neutral-600 font-mono ml-auto">{resources.illustrations.length} images</span>
+          </button>
+          {openSections.gallery && (
+            <div className="pl-4 border-l border-neutral-800 py-3 space-y-3">
+              {resources.illustrations.map((ill, idx) => (
+                <div key={idx} className="border border-neutral-800 rounded overflow-hidden">
+                  <a href={ill.url} target="_blank" rel="noopener noreferrer">
+                    <img src={ill.url} alt={ill.alt} className="w-full max-h-64 object-cover hover:opacity-80 transition-opacity" />
+                  </a>
+                  <div className="p-2 font-mono text-xs text-neutral-500">{ill.caption}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* 4. External Resources */}
       {resources.links && resources.links.length > 0 && (
-        <section>
-          <h3 className="text-sm font-semibold text-neutral-200 uppercase tracking-wider mb-3 flex items-center gap-2">
-            <span className="text-cyan-500">­ƒöù</span> Resources
-          </h3>
-          <div className="grid grid-cols-1 gap-2">
-            {resources.links.map((link, idx) => (
-              <a
-                key={idx}
-                href={link.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 bg-neutral-800/50 hover:bg-neutral-800 rounded-lg px-4 py-3 transition-colors group"
-              >
-                <span className="text-lg">{LINK_TYPE_ICONS[link.type] || "­ƒöù"}</span>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm text-neutral-200 group-hover:text-white truncate">{link.title}</div>
-                  {link.description && (
-                    <div className="text-xs text-neutral-500 truncate">{link.description}</div>
+        <section id="wiki-links" className="scroll-mt-4">
+          <button onClick={() => toggle("links")} className="w-full flex items-center gap-2 py-2 border-b border-neutral-700 hover:border-neutral-500 transition-colors group">
+            <span className="text-xs font-mono text-neutral-500 group-hover:text-brand-400 transition-colors">{openSections.links ? "▼" : "▶"}</span>
+            <span className="font-mono text-sm text-neutral-200 group-hover:text-white">4. External Resources</span>
+            <span className="text-xs text-neutral-600 font-mono ml-auto">{resources.links.length} links</span>
+          </button>
+          {openSections.links && (
+            <div className="pl-4 border-l border-neutral-800 py-3">
+              <table className="w-full font-mono text-xs">
+                <thead>
+                  <tr className="text-neutral-500 border-b border-neutral-800">
+                    <th className="text-left py-1.5 font-medium">Title</th>
+                    <th className="text-left py-1.5 font-medium">Type</th>
+                    <th className="text-left py-1.5 font-medium hidden sm:table-cell">Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {resources.links.map((link, idx) => (
+                    <tr key={idx} className="border-b border-neutral-800/50 hover:bg-neutral-900/50">
+                      <td className="py-2 pr-3">
+                        <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-brand-400 hover:underline">
+                          {link.title} ↗
+                        </a>
+                      </td>
+                      <td className="py-2 pr-3 text-neutral-500">{link.type}</td>
+                      <td className="py-2 text-neutral-500 hidden sm:table-cell">{link.description || "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* 5. FAQ */}
+      {resources.faq && resources.faq.length > 0 && (
+        <section id="wiki-faq" className="scroll-mt-4">
+          <button onClick={() => toggle("faq")} className="w-full flex items-center gap-2 py-2 border-b border-neutral-700 hover:border-neutral-500 transition-colors group">
+            <span className="text-xs font-mono text-neutral-500 group-hover:text-brand-400 transition-colors">{openSections.faq ? "▼" : "▶"}</span>
+            <span className="font-mono text-sm text-neutral-200 group-hover:text-white">5. FAQ</span>
+            <span className="text-xs text-neutral-600 font-mono ml-auto">{resources.faq.length} questions</span>
+          </button>
+          {openSections.faq && (
+            <div className="pl-4 border-l border-neutral-800 py-3 space-y-1">
+              {resources.faq.map((item, idx) => (
+                <div key={idx}>
+                  <button
+                    onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
+                    className="w-full flex items-center gap-2 py-2 text-left font-mono text-xs"
+                  >
+                    <span className="text-neutral-600">Q{idx + 1}.</span>
+                    <span className="text-neutral-300">{item.question}</span>
+                    <span className="ml-auto text-neutral-600">{openFaq === idx ? "−" : "+"}</span>
+                  </button>
+                  {openFaq === idx && (
+                    <div className="pl-6 pb-2 font-mono text-xs text-neutral-500 leading-relaxed">
+                      A: {item.answer}
+                    </div>
                   )}
                 </div>
-                <span className={`text-xs px-2 py-0.5 rounded-full ${LINK_TYPE_COLORS[link.type] || LINK_TYPE_COLORS.other}`}>
-                  {link.type}
-                </span>
-              </a>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </section>
       )}
 
-      {/* FAQ */}
-      {resources.faq && resources.faq.length > 0 && (
-        <section>
-          <h3 className="text-sm font-semibold text-neutral-200 uppercase tracking-wider mb-3 flex items-center gap-2">
-            <span className="text-purple-500">ÔØô</span> FAQ
-          </h3>
-          <div className="space-y-2">
-            {resources.faq.map((item, idx) => (
-              <div key={idx} className="border border-neutral-800 rounded-lg overflow-hidden">
-                <button
-                  onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
-                  className="w-full flex items-center justify-between px-4 py-3 text-sm text-neutral-200 hover:bg-neutral-800/50 transition-colors"
-                >
-                  <span className="font-medium text-left">{item.question}</span>
-                  <svg
-                    className={`w-4 h-4 text-neutral-500 transition-transform ${openFaq === idx ? "rotate-180" : ""}`}
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                {openFaq === idx && (
-                  <div className="px-4 pb-3 text-sm text-neutral-400 border-t border-neutral-800 pt-3">
-                    {item.answer}
-                  </div>
-                )}
+      {/* 6. Community Notes */}
+      <section id="wiki-feedback" className="scroll-mt-4">
+        <button onClick={() => toggle("feedback")} className="w-full flex items-center gap-2 py-2 border-b border-neutral-700 hover:border-neutral-500 transition-colors group">
+          <span className="text-xs font-mono text-neutral-500 group-hover:text-brand-400 transition-colors">{openSections.feedback ? "▼" : "▶"}</span>
+          <span className="font-mono text-sm text-neutral-200 group-hover:text-white">6. Community Notes</span>
+        </button>
+        {openSections.feedback && (
+          <div className="pl-4 border-l border-neutral-800 py-3">
+            {submitted && (
+              <div className="border border-green-700 rounded bg-green-900/20 p-3 mb-3 font-mono text-xs text-green-400">
+                ✓ Feedback submitted. Thank you.
               </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* User Feedback */}
-      <section>
-        <h3 className="text-sm font-semibold text-neutral-200 uppercase tracking-wider mb-3 flex items-center gap-2">
-          <span className="text-pink-500">­ƒÆ¼</span> Community Feedback
-        </h3>
-        {submitted && (
-          <div className="bg-green-600/10 border border-green-600/20 rounded-lg px-4 py-3 text-sm text-green-400 mb-3">
-            Feedback submitted! Thank you for sharing your experience with {instrumentName}.
+            )}
+            <div className="font-mono text-xs text-neutral-500 mb-2">
+              Add your experience building the {instrumentName}:
+            </div>
+            <textarea
+              placeholder="Notes, tips, or corrections..."
+              value={feedbackText}
+              onChange={(e) => setFeedbackText(e.target.value)}
+              rows={4}
+              className="w-full bg-neutral-900 border border-neutral-700 rounded p-3 font-mono text-xs text-neutral-300 placeholder:text-neutral-600 focus:outline-none focus:border-brand-500/50 resize-none"
+            />
+            <div className="flex justify-end mt-2">
+              <button
+                onClick={handleSubmitFeedback}
+                disabled={!feedbackText.trim()}
+                className="px-4 py-1.5 bg-brand-600 hover:bg-brand-500 disabled:bg-neutral-800 disabled:text-neutral-600 text-xs text-white font-mono rounded transition-colors"
+              >
+                Submit
+              </button>
+            </div>
           </div>
         )}
-        <div className="bg-neutral-800/30 rounded-lg p-4 space-y-3">
-          <input
-            type="text"
-            placeholder="Your name (optional)"
-            value={feedbackName}
-            onChange={(e) => setFeedbackName(e.target.value)}
-            className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-200 placeholder:text-neutral-600 focus:outline-none focus:border-brand-500"
-          />
-          <textarea
-            placeholder="Share your experience, tips, or questions about this instrument..."
-            value={feedbackText}
-            onChange={(e) => setFeedbackText(e.target.value)}
-            rows={3}
-            className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-200 placeholder:text-neutral-600 focus:outline-none focus:border-brand-500 resize-none"
-          />
-          <button
-            onClick={handleSubmitFeedback}
-            disabled={!feedbackText.trim()}
-            className="px-4 py-2 bg-brand-600 hover:bg-brand-500 disabled:bg-neutral-700 disabled:text-neutral-500 text-sm text-white rounded-lg transition-colors"
-          >
-            Submit Feedback
-          </button>
-        </div>
       </section>
 
       {/* Empty State */}
       {!resources.tips && !resources.build_notes && !resources.illustrations && !resources.links && !resources.faq && (
-        <div className="text-center py-12 text-neutral-500">
-          <p className="text-sm">No resources available yet for this instrument.</p>
-          <p className="text-xs mt-2">Be the first to contribute tips, links, or feedback!</p>
+        <div className="text-center py-16 font-mono">
+          <div className="text-2xl mb-3">[ ]</div>
+          <div className="text-xs text-neutral-500">No resources available for {instrumentName}.</div>
+          <div className="text-xs text-neutral-600 mt-1">Be the first to contribute.</div>
         </div>
       )}
     </div>

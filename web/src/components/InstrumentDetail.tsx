@@ -2,19 +2,14 @@
 import type { Instrument } from "../data/instruments";
 import TonePlayer from "./TonePlayer";
 import ResourcePage from "./ResourcePage";
+import AIInstrumentArt from "./AIInstrumentArt";
+import InstrumentSoundPlayer from "./InstrumentSoundPlayer";
 
 interface Props {
   instrument: Instrument;
   onClose: () => void;
   onGenerate: (preset: string) => void;
 }
-
-const DIFFICULTY_COLORS: Record<string, string> = {
-  Beginner: "bg-green-600/20 text-green-400",
-  Intermediate: "bg-yellow-600/20 text-yellow-400",
-  Advanced: "bg-orange-600/20 text-orange-400",
-  Expert: "bg-red-600/20 text-red-400",
-};
 
 type DetailTab = "info" | "resources";
 
@@ -30,42 +25,75 @@ export function InstrumentDetail({ instrument, onClose, onGenerate }: Props) {
   );
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-start gap-4 px-6 pt-6 pb-3">
-        <button onClick={onClose} className="text-neutral-500 hover:text-neutral-300 mt-1">
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-        <div className="flex-1">
-          <h2 className="text-2xl font-bold text-neutral-100">{i.name}</h2>
-          <p className="text-sm text-neutral-400 mt-1">{i.type_label}</p>
+    <div className="flex flex-col h-full bg-neutral-950">
+      {/* Wiki Header */}
+      <div className="px-6 py-4 border-b border-neutral-800 bg-neutral-950">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="font-mono text-xs text-neutral-600 mb-1">INSTRUMENT / {i.type_label.toUpperCase()}</div>
+            <h1 className="text-xl font-mono font-bold text-neutral-100">{i.name}</h1>
+            <p className="text-xs text-neutral-500 mt-1 font-mono">{i.description}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="flex-shrink-0 w-8 h-8 border border-neutral-700 rounded flex items-center justify-center text-neutral-500 hover:text-white hover:border-neutral-500 transition-all font-mono text-xs"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Metadata bar */}
+        <div className="flex gap-6 mt-4 font-mono text-xs">
+          <div>
+            <span className="text-neutral-600">difficulty: </span>
+            <span className="text-neutral-300">{i.difficulty.toLowerCase()}</span>
+          </div>
+          <div>
+            <span className="text-neutral-600">key: </span>
+            <span className="text-neutral-300">{i.key}</span>
+          </div>
+          <div>
+            <span className="text-neutral-600">range: </span>
+            <span className="text-neutral-300">{i.range}</span>
+          </div>
+          <div>
+            <span className="text-neutral-600">source: </span>
+            <span className="text-neutral-300">{i.source}</span>
+          </div>
+        </div>
+
+        {/* Tags */}
+        <div className="flex gap-2 mt-3">
+          {i.tags.map((tag) => (
+            <span key={tag} className="font-mono text-[10px] text-neutral-500 border border-neutral-800 px-2 py-0.5 rounded">
+              {tag}
+            </span>
+          ))}
         </div>
       </div>
 
       {/* Tab Bar */}
-      <div className="flex gap-1 px-6 border-b border-neutral-800">
+      <div className="flex gap-0 px-6 border-b border-neutral-800 bg-neutral-950 font-mono text-xs">
         <button
           onClick={() => setTab("info")}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+          className={`px-4 py-2.5 border-b-2 transition-colors ${
             tab === "info"
               ? "border-brand-500 text-brand-400"
-              : "border-transparent text-neutral-500 hover:text-neutral-300"
+              : "border-transparent text-neutral-600 hover:text-neutral-400"
           }`}
         >
-          Overview
+          overview
         </button>
         {hasResources && (
           <button
             onClick={() => setTab("resources")}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            className={`px-4 py-2.5 border-b-2 transition-colors ${
               tab === "resources"
                 ? "border-brand-500 text-brand-400"
-                : "border-transparent text-neutral-500 hover:text-neutral-300"
+                : "border-transparent text-neutral-600 hover:text-neutral-400"
             }`}
           >
-            Resources
+            resources
           </button>
         )}
       </div>
@@ -74,58 +102,16 @@ export function InstrumentDetail({ instrument, onClose, onGenerate }: Props) {
       <div className="flex-1 overflow-auto">
         {tab === "info" && (
           <div className="p-6 space-y-6">
-            {i.image_url && (
-              <a href={i.image_url} target="_blank" rel="noopener noreferrer">
-                <img
-                  src={i.image_url}
-                  alt={i.name}
-                  className="w-full max-h-80 object-cover rounded-xl border border-neutral-800"
-                />
-              </a>
-            )}
-
-            <p className="text-neutral-300 leading-relaxed">{i.description}</p>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-neutral-800/50 rounded-lg px-4 py-3">
-                <div className="text-xs text-neutral-500 uppercase tracking-wider">Range</div>
-                <div className="text-sm text-neutral-100 mt-1">{i.range}</div>
-              </div>
-              <div className="bg-neutral-800/50 rounded-lg px-4 py-3">
-                <div className="text-xs text-neutral-500 uppercase tracking-wider">Key</div>
-                <div className="text-sm text-neutral-100 mt-1">{i.key}</div>
-              </div>
-              <div className="bg-neutral-800/50 rounded-lg px-4 py-3">
-                <div className="text-xs text-neutral-500 uppercase tracking-wider">Difficulty</div>
-                <div className="mt-1">
-                  <span className={`text-xs px-2 py-0.5 rounded ${DIFFICULTY_COLORS[i.difficulty] || ""}`}>
-                    {i.difficulty}
-                  </span>
-                </div>
-              </div>
-              <div className="bg-neutral-800/50 rounded-lg px-4 py-3">
-                <div className="text-xs text-neutral-500 uppercase tracking-wider">Source</div>
-                <div className="text-sm text-neutral-100 mt-1">{i.source}</div>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              {i.tags.map((tag) => (
-                <span key={tag} className="text-xs bg-neutral-800 text-neutral-400 px-2 py-1 rounded-full">
-                  {tag}
-                </span>
-              ))}
-            </div>
-
+            {/* Actions */}
             <div className="flex gap-3 flex-wrap">
               {i.download_url && (
                 <a
                   href={i.download_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-sm text-neutral-100 rounded-lg transition-colors"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-500 text-xs text-white font-mono rounded transition-colors"
                 >
-                  Download STL
+                  ↓ download STL
                 </a>
               )}
               {i.audio_url && (
@@ -133,22 +119,38 @@ export function InstrumentDetail({ instrument, onClose, onGenerate }: Props) {
                   href={i.audio_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-sm text-neutral-100 rounded-lg transition-colors"
+                  className="inline-flex items-center gap-2 px-4 py-2 border border-neutral-700 hover:border-neutral-500 text-xs text-neutral-300 font-mono rounded transition-colors"
                 >
-                  Listen
+                  ▶ listen
                 </a>
               )}
               {i.demakein_preset && (
                 <button
                   onClick={() => onGenerate(i.demakein_preset!)}
-                  className="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-sm text-white rounded-lg transition-colors font-medium"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-500 text-xs text-white font-mono rounded transition-colors"
                 >
-                  Generate This Instrument
+                  ⚡ generate
                 </button>
               )}
             </div>
 
-            <TonePlayer range={i.range} instrumentName={i.name} />
+            {/* AI Art */}
+            <div>
+              <div className="font-mono text-xs text-neutral-600 mb-2 border-b border-neutral-800 pb-1">// cross-section illustration</div>
+              <AIInstrumentArt instrumentName={i.name} className="w-full h-64 rounded border border-neutral-800" />
+            </div>
+
+            {/* Sound Player */}
+            <div>
+              <div className="font-mono text-xs text-neutral-600 mb-2 border-b border-neutral-800 pb-1">// sound preview</div>
+              <InstrumentSoundPlayer range={i.range} />
+            </div>
+
+            {/* Tone Player */}
+            <div>
+              <div className="font-mono text-xs text-neutral-600 mb-2 border-b border-neutral-800 pb-1">// interactive tone generator</div>
+              <TonePlayer range={i.range} instrumentName={i.name} />
+            </div>
           </div>
         )}
 
