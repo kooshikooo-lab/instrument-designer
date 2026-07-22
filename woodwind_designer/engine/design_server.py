@@ -50,6 +50,24 @@ class OptimizeRequest(BaseModel):
     n_workers: Optional[int] = None  # None = auto-detect CPU count
 
 
+class TMMOptimizeRequest(BaseModel):
+    """TMM-based bore optimization using Powell + L-BFGS-B two-phase approach."""
+    target_frequencies: list[float]
+    fingering_sets: list[list[str]]
+    n_control_points: int = 12
+    bore_length: Optional[float] = None
+    min_radius: float = 1.0  # mm (TMM uses mm internally)
+    max_radius: float = 15.0  # mm
+    temperature: float = 20.0
+    hole_positions: Optional[list[float]] = None  # mm
+    hole_diameters: Optional[list[float]] = None  # mm
+    hole_lengths: Optional[list[float]] = None  # mm
+    closed_top: bool = False
+    outer_diameter: float = 22.0  # mm
+    n_register: int = 1
+    maxiter: int = 300
+
+
 class EvaluateRequest(BaseModel):
     variables: list[float]
     bore_length: float
@@ -327,6 +345,200 @@ def get_optimization_presets():
                 "frequencies": [523.3, 1046.5, 1569.8, 2093.0, 2616.3, 3139.6],
             },
         }}
+
+
+# ─── TMM Optimization Endpoints ──────────────────────────────────────────
+
+def _run_tmm_optimization(job_id: str, req: TMMOptimizeRequest):
+    """Run TMM-based optimization in a background thread."""
+    try:
+        import sys
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+        from backend.tmm_optimizer_v2 import TMMBoreOptimizerJAX
+
+        with _lock:
+            _jobs[job_id]["progress"] = ["Starting TMM optimization..."]
+
+        optimizer = TMMBoreOptimizerJAX(
+            target_frequencies=req.target_frequencies,
+            fingering_sets=req.fingering_sets,
+            n_control_points=req.n_control_points,
+            bore_length=req.bore_length,
+            min_radius=req.min_radius,
+            max_radius=req.max_radius,
+            temperature=req.temperature,
+            hole_positions=req.hole_positions,
+            hole_diameters=req.hole_diameters,
+            hole_lengths=req.hole_lengths,
+            closed_top=req.closed_top,
+            outer_diameter=req.outer_diameter,
+            n_register=req.n_register,
+        )
+
+        with _lock:
+            _jobs[job_id]["progress"].append(
+                f"Config: {req.n_control_points} control points, "
+                f"bore {optimizer.bore_length:.1f}mm, "
+                f"{len(req.fingering_sets)} fingerings, "
+                f"maxiter={req.maxiter}"
+            )
+
+        result = optimizer.run(verbose=False, maxiter=req.maxiter)
+
+        with _lock:
+            _jobs[job_id].update(
+                status="completed",
+                result={
+                    "success": result.get("success", True),
+                    "best_radii": result.get("best_radii", []),
+                    "final_rms_cents": result.get("final_rms_cents", 0),
+                    "global_offset_cents": result.get("global_offset_cents", 0),
+                    "matched_frequencies": [
+                        {"target": m["target"], "actual": m["actual"], "error_cents": m["error_cents"]}
+                        for m in result.get("matched_frequencies", [])
+                    ],
+                    "wall_time": result.get("wall_time", 0),
+                    "bore_length_mm": result.get("bore_length_mm", 0),
+                    "best_objective": result.get("best_objective", 0),
+                },
+                progress=_jobs[job_id].get("progress", []) + ["TMM optimization complete"],
+            )
+    except Exception as e:
+        with _lock:
+            _jobs[job_id].update(
+                status="failed",
+                error=str(e),
+                progress=_jobs[job_id].get("progress", []) + [f"Error: {e}"],
+            )
+
+
+@app.post("/optimize/tmm")
+def start_tmm_optimization(req: TMMOptimizeRequest):
+    """Start a TMM-based bore optimization job (Powell + L-BFGS-B two-phase)."""
+    job_id = uuid.uuid4().hex[:12]
+    with _lock:
+        _jobs[job_id] = {"status": "queued", "progress": [], "result": None}
+    t = threading.Thread(target=_run_tmm_optimization, args=(job_id, req), daemon=True)
+    t.start()
+    return {"job_id": job_id}
+
+
+@app.get("/optimize/tmm/{job_id}/status")
+def get_tmm_optimization_status(job_id: str):
+    """Poll TMM optimization job status."""
+    with _lock:
+        job = _jobs.get(job_id)
+    if not job:
+        raise HTTPException(404, "Job not found")
+    return {
+        "job_id": job_id,
+        "status": job["status"],
+        "progress": job.get("progress", []),
+        "result": job.get("result"),
+        "error": job.get("error"),
+    }
+
+
+# ─── Sequential Bore Optimization (Bordeaux Method) ────────────────────
+
+class SequentialOptimizeRequest(BaseModel):
+    """Sequential bore + tone hole optimization (Bordeaux method)."""
+    target_frequencies: list[float]
+    fingering_sets: list[list[str]]
+    bore_radius: float = 7.25  # mm
+    outer_diameter: float = 22.0  # mm
+    closed_top: bool = True
+    n_register: int = 1
+    hole_diameter: float = 7.0  # mm
+    hole_length: float = 3.75  # mm
+    bore_length_bounds: list[float] = [100.0, 2000.0]  # mm
+
+
+def _run_sequential_optimization(job_id: str, req: SequentialOptimizeRequest):
+    """Run sequential bore optimization in a background thread."""
+    try:
+        import sys
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+        from backend.tmm_optimizer_sequential import SequentialBoreOptimizer
+
+        with _lock:
+            _jobs[job_id]["progress"] = ["Starting sequential optimization..."]
+
+        optimizer = SequentialBoreOptimizer(
+            target_frequencies=req.target_frequencies,
+            fingering_sets=req.fingering_sets,
+            bore_radius=req.bore_radius,
+            outer_diameter=req.outer_diameter,
+            closed_top=req.closed_top,
+            n_register=req.n_register,
+            hole_diameter=req.hole_diameter,
+            hole_length=req.hole_length,
+            bore_length_bounds=tuple(req.bore_length_bounds),
+        )
+
+        with _lock:
+            _jobs[job_id]["progress"].append(
+                f"Config: {len(req.target_frequencies)} notes, "
+                f"bore r={req.bore_radius:.1f}mm, "
+                f"{'closed' if req.closed_top else 'open'} top"
+            )
+
+        result = optimizer.run(verbose=False)
+
+        with _lock:
+            _jobs[job_id].update(
+                status="completed",
+                result={
+                    "success": result.get("success", False),
+                    "bore_length_mm": result.get("bore_length_mm", 0),
+                    "bore_radii": result.get("bore_radii", []),
+                    "hole_positions": result.get("hole_positions", []),
+                    "hole_diameters": result.get("hole_diameters", []),
+                    "hole_lengths": result.get("hole_lengths", []),
+                    "final_rms_cents": result.get("final_rms_cents", 0),
+                    "peak_error_cents": result.get("peak_error_cents", 0),
+                    "wall_time": result.get("wall_time", 0),
+                    "matched_frequencies": [
+                        {"target": m["target"], "actual": m["actual"], "error_cents": m["error_cents"]}
+                        for m in result.get("matched_frequencies", [])
+                    ],
+                },
+                progress=_jobs[job_id].get("progress", []) + ["Sequential optimization complete"],
+            )
+    except Exception as e:
+        with _lock:
+            _jobs[job_id].update(
+                status="failed",
+                error=str(e),
+                progress=_jobs[job_id].get("progress", []) + [f"Error: {e}"],
+            )
+
+
+@app.post("/optimize/sequential")
+def start_sequential_optimization(req: SequentialOptimizeRequest):
+    """Start a sequential bore + tone hole optimization (Bordeaux method)."""
+    job_id = uuid.uuid4().hex[:12]
+    with _lock:
+        _jobs[job_id] = {"status": "queued", "progress": [], "result": None}
+    t = threading.Thread(target=_run_sequential_optimization, args=(job_id, req), daemon=True)
+    t.start()
+    return {"job_id": job_id}
+
+
+@app.get("/optimize/sequential/{job_id}/status")
+def get_sequential_optimization_status(job_id: str):
+    """Poll sequential optimization job status."""
+    with _lock:
+        job = _jobs.get(job_id)
+    if not job:
+        raise HTTPException(404, "Job not found")
+    return {
+        "job_id": job_id,
+        "status": job["status"],
+        "progress": job.get("progress", []),
+        "result": job.get("result"),
+        "error": job.get("error"),
+    }
 
 
 # ─── Cache Management ────────────────────────────────────────────────────

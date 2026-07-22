@@ -138,7 +138,7 @@ def _hole_objective(
     # (This is the fingering for the note that the new hole produces)
     fingering = ["closed"] * len(existing_holes) + ["open"]
     # Reorder fingering to match sorted hole positions
-    new_idx = sorted_idx.index(len(existing_holes))
+    new_idx = list(sorted_idx).index(len(existing_holes))
     fingering_sorted = ["closed"] * len(positions)
     fingering_sorted[new_idx] = "open"
 
@@ -418,7 +418,7 @@ class CorrectedPowellOptimizer:
 
         # Auto-calculate bore length if not provided
         if bore_length is None:
-            fundamental = min(target_freqs)
+            fundamental = min(target_frequencies)
             c = SPEED_OF_SOUND
             if closed_top:
                 self.bore_length_init = c / (4.0 * fundamental)
