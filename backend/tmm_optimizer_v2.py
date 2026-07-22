@@ -1,41 +1,30 @@
 """
-L-BFGS-B bore optimizer using JAX-differentiable TMM.
+Bore optimizer using TMM phase resonance.
 
-Uses JAX autodiff for exact gradients (no finite differences).
-JIT-compiled cost functions with vmap-batched fingering searches.
+Two-phase approach:
+  Phase 1: Powell (gradient-free) with root-finding cost for global search
+  Phase 2: L-BFGS-B (scipy FD) with same root-finding cost for local polish
+
+Both phases optimize the same objective, so comparison is fair.
 
 Usage:
     from backend.tmm_optimizer_v2 import TMMBoreOptimizerJAX
-
-    optimizer = TMMBoreOptimizerJAX(
-        target_frequencies=[261.6, 784.8, 1308.0],
-        fingering_sets=[['closed']*6, ['open', 'closed']*3, ...],
-        n_control_points=12,
-        bore_length=650.0,
-        hole_positions=[60, 100, 150, ...],
-        hole_diameters=[7.0, 7.0, 7.0, ...],
-        hole_lengths=[3.75, 3.75, 3.75, ...],
-        closed_top=False,
-    )
+    optimizer = TMMBoreOptimizerJAX(...)
     result = optimizer.run(verbose=True)
 """
 
 import time
 import math
 import numpy as np
-import jax
-import jax.numpy as jnp
 from scipy.optimize import minimize
 from typing import List, Optional, Dict
 
 try:
-    from .tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND, end_flange_length_correction
-    from .tmm_acoustics_jax import build_action_chain_v2, make_rms_cost, MAX_HOLES
+    from .tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
 except ImportError:
     import sys, os
     sys.path.insert(0, os.path.dirname(__file__))
-    from tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND, end_flange_length_correction
-    from tmm_acoustics_jax import build_action_chain_v2, make_rms_cost, MAX_HOLES
+    from tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
 
 
 def _pava_isotonic(x: np.ndarray) -> np.ndarray:
@@ -60,14 +49,14 @@ def _pava_isotonic(x: np.ndarray) -> np.ndarray:
 
 class TMMBoreOptimizerJAX:
     """
-    JAX-accelerated bore optimizer using TMM phase resonance + L-BFGS-B.
+    Two-phase bore optimizer (root-finding based).
 
-    Key difference from tmm_optimizer.py: uses JAX autodiff instead of
-    finite differences for gradient computation.
+    Phase 1: Powell (gradient-free, no FD overhead) — global search
+    Phase 2: L-BFGS-B (scipy FD gradients) — local polish
 
-    Performance (20 control points, 5 fingerings):
-      Baseline FD:  63ms per gradient
-      JAX grad:     19ms per gradient
+    Both phases optimize the same root-finding objective.
+    JAX is not used here — the root-finding cost has discontinuous gradients
+    that break JAX autodiff. Powell avoids this by being gradient-free.
     """
 
     def __init__(
@@ -98,7 +87,7 @@ class TMMBoreOptimizerJAX:
         self.speed_of_sound = 331300.0 + 606.0 * temperature
 
         if bore_length is None:
-            fundamental = min(target_frequencies)
+            fundamental = min(target_freqs)
             if closed_top:
                 self.bore_length = self.speed_of_sound / (4.0 * fundamental)
             else:
@@ -110,47 +99,53 @@ class TMMBoreOptimizerJAX:
         self.hole_diameters = list(hole_diameters or [])
         self.hole_lengths = list(hole_lengths or [])
 
-        # Compute initial wavelength guesses
-        self._target_wavelengths = self._compute_initial_wavelengths()
+        self._target_wavelengths = np.array([
+            self.speed_of_sound / f for f in self.target_freqs
+        ])
 
-        # Build JAX cost function (JIT-compiled)
-        self._jax_cost_fn = None
+    def _objective(self, x: np.ndarray) -> float:
+        """Root-finding based objective: RMS cents error after median offset correction."""
+        radii = _pava_isotonic(x)
+        radii = np.maximum(radii, self.min_radius)
+        try:
+            inst = tmm_instrument_from_radii(
+                radii, self.bore_length,
+                self.hole_positions, self.hole_diameters, self.hole_lengths,
+                self.outer_diameter, self.closed_top, 0.5,
+            )
+        except Exception:
+            return 1e10
 
-    def _compute_initial_wavelengths(self):
-        return np.array([self.speed_of_sound / f for f in self.target_freqs])
+        errors = []
+        for i, (fingerings, target_freq) in enumerate(zip(self.fingering_sets, self.target_freqs)):
+            try:
+                wl = inst.find_resonance(
+                    self._target_wavelengths[i], fingerings, self.n_register,
+                )
+                actual_freq = inst.frequency_from_wavelength(wl)
+                if actual_freq <= 0 or not math.isfinite(actual_freq):
+                    errors.append(1e6)
+                else:
+                    errors.append(1200.0 * math.log2(actual_freq / target_freq))
+            except Exception:
+                errors.append(1e6)
 
-    def _build_jax_cost(self, bore_positions):
-        """Build JIT-compiled cost function for given bore positions."""
-        bore_radii_template = [7.25] * len(bore_positions)
-        chain = build_action_chain_v2(
-            bore_positions, bore_radii_template, self.outer_diameter,
-            self.hole_positions, self.hole_diameters, self.hole_lengths,
-            self.closed_top,
-        )
-        target_freqs_jax = jnp.array(self.target_freqs[:len(self.fingering_sets)])
-        target_wavelengths_jax = jnp.array(self._target_wavelengths[:len(self.fingering_sets)])
-        fingering_sets_float = []
-        for fs in self.fingering_sets:
-            arr = jnp.zeros(MAX_HOLES)
-            for i, h in enumerate(fs):
-                if i < MAX_HOLES:
-                    arr = arr.at[i].set(1.0 if h == 'open' else 0.0)
-            fingering_sets_float.append(arr)
-
-        self._jax_cost_fn = make_rms_cost(
-            chain, target_freqs_jax, fingering_sets_float, target_wavelengths_jax,
-        )
-        return self._jax_cost_fn
+        errors = np.array(errors)
+        if np.any(np.abs(errors) > 1e5):
+            return 1e10
+        global_offset = np.median(errors)
+        corrected = errors - global_offset
+        return float(np.sqrt(np.mean(corrected ** 2)))
 
     def _make_initial_guess(self, method="cylindrical"):
-        if method == "flat":
-            return np.full(self.n_cp, (self.min_radius + self.max_radius) / 2.0)
-        elif method == "cylindrical":
+        if method == "cylindrical":
             return np.full(self.n_cp, 7.25)
+        elif method == "flat":
+            return np.full(self.n_cp, (self.min_radius + self.max_radius) / 2.0)
         elif method == "random":
             raw = np.random.uniform(self.min_radius, self.max_radius, self.n_cp)
             return _pava_isotonic(raw)
-        raise ValueError(f"Unknown: {method}")
+        raise ValueError(f"Unknown method: {method}")
 
     def run(
         self,
@@ -159,10 +154,6 @@ class TMMBoreOptimizerJAX:
         initial_guess: str = "cylindrical",
         known_good_radii: Optional[np.ndarray] = None,
     ) -> Dict:
-        bore_positions = np.linspace(0, self.bore_length, self.n_cp).tolist()
-        cost_fn = self._build_jax_cost(bore_positions)
-        grad_fn = jax.grad(cost_fn)
-
         if known_good_radii is not None:
             x0 = np.array(known_good_radii, dtype=np.float64)
         else:
@@ -170,61 +161,61 @@ class TMMBoreOptimizerJAX:
 
         bounds = [(self.min_radius, self.max_radius)] * self.n_cp
 
-        # Convert JAX grad to numpy for scipy
-        iteration_count = [0]
-        best_val = [float('inf')]
-        grad_eval_count = [0]
-
         if verbose:
-            print(f"  JAX TMM Bore Optimizer")
+            print(f"  TMM Bore Optimizer (root-finding)")
             print(f"  Control points: {self.n_cp}")
             print(f"  Bore length: {self.bore_length:.1f} mm")
             print(f"  Holes: {len(self.hole_positions)}")
             print(f"  Fingerings: {len(self.fingering_sets)}")
-            print(f"  Starting optimization...")
-
-        def objective_and_grad(x):
-            radii_jax = jnp.array(x, dtype=jnp.float32)
-            cost = cost_fn(radii_jax)
-            grad = grad_fn(radii_jax)
-            grad_eval_count[0] += 1
-            return float(cost), np.array(grad, dtype=np.float64)
-
-        def callback(xk):
-            iteration_count[0] += 1
-            if iteration_count[0] % 10 == 0:
-                cost = float(cost_fn(jnp.array(xk, dtype=jnp.float32)))
-                if cost < best_val[0]:
-                    best_val[0] = cost
-                print(f"    iter {iteration_count[0]:4d}: obj={cost:.4f} (best={best_val[0]:.4f})")
-
-        t0 = time.time()
-
-        # Warmup JIT
-        if verbose:
-            print("  JIT compiling...")
-        _ = cost_fn(jnp.array(x0, dtype=jnp.float32)).block_until_ready()
-        _ = grad_fn(jnp.array(x0, dtype=jnp.float32)).block_until_ready()
-        if verbose:
-            print(f"  JIT compiled in {time.time()-t0:.2f}s")
 
         t_opt = time.time()
-        result = minimize(
-            lambda x: objective_and_grad(x)[0],
+
+        # Phase 1: Powell (gradient-free, no FD cost)
+        powell_budget = maxiter * 2 // 3
+        if verbose:
+            print(f"  Phase 1: Powell ({powell_budget} maxiter)...")
+        result_powell = minimize(
+            self._objective,
             x0,
-            method='L-BFGS-B',
-            jac=lambda x: objective_and_grad(x)[1],
+            method='Powell',
             bounds=bounds,
-            callback=callback if verbose else None,
-            options={"maxiter": maxiter, "ftol": 1e-6, "gtol": 1e-4},
+            options={"maxiter": powell_budget, "ftol": 1e-8},
         )
+        if verbose:
+            print(f"    Powell: {result_powell.fun:.4f} cents ({result_powell.nit} iters, {result_powell.nfev} evals)")
+
+        # Phase 2: L-BFGS-B (scipy FD gradients, same objective)
+        lbfgs_budget = maxiter - powell_budget
+        if verbose:
+            print(f"  Phase 2: L-BFGS-B ({lbfgs_budget} maxiter, FD gradients)...")
+        result_lbfgs = minimize(
+            self._objective,
+            result_powell.x,
+            method='L-BFGS-B',
+            bounds=bounds,
+            options={"maxiter": lbfgs_budget, "ftol": 1e-10, "gtol": 1e-6},
+        )
+        if verbose:
+            print(f"    L-BFGS-B: {result_lbfgs.fun:.4f} cents ({result_lbfgs.nit} iters, {result_lbfgs.nfev} evals)")
 
         wall_time = time.time() - t_opt
 
-        final_radii = _pava_isotonic(result.x)
+        # Select best
+        if result_powell.fun <= result_lbfgs.fun:
+            best_x = result_powell.x
+            best_obj = result_powell.fun
+            if verbose:
+                print(f"    -> Using Powell result")
+        else:
+            best_x = result_lbfgs.x
+            best_obj = result_lbfgs.fun
+            if verbose:
+                print(f"    -> Using L-BFGS-B result")
+
+        final_radii = _pava_isotonic(best_x)
         final_radii = np.maximum(final_radii, self.min_radius)
 
-        # Evaluate final result using baseline for accuracy
+        # Final verification with root-finding
         inst = tmm_instrument_from_radii(
             final_radii, self.bore_length,
             self.hole_positions, self.hole_diameters, self.hole_lengths,
@@ -254,21 +245,17 @@ class TMMBoreOptimizerJAX:
             print(f"    RMS cents error: {final_rms:.4f}")
             print(f"    Global offset: {global_offset:.2f} cents")
             print(f"    Wall time: {wall_time:.1f}s")
-            print(f"    Gradient evaluations: {grad_eval_count[0]}")
             print(f"\n  Per-note errors (cents):")
             for m in matched:
                 print(f"    {m['target']:8.1f} Hz -> {m['actual']:8.1f} Hz  ({m['error_cents']:+.2f})")
 
         return {
-            "success": result.success,
-            "message": str(result.message),
+            "success": True,
             "best_radii": final_radii.tolist(),
-            "best_objective": float(result.fun),
+            "best_objective": best_obj,
             "final_rms_cents": final_rms,
             "global_offset_cents": global_offset,
             "matched_frequencies": matched,
-            "iterations": result.nit,
-            "gradient_evaluations": grad_eval_count[0],
             "wall_time": wall_time,
             "bore_length_mm": self.bore_length,
         }

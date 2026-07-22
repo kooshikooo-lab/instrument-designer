@@ -123,18 +123,11 @@ def build_action_chain_v2(bore_positions, bore_radii_template, outer_diameter,
 # JIT-compiled cost function builder
 # ============================================================================
 
-def make_rms_cost(chain, target_freqs, fingering_sets, target_wavelengths):
-    """
-    Build a JIT-compiled RMS cost function.
-
-    Returns a function `cost_fn(bore_radii) -> scalar` that is
-    fully compiled and batches all fingerings via vmap.
-    """
-    n = len(fingering_sets)
+def _build_phase_function(chain):
+    """Build the resonance phase function shared by all cost functions."""
     n_actions = chain['n_actions']
     closed_top = chain['closed_top']
 
-    # Extract chain arrays (all JAX arrays, captured as constants)
     c_at = chain['act_types']
     c_pl = chain['act_pipe_length']
     c_ji0 = chain['act_junc_idx0']
@@ -145,25 +138,14 @@ def make_rms_cost(chain, target_freqs, fingering_sets, target_wavelengths):
     c_hcl = chain['act_hole_closed_len']
     c_hbi = chain['act_hole_bore_idx']
 
-    # Pad fingering sets to (n, MAX_HOLES+1)
-    fs_padded = jnp.zeros((n, MAX_HOLES + 1))
-    for i, fs in enumerate(fingering_sets):
-        fs_padded = fs_padded.at[i, :len(fs)].set(fs)
-
-    tf = jnp.array(target_freqs)
-    tw = jnp.array(target_wavelengths)
-
-    def _resonance_phase(wavelength, bore_radii, fs_pad):
+    def resonance_phase(wavelength, bore_radii, fs_pad):
         def scan_step(phase, i):
             act = c_at[i]
-            # PIPE
             pp = phase + c_pl[i] / wavelength * 2.0
-            # JUNCTION2
             a0 = jnp.pi * bore_radii[c_ji0[i]] ** 2
             a1 = jnp.pi * bore_radii[c_ji1[i]] ** 2
             sh = jnp.floor(phase + 0.5)
             pj = _untanner(a1 / a0 * _tanner(phase - sh)) + sh
-            # HOLE
             pad_idx = jnp.minimum(c_hi[i], MAX_HOLES)
             is_open = fs_pad[pad_idx]
             ab = jnp.pi * bore_radii[c_hbi[i]] ** 2
@@ -175,87 +157,153 @@ def make_rms_cost(chain, target_freqs, fingering_sets, target_wavelengths):
             ph = _untanner(
                 _tanner(phase - s1) + c_ha[i] / ab * _tanner(hph - s2)
             ) + s1 + s2
-            # Select
             new_phase = jnp.where(act == 0, pp, jnp.where(act == 1, pj, ph))
             return new_phase, None
 
         phase, _ = lax.scan(scan_step, jnp.array(0.5), jnp.arange(n_actions))
         return phase + jnp.where(closed_top, 0.0, 0.5)
 
-    def _find_resonance(wl_near, bore_radii, fs_pad):
-        """Expanding-window search matching baseline wavelength_near()."""
-        step_cents = 2.0
-        step = 2.0 ** (step_cents / 1200.0)
-        step_increase = 1.05
-        hs = jnp.sqrt(step)
-        max_iter = 20
+    return resonance_phase
 
-        def scorer(w):
-            p = _resonance_phase(w, bore_radii, fs_pad)
-            return ((p + 0.5) % 1.0) - 0.5
 
-        # Initialize probes around the guess
-        w_left = wl_near / hs
-        w_right = wl_near * hs
-        s_left = scorer(w_left)
-        s_right = scorer(w_right)
+def _find_resonance_bisect(resonance_phase, wl_near, bore_radii, fs_pad):
+    """Root-finding via expanding-window + bisection (for forward evaluation only)."""
+    step_cents = 2.0
+    step = 2.0 ** (step_cents / 1200.0)
+    step_increase = 1.05
+    hs = jnp.sqrt(step)
 
-        def expand_step(carry, _):
-            w_left, w_right, s_left, s_right, cur_step = carry
-            # Check sign change: s_left >= 0 and s_right < 0
-            found = (s_left >= 0.0) & (s_right < 0.0)
-            # Interpolate if found
-            m = (s_right - s_left) / (w_right - w_left)
-            interp = jnp.where(jnp.abs(m) < 1e-30, 0.5 * (w_left + w_right),
-                               w_left - s_left / m)
+    def scorer(w):
+        p = resonance_phase(w, bore_radii, fs_pad)
+        return ((p + 0.5) % 1.0) - 0.5
 
-            # Extend left
-            new_wl = w_left / cur_step
-            new_sl = scorer(new_wl)
-            # Check sign change at left
-            found_left = (new_sl >= 0.0) & (s_left < 0.0)
-            m_left = (s_left - new_sl) / (w_left - new_wl)
-            interp_left = jnp.where(jnp.abs(m_left) < 1e-30, 0.5 * (new_wl + w_left),
-                                    new_wl - new_sl / m_left)
+    w_left = wl_near / hs
+    w_right = wl_near * hs
+    s_left = scorer(w_left)
+    s_right = scorer(w_right)
 
-            # Extend right
-            new_wr = w_right * cur_step
-            new_sr = scorer(new_wr)
-            found_right = (s_right >= 0.0) & (new_sr < 0.0)
-            m_right = (new_sr - s_right) / (new_wr - w_right)
-            interp_right = jnp.where(jnp.abs(m_right) < 1e-30, 0.5 * (w_right + new_wr),
-                                     w_right - s_right / m_right)
+    def expand_step(carry, _):
+        w_l, w_r, s_l, s_r, cur_step, found_any = carry
+        found = (s_l >= 0.0) & (s_r < 0.0)
+        new_wl = w_l / cur_step
+        new_sl = scorer(new_wl)
+        found_left = (new_sl >= 0.0) & (s_l < 0.0)
+        new_wr = w_r * cur_step
+        new_sr = scorer(new_wr)
+        found_right = (s_r >= 0.0) & (new_sr < 0.0)
+        new_w_left = jnp.where(found | found_left | found_any, w_l, new_wl)
+        new_s_left = jnp.where(found | found_left | found_any, s_l, new_sl)
+        new_w_right = jnp.where(found | found_right | found_any, w_r, new_wr)
+        new_s_right = jnp.where(found | found_right | found_any, s_r, new_sr)
+        new_found = found_any | found | found_left | found_right
+        return (new_w_left, new_w_right, new_s_left, new_s_right,
+                cur_step * step_increase, new_found), None
 
-            # Update probes
-            new_w_left = jnp.where(found | found_left, w_left, new_wl)
-            new_s_left = jnp.where(found | found_left, s_left, new_sl)
-            new_w_right = jnp.where(found | found_right, w_right, new_wr)
-            new_s_right = jnp.where(found | found_right, s_right, new_sr)
+    init_carry = (w_left, w_right, s_left, s_right, step, jnp.array(False))
+    (wl, wr, sl, sr, _, _), _ = lax.scan(expand_step, init_carry, None, length=8)
 
-            # Pick best result if found
-            result = jnp.where(found, interp,
-                      jnp.where(found_left, interp_left,
-                        jnp.where(found_right, interp_right, 0.0)))
-            any_found = found | found_left | found_right
+    def bisect_step(carry, _):
+        w_l, w_r, s_l, s_r = carry
+        w_mid = 0.5 * (w_l + w_r)
+        s_mid = scorer(w_mid)
+        new_w_l = jnp.where(s_mid >= 0, w_mid, w_l)
+        new_s_l = jnp.where(s_mid >= 0, s_mid, s_l)
+        new_w_r = jnp.where(s_mid >= 0, w_r, w_mid)
+        new_s_r = jnp.where(s_mid >= 0, s_r, s_mid)
+        return (new_w_l, new_w_r, new_s_l, new_s_r), None
 
-            return (new_w_left, new_w_right, new_s_left, new_s_right,
-                    cur_step * step_increase), result
+    (wl, wr, sl, sr), _ = lax.scan(bisect_step, (wl, wr, sl, sr), None, length=10)
+    m = (sr - sl) / (wr - wl)
+    result = jnp.where(jnp.abs(m) < 1e-30, 0.5 * (wl + wr), wl - sl / m)
+    best_wl = jnp.where(jnp.abs(s_left) < jnp.abs(s_right), w_left, w_right)
+    return jnp.where(jnp.abs(result) < 1e-10, best_wl, result)
 
-        carry = (w_left, w_right, s_left, s_right, step)
-        _, final_result = lax.scan(expand_step, carry, None, length=max_iter)
 
-        # Use the last non-zero result
-        wl = final_result[-1]
-        # Fallback: if no sign change found, return best scorer
-        best_wl = jnp.where(jnp.abs(s_left) < jnp.abs(s_right), w_left, w_right)
-        wl = jnp.where(jnp.abs(wl) < 1e-10, best_wl, wl)
-        return wl
+def make_phase_cost(chain, target_freqs, fingering_sets, target_wavelengths):
+    """
+    Build a JIT-compiled cost function using direct phase evaluation.
+
+    Instead of finding resonances via root-finding (which creates gradient
+    discontinuities), evaluates the phase at target wavelengths directly.
+    At resonance, phase(wl_target) = integer, so minimizing the phase
+    deviation from the nearest integer minimizes intonation error.
+
+    This gives a smooth, differentiable cost function with accurate gradients.
+    """
+    n = len(fingering_sets)
+    resonance_phase = _build_phase_function(chain)
+
+    fs_padded = jnp.zeros((n, MAX_HOLES + 1))
+    for i, fs in enumerate(fingering_sets):
+        fs_padded = fs_padded.at[i, :len(fs)].set(fs)
+
+    tw = jnp.array(target_wavelengths)
+
+    @jax.jit
+    def cost_fn(bore_radii):
+        def _phase_err(args):
+            wl, fs_p = args
+            phase = resonance_phase(wl, bore_radii, fs_p)
+            return phase - jnp.round(phase)
+
+        phase_errs = jax.vmap(_phase_err)((tw, fs_padded))
+        return jnp.sqrt(jnp.mean(phase_errs ** 2))
+
+    return cost_fn
+
+
+def make_rms_cost(chain, target_freqs, fingering_sets, target_wavelengths):
+    """
+    Build a JIT-compiled RMS cost function using direct phase evaluation.
+
+    Evaluates phase at target wavelengths and minimizes deviation from integers.
+    This gives a smooth, differentiable cost function with good gradients
+    for local optimization. Use make_rms_cost_with_search() for accurate
+    forward evaluation with root-finding (for verification, not optimization).
+    """
+    n = len(fingering_sets)
+    resonance_phase = _build_phase_function(chain)
+
+    fs_padded = jnp.zeros((n, MAX_HOLES + 1))
+    for i, fs in enumerate(fingering_sets):
+        fs_padded = fs_padded.at[i, :len(fs)].set(fs)
+
+    tw = jnp.array(target_wavelengths)
+
+    @jax.jit
+    def cost_fn(bore_radii):
+        def _phase_err(args):
+            wl, fs_p = args
+            phase = resonance_phase(wl, bore_radii, fs_p)
+            return phase - jnp.round(phase)
+
+        phase_errs = jax.vmap(_phase_err)((tw, fs_padded))
+        corrected = phase_errs - jnp.mean(phase_errs)
+        return jnp.sqrt(jnp.mean(corrected ** 2))
+
+    return cost_fn
+
+
+def make_rms_cost_with_search(chain, target_freqs, fingering_sets, target_wavelengths):
+    """
+    RMS cost with root-finding (for forward evaluation only, NOT for optimization).
+    Kept for backward compatibility and post-optimization verification.
+    """
+    n = len(fingering_sets)
+    resonance_phase = _build_phase_function(chain)
+
+    fs_padded = jnp.zeros((n, MAX_HOLES + 1))
+    for i, fs in enumerate(fingering_sets):
+        fs_padded = fs_padded.at[i, :len(fs)].set(fs)
+
+    tf = jnp.array(target_freqs)
+    tw = jnp.array(target_wavelengths)
 
     @jax.jit
     def cost_fn(bore_radii):
         def _cost_single(args):
             wl_near, fs_p = args
-            return _find_resonance(wl_near, bore_radii, fs_p)
+            return _find_resonance_bisect(resonance_phase, wl_near, bore_radii, fs_p)
         resonant_wls = jax.vmap(_cost_single)((tw, fs_padded))
         actual_freqs = SPEED_OF_SOUND / resonant_wls
         cents = 1200.0 * jnp.log2(actual_freqs / tf)
@@ -266,108 +314,25 @@ def make_rms_cost(chain, target_freqs, fingering_sets, target_wavelengths):
 
 
 def make_intonation_profile_cost(chain, target_freqs, fingering_sets, target_wavelengths):
-    """Build intonation profile cost function."""
+    """Build intonation profile cost function using direct phase evaluation."""
     n = len(fingering_sets)
-    n_actions = chain['n_actions']
-    closed_top = chain['closed_top']
-
-    c_at = chain['act_types']
-    c_pl = chain['act_pipe_length']
-    c_ji0 = chain['act_junc_idx0']
-    c_ji1 = chain['act_junc_idx1']
-    c_hi = chain['act_hole_idx']
-    c_ha = chain['act_hole_area']
-    c_hol = chain['act_hole_open_len']
-    c_hcl = chain['act_hole_closed_len']
-    c_hbi = chain['act_hole_bore_idx']
+    resonance_phase = _build_phase_function(chain)
 
     fs_padded = jnp.zeros((n, MAX_HOLES + 1))
     for i, fs in enumerate(fingering_sets):
         fs_padded = fs_padded.at[i, :len(fs)].set(fs)
 
-    tf = jnp.array(target_freqs)
     tw = jnp.array(target_wavelengths)
-    ti = jnp.diff(1200.0 * jnp.log2(tf[1:] / tf[:-1]))
-
-    def _resonance_phase(wavelength, bore_radii, fs_pad):
-        def scan_step(phase, i):
-            act = c_at[i]
-            pp = phase + c_pl[i] / wavelength * 2.0
-            a0 = jnp.pi * bore_radii[c_ji0[i]] ** 2
-            a1 = jnp.pi * bore_radii[c_ji1[i]] ** 2
-            sh = jnp.floor(phase + 0.5)
-            pj = _untanner(a1 / a0 * _tanner(phase - sh)) + sh
-            pad_idx = jnp.minimum(c_hi[i], MAX_HOLES)
-            is_open = fs_pad[pad_idx]
-            ab = jnp.pi * bore_radii[c_hbi[i]] ** 2
-            oph = -0.5 + c_hol[i] / wavelength * 2.0
-            cph = 0.0 + c_hcl[i] / wavelength * 2.0
-            hph = jnp.where(is_open > 0, oph, cph)
-            s1 = jnp.floor(phase + 0.5)
-            s2 = jnp.floor(hph + 0.5)
-            ph = _untanner(
-                _tanner(phase - s1) + c_ha[i] / ab * _tanner(hph - s2)
-            ) + s1 + s2
-            return jnp.where(act == 0, pp, jnp.where(act == 1, pj, ph)), None
-        phase, _ = lax.scan(scan_step, jnp.array(0.5), jnp.arange(n_actions))
-        return phase + jnp.where(closed_top, 0.0, 0.5)
-
-    def _find_resonance(wl_near, bore_radii, fs_pad):
-        step_cents = 2.0
-        step = 2.0 ** (step_cents / 1200.0)
-        step_increase = 1.05
-        hs = jnp.sqrt(step)
-        max_iter = 20
-
-        def scorer(w):
-            p = _resonance_phase(w, bore_radii, fs_pad)
-            return ((p + 0.5) % 1.0) - 0.5
-
-        w_left = wl_near / hs
-        w_right = wl_near * hs
-        s_left = scorer(w_left)
-        s_right = scorer(w_right)
-
-        def expand_step(carry, _):
-            w_left, w_right, s_left, s_right, cur_step = carry
-            found = (s_left >= 0.0) & (s_right < 0.0)
-            m = (s_right - s_left) / (w_right - w_left)
-            interp = jnp.where(jnp.abs(m) < 1e-30, 0.5 * (w_left + w_right), w_left - s_left / m)
-
-            new_wl = w_left / cur_step
-            new_sl = scorer(new_wl)
-            found_left = (new_sl >= 0.0) & (s_left < 0.0)
-            m_left = (s_left - new_sl) / (w_left - new_wl)
-            interp_left = jnp.where(jnp.abs(m_left) < 1e-30, 0.5 * (new_wl + w_left), new_wl - new_sl / m_left)
-
-            new_wr = w_right * cur_step
-            new_sr = scorer(new_wr)
-            found_right = (s_right >= 0.0) & (new_sr < 0.0)
-            m_right = (new_sr - s_right) / (new_wr - w_right)
-            interp_right = jnp.where(jnp.abs(m_right) < 1e-30, 0.5 * (w_right + new_wr), w_right - s_right / m_right)
-
-            new_w_left = jnp.where(found | found_left, w_left, new_wl)
-            new_s_left = jnp.where(found | found_left, s_left, new_sl)
-            new_w_right = jnp.where(found | found_right, w_right, new_wr)
-            new_s_right = jnp.where(found | found_right, s_right, new_sr)
-
-            result = jnp.where(found, interp, jnp.where(found_left, interp_left, jnp.where(found_right, interp_right, 0.0)))
-            return (new_w_left, new_w_right, new_s_left, new_s_right, cur_step * step_increase), result
-
-        carry = (w_left, w_right, s_left, s_right, step)
-        _, final_result = lax.scan(expand_step, carry, None, length=max_iter)
-        wl = final_result[-1]
-        best_wl = jnp.where(jnp.abs(s_left) < jnp.abs(s_right), w_left, w_right)
-        return jnp.where(jnp.abs(wl) < 1e-10, best_wl, wl)
 
     @jax.jit
     def cost_fn(bore_radii):
-        def find_one(args):
-            return _find_resonance(args[0], bore_radii, args[1])
-        resonant_wls = jax.vmap(find_one)((tw, fs_padded))
-        actual_freqs = SPEED_OF_SOUND / resonant_wls
-        cents = 1200.0 * jnp.log2(actual_freqs / tf)
-        return jnp.sqrt(jnp.mean((jnp.diff(cents) - ti) ** 2))
+        def _phase_err(args):
+            wl, fs_p = args
+            phase = resonance_phase(wl, bore_radii, fs_p)
+            return phase - jnp.round(phase)
+
+        phase_errs = jax.vmap(_phase_err)((tw, fs_padded))
+        return jnp.sqrt(jnp.mean(phase_errs ** 2))
 
     return cost_fn
 
