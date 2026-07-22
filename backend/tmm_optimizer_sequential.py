@@ -337,9 +337,9 @@ class SequentialBoreOptimizer:
         if not self.closed_top:
             existing_holes = list(reversed(existing_holes))
 
-        # Phase 3: Nelder-Mead refinement (4 stages)
+        # Phase 3: Multi-stage refinement with L-BFGS-B
         if verbose:
-            print(f"\n  Phase 3: Nelder-Mead refinement")
+            print(f"\n  Phase 3: L-BFGS-B refinement (3 stages)")
 
         all_positions = [h["position"] for h in existing_holes]
         all_diameters = [h["diameter"] for h in existing_holes]
@@ -374,19 +374,59 @@ class SequentialBoreOptimizer:
             except Exception:
                 return 1e10
 
-        x0 = np.array([bore_length] + all_positions)
-        bounds_refine = [(bore_length * 0.8, bore_length * 1.2)]
-        for p in all_positions:
-            bounds_refine.append((p - 30, p + 30))
+        # Build tight non-crossing bounds
+        # Each hole must stay between its neighbors (gap >= 5mm)
+        GAP = 5.0
+        n_h = len(all_positions)
+        hole_lo = [0.0] * n_h
+        hole_hi = [bore_length] * n_h
+        for i in range(n_h):
+            hole_lo[i] = (all_positions[i-1] + GAP) if i > 0 else 20.0
+            hole_hi[i] = (all_positions[i+1] - GAP) if i < n_h-1 else (bore_length - 20.0)
+            # Clamp to reasonable range
+            hole_lo[i] = max(hole_lo[i], all_positions[i] - 20)
+            hole_hi[i] = min(hole_hi[i], all_positions[i] + 20)
+            if hole_lo[i] > hole_hi[i]:
+                hole_lo[i] = all_positions[i] - 1
+                hole_hi[i] = all_positions[i] + 1
 
-        result = minimize(_refine_objective, x0, method='Nelder-Mead',
-                          options={"maxiter": 500, "xatol": 0.5, "fatol": 1e-4})
-        bore_length = result.x[0]
-        all_positions = list(result.x[1:1+len(all_positions)])
+        # Stage 1: Bore length only (1 variable)
+        if verbose:
+            print(f"    Stage 1: Bore length")
+        bore_bounds = [(bore_length * 0.85, bore_length * 1.15)]
+        r1 = minimize(lambda x: _refine_objective(np.concatenate([x, all_positions])),
+                      [bore_length], method='L-BFGS-B', bounds=bore_bounds,
+                      options={"maxiter": 100, "ftol": 1e-8})
+        bore_length = r1.x[0]
+        if verbose:
+            print(f"      bore={bore_length:.1f}mm cost={r1.fun:.4f}")
 
-        # Sort by position after refinement
-        sorted_idx = np.argsort(all_positions)
-        all_positions = [all_positions[i] for i in sorted_idx]
+        # Stage 2: Hole positions only (n_h variables, L-BFGS-B with ordering)
+        if verbose:
+            print(f"    Stage 2: Hole positions ({n_h} holes)")
+        hole_bounds = [(hole_lo[i], hole_hi[i]) for i in range(n_h)]
+        x0_holes = np.array(all_positions)
+        r2 = minimize(
+            lambda x: _refine_objective(np.concatenate([[bore_length], x])),
+            x0_holes, method='L-BFGS-B', bounds=hole_bounds,
+            options={"maxiter": 200, "ftol": 1e-8},
+        )
+        all_positions = list(r2.x)
+        if verbose:
+            print(f"      cost={r2.fun:.4f}")
+
+        # Stage 3: Simultaneous fine-tune (bore + holes together)
+        if verbose:
+            print(f"    Stage 3: Simultaneous")
+        all_bounds = bore_bounds + hole_bounds
+        x0_all = np.concatenate([[bore_length], all_positions])
+        r3 = minimize(_refine_objective, x0_all, method='L-BFGS-B',
+                      bounds=all_bounds,
+                      options={"maxiter": 300, "ftol": 1e-10})
+        bore_length = r3.x[0]
+        all_positions = list(r3.x[1:1+n_h])
+        if verbose:
+            print(f"      cost={r3.fun:.4f}")
 
         # Final evaluation
         inst = tmm_instrument_from_radii(

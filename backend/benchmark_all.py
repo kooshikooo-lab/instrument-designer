@@ -184,7 +184,7 @@ def sequential(cfg):
 
 
 def sequential_refined(cfg):
-    """Sequential + 3-stage refinement (avoids Powell hang on many variables)."""
+    """Sequential + 3-stage L-BFGS-B refinement with non-crossing bounds."""
     rms_seq, L_seq, hp_seq, t_seq = sequential(cfg)
     t0 = time.time()
 
@@ -196,11 +196,23 @@ def sequential_refined(cfg):
     hd = [cfg["hole_diameter"]] * n_h
     hl = [cfg["hole_length"]] * n_h
 
-    # Stage 1: Bore-length-only (1 variable, L-BFGS-B)
+    # Build non-crossing bounds for holes
+    GAP = 5.0
+    hole_lo, hole_hi = [0.0]*n_h, [0.0]*n_h
+    for i in range(n_h):
+        hole_lo[i] = (hp[i-1] + GAP) if i > 0 else 30.0
+        hole_hi[i] = (hp[i+1] - GAP) if i < n_h-1 else (L*1.3 - 30.0)
+        hole_lo[i] = max(hole_lo[i], hp[i] - 20)
+        hole_hi[i] = min(hole_hi[i], hp[i] + 20)
+        if hole_lo[i] > hole_hi[i]:
+            hole_lo[i] = hp[i] - 1
+            hole_hi[i] = hp[i] + 1
+
+    # Stage 1: Bore length only (1 variable, L-BFGS-B)
     def obj_bore_length(x):
         return eval_all(radii, x[0], hp, hd, hl, cfg)
     r = sp_min(obj_bore_length, [L], method='L-BFGS-B',
-               bounds=[(L*0.7, L*1.3)], options={"maxiter": 50, "ftol": 1e-8})
+               bounds=[(L*0.85, L*1.15)], options={"maxiter": 100, "ftol": 1e-8})
     L = r.x[0]
 
     # Stage 2: Bore-radii only (n_cp variables, Nelder-Mead)
@@ -211,15 +223,21 @@ def sequential_refined(cfg):
                     options={"maxiter": 200, "xatol": 0.01, "fatol": 1e-6})
         radii = np.maximum(r.x, 3.0)
 
-    # Stage 3: Hole positions only (n_h variables, Nelder-Mead)
+    # Stage 3: Hole positions only (n_h variables, L-BFGS-B with ordering)
     if n_h > 0:
+        hole_bounds = [(hole_lo[i], hole_hi[i]) for i in range(n_h)]
         def obj_holes(x):
             return eval_all(radii, L, x.tolist(), hd, hl, cfg)
-        r = sp_min(obj_holes, np.array(hp), method='Nelder-Mead',
-                    options={"maxiter": 200, "xatol": 0.1, "fatol": 1e-6})
+        r = sp_min(obj_holes, np.array(hp), method='L-BFGS-B',
+                    bounds=hole_bounds,
+                    options={"maxiter": 200, "ftol": 1e-8})
         hp = r.x.tolist()
 
-    # Stage 4: Simultaneous fine-tune (Nelder-Mead, small budget)
+    # Stage 4: Simultaneous fine-tune (L-BFGS-B, all variables)
+    all_bounds = [(L*0.85, L*1.15)]
+    all_bounds += [(3.0, 15.0)] * n_cp
+    all_bounds += hole_bounds if n_h > 0 else []
+
     def obj_all(x):
         L_i = x[0]
         rad_i = np.maximum(x[1:1+n_cp], 3.0)
@@ -227,8 +245,9 @@ def sequential_refined(cfg):
         return eval_all(rad_i, L_i, hp_i.tolist(), hd, hl, cfg)
 
     x0 = np.concatenate([[L], radii, np.array(hp)])
-    r = sp_min(obj_all, x0, method='Nelder-Mead',
-                options={"maxiter": 300, "xatol": 0.01, "fatol": 1e-8})
+    r = sp_min(obj_all, x0, method='L-BFGS-B',
+                bounds=all_bounds,
+                options={"maxiter": 300, "ftol": 1e-10})
     L = r.x[0]
     radii = np.maximum(r.x[1:1+n_cp], 3.0)
     hp = r.x[1+n_cp:].tolist()
