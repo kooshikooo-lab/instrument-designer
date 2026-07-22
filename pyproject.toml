@@ -11,12 +11,24 @@ license = { text = "GPL-3.0" }
 requires-python = ">=3.10"
 dependencies = [
     "PySide6>=6.5",
+    "numpy>=1.24",
+    "scipy>=1.11",
+    "matplotlib>=3.7",
     "demakein>=1.0",
     "openwind>=0.12",
     "pyyaml>=6.0",
-    "numpy>=1.24",
-    "matplotlib>=3.7",
+    "pydantic>=2.0",
+    "pymoo>=0.6",
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.27",
+    "requests>=2.31",
+    "fpdf>=2.7",
 ]
+
+[project.optional-dependencies]
+jax = ["jax>=0.4", "jaxlib>=0.4"]
+freecad = ["freecad"]
+dev = ["pytest>=7.0", "ruff>=0.1"]
 
 [project.scripts]
 instrument-designer = "woodwind_designer.main:main"
@@ -24,3 +36,7 @@ woodwind-designer = "woodwind_designer.main:main"
 
 [tool.setuptools.packages.find]
 include = ["woodwind_designer*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
