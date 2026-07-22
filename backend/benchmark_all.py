@@ -98,45 +98,78 @@ def eval_all(radii, bore_length, hp, hd, hl, cfg):
 
 
 def sequential(cfg):
-    """Sequential hole placement."""
+    """Sequential hole placement.
+
+    For closed-open (clarinet): combined fingering method (Bordeaux).
+    For open-open (sax/flute): independent placement (each hole solo).
+
+    Both skip the fundamental and optimize bore length first.
+    """
     t0 = time.time()
     targets = sorted(cfg["targets"])
     fundamental = min(targets)
-    L_est = c / (4.0 * fundamental) if cfg["closed_top"] else c / (2.0 * fundamental)
+    closed_top = cfg["closed_top"]
 
-    bore_length = L_est
     bore_radii = np.full(8, cfg["bore_radius"])
-    hp, hd, hl = [], [], []
+    L_est = c / (4.0 * fundamental) if closed_top else c / (2.0 * fundamental)
 
-    for i, target in enumerate(targets):
-        best_pos, best_err = 0, 1e10
+    # Phase 1: Optimize bore length
+    def bore_obj(L):
+        try:
+            inst = tmm_instrument_from_radii(bore_radii, L, [], [], [],
+                cfg["outer_diameter"], closed_top, 0.5)
+            wl = inst.find_resonance(c / fundamental, [], 1)
+            f = inst.frequency_from_wavelength(wl)
+            if f <= 0 or not math.isfinite(f): return 1e10
+            return abs(1200.0 * math.log2(f / fundamental))
+        except: return 1e10
+
+    from scipy.optimize import minimize as sp_min
+    r = sp_min(bore_obj, [L_est], method='L-BFGS-B',
+               bounds=[(L_est * 0.7, L_est * 1.3)],
+               options={"maxiter": 50, "ftol": 1e-8})
+    bore_length = r.x[0]
+
+    # Phase 2: Place holes
+    hp, hd, hl = [], [], []
+    hole_targets = targets[1:]
+
+    for k, target in enumerate(hole_targets):
         min_p = hp[-1] + 15 if hp else 30
         max_p = bore_length - 30
         if min_p >= max_p:
-            max_p = min_p + 1
+            break
 
-        for pos in np.linspace(min_p, max_p, 40):
-            pl = hp + [pos]
-            dl = hd + [cfg["hole_diameter"]]
-            ll = hl + [cfg["hole_length"]]
-            idx = np.argsort(pl)
-            pl_s = [pl[j] for j in idx]
-            dl_s = [dl[j] for j in idx]
-            ll_s = [ll[j] for j in idx]
-            fing = ["closed"] * len(pl)
-            fing[list(idx).index(i)] = "open"
+        best_pos, best_err = 0, 1e10
+        for pos in np.linspace(min_p, max_p, 60):
             try:
-                inst = tmm_instrument_from_radii(
-                    bore_radii, bore_length, pl_s, dl_s, ll_s,
-                    cfg["outer_diameter"], cfg["closed_top"], 0.5,
-                )
+                if closed_top:
+                    # Combined fingering: all placed holes + new one open
+                    pl = hp + [pos]
+                    dl = hd + [cfg["hole_diameter"]]
+                    ll = hl + [cfg["hole_length"]]
+                    idx = np.argsort(pl)
+                    pl_s = [pl[j] for j in idx]
+                    dl_s = [dl[j] for j in idx]
+                    ll_s = [ll[j] for j in idx]
+                    fing = ["closed"] * len(pl)
+                    for j in range(k + 1):
+                        fing[list(idx).index(j)] = "open"
+                    inst = tmm_instrument_from_radii(bore_radii, bore_length,
+                        pl_s, dl_s, ll_s, cfg["outer_diameter"], closed_top, 0.5)
+                else:
+                    # Independent: only new hole open
+                    inst = tmm_instrument_from_radii(bore_radii, bore_length,
+                        [pos], [cfg["hole_diameter"]], [cfg["hole_length"]],
+                        cfg["outer_diameter"], closed_top, 0.5)
+                    fing = ["open"]
+
                 wl = inst.find_resonance(c / target, fing, 1)
                 f = inst.frequency_from_wavelength(wl)
                 err = abs(1200.0 * math.log2(f / target)) if f > 0 else 1e10
                 if err < best_err:
                     best_err, best_pos = err, pos
-            except:
-                pass
+            except: pass
         hp.append(best_pos)
         hd.append(cfg["hole_diameter"])
         hl.append(cfg["hole_length"])
