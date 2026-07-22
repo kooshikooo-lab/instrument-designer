@@ -17,36 +17,48 @@ def server():
     srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     srv.bind(("0.0.0.0", PORT))
-    srv.listen(1)
+    srv.listen(5)
     print(f"[SERVER] Listening on port {PORT}...")
     
-    conn, addr = srv.accept()
-    print(f"[SERVER] Client connected from {addr}")
-    
-    def recv_loop():
+    def handle_client(conn, addr):
+        print(f"[SERVER] Client connected from {addr}")
+        
+        def recv_loop():
+            while True:
+                try:
+                    data = conn.recv(4096).decode("utf-8")
+                    if not data:
+                        break
+                    for line in data.strip().split("\n"):
+                        if line:
+                            msg = json.loads(line)
+                            print(f"\n[{msg['from']}] {msg['text']}")
+                except:
+                    break
+            print(f"[SERVER] Client {addr} disconnected.")
+        
+        t = threading.Thread(target=recv_loop, daemon=True)
+        t.start()
+        
         while True:
             try:
-                data = conn.recv(4096).decode("utf-8")
-                if not data:
+                text = input("[You] ")
+                if text == "quit":
                     break
-                for line in data.strip().split("\n"):
-                    msg = json.loads(line)
-                    print(f"\n[{msg['from']}] {msg['text']}")
+                reply = json.dumps({"from": "desktop", "text": text}) + "\n"
+                conn.sendall(reply.encode("utf-8"))
             except:
                 break
-        print("[SERVER] Client disconnected.")
-    
-    t = threading.Thread(target=recv_loop, daemon=True)
-    t.start()
+        
+        conn.close()
     
     while True:
-        text = input("[You] ")
-        if text == "quit":
+        try:
+            conn, addr = srv.accept()
+            threading.Thread(target=handle_client, args=(conn, addr), daemon=True).start()
+        except:
             break
-        msg = json.dumps({"from": "desktop", "text": text}) + "\n"
-        conn.sendall(msg.encode("utf-8"))
     
-    conn.close()
     srv.close()
 
 def client(host):
@@ -79,26 +91,40 @@ def client(host):
     
     sock.close()
 
-def send(text, host, wait=2.0):
+def send(text, host, wait=3.0):
+    """Send a message and wait for reply. More robust version."""
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.settimeout(wait + 1)
-    sock.connect((host, PORT))
-    msg = json.dumps({"from": "laptop", "text": text}) + "\n"
-    sock.sendall(msg.encode("utf-8"))
-    replies = []
+    sock.settimeout(wait)
     try:
-        while True:
-            data = sock.recv(4096).decode("utf-8")
-            if not data:
-                break
-            for line in data.strip().split("\n"):
-                if line:
-                    r = json.loads(line)
-                    replies.append(r)
-    except socket.timeout:
-        pass
-    sock.close()
-    return replies
+        sock.connect((host, PORT))
+        msg = json.dumps({"from": "laptop", "text": text}) + "\n"
+        sock.sendall(msg.encode("utf-8"))
+        print(f"[SENT] {text[:50]}...")
+        
+        replies = []
+        try:
+            while True:
+                data = sock.recv(4096).decode("utf-8")
+                if not data:
+                    break
+                for line in data.strip().split("\n"):
+                    if line:
+                        r = json.loads(line)
+                        replies.append(r)
+                        print(f"[REPLY] {r['from']}: {r['text'][:80]}")
+        except socket.timeout:
+            print("[TIMEOUT] No more replies")
+        except ConnectionResetError:
+            print("[RESET] Connection closed by remote")
+        
+        sock.close()
+        return replies
+    except ConnectionRefusedError:
+        print(f"[ERROR] Cannot connect to {host}:{PORT} - server not running?")
+        return []
+    except Exception as e:
+        print(f"[ERROR] {e}")
+        return []
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
