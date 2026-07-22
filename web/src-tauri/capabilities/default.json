@@ -8,6 +8,10 @@
   "permissions": [
     "core:default",
     "core:event:default",
+    "core:event:allow-listen",
+    "core:event:allow-emit",
+    "core:event:allow-emit-to",
+    "core:event:allow-unlisten",
     "fs:default",
     "fs:allow-read-file",
     "fs:allow-write-file",
@@ -15,6 +19,8 @@
     "dialog:allow-save",
     "dialog:allow-open",
     "process:default",
+    "process:allow-exit",
+    "process:allow-restart",
     "shell:default",
     "http:default"
   ]
