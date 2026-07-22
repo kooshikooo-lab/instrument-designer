@@ -121,7 +121,15 @@ def _hole_objective(
     existing_holes: List[Dict],  # Already-placed holes
     n_register: int,
 ) -> float:
-    """Objective for placing a single new hole."""
+    """
+    Objective for placing a single new hole.
+    
+    Fingering strategy depends on instrument type:
+    - Closed-open (clarinets): existing holes CLOSED, new hole open
+      (Bordeaux method - closing holes extends effective bore)
+    - Open-open (sax/flute): existing holes OPEN, new hole open
+      (each hole creates independent resonator)
+    """
     hole_position = params[0]
 
     # Build hole list: existing + new
@@ -135,13 +143,20 @@ def _hole_objective(
     diameters = [diameters[i] for i in sorted_idx]
     lengths = [lengths[i] for i in sorted_idx]
 
-    # Fingering: all existing holes closed, new hole open
-    # (This is the fingering for the note that the new hole produces)
-    fingering = ["closed"] * len(existing_holes) + ["open"]
-    # Reorder fingering to match sorted hole positions
+    # Fingering depends on instrument type
     new_idx = list(sorted_idx).index(len(existing_holes))
-    fingering_sorted = ["closed"] * len(positions)
-    fingering_sorted[new_idx] = "open"
+    
+    if closed_top:
+        # Closed-open (clarinets): Bordeaux method
+        # All existing holes CLOSED, new hole OPEN
+        fingering_sorted = ["closed"] * len(positions)
+        fingering_sorted[new_idx] = "open"
+    else:
+        # Open-open (sax/flute): Ernoult (2021) method
+        # Only the new hole OPEN, all others CLOSED
+        # Each hole is independent - place using "xxxo" fingering
+        fingering_sorted = ["closed"] * len(positions)
+        fingering_sorted[new_idx] = "open"
 
     try:
         inst = tmm_instrument_from_radii(
@@ -293,11 +308,20 @@ class SequentialBoreOptimizer:
 
         existing_holes = []
         sorted_targets = sorted(self.target_freqs)
+        # Skip the fundamental (lowest note) - it's played with all holes closed
+        # Place holes for notes above the fundamental
+        notes_needing_holes = sorted_targets[1:]
+        
+        # For open-open instruments (sax/flute), place holes from HIGHEST to LOWEST
+        # (furthest from bell to closest to bell)
+        # This follows Ernoult (2021) - each hole is placed independently
+        if not self.closed_top:
+            notes_needing_holes = list(reversed(notes_needing_holes))
 
-        for i, target_freq in enumerate(sorted_targets):
+        for i, target_freq in enumerate(notes_needing_holes):
             if verbose:
                 print(f"\n    Adding hole for {target_freq:.1f} Hz "
-                      f"(note {i+1}/{len(sorted_targets)})")
+                      f"(note {i+1}/{len(notes_needing_holes)})")
 
             hole = optimize_hole_position(
                 bore_radii, bore_length,
@@ -307,6 +331,11 @@ class SequentialBoreOptimizer:
                 self.n_register, verbose, i,
             )
             existing_holes.append(hole)
+        
+        # For open-open: reverse hole order to match fingering_sets convention
+        # (lowest note = hole 0, highest note = last hole)
+        if not self.closed_top:
+            existing_holes = list(reversed(existing_holes))
 
         # Phase 3: Nelder-Mead refinement (4 stages)
         if verbose:
