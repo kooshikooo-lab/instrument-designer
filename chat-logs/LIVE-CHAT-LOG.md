@@ -1,7 +1,7 @@
 # LIVE CHAT LOG — instrument-designer
-## Last updated: 2026-07-21 (desktop — session 9: flute calculator)
+## Last updated: 2026-07-22 (desktop — coordination audit)
 ## For: Both machines — pull this file before starting work
-## Branch: option-a-tauri
+## Branch: experiment/tmm-improvements (desktop), experiment/flute-pvc (laptop)
 
 ---
 
@@ -401,5 +401,52 @@ best = r['best_candidates'][0]
 print('RMS:', best['objectives']['frequency_accuracy'], 'cents')
 "
 ```
+
+---
+
+### Desktop Session 10 (2026-07-22 — coordination audit)
+- **CRITICAL BLOCKER FOUND:** `backend/tmm_acoustics.py` does NOT exist in any branch
+  - Imported by `tmm_optimizer_v2.py`, `benchmark_diatonic.py`, `benchmark_chalumeau.py`, all test files
+  - Contains: `TMMInstrument` class, `tmm_instrument_from_radii()`, `SPEED_OF_SOUND`
+  - The JAX version (`tmm_acoustics_jax.py`) has different API — NOT a drop-in replacement
+  - **LAPTOP: Check if this file exists locally but was never pushed**
+- Audit complete: all files inventoried, dependency versions checked
+- `pyproject.toml` confirmed missing: scipy, pymoo, pydantic, fastapi, uvicorn, jax
+- jax NOT INSTALLED on desktop (only scipy 1.18.0, pymoo 0.6.2, pydantic 2.13.4, fastapi 0.139.2)
+- Created `chat-logs/2026-07-22-desktop-coordination-session.md`
+- Communication protocol established: session logs + LIVE-CHAT-LOG + GitHub Issues
+- See Issue #9 for coordination details and task assignments
+
+---
+
+## Desktop Environment (for reference)
+- **OS:** Windows 10 Home, Build 19045
+- **Python:** 3.14.6
+- **Java:** 1.8.0_333 (needs JDK 17 for chalumier)
+- **Packages:** scipy 1.18.0, pymoo 0.6.2, pydantic 2.13.4, fastapi 0.139.2, uvicorn 0.51.0, PySide6 6.11.1
+- **NOT installed:** jax
+- **WSL2:** BLOCKED (BIOS virtualization disabled)
+- **Path:** `C:\Users\Admin\Desktop\Woodwind design automation\woodwind-designer`
+
+## Laptop Environment (LAPTOP: CONFIRM/UPDATE)
+- **OS:** ? (likely Windows 11)
+- **Python:** ?
+- **Java:** JDK 17 Temurin 17.0.19 (installed via winget, on PATH)
+- **Packages:** ? (likely has jax)
+- **WSL2:** Cannot run (BIOS virtualization disabled)
+- **Known:** Has `tmm_acoustics.py` locally (never pushed)
+
+---
+
+## Cross-Machine Communication Protocol
+
+### How to coordinate:
+1. **Before starting work:** `git pull` + read this file + `gh issue list`
+2. **While working:** Commit to feature branches, push early
+3. **When done:** Append to this file (date, machine, what you did)
+4. **For formal tasks:** Use GitHub Issues (create, assign, comment)
+
+### File naming: `YYYY-MM-DD-<topic>.md`
+### Avoid conflicts: Don't edit the same files on both machines simultaneously
 
 *This file is updated frequently. Pull often.*
