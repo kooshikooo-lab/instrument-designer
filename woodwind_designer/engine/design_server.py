@@ -452,6 +452,8 @@ class SequentialOptimizeRequest(BaseModel):
     hole_diameter: float = 7.0  # mm
     hole_length: float = 3.75  # mm
     bore_length_bounds: list[float] = [100.0, 2000.0]  # mm
+    n_bore_cp: int = 0  # 0=uniform bore, >0=variable-radius bore with N control points
+    bore_radius_bounds: list[float] = [2.0, 20.0]  # mm, min/max radius for variable bore
 
 
 def _run_sequential_optimization(job_id: str, req: SequentialOptimizeRequest):
@@ -474,6 +476,8 @@ def _run_sequential_optimization(job_id: str, req: SequentialOptimizeRequest):
             hole_diameter=req.hole_diameter,
             hole_length=req.hole_length,
             bore_length_bounds=tuple(req.bore_length_bounds),
+            n_bore_cp=req.n_bore_cp,
+            bore_radius_bounds=tuple(req.bore_radius_bounds),
         )
 
         with _lock:
@@ -492,6 +496,7 @@ def _run_sequential_optimization(job_id: str, req: SequentialOptimizeRequest):
                     "success": result.get("success", False),
                     "bore_length_mm": result.get("bore_length_mm", 0),
                     "bore_radii": result.get("bore_radii", []),
+                    "n_bore_cp": req.n_bore_cp,
                     "hole_positions": result.get("hole_positions", []),
                     "hole_diameters": result.get("hole_diameters", []),
                     "hole_lengths": result.get("hole_lengths", []),

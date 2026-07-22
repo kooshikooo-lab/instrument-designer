@@ -240,6 +240,56 @@ export async function getOptimizationPresets(): Promise<Record<string, Optimizat
 
 // ── Cache Stats ────────────────────────────────────────────────────
 
+// ── Sequential Optimization (Bordeaux Method) ─────────────────────
+
+export interface SequentialOptimizeRequest {
+  target_frequencies: number[];
+  fingering_sets: string[][];
+  bore_radius: number;
+  outer_diameter: number;
+  closed_top: boolean;
+  n_register: number;
+  hole_diameter: number;
+  hole_length: number;
+  bore_length_bounds: number[];
+  n_bore_cp?: number;
+  bore_radius_bounds?: number[];
+}
+
+export interface SequentialOptimizationJob {
+  job_id: string;
+  status: string;
+  progress: string[];
+  result?: {
+    success: boolean;
+    bore_length_mm: number;
+    bore_radii: number[];
+    n_bore_cp: number;
+    hole_positions: number[];
+    hole_diameters: number[];
+    hole_lengths: number[];
+    final_rms_cents: number;
+    peak_error_cents: number;
+    wall_time: number;
+    matched_frequencies: MatchedFrequency[];
+  };
+  error?: string;
+}
+
+export async function startSequentialOptimization(req: SequentialOptimizeRequest): Promise<{ job_id: string }> {
+  const res = await apiPost("/optimize/sequential", req);
+  if (!res.ok) throw new Error(`Sequential optimization start failed: ${res.statusText}`);
+  return res.json();
+}
+
+export async function getSequentialOptimizationStatus(jobId: string): Promise<SequentialOptimizationJob> {
+  const res = await apiGet(`/optimize/sequential/${jobId}/status`);
+  if (!res.ok) throw new Error(`Sequential optimization status failed: ${res.statusText}`);
+  return res.json();
+}
+
+// ── Cache Stats ────────────────────────────────────────────────────
+
 export async function getCacheStats(): Promise<{ cache_size: number; status: string }> {
   const res = await apiGet("/optimize/cache/stats");
   if (!res.ok) throw new Error(`Cache stats failed`);
