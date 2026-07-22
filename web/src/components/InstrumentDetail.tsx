@@ -2,6 +2,8 @@
 import type { Instrument } from "../data/instruments";
 import TonePlayer from "./TonePlayer";
 import ResourcePage from "./ResourcePage";
+import AIInstrumentArt from "./AIInstrumentArt";
+import InstrumentSoundPlayer from "./InstrumentSoundPlayer";
 
 interface Props {
   instrument: Instrument;
@@ -186,6 +188,18 @@ export function InstrumentDetail({ instrument, onClose, onGenerate }: Props) {
             </div>
 
             <TonePlayer range={i.range} instrumentName={i.name} />
+
+            {/* AI Instrument Illustration */}
+            <div>
+              <h4 className="text-xs font-medium text-neutral-400 mb-3 flex items-center gap-2">
+                <span className="w-5 h-5 rounded bg-purple-500/20 flex items-center justify-center text-[10px]">🎨</span>
+                AI-Generated Cross-Section
+              </h4>
+              <AIInstrumentArt instrumentName={i.name} className="w-full h-64" />
+            </div>
+
+            {/* Sound Preview */}
+            <InstrumentSoundPlayer instrumentName={i.name} range={i.range} />
           </div>
         )}
 
