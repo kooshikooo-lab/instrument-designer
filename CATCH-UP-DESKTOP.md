@@ -142,3 +142,35 @@
 - **GitHub Issues** — async coordination (Issues #1, #9, #10, #11, #12)
 - **LAN Chat** — `python backend/lan_chat.py send "msg" 100.69.113.41` (one-shot)
 - **Tailscale** — direct ping/SCP between machines
+
+---
+
+## UPDATE: Saxophone Research (2026-07-22, commit ee80ace)
+
+### New File: SAXOPHONE_RESEARCH.md
+Comprehensive expert research on saxophone acoustics for creating benchmark instruments.
+
+### Key Findings:
+1. **Lefebvre & Scavone (2011):** "A straight conical tube is NOT appropriate for a saxophone" — bore deviations necessary for harmonicity
+2. **UNSW (Wolfe lab):** Soprano half angle 1.74°, Tenor 1.52°, Sax original 3° total
+3. **Tone holes:** 25-40% of local bore diameter, 6% rule for placement
+4. **Bell has minimal acoustic impact** — only low Bb radiates from it
+5. **Simultaneous bore + tonehole optimization required** — not just one or the other
+
+### Available Toolkits:
+- **WIAT** (McGill): Python TMM impedance, tonehole modeling
+- **OpenWInD** (Inria): Python TMM/FEM impedance, optimization
+- **Demakein** (Harrison): Closed-top instrument design + 3D print
+- **Our chalumier:** Phase-based resonance, ~0.01s/eval
+
+### Recommended Benchmark Order:
+1. **Xaphoon** (easiest) — 32cm cylindrical bore, 9 holes, key of C
+2. **Simple soprano sax** — straight conical, 6 holes + octave
+3. **Alto sax** — curved bore, most complex, may need bore modifications
+4. **Baritone sax** — largest, most challenging for 3D printing
+
+### Desktop: Please start LAN chat server:
+```
+python backend/lan_chat.py server
+```
+Then I can send live updates via Tailscale!
