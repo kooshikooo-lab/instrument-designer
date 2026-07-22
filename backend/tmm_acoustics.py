@@ -546,9 +546,15 @@ def tmm_instrument_from_radii(
     Returns:
         TMMInstrument instance
     """
-    n = len(radii_mm)
-    positions = np.linspace(0, bore_length_mm, n).tolist()
-    diameters = (radii_mm * 2.0).tolist()
+    bore_length_scalar = float(bore_length_mm)
+    n = max(len(radii_mm), 2)
+    if len(radii_mm) < 2:
+        r = float(radii_mm[0]) if len(radii_mm) == 1 else 7.0
+        positions = [0.0, bore_length_scalar]
+        diameters = [r * 2.0, r * 2.0]
+    else:
+        positions = np.linspace(0, bore_length_scalar, n).tolist()
+        diameters = (np.asarray(radii_mm, dtype=float) * 2.0).tolist()
     outer_diams = [outer_diameter_mm] * n
 
     return TMMInstrument(

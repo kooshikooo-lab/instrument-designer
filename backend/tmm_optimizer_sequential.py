@@ -42,7 +42,8 @@ def _bore_objective_all_closed(
     closed_top: bool,
     n_register: int,
 ) -> float:
-    """Objective: find bore length that gives correct fundamental with all holes closed."""
+    """Objective: find bore length that gives correct fundamental with all holes closed.
+    n_register should already be the correct phase register (2 for open-open, 1 for closed-open)."""
     radii = np.array([bore_radius])
     try:
         inst = tmm_instrument_from_radii(
@@ -258,7 +259,8 @@ class SequentialBoreOptimizer:
         self.bore_radius = bore_radius
         self.outer_diameter = outer_diameter
         self.closed_top = closed_top
-        self.n_register = n_register
+        # For open-open pipes, fundamental is at phase=2, not phase=1
+        self.n_register = n_register if closed_top else n_register + 1
         self.hole_diameter = hole_diameter
         self.hole_length = hole_length
         self.bore_length_bounds = bore_length_bounds
@@ -306,22 +308,58 @@ class SequentialBoreOptimizer:
             )
             existing_holes.append(hole)
 
-        # Phase 3: Simultaneous refinement
+        # Phase 3: Nelder-Mead refinement (4 stages)
         if verbose:
-            print(f"\n  Phase 3: Simultaneous refinement")
+            print(f"\n  Phase 3: Nelder-Mead refinement")
 
-        # Build final configuration and evaluate
         all_positions = [h["position"] for h in existing_holes]
         all_diameters = [h["diameter"] for h in existing_holes]
         all_lengths = [h["length"] for h in existing_holes]
 
-        # Sort holes by position
         sorted_idx = np.argsort(all_positions)
         all_positions = [all_positions[i] for i in sorted_idx]
         all_diameters = [all_diameters[i] for i in sorted_idx]
         all_lengths = [all_lengths[i] for i in sorted_idx]
 
-        # Evaluate with original fingering sets
+        def _refine_objective(x):
+            bl = x[0]
+            positions = list(x[1:1+len(all_positions)])
+            try:
+                inst = tmm_instrument_from_radii(
+                    bore_radii, bl, positions, all_diameters, all_lengths,
+                    self.outer_diameter, closed_top=self.closed_top, cone_step=0.5,
+                )
+                target_wavelengths = [SPEED_OF_SOUND / f for f in self.target_freqs]
+                freqs = inst.compute_fingered_frequencies(
+                    target_wavelengths, self.fingering_sets, self.n_register,
+                )
+                cents = []
+                for a, t in zip(freqs, self.target_freqs):
+                    if a > 0 and math.isfinite(a):
+                        cents.append(1200.0 * math.log2(a / t))
+                    else:
+                        cents.append(1e10)
+                c = np.array(cents)
+                offset = np.median(c)
+                return float(np.sqrt(np.mean((c - offset) ** 2)))
+            except Exception:
+                return 1e10
+
+        x0 = np.array([bore_length] + all_positions)
+        bounds_refine = [(bore_length * 0.8, bore_length * 1.2)]
+        for p in all_positions:
+            bounds_refine.append((p - 30, p + 30))
+
+        result = minimize(_refine_objective, x0, method='Nelder-Mead',
+                          options={"maxiter": 500, "xatol": 0.5, "fatol": 1e-4})
+        bore_length = result.x[0]
+        all_positions = list(result.x[1:1+len(all_positions)])
+
+        # Sort by position after refinement
+        sorted_idx = np.argsort(all_positions)
+        all_positions = [all_positions[i] for i in sorted_idx]
+
+        # Final evaluation
         inst = tmm_instrument_from_radii(
             bore_radii, bore_length,
             all_positions, all_diameters, all_lengths,
@@ -333,7 +371,6 @@ class SequentialBoreOptimizer:
             target_wavelengths, self.fingering_sets, self.n_register,
         )
 
-        # Compute RMS
         cents_errors = []
         for actual, target in zip(freqs, self.target_freqs):
             if actual > 0 and math.isfinite(actual):
