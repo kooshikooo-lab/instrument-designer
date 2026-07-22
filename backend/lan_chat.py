@@ -13,6 +13,17 @@ import sys, socket, threading, json, time, os
 
 DEFAULT_PORT = 9123
 MY_NAME = "desktop" if "desktop" in os.environ.get("COMPUTERNAME", "").lower() else "laptop"
+LOG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "chat.log")
+
+
+def _log(text):
+    """Print and append to chat.log."""
+    print(text)
+    try:
+        with open(LOG_FILE, "a", encoding="utf-8") as f:
+            f.write(f"[{time.strftime('%H:%M:%S')}] {text}\n")
+    except Exception:
+        pass
 
 
 def server(port=DEFAULT_PORT):
