@@ -73,7 +73,7 @@ The file `backend/tmm_acoustics.py` does **not exist** on any branch (`main`, `e
 - **Path:** `C:\Users\Admin\Desktop\Woodwind design automation\woodwind-designer`
 
 ### Laptop (confirmed from chat logs)
-- **OS:** ? (likely Windows 11)
+- **OS:** Windows 11
 - **Python:** ?
 - **Java:** JDK 17 Temurin 17.0.19 (installed via winget, on PATH)
 - **Packages:** ? (likely has jax)

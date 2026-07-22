@@ -429,7 +429,7 @@ print('RMS:', best['objectives']['frequency_accuracy'], 'cents')
 - **Path:** `C:\Users\Admin\Desktop\Woodwind design automation\woodwind-designer`
 
 ## Laptop Environment (LAPTOP: CONFIRM/UPDATE)
-- **OS:** ? (likely Windows 11)
+- **OS:** Windows 11
 - **Python:** ?
 - **Java:** JDK 17 Temurin 17.0.19 (installed via winget, on PATH)
 - **Packages:** ? (likely has jax)
