@@ -39,6 +39,11 @@ INSTRUMENT_TYPES: dict[str, str] = {
     "alto_sax": "open-open",
     "tenor_sax": "open-open",
     "baritone_sax": "open-open",
+    # Brass — closed-open pipe but bell flare + cup mouthpiece give all harmonics
+    "trumpet_bb": "open-open",
+    "trombone": "open-open",
+    "french_horn": "open-open",
+    "tuba": "open-open",
 }
 
 # Standard pitch reference
@@ -211,6 +216,30 @@ PRESET_TARGETS: dict[str, dict] = {
         "note": "Eb3",
         "range": ("Eb3", "Eb5"),
         "description": "Baritone saxophone in Eb — conical bore, all harmonics",
+    },
+    "trumpet_bb": {
+        "type": "open-open",
+        "note": "Bb3",
+        "range": ("Bb3", "Bb5"),
+        "description": "Bb trumpet — cylindrical bore with bell, all harmonics",
+    },
+    "trombone": {
+        "type": "open-open",
+        "note": "Bb2",
+        "range": ("Bb2", "Bb4"),
+        "description": "Tenor trombone in Bb — cylindrical bore, all harmonics",
+    },
+    "french_horn": {
+        "type": "open-open",
+        "note": "F3",
+        "range": ("F3", "F5"),
+        "description": "French horn in F — conical bore, all harmonics",
+    },
+    "tuba": {
+        "type": "open-open",
+        "note": "Bb1",
+        "range": ("Bb1", "Bb3"),
+        "description": "Tuba in Bb — conical bore, all harmonics",
     },
 }
 

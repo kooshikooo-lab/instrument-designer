@@ -302,7 +302,7 @@ def get_optimization_presets():
         from backend.target_frequencies import get_preset_info
 
         presets = {}
-        for preset_key in ["folk_whistle", "folk_flute", "recorder", "reedpipe", "folk_shawm", "clarinet_Bb", "reed_drone", "soprano_sax", "alto_sax", "tenor_sax", "baritone_sax"]:
+        for preset_key in ["folk_whistle", "folk_flute", "recorder", "reedpipe", "folk_shawm", "clarinet_Bb", "reed_drone", "soprano_sax", "alto_sax", "tenor_sax", "baritone_sax", "trumpet_bb", "trombone", "french_horn", "tuba"]:
             info = get_preset_info(preset_key)
             if info:
                 presets[preset_key] = {
