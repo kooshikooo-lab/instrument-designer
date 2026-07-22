@@ -38,6 +38,7 @@ INSTRUMENT_TYPES: dict[str, str] = {
     "soprano_sax": "open-open",
     "alto_sax": "open-open",
     "tenor_sax": "open-open",
+    "baritone_sax": "open-open",
 }
 
 # Standard pitch reference
@@ -186,6 +187,30 @@ PRESET_TARGETS: dict[str, dict] = {
         "note": "Bb3",
         "range": ("Bb3", "Bb5"),
         "description": "Bb clarinet — odd harmonics only",
+    },
+    "soprano_sax": {
+        "type": "open-open",
+        "note": "Bb4",
+        "range": ("Bb4", "Bb6"),
+        "description": "Soprano saxophone in Bb — conical bore, all harmonics",
+    },
+    "alto_sax": {
+        "type": "open-open",
+        "note": "Eb4",
+        "range": ("Eb4", "Eb6"),
+        "description": "Alto saxophone in Eb — conical bore, all harmonics",
+    },
+    "tenor_sax": {
+        "type": "open-open",
+        "note": "Bb3",
+        "range": ("Bb3", "Bb5"),
+        "description": "Tenor saxophone in Bb — conical bore, all harmonics",
+    },
+    "baritone_sax": {
+        "type": "open-open",
+        "note": "Eb3",
+        "range": ("Eb3", "Eb5"),
+        "description": "Baritone saxophone in Eb — conical bore, all harmonics",
     },
 }
 
