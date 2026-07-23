@@ -367,12 +367,16 @@ class TMMInstrument:
             return -c / m
 
         for _ in range(max_steps):
+            if step > 1e6:
+                break
             # Check for sign change at right end
             if scores[-2] >= 0.0 and scores[-1] < 0.0:
                 return evaluate(len(scores) - 2)
 
             # Extend left
             new_w = probes[0] / step
+            if new_w < 1.0:
+                new_w = probes[0] * 0.5
             probes.insert(0, new_w)
             scores.insert(0, scorer(new_w))
 
@@ -381,9 +385,13 @@ class TMMInstrument:
 
             # Extend right
             new_w = probes[-1] * step
+            if not math.isfinite(new_w):
+                new_w = probes[-1] * 2.0
             probes.append(new_w)
             scores.append(scorer(new_w))
             step = step ** step_increase
+            if not math.isfinite(step):
+                step = 2.0
 
         # Return best guess
         if abs(scores[-1]) < abs(scores[0]):
