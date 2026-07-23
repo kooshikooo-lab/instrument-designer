@@ -164,6 +164,12 @@ PRESET_TARGETS: dict[str, dict] = {
         "range": ("D5", "C#6"),
         "description": "Tin whistle in D — 6 holes, all harmonics",
     },
+    "concert_flute": {
+        "type": "open-open",
+        "note": "C4",
+        "range": ("C4", "D5"),
+        "description": "Concert flute in C (Boehm) — 6-hole simple system model",
+    },
     "recorder": {
         "type": "open-open",
         "note": "C5",

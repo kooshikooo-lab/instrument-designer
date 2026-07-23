@@ -109,6 +109,23 @@ INSTRUMENTS = {
             ["open", "open", "open", "open", "open", "open"],
         ],
     },
+    "concert_flute_C": {
+        "desc": "Concert flute in C (open-open, cylindrical)",
+        "closed_top": False,
+        "targets": [261.6, 293.7, 329.6, 349.2, 392.0, 440.0, 493.9],
+        "names": ["C4", "D4", "E4", "F4", "G4", "A4", "B4"],
+        "bore_radius": 9.5, "outer_diameter": 16.0,
+        "hole_diameter": 8.0, "hole_length": 3.0,
+        "fingerings": [
+            ["closed"] * 6,
+            ["open", "closed", "closed", "closed", "closed", "closed"],
+            ["open", "open", "closed", "closed", "closed", "closed"],
+            ["open", "open", "open", "closed", "closed", "closed"],
+            ["open", "open", "open", "open", "closed", "closed"],
+            ["open", "open", "open", "open", "open", "closed"],
+            ["open", "open", "open", "open", "open", "open"],
+        ],
+    },
     "recorder_C": {
         "desc": "Soprano recorder in C (open-open, conical)",
         "closed_top": False,
