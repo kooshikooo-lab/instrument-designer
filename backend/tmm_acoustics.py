@@ -33,7 +33,7 @@ Usage:
 
 import math
 import numpy as np
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Union
 
 # Matches chalumier's SPEED_OF_SOUND exactly (cm/s)
 SPEED_OF_SOUND = 346100.0
@@ -418,22 +418,29 @@ class TMMInstrument:
         self,
         target_wavelengths: List[float],
         fingering_sets: List[List[str]],
-        n_register: int = 1,
+        n_register: Union[int, List[int]] = 1,
     ) -> List[float]:
         """
         Compute resonant frequencies for a set of fingerings.
 
+        Each note can use a different register via a list of n_register
+        values (one per fingering).
+
         Args:
             target_wavelengths: initial wavelength guesses for each fingering
             fingering_sets: list of fingering configurations
-            n_register: which register to target
+            n_register: which register(s) to target.
+                int: same register for all notes.
+                List[int]: one register per note.
 
         Returns:
             List of resonant frequencies in Hz
         """
         freqs = []
-        for target_wl, fingerings in zip(target_wavelengths, fingering_sets):
-            wl = self.find_resonance(target_wl, fingerings, n_register=n_register)
+        is_list = isinstance(n_register, list)
+        for i, (target_wl, fingerings) in enumerate(zip(target_wavelengths, fingering_sets)):
+            reg = n_register[i] if is_list else n_register
+            wl = self.find_resonance(target_wl, fingerings, n_register=reg)
             freq = self.frequency_from_wavelength(wl)
             freqs.append(freq)
         return freqs
@@ -442,7 +449,7 @@ class TMMInstrument:
         self,
         target_frequencies: List[float],
         fingering_sets: List[List[str]],
-        n_register: int = 1,
+        n_register: Union[int, List[int]] = 1,
     ) -> float:
         """
         Phase-based cost function (Ernoult 2020).
@@ -455,21 +462,21 @@ class TMMInstrument:
         Args:
             target_frequencies: list of target frequencies in Hz
             fingering_sets: list of fingering configurations (one per target)
-            n_register: which register to target
+            n_register: which register(s) to target.
+                int: same register for all notes.
+                List[int]: one register per note.
 
         Returns:
             Cost value (0.0 = perfect match)
         """
         costs = []
-        for target_freq, fingerings in zip(target_frequencies, fingering_sets):
+        is_list = isinstance(n_register, list)
+        for i, (target_freq, fingerings) in enumerate(zip(target_frequencies, fingering_sets)):
             target_wl = self.speed_of_sound / target_freq
+            reg = n_register[i] if is_list else n_register
             try:
                 phase = self.resonance_phase(target_wl, fingerings)
-                # Phase should be integer at resonance (n_register)
-                # Distance from nearest integer register
-                deviation = phase - n_register
-                # Use sinusoidal cost: 0 at integer, peaks at half-integer
-                # This is smooth and differentiable everywhere
+                deviation = phase - reg
                 costs.append(math.sin(math.pi * deviation) ** 2)
             except Exception:
                 costs.append(1.0)
@@ -479,7 +486,7 @@ class TMMInstrument:
         self,
         target_frequencies: List[float],
         fingering_sets: List[List[str]],
-        n_register: int = 1,
+        n_register: Union[int, List[int]] = 1,
     ) -> float:
         """
         Phase-based cost with global offset correction.
@@ -491,17 +498,21 @@ class TMMInstrument:
         Args:
             target_frequencies: list of target frequencies in Hz
             fingering_sets: list of fingering configurations (one per target)
-            n_register: which register to target
+            n_register: which register(s) to target.
+                int: same register for all notes.
+                List[int]: one register per note.
 
         Returns:
             Cost value (0.0 = perfect evenness)
         """
         deviations = []
-        for target_freq, fingerings in zip(target_frequencies, fingering_sets):
+        is_list = isinstance(n_register, list)
+        for i, (target_freq, fingerings) in enumerate(zip(target_frequencies, fingering_sets)):
             target_wl = self.speed_of_sound / target_freq
+            reg = n_register[i] if is_list else n_register
             try:
                 phase = self.resonance_phase(target_wl, fingerings)
-                deviations.append(phase - n_register)
+                deviations.append(phase - reg)
             except Exception:
                 deviations.append(0.0)
 
