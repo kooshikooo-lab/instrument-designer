@@ -23,6 +23,11 @@ except ImportError:
 class GlobalFingeringOptimizer:
     """Optimize all hole positions simultaneously over a complete fingering chart."""
 
+    @staticmethod
+    def graduated_diameters(d_min, d_max, n_holes):
+        """Linearly interpolate hole diameters from d_min (reed) to d_max (bell)."""
+        return np.linspace(d_min, d_max, n_holes).tolist()
+
     def __init__(
         self,
         targets_hz: List[float],
@@ -39,6 +44,8 @@ class GlobalFingeringOptimizer:
         hole_diameters: List[float] = None,
         hole_lengths: List[float] = None,
         register_weights: Tuple[float, float] = (0.15, 1.0),
+        optimize_grad: bool = False,
+        grad_bounds: Tuple[float, float, float, float] = (6.0, 8.0, 10.0, 16.0),
     ):
         """
         Args:
@@ -56,7 +63,8 @@ class GlobalFingeringOptimizer:
             hole_diameters: per-hole diameters (one per free hole, overrides hole_diameter)
             hole_lengths: per-hole chimney heights (one per free hole, overrides hole_length)
             register_weights: (w1, w2) weights for 1st/2nd register in cost function
-                              default (0.15, 1.0): 2nd register dominates
+            optimize_grad: if True, optimize d_min/d_max as graduated hole diameters
+            grad_bounds: (d_min_lo, d_min_hi, d_max_lo, d_max_hi) in mm
         """
         self.targets = targets_hz
         self.fingering_chart = fingering_chart
@@ -74,7 +82,10 @@ class GlobalFingeringOptimizer:
         self.n_bore_cp = n_bore_cp
         self.fixed_holes = fixed_holes or []
         self.register_weights = register_weights
-        self.targets_2nd = [f * 3.0 for f in targets_hz]  # 3rd harmonic
+        self.targets_2nd = [f * 3.0 for f in targets_hz]
+        self.optimize_grad = optimize_grad
+        self.grad_bounds = grad_bounds
+        self.num_opt_vars = self.n_free_holes + (2 if optimize_grad else 0)  # 3rd harmonic
         
         self.n_fixed = len(self.fixed_holes)
         
@@ -178,14 +189,21 @@ class GlobalFingeringOptimizer:
         return combined
     
     def _objective(self, x):
-        """Objective for DE: x = hole positions (unsorted)."""
+        """Objective for DE: x = hole positions (unsorted), plus optional [d_min, d_max]."""
         if hasattr(x, 'tolist'):
             x = x.tolist()
-        free_pos = sorted(x)
+        if self.optimize_grad:
+            d_min, d_max = x[-2], x[-1]
+            self.hole_diameters = self.graduated_diameters(d_min, d_max, self.n_free_holes)
+            free_pos = sorted(x[:-2])
+        else:
+            free_pos = sorted(x)
         return self._evaluate(free_pos)
     
     def optimize(self, initial_positions=None, bounds_per_hole=40, verbose=True, use_de=True):
         """Run global optimization.
+        
+        If self.optimize_grad, also optimizes d_min/d_max for graduated hole sizes.
         
         Args:
             initial_positions: starting guess for free hole positions
@@ -207,16 +225,26 @@ class GlobalFingeringOptimizer:
         else:
             initial_positions = sorted(initial_positions[:n_free])
         
+        # Build extended initial vector if optimizing diameters
+        if self.optimize_grad:
+            d_lo, d_hi, d2_lo, d2_hi = self.grad_bounds
+            d_min_guess = (d_lo + d_hi) / 2.0
+            d_max_guess = (d2_lo + d2_hi) / 2.0
+            initial = list(initial_positions) + [d_min_guess, d_max_guess]
+        else:
+            initial = list(initial_positions)
+        
         if verbose:
             print(f"  GlobalFingeringOptimizer")
             print(f"  Notes: {self.n_notes}, Free holes: {n_free}, Fixed holes: {self.n_fixed}")
             print(f"  Bore: {self.bore_length:.0f}mm × {self.bore_radius}mm radius")
-            print(f"  Initial: {[f'{p:.0f}' for p in initial_positions]}")
+            print(f"  Initial positions: {[f'{p:.0f}' for p in initial_positions]}")
+            if self.optimize_grad:
+                print(f"  Initial diameters: d_min={d_min_guess:.1f} d_max={d_max_guess:.1f}")
             print(f"  Register: {self.n_register}")
             print()
         
         if use_de:
-            # Build bounds for DE
             bounds = []
             for i in range(n_free):
                 lo = max(GAP, initial_positions[i] - bounds_per_hole)
@@ -229,28 +257,45 @@ class GlobalFingeringOptimizer:
                     lo, hi = hi - 10, hi + 10
                 bounds.append((lo, hi))
             
-            if verbose:
-                print(f"  Bounds: {bounds}")
-                print(f"  Phase 1: Differential Evolution ({max(20, n_free*2)} iter)")
+            if self.optimize_grad:
+                d_lo, d_hi, d2_lo, d2_hi = self.grad_bounds
+                bounds.append((d_lo, d_hi))
+                bounds.append((d2_lo, d2_hi))
             
-            popsize = max(8, n_free * 2)
+            n_vars = n_free + (2 if self.optimize_grad else 0)
+            if verbose:
+                print(f"  Variables: {n_vars}")
+                if self.optimize_grad:
+                    print(f"  Bounds (holes): first {n_free}")
+                    print(f"  Bounds (d_min, d_max): ({d_lo:.1f},{d_hi:.1f}) ({d2_lo:.1f},{d2_hi:.1f})")
+                print(f"  Phase 1: Differential Evolution ({max(20, n_vars*2)} iter)")
+            
+            popsize = max(8, n_vars * 2)
             de_result = differential_evolution(
                 self._objective, bounds,
                 seed=42,
-                maxiter=min(30, max(10, n_free*2)), popsize=popsize,
+                maxiter=min(30, max(10, n_vars*2)), popsize=popsize,
                 tol=1e-4, mutation=(0.5, 1.0), recombination=0.7,
                 polish=True,
             )
-            best_pos = sorted(de_result.x.tolist())
+            best_vec = de_result.x.tolist()
             best_cost = de_result.fun
             if verbose:
-                print(f"    DE: cost={best_cost:.4f}")
-                print(f"    Holes: {[f'{p:.0f}' for p in best_pos]}")
+                if self.optimize_grad:
+                    bp = best_vec[:-2]
+                    bd = best_vec[-2:]
+                    print(f"    DE: cost={best_cost:.4f}")
+                    print(f"    Holes: {[f'{p:.0f}' for p in bp]}, d_min={bd[0]:.1f} d_max={bd[1]:.1f}")
+                else:
+                    print(f"    DE: cost={best_cost:.4f}")
+                    print(f"    Holes: {[f'{p:.0f}' for p in best_vec]}")
         else:
-            best_pos = initial_positions
-            best_cost = self._objective(best_pos)
+            best_vec = initial
+            best_cost = self._objective(best_vec)
             if verbose:
                 print(f"    (skipping DE, initial cost={best_cost:.4f})")
+        
+        best_pos = sorted(best_vec[:n_free])
         
         # Phase 2: L-BFGS-B refinement
         if verbose:
@@ -267,24 +312,40 @@ class GlobalFingeringOptimizer:
                 ref_bounds.append((lo, hi))
             return ref_bounds
         
-        ref_bounds = make_refine_bounds(best_pos)
-        r = minimize(self._objective, np.array(best_pos), method='L-BFGS-B',
-                     bounds=ref_bounds, options={"maxiter": 200, "ftol": 1e-8})
-        best_pos = sorted(r.x.tolist())
-        best_cost = r.fun
+        if self.optimize_grad:
+            ref_bounds = make_refine_bounds(best_pos)
+            d_lo, d_hi, d2_lo, d2_hi = self.grad_bounds
+            ref_bounds.append((d_lo, d_hi))
+            ref_bounds.append((d2_lo, d2_hi))
+            r = minimize(self._objective, np.array(best_vec), method='L-BFGS-B',
+                         bounds=ref_bounds, options={"maxiter": 200, "ftol": 1e-8})
+            best_vec = r.x.tolist()
+            best_cost = r.fun
+            best_pos = sorted(best_vec[:n_free])
+            best_d_min, best_d_max = best_vec[-2], best_vec[-1]
+            self.hole_diameters = self.graduated_diameters(best_d_min, best_d_max, n_free)
+            if verbose:
+                print(f"    L-BFGS-B: cost={best_cost:.4f}")
+                print(f"    Holes: {[f'{p:.0f}' for p in best_pos]}")
+                print(f"    d_min={best_d_min:.1f}mm d_max={best_d_max:.1f}mm")
+        else:
+            ref_bounds = make_refine_bounds(best_pos)
+            r = minimize(self._objective, np.array(best_pos), method='L-BFGS-B',
+                         bounds=ref_bounds, options={"maxiter": 200, "ftol": 1e-8})
+            best_pos = sorted(r.x.tolist())
+            best_cost = r.fun
+            if verbose:
+                print(f"    L-BFGS-B: cost={best_cost:.4f}")
+                print(f"    Holes: {[f'{p:.0f}' for p in best_pos]}")
         
-        if verbose:
-            print(f"    L-BFGS-B: cost={best_cost:.4f}")
-            print(f"    Holes: {[f'{p:.0f}' for p in best_pos]}")
-        
-        # Final eval with verbose
+        # Final eval
         if verbose:
             print(f"\n  Final evaluation:")
         r1, r2, combined = self._evaluate(best_pos, verbose=verbose, return_both=True)
         
         dt = time.time() - t0
         
-        return {
+        result = {
             "success": combined < 50.0,
             "bore_length_mm": self.bore_length,
             "free_hole_positions": best_pos,
@@ -293,6 +354,12 @@ class GlobalFingeringOptimizer:
             "final_rms_cents": combined,
             "wall_time": dt,
         }
+        if self.optimize_grad:
+            result["d_min_mm"] = best_d_min
+            result["d_max_mm"] = best_d_max
+            result["hole_diameters"] = self.hole_diameters
+        
+        return result
 
 
 # ======================================================================
