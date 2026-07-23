@@ -19,3 +19,8 @@ target/
 *.exp
 
 design_memory.db
+jdk-17.0.13+11/
+jdk*.zip
+*_stderr.log
+*_stdout.log
+chat.log

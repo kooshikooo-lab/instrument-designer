@@ -376,6 +376,22 @@ There is no dedicated acoustics preprint server. Researchers use **arXiv** (cs.S
 
 ## Low Priority — Future
 
+### Trumpet Design (Branches Available)
+- [ ] **OpenWind FEM approach** (`experiment/trumpet-openwind`)
+  - Uses OpenWind's 1D FEM with visco-thermal losses
+  - Models valves as deviation pipes with proper junction physics
+  - Ready for leadpipe optimization (6 variables)
+  - See `ROADMAP-Trumpet.md` for details
+- [ ] **Custom TMM approach** (`experiment/trumpet-custom-tmm`)
+  - Phase-based TMM (same engine as woodwinds)
+  - Deprecated for trumpets due to accuracy limitations
+  - Bell flare not handled correctly by TMM
+- [ ] **Yamaha/ML approach** (future, needs compute resources)
+  - Physics-based sound simulation (harmonic balance)
+  - ML model training on impedance parameters
+  - NSGA-II multi-objective optimization
+  - Reference: Petiot et al. (2024-2025), Yamaha Corporation
+
 ### Advanced Acoustics
 - [ ] Thermoviscous losses (Keefe 1984) — adds frequency-dependent attenuation
 - [ ] TMMI external tonehole interactions (Lefebvre et al. 2013)
