@@ -218,6 +218,12 @@ PRESET_TARGETS: dict[str, dict] = {
         "range": ("Bb3", "Bb5"),
         "description": "Bb clarinet — odd harmonics only",
     },
+    "diatonic_chalumeau": {
+        "type": "closed-open",
+        "note": "C#4",
+        "range": ("C#4", "C#5"),
+        "description": "Diatonic D chalumeau (baroque, 16mm bore, La Belle Note style)",
+    },
     "soprano_sax": {
         "type": "open-open",
         "note": "Bb4",

@@ -419,6 +419,25 @@ print('RMS:', best['objectives']['frequency_accuracy'], 'cents')
 
 ---
 
+---
+
+### Laptop Session (2026-07-24 — TMM diagnostic, cross-fingering, Diatonic D Chalumeau, session wrap)
+- ✅ **TMM diagnostic confirmed**: `diagnose_tmm_holes.py` verified holes DO shift resonance frequencies with n_register=2 (was worried the TMM was broken)
+- ✅ **Cross-fingering validated**: 9-hole chromatic flute achieved 34.55c RMS (18x improvement from 625c baseline). A#4/B4 sub-1c with patterns from `chromatic_flute.py`
+- ✅ **Key finding confirmed**: Sequential chromatic flat-to-the-body hard-limited to ~15c RMS (desktop's finding independently replicated)
+- ✅ **n_register auto-detect fixed**: `n_register = 1 if closed_top else 2` — open-open pipe fundamental is phase=2, never phase=1
+- ✅ **Diatonic D Chalumeau config** added to `benchmark_all.py` + `target_frequencies.py` (closed-open, 7 notes C#4-B4, 16mm bore)
+- ✅ **Per-note register support** added to `tmm_acoustics.py`: `compute_fingered_frequencies` accepts `Union[int, List[int]]`
+- ✅ **3D-printable STLs found**: Modern Chalumeau in C (Printables #752555, Vandoren Eb mouthpiece), Pocket Clarinet (Thingiverse #3834802, Bb mouthpiece)
+- ⚠️ **Pushed to GitHub**: All changes on `experiment/bore-profile-optimization`
+
+### Next for Desktop:
+- Cross-fingering optimizer needed (not SequentialBoreOptimizer — classify holes as primary/corrective/vents with fixed fingering matrix)
+- Merge two-register optimizer and 13x13 cross-fingering chart from experiment branch
+- Run full Diatonic D Chalumeau (should achieve sub-1c RMS, closed-open n_register=1)
+
+---
+
 ## Desktop Environment (for reference)
 - **OS:** Windows 10 Home, Build 19045
 - **Python:** 3.14.6

@@ -242,6 +242,23 @@ INSTRUMENTS = {
             ["open", "open", "open", "open", "open", "open"],
         ],
     },
+    "diatonic_D_chalumeau": {
+        "desc": "Diatonic D chalumeau (baroque, closed-open, La Belle Note style)",
+        "closed_top": True,
+        "targets": [277.2, 293.7, 329.6, 370.0, 392.0, 440.0, 493.9],
+        "names": ["C#4", "D4", "E4", "F#4", "G4", "A4", "B4"],
+        "bore_radius": 8.0, "outer_diameter": 14.0,
+        "hole_diameter": 5.0, "hole_length": 3.0,
+        "fingerings": [
+            ["closed"] * 6,
+            ["open", "closed", "closed", "closed", "closed", "closed"],
+            ["open", "open", "closed", "closed", "closed", "closed"],
+            ["open", "open", "open", "closed", "closed", "closed"],
+            ["open", "open", "open", "open", "closed", "closed"],
+            ["open", "open", "open", "open", "open", "closed"],
+            ["open", "open", "open", "open", "open", "open"],
+        ],
+    },
     "recorder_C": {
         "desc": "Soprano recorder in C (open-open, conical)",
         "closed_top": False,
@@ -527,87 +544,88 @@ def sequential_refined(cfg):
     return rms, L, hp, hd, time.time() - t0 + t_seq
 
 
-# Run
-all_results = {}
-for name, cfg in INSTRUMENTS.items():
-    print(f"\n{'#'*60}")
-    print(f"# {cfg['desc']}")
-    print(f"{'#'*60}")
+if __name__ == "__main__":
+    # Run
+    all_results = {}
+    for name, cfg in INSTRUMENTS.items():
+        print(f"\n{'#'*60}")
+        print(f"# {cfg['desc']}")
+        print(f"{'#'*60}")
 
-    # Chromatic instruments use per-note registers (not compatible with
-    # sequential optimizer — the 17-hole geometry is for validation only).
-    # Evaluate them directly via eval_all.
-    if cfg.get("_chromatic", False):
-        print(f"\n  --- Direct evaluation (chromatic instrument) ---")
-        try:
-            # Build instrument from the model
-            model = cfg.get("_chromatic_model")
-            if model is None:
-                from backend.chromatic_flute import ChromaticFluteModel
-                model = ChromaticFluteModel()
-            inst = model.build_instrument()
-            tw = [c / f for f in cfg["targets"]]
-            n_reg = cfg.get("_n_registers", 2)
-            freqs = inst.compute_fingered_frequencies(tw, cfg["fingerings"], n_reg)
-            cents = []
-            for a, t in zip(freqs, cfg["targets"]):
-                cents.append(1200.0 * math.log2(a / t) if a > 0 and math.isfinite(a) else 1e10)
-            ca = np.array(cents)
-            rms = float(np.sqrt(np.mean(ca ** 2))) if np.all(np.isfinite(ca)) else 1e10
-            r = {
-                "Eval": {"rms": rms, "time": 0, "bore": 613, "holes": 17},
-            }
-            # Also report per-range
-            ranges = cfg.get("ranges", {})
-            for rname, rcfg in ranges.items():
-                if not rcfg.get("targets"):
-                    continue
-                rtw = [c / f for f in rcfg["targets"]]
-                rfreqs = inst.compute_fingered_frequencies(
-                    rtw, rcfg["fingerings"], rcfg["n_registers"])
-                rcents = []
-                for a, t in zip(rfreqs, rcfg["targets"]):
-                    rcents.append(1200.0 * math.log2(a / t) if a > 0 and math.isfinite(a) else 1e10)
-                rca = np.array(rcents)
-                rrms = float(np.sqrt(np.mean(rca ** 2))) if np.all(np.isfinite(rca)) else 1e10
-                r[f"Eval_{rname}"] = {"rms": rrms, "time": 0, "bore": 613, "holes": 17}
-                print(f"    {rname}: RMS={rrms:.2f}c")
-            print(f"    Full range: RMS={rms:.2f}c")
-        except Exception as e:
-            import traceback
-            print(f"    FAILED: {e}")
-            traceback.print_exc()
-            r = {"Eval": {"rms": 1e10, "time": 0, "bore": 0, "holes": 0}}
+        # Chromatic instruments use per-note registers (not compatible with
+        # sequential optimizer — the 17-hole geometry is for validation only).
+        # Evaluate them directly via eval_all.
+        if cfg.get("_chromatic", False):
+            print(f"\n  --- Direct evaluation (chromatic instrument) ---")
+            try:
+                # Build instrument from the model
+                model = cfg.get("_chromatic_model")
+                if model is None:
+                    from backend.chromatic_flute import ChromaticFluteModel
+                    model = ChromaticFluteModel()
+                inst = model.build_instrument()
+                tw = [c / f for f in cfg["targets"]]
+                n_reg = cfg.get("_n_registers", 2)
+                freqs = inst.compute_fingered_frequencies(tw, cfg["fingerings"], n_reg)
+                cents = []
+                for a, t in zip(freqs, cfg["targets"]):
+                    cents.append(1200.0 * math.log2(a / t) if a > 0 and math.isfinite(a) else 1e10)
+                ca = np.array(cents)
+                rms = float(np.sqrt(np.mean(ca ** 2))) if np.all(np.isfinite(ca)) else 1e10
+                r = {
+                    "Eval": {"rms": rms, "time": 0, "bore": 613, "holes": 17},
+                }
+                # Also report per-range
+                ranges = cfg.get("ranges", {})
+                for rname, rcfg in ranges.items():
+                    if not rcfg.get("targets"):
+                        continue
+                    rtw = [c / f for f in rcfg["targets"]]
+                    rfreqs = inst.compute_fingered_frequencies(
+                        rtw, rcfg["fingerings"], rcfg["n_registers"])
+                    rcents = []
+                    for a, t in zip(rfreqs, rcfg["targets"]):
+                        rcents.append(1200.0 * math.log2(a / t) if a > 0 and math.isfinite(a) else 1e10)
+                    rca = np.array(rcents)
+                    rrms = float(np.sqrt(np.mean(rca ** 2))) if np.all(np.isfinite(rca)) else 1e10
+                    r[f"Eval_{rname}"] = {"rms": rrms, "time": 0, "bore": 613, "holes": 17}
+                    print(f"    {rname}: RMS={rrms:.2f}c")
+                print(f"    Full range: RMS={rms:.2f}c")
+            except Exception as e:
+                import traceback
+                print(f"    FAILED: {e}")
+                traceback.print_exc()
+                r = {"Eval": {"rms": 1e10, "time": 0, "bore": 0, "holes": 0}}
+            all_results[name] = r
+            continue
+
+        r = {}
+        for label, fn in [("Sequential", sequential), ("Seq+Refine", sequential_refined)]:
+            print(f"\n  --- {label} ---")
+            try:
+                result = fn(cfg)
+                rms, L, hp, dt = result[0], result[1], result[2], result[-1]
+                hd = result[3] if label == "Seq+Refine" else None
+                r[label] = {"rms": rms, "time": dt, "bore": L, "holes": len(hp)}
+                if hd is not None:
+                    r[label]["hole_diameters"] = hd
+                print(f"  RMS={rms:.2f}c | L={L:.0f}mm | {len(hp)} holes | {dt:.1f}s")
+            except Exception as e:
+                import traceback
+                print(f"  FAILED: {e}")
+                traceback.print_exc()
+                r[label] = {"rms": 1e10, "time": 0, "bore": 0, "holes": 0}
         all_results[name] = r
-        continue
 
-    r = {}
-    for label, fn in [("Sequential", sequential), ("Seq+Refine", sequential_refined)]:
-        print(f"\n  --- {label} ---")
-        try:
-            result = fn(cfg)
-            rms, L, hp, dt = result[0], result[1], result[2], result[-1]
-            hd = result[3] if label == "Seq+Refine" else None
-            r[label] = {"rms": rms, "time": dt, "bore": L, "holes": len(hp)}
-            if hd is not None:
-                r[label]["hole_diameters"] = hd
-            print(f"  RMS={rms:.2f}c | L={L:.0f}mm | {len(hp)} holes | {dt:.1f}s")
-        except Exception as e:
-            import traceback
-            print(f"  FAILED: {e}")
-            traceback.print_exc()
-            r[label] = {"rms": 1e10, "time": 0, "bore": 0, "holes": 0}
-    all_results[name] = r
-
-# Summary
-print(f"\n{'#'*60}")
-print("# SUMMARY")
-print(f"{'#'*60}")
-print(f"\n  {'Instrument':<22} {'Method':<14} {'RMS':>8} {'Time':>8}")
-print(f"  {'-'*22} {'-'*14} {'-'*8} {'-'*8}")
-for name, results in all_results.items():
-    for method, data in results.items():
-        rms = data["rms"]
-        s = f"{rms:.2f}" if rms < 1e5 else "FAIL"
-        print(f"  {name:<22} {method:<14} {s:>8} {data['time']:>7.1f}s")
-    print()
+    # Summary
+    print(f"\n{'#'*60}")
+    print("# SUMMARY")
+    print(f"{'#'*60}")
+    print(f"\n  {'Instrument':<22} {'Method':<14} {'RMS':>8} {'Time':>8}")
+    print(f"  {'-'*22} {'-'*14} {'-'*8} {'-'*8}")
+    for name, results in all_results.items():
+        for method, data in results.items():
+            rms = data["rms"]
+            s = f"{rms:.2f}" if rms < 1e5 else "FAIL"
+            print(f"  {name:<22} {method:<14} {s:>8} {data['time']:>7.1f}s")
+        print()
