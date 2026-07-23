@@ -86,41 +86,52 @@ class TrumpetBore:
         """
         Create a default Bb trumpet bore geometry.
         
-        Based on measurements from professional trumpets (Bach 180ML).
-        Total length ~1.12m for Bb3 (233 Hz).
+        Based on Bach 180-37 ML measurements:
+        - ML bore: 0.459" = 11.66mm dia = 5.83mm radius
+        - Bell: 122.24mm dia = 61.12mm radius  
+        - Leadpipe venturi: 0.345" = 8.76mm dia = 4.38mm radius
+        - Total tube length: ~1335mm (matches Bb3 = 233 Hz)
+        
+        The bore profile is: leadpipe taper -> cylinder -> bell flare (Bessel).
+        From pulse reflectometry: "After initial widening, the profile is 
+        approximately cylindrical. The radius remains fairly constant through 
+        the valve section. At the bell, the radius increases rapidly."
         """
         # Main bore geometry (meters)
         # Format: [start_x, end_x, start_radius, end_radius, shape, ...]
         segments = [
             # Mouthpiece receiver (conical taper)
-            [0, 0.05, 0.003, 0.006, 'linear'],
+            [0, 0.05, 0.003, 0.00438, 'linear'],
             
-            # Leadpipe (cylindrical, slight taper)
-            [0.05, 0.25, 0.006, 0.006, 'linear'],
+            # Leadpipe (expanding taper from venturi to ML bore)
+            [0.05, 0.25, 0.00438, 0.00583, 'linear'],
             
-            # Central bore (cylindrical)
-            [0.25, 0.65, 0.006, 0.006, 'linear'],
+            # Central bore (cylindrical, includes valve section)
+            [0.25, 0.75, 0.00583, 0.00583, 'linear'],
             
-            # Bell tail (cylindrical)
-            [0.65, 0.75, 0.006, 0.006, 'linear'],
-            
-            # Bell flare (Bessel horn for optimal harmonic alignment)
-            [0.75, 1.12, 0.006, 0.0635, 'bessel', 0.7],
+            # Bell flare (Bessel horn - critical for harmonic compression)
+            [0.75, 1.335, 0.00583, 0.06112, 'bessel', 0.7],
         ]
         
         # Valve definitions (pistons)
         # Format: ['variety', 'label', 'position', 'reconnection', 'radius', 'length']
         # position = where valve diverts air from main bore
-        # reconnection = where valve tube reconnects to main bore
+        # reconnection = where valve tube reconnects to main bore  
         # length = total length of deviation pipe
+        #
+        # CRITICAL: Each valve's entry MUST be AFTER the previous valve's 
+        # reconnection, otherwise pressing both valves gives same result as 
+        # pressing only the first one (wave bypasses second valve's entry).
+        #
+        # Standard Bb trumpet valve slides:
+        #   V1 (whole tone): +160mm tubing
+        #   V2 (semitone):   +70mm tubing  
+        #   V3 (minor third): +270mm tubing
         valves = [
             ['variety', 'label', 'position', 'reconnection', 'radius', 'length'],
-            # Valve 1: whole tone down (adds ~160mm)
-            ['valve', 'piston1', 0.30, 0.33, 0.005, 0.16],
-            # Valve 2: semitone down (adds ~70mm)
-            ['valve', 'piston2', 0.35, 0.38, 0.005, 0.07],
-            # Valve 3: minor third down (adds ~270mm)
-            ['valve', 'piston3', 0.40, 0.43, 0.005, 0.27],
+            ['valve', 'piston1', 0.30, 0.46, 0.005, 0.16],
+            ['valve', 'piston2', 0.47, 0.54, 0.005, 0.07],
+            ['valve', 'piston3', 0.55, 0.82, 0.005, 0.27],
         ]
         
         # Fingering chart for 8 valve combinations
