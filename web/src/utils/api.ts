@@ -288,6 +288,18 @@ export async function getSequentialOptimizationStatus(jobId: string): Promise<Se
   return res.json();
 }
 
+export async function downloadSequentialSTL(jobId: string): Promise<Blob> {
+  const res = await apiGet(`/optimize/sequential/${jobId}/stl`);
+  if (!res.ok) throw new Error(`STL download failed: ${res.statusText}`);
+  return res.blob();
+}
+
+export async function downloadSequentialProfile(jobId: string): Promise<unknown> {
+  const res = await apiGet(`/optimize/sequential/${jobId}/profile`);
+  if (!res.ok) throw new Error(`Profile download failed: ${res.statusText}`);
+  return res.json();
+}
+
 // ── Cache Stats ────────────────────────────────────────────────────
 
 export async function getCacheStats(): Promise<{ cache_size: number; status: string }> {

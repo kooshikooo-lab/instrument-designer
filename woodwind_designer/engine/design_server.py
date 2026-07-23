@@ -546,6 +546,54 @@ def get_sequential_optimization_status(job_id: str):
     }
 
 
+@app.get("/optimize/sequential/{job_id}/stl")
+def download_sequential_stl(job_id: str):
+    """Download STL file for a completed sequential optimization."""
+    from backend.stl_export import export_optimizer_result
+    with _lock:
+        job = _jobs.get(job_id)
+    if not job:
+        raise HTTPException(404, "Job not found")
+    if job["status"] != "completed" or not job.get("result"):
+        raise HTTPException(400, "Job not completed yet")
+    import tempfile
+    tmp_dir = tempfile.mkdtemp()
+    stl_path = os.path.join(tmp_dir, f"{job_id}.stl")
+    try:
+        export_optimizer_result(job["result"], stl_path)
+    except Exception as e:
+        raise HTTPException(500, f"STL generation failed: {e}")
+    from fastapi.responses import FileResponse
+    return FileResponse(
+        stl_path, media_type="model/stl",
+        filename=f"instrument_{job_id}.stl",
+    )
+
+
+@app.get("/optimize/sequential/{job_id}/profile")
+def download_sequential_profile(job_id: str):
+    """Download bore profile JSON for visualization."""
+    from backend.stl_export import export_bore_profile_json
+    with _lock:
+        job = _jobs.get(job_id)
+    if not job:
+        raise HTTPException(404, "Job not found")
+    if job["status"] != "completed" or not job.get("result"):
+        raise HTTPException(400, "Job not completed yet")
+    import tempfile
+    tmp_dir = tempfile.mkdtemp()
+    json_path = os.path.join(tmp_dir, f"{job_id}_profile.json")
+    try:
+        export_bore_profile_json(job["result"], json_path)
+    except Exception as e:
+        raise HTTPException(500, f"Profile generation failed: {e}")
+    from fastapi.responses import FileResponse
+    return FileResponse(
+        json_path, media_type="application/json",
+        filename=f"instrument_{job_id}_profile.json",
+    )
+
+
 # ─── Cache Management ────────────────────────────────────────────────────
 
 @app.get("/optimize/cache/size")
