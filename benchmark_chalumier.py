@@ -106,6 +106,8 @@ def run_chalumier(spec_path, output_dir, timeout=600):
         params['_elapsed'] = 0
         params['_cached'] = True
         return params
+    if '--run-chal' not in sys.argv:
+        return {'error': 'no cached output (use --run-chal to generate)', 'elapsed': 0}
     jar = find_jar()
     java = find_java()
     os.makedirs(output_dir, exist_ok=True)
@@ -178,7 +180,20 @@ def evaluate_chalumier_output(params, fingerings, transpose=0):
             fl.append('open')
         fl = fl[:inst.n_holes]
         try:
-            wl = inst.find_resonance(c / target_freq, fl, n_register=nth)
+            wl_guess = c / target_freq
+            best_phase_reg = None
+            best_dist = 1e10
+            for pr in range(1, 6):
+                try:
+                    wl = inst.find_resonance(wl_guess, fl, n_register=pr)
+                    f = inst.frequency_from_wavelength(wl)
+                    dist = abs(cents_error(f, target_freq))
+                    if dist < best_dist:
+                        best_dist = dist
+                        best_phase_reg = pr
+                except:
+                    continue
+            wl = inst.find_resonance(wl_guess, fl, n_register=best_phase_reg)
             actual = inst.frequency_from_wavelength(wl)
             err = cents_error(actual, target_freq)
         except:
@@ -209,14 +224,43 @@ def run_our_optimizer(fingerings, transpose=0, bore_length=None, n_holes=None,
     targets = np.array(targets)
     if bore_length is None:
         bore_length = c / (2.0 * min(targets))
-    bore_r = bore_length / 2.0
-    bore_d = 2.0 * bore_r
+    bore_d = 11.0
     bore_d1 = bore_d * 1.2
     bore_d0 = bore_d * 0.85
     hole_positions = [bore_length * (i + 1) / (n_holes + 1) for i in range(n_holes)] if n_holes > 0 else []
     hole_lengths = [3.5] * n_holes
     hole_d0 = [bore_d * 0.54] * n_holes
     OD = bore_d + 6.0
+
+    def detect_registers():
+        inst = TMMInstrument(
+            inner_positions=[0.0, bore_length],
+            inner_diameters=[bore_d, bore_d],
+            outer_diameters=[OD, OD],
+            hole_positions=hole_positions, hole_diameters=hole_d0,
+            hole_lengths=hole_lengths, closed_top=closed_top, cone_step=bore_length,
+        )
+        regs = []
+        for tgt, fl in zip(targets, fing_lists):
+            wl_guess = c / tgt
+            best_pr = 2 if not closed_top else 1
+            best_dist = 1e10
+            for pr in range(1, 5):
+                try:
+                    wl = inst.find_resonance(wl_guess, fl, n_register=pr, max_steps=20)
+                    f = inst.frequency_from_wavelength(wl)
+                    dist = abs(cents_error(f, tgt))
+                    if dist < best_dist:
+                        best_dist = dist
+                        best_pr = pr
+                except:
+                    continue
+            regs.append(best_pr)
+        return regs
+
+    detected_regs = detect_registers()
+    print(f"    Detected registers: {detected_regs}")
+
     def cost_fn(x):
         radii = x[:12]
         hd = list(x[12:12+n_holes])
@@ -228,9 +272,9 @@ def run_our_optimizer(fingerings, transpose=0, bore_length=None, n_holes=None,
             hole_lengths=hole_lengths, closed_top=closed_top, cone_step=0.5,
         )
         cents = []
-        for tgt, fl, nth in zip(targets, fing_lists, nth_list):
+        for tgt, fl, pr in zip(targets, fing_lists, detected_regs):
             try:
-                wl = inst.find_resonance(c / tgt, fl, n_register=nth)
+                wl = inst.find_resonance(c / tgt, fl, n_register=pr)
                 f = inst.frequency_from_wavelength(wl)
                 cents.append(cents_error(f, tgt))
             except:
@@ -259,9 +303,9 @@ def run_our_optimizer(fingerings, transpose=0, bore_length=None, n_holes=None,
         hole_lengths=hole_lengths, closed_top=closed_top, cone_step=0.5,
     )
     per_note = []
-    for tgt, fl, nth, (note, fs, _) in zip(targets, fing_lists, nth_list, fingerings):
+    for tgt, fl, pr, (note, fs, _) in zip(targets, fing_lists, detected_regs, fingerings):
         try:
-            wl = inst.find_resonance(c / tgt, fl, n_register=nth)
+            wl = inst.find_resonance(c / tgt, fl, n_register=pr)
             f = inst.frequency_from_wavelength(wl)
             err = cents_error(f, tgt)
         except:
@@ -337,7 +381,7 @@ def main():
 
         # Run our optimizer
         print(f"\n  Running our optimizer (L-BFGS-B)...", end='', flush=True)
-        our_result = run_our_optimizer(fingerings, transpose, n_holes=n_holes, maxiter=300)
+        our_result = run_our_optimizer(fingerings, transpose, n_holes=n_holes, maxiter=50)
         print(f" done in {our_result['elapsed']:.1f}s")
         ev, ma, mx, off = compute_stats(our_result['per_note'])
         print(f"  Our optimizer: even={ev:.1f}c mean={ma:.1f}c max={mx:.1f}c off={off:+.1f}c")

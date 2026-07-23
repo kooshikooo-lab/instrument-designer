@@ -93,8 +93,11 @@ def end_flange_length_correction(outer_diameter: float, inner_diameter: float) -
     From Nederveen / chalumier.
     """
     a = inner_diameter / 2.0
+    if a <= 0:
+        return 0.0
     w = (outer_diameter - inner_diameter) / 2.0
-    return a * (0.821 - 0.13 * (0.42 + w / a) ** (-0.54))
+    base = max(0.01, 0.42 + w / a)
+    return a * (0.821 - 0.13 * base ** (-0.54))
 
 
 def hole_length_correction(hole_diameter: float, bore_diameter: float, closed: bool) -> float:
@@ -307,7 +310,7 @@ class TMMInstrument:
         for action in self.actions:
             if action[0] == 'pipe':
                 _, seg_length = action
-                phase = pipe_reply_phase(phase, seg_length / wavelength)
+                phase = pipe_reply_phase(phase, seg_length / wavelength if wavelength > 0 else 1e10)
 
             elif action[0] == 'junction2':
                 _, area_a, area_b = action
@@ -318,9 +321,9 @@ class TMMInstrument:
                 is_open = fingerings[hole_idx] == Hole.OPEN
 
                 if is_open:
-                    hole_phase = pipe_reply_phase(-0.5, open_length / wavelength)
+                    hole_phase = pipe_reply_phase(-0.5, open_length / wavelength if wavelength > 0 else 1e10)
                 else:
-                    hole_phase = pipe_reply_phase(0.0, closed_length / wavelength)
+                    hole_phase = pipe_reply_phase(0.0, closed_length / wavelength if wavelength > 0 else 1e10)
 
                 phase = junction3_reply_phase(area_bore, area_bore, hole_area, phase, hole_phase)
 
@@ -334,7 +337,7 @@ class TMMInstrument:
         wavelength: float,
         fingerings: List[str],
         step_cents: float = 1.0,
-        step_increase: float = 1.05,
+        step_increase: float = 1.2,
         max_steps: int = 100,
         target_register: int = 1,
     ) -> float:
@@ -392,6 +395,7 @@ class TMMInstrument:
         wavelength_near: float,
         fingerings: List[str],
         n_register: int = 1,
+        max_steps: int = 100,
     ) -> float:
         """
         Find the resonant wavelength for a given fingering and register.
@@ -401,8 +405,9 @@ class TMMInstrument:
             wavelength_near: initial guess for the wavelength
             fingerings: list of 'open' or 'closed' for each hole
             n_register: register number (1 = fundamental, 2 = first overtone, etc.)
+            max_steps: maximum search steps
         """
-        return self.wavelength_near(wavelength_near, fingerings, target_register=n_register)
+        return self.wavelength_near(wavelength_near, fingerings, target_register=n_register, max_steps=max_steps)
 
     def frequency_from_wavelength(self, wavelength_mm: float) -> float:
         """Convert wavelength (mm) to frequency (Hz)."""
