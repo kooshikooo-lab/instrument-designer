@@ -119,19 +119,24 @@ class TrumpetBore:
         # reconnection = where valve tube reconnects to main bore  
         # length = total length of deviation pipe
         #
-        # CRITICAL: Each valve's entry MUST be AFTER the previous valve's 
-        # reconnection, otherwise pressing both valves gives same result as 
-        # pressing only the first one (wave bypasses second valve's entry).
+        # CRITICAL: The deviation pipe REPLACES the bypassed main bore section.
+        # So: deviation_length = bypassed_section + extra_interval_length
+        # where bypassed = reconnection - position
+        # and extra for n semitones = L_total * (2^(n/12) - 1)
         #
-        # Standard Bb trumpet valve slides:
-        #   V1 (whole tone): +160mm tubing
-        #   V2 (semitone):   +70mm tubing  
-        #   V3 (minor third): +270mm tubing
+        # For Bb trumpet (L=1.335m):
+        #   V1 (whole step, +2 st): extra = 1.335 * 0.1225 = 0.164m
+        #   V2 (semitone, +1 st):  extra = 1.335 * 0.0595 = 0.079m
+        #   V3 (minor 3rd, +3 st): extra = 1.335 * 0.189 = 0.252m
+        # Also: each valve's entry must be AFTER previous valve's reconnection.
         valves = [
             ['variety', 'label', 'position', 'reconnection', 'radius', 'length'],
-            ['valve', 'piston1', 0.30, 0.46, 0.005, 0.16],
-            ['valve', 'piston2', 0.47, 0.54, 0.005, 0.07],
-            ['valve', 'piston3', 0.55, 0.82, 0.005, 0.27],
+            # V1: bypass=0.16m, extra=0.164m, total=0.324m
+            ['valve', 'piston1', 0.30, 0.46, 0.005, 0.324],
+            # V2: bypass=0.07m, extra=0.079m, total=0.149m
+            ['valve', 'piston2', 0.47, 0.54, 0.005, 0.149],
+            # V3: bypass=0.27m, extra=0.252m, total=0.522m
+            ['valve', 'piston3', 0.55, 0.82, 0.005, 0.522],
         ]
         
         # Fingering chart for 8 valve combinations
