@@ -457,6 +457,54 @@ print('RMS:', best['objectives']['frequency_accuracy'], 'cents')
 
 ## Direct Communication (Tailscale)
 - **Desktop:** Tailscale ACTIVE — IP 100.69.113.41, hostname "twitchy"
-- **Laptop:** Needs to install Tailscale and login with same account (Issue #12)
-- Once both machines are on the same tailnet, they can communicate directly
-- Tailscale IPs: 100.x.x.x (assigned after login)
+- **Laptop:** Tailscale ACTIVE — IP 100.100.66.117
+- Both machines on same tailnet, can ping each other
+- LAN chat port 9123: desktop server may not be running
+
+---
+
+## Laptop Session — 2026-07-23 (hole diameter optimization + research merge)
+
+### What was done:
+1. **Hole diameter optimization implemented** (commit a13a55b)
+   - Diameters co-optimized with positions in Phase 2b DE and Phase 3 refinement
+   - Bounds: [bore_radius * 0.4, bore_radius * 0.9] per hole
+   - Results improved: soprano sax 0.29c → 0.03c, chalumeau 0.51c → 0.00c
+
+2. **Two new instruments added:**
+   - Tin whistle in D (6 holes, cylindrical, 0.91c RMS)
+   - Soprano recorder in C (7 holes, conical, 0.00c RMS)
+
+3. **Research completed (4 topics):**
+   - Hole diameter optimization → IMPLEMENTED
+   - TMMI (mutual radiation impedance) → 5-10c improvement for real instruments
+   - More instruments → oboe/bassoon too complex for 3D printing
+   - Spectral target optimization → 6 tone-shaping features identified
+
+4. **Desktop research merged** (commit aa4f44e)
+   - Pull from experiment/alto-sax-bore-profile
+   - refine_chalumier.py, benchmark_chalumier.py, two_phase_optimizer.py
+   - research/instrument-measurements.md (702 lines)
+   - research/saxophone/ (6 docs)
+
+### All 7 instruments sub-1c RMS:
+| Instrument | Type | RMS | Time |
+|---|---|---|---|
+| Chalumeau C | closed-open | 0.00c | 4.8s |
+| Bass Chalumeau Bb | closed-open | 0.00c | 14.3s |
+| Soprano Sax Bb | open-open | 0.03c | 93.9s |
+| Xaphoon C | open-open | 0.00c | 70.3s |
+| Alto Sax Eb | open-open | 0.15c | 106.2s |
+| Tin Whistle D | open-open | 0.91c | 101.6s |
+| Recorder C | open-open (conical) | 0.00c | 178.6s |
+
+### Desktop status:
+- Online (pingable at 100.69.113.41)
+- LAN chat server not running (port 9123 not responding)
+- SSH not available
+- Last known: working on experiment/alto-sax-bore-profile, verified Phase 2b DE
+
+### For Desktop:
+- Pull latest: `git pull origin experiment/bore-profile-optimization`
+- New: hole diameter optimization, tin whistle, recorder
+- Merged: your chalumier benchmarks + instrument measurements + saxophone research
