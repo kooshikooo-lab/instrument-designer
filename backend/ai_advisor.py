@@ -331,6 +331,208 @@ def analyze_optimization_result(result: dict, target_frequencies: list[float]) -
     )
 
 
+# ── Sequential Optimizer Adapter ────────────────────────────────────────
+
+def analyze_sequential_result(result: dict, target_frequencies: list[float]) -> AdvisorResult:
+    """
+    Analyze a SequentialBoreOptimizer result and produce suggestions.
+
+    Translates SequentialBoreOptimizer output format to the internal
+    analysis format. Adds sequential-specific suggestions for:
+    - Hole spacing quality (gaps between adjacent holes)
+    - Diameter consistency across holes
+    - Phase 2b DE improvement potential
+    - Bore radius uniformity
+    """
+    suggestions = []
+    analysis_parts = []
+
+    rms = result.get("final_rms_cents", 999)
+    peak = result.get("peak_error_cents", 999)
+    bore_length = result.get("bore_length_mm", 0)
+    bore_radii = result.get("bore_radii", [])
+    hole_positions = result.get("hole_positions", [])
+    hole_diameters = result.get("hole_diameters", [])
+    matched = result.get("matched_frequencies", [])
+    wall_time = result.get("wall_time", 0)
+
+    # ── Score from RMS ──
+    if rms <= 0.5:
+        score, grade = 95 + min(5, (0.5 - rms) / 0.1 * 5), "A+"
+    elif rms <= 1:
+        score, grade = 85 + (1 - rms) / 0.5 * 10, "A"
+    elif rms <= 3:
+        score, grade = 70 + (3 - rms) / 2 * 15, "B"
+    elif rms <= 10:
+        score, grade = 50 + (10 - rms) / 7 * 20, "C"
+    elif rms <= 20:
+        score, grade = 30 + (20 - rms) / 10 * 20, "D"
+    else:
+        score, grade = max(0, 30 - rms / 2), "F"
+
+    # ── Frequency accuracy analysis ──
+    if matched:
+        errors = [m.get("error_cents", 0) for m in matched]
+        abs_errors = [abs(e) for e in errors]
+        mean_abs = sum(abs_errors) / len(abs_errors) if abs_errors else 0
+        max_err = max(abs_errors) if abs_errors else 0
+
+        positive = sum(1 for e in errors if e > 0)
+        negative = sum(1 for e in errors if e < 0)
+        if positive == len(errors) or negative == len(errors):
+            suggestions.append(AdvisorSuggestion(
+                category="warning",
+                priority="high",
+                title="Systematic pitch offset detected",
+                description=f"All {len(errors)} harmonics are {'sharp' if positive == len(errors) else 'flat'}. "
+                           f"This indicates a global bore length error.",
+                action="Adjust bore length by ~0.1mm per 1-3 cents of offset. "
+                      f"Current length: {bore_length:.1f}mm.",
+                impact="Could reduce RMS error by 50-80%"
+            ))
+
+        for m in matched:
+            err = abs(m.get("error_cents", 0))
+            if err > mean_abs * 2 and err > 1.0:
+                suggestions.append(AdvisorSuggestion(
+                    category="geometry",
+                    priority="medium",
+                    title=f"Note at {m.get('target', 0):.0f} Hz has large error ({m.get('error_cents', 0):.1f}c)",
+                    description=f"This note is {err / max(mean_abs, 0.01):.1f}x worse than average. "
+                               f"May indicate a hole position or diameter issue.",
+                    action="Check hole spacing around this note's position. Consider increasing "
+                          "diameter bounds or adding a refinement stage.",
+                    impact="Could reduce peak error by 30-50%"
+                ))
+
+        analysis_parts.append(
+            f"RMS: {rms:.2f}c, Peak: {peak:.2f}c, "
+            f"mean |error|: {mean_abs:.1f}c"
+        )
+
+    # ── Sequential-specific: hole spacing analysis ──
+    if len(hole_positions) >= 2:
+        gaps = [hole_positions[i+1] - hole_positions[i] for i in range(len(hole_positions)-1)]
+        mean_gap = sum(gaps) / len(gaps)
+        max_gap = max(gaps)
+        min_gap = min(gaps)
+        gap_ratio = max_gap / max(min_gap, 1)
+
+        if gap_ratio > 3:
+            suggestions.append(AdvisorSuggestion(
+                category="geometry",
+                priority="high",
+                title="Uneven hole spacing detected",
+                description=f"Gaps range from {min_gap:.0f}mm to {max_gap:.0f}mm "
+                           f"(ratio {gap_ratio:.1f}x). Large gaps can cause "
+                           f"register breaks where TMM can't find resonances.",
+                action="Run Phase 2b DE again with adjusted bounds to redistribute "
+                      "holes more evenly. Try tighter bounds on large gaps.",
+                impact="Could reduce RMS by 50-90% for open-open instruments"
+            ))
+
+        # Check clustering (two holes very close)
+        if min_gap < 15:
+            suggestions.append(AdvisorSuggestion(
+                category="geometry",
+                priority="medium",
+                title="Holes clustered too close",
+                description=f"Minimum gap is only {min_gap:.0f}mm between holes. "
+                           f"This may cause cross-fingering issues and is hard to 3D print.",
+                action="Increase minimum hole spacing constraint to 15-20mm "
+                      "and re-optimize.",
+                impact="Better printability and cross-fingering behavior"
+            ))
+
+        analysis_parts.append(f"Holes: {len(hole_positions)} at mean gap {mean_gap:.0f}mm")
+
+    # ── Diameter analysis ──
+    if len(hole_diameters) >= 2:
+        dia_range = max(hole_diameters) - min(hole_diameters)
+        if dia_range > 3:
+            suggestions.append(AdvisorSuggestion(
+                category="geometry",
+                priority="low",
+                title="Large hole diameter variation",
+                description=f"Diameters range {min(hole_diameters):.1f}-{max(hole_diameters):.1f}mm "
+                           f"(range {dia_range:.1f}mm). Large variation complicates manufacturing.",
+                action="Narrow diameter bounds or add a smoothness penalty on diameters "
+                      "to encourage more uniform sizes.",
+                impact="Simpler manufacturing, similar acoustic performance"
+            ))
+
+    # ── Bore radius analysis (if profile has multiple segments) ──
+    if len(bore_radii) >= 2:
+        rad_range = max(bore_radii) - min(bore_radii)
+        if rad_range < 0.5:
+            suggestions.append(AdvisorSuggestion(
+                category="parameter",
+                priority="low",
+                title="Nearly uniform bore radius",
+                description=f"Bore radii vary only {rad_range:.1f}mm. "
+                           f"A tapered bore can improve intonation.",
+                action="Enable bore profile optimization (n_bore_cp > 0) "
+                      "to allow non-uniform bore shape.",
+                impact="Moderate intonation improvement for complex instruments"
+            ))
+
+    # ── Speed analysis (optional) ──
+    if rms > 1 and wall_time > 60:
+        suggestions.append(AdvisorSuggestion(
+            category="strategy",
+            priority="low",
+            title=f"Optimization took {wall_time:.0f}s",
+            description=f"RMS of {rms:.2f}c achieved in {wall_time:.0f}s. "
+                       f"The sequential optimizer converges quickly.",
+            action="If this accuracy is acceptable, consider reducing DE "
+                  "maxiter or popsize for faster iteration.",
+            impact="Faster design iteration"
+        ))
+
+    # ── Compare to best-known ──
+    best_known = get_best_design()
+    comparison = {}
+    if best_known and best_known.get("frequency_accuracy"):
+        prev_acc = best_known["frequency_accuracy"]
+        if rms < prev_acc:
+            improvement = ((prev_acc - rms) / prev_acc * 100)
+            if improvement > 0:
+                comparison["improvement"] = f"{improvement:.1f}%"
+                comparison["previous_best"] = prev_acc
+                analysis_parts.append(f"Improvement over previous best: {comparison['improvement']}")
+
+    priority_order = {"high": 0, "medium": 1, "low": 2}
+    suggestions.sort(key=lambda s: priority_order.get(s.priority, 99))
+
+    return AdvisorResult(
+        score=round(score, 1),
+        grade=grade,
+        suggestions=suggestions,
+        analysis="; ".join(analysis_parts),
+        comparison=comparison,
+    )
+
+
+def sequential_result_for_llm(result: dict) -> dict:
+    """Translate SequentialBoreOptimizer result to format expected by get_llm_suggestion."""
+    return {
+        "best_candidates": [{
+            "bore_profile": [
+                {"position": i * 10, "radius": r}
+                for i, r in enumerate(result.get("bore_radii", []))
+            ],
+            "matched_frequencies": result.get("matched_frequencies", []),
+            "objectives": {
+                "frequency_accuracy": result.get("final_rms_cents", 0),
+                "scale_evenness": 0,
+            },
+        }],
+        "n_evaluations": max(100, int(result.get("wall_time", 0) * 2)),
+        "n_generations": 1,
+        "bore_length": result.get("bore_length_mm", 0) / 1000.0,
+    }
+
+
 # ── LLM-Powered Advisor (Optional) ──────────────────────────────────────
 
 OLLAMA_BASE = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")

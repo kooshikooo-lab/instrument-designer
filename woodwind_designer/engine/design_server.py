@@ -627,6 +627,34 @@ def advisor_analyze(req: AdvisorAnalyzeRequest):
     return response
 
 
+@app.post("/advisor/analyze-sequential")
+def advisor_analyze_sequential(req: AdvisorAnalyzeRequest):
+    """Analyze a SequentialBoreOptimizer result."""
+    import sys
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+    from backend.ai_advisor import analyze_sequential_result, sequential_result_for_llm, get_llm_suggestion
+
+    result = analyze_sequential_result(req.optimization_result, req.target_frequencies)
+
+    response = {
+        "score": result.score,
+        "grade": result.grade,
+        "analysis": result.analysis,
+        "suggestions": [asdict(s) for s in result.suggestions],
+        "comparison": result.comparison,
+        "llm_analysis": None,
+    }
+
+    if req.use_llm:
+        llm_input = sequential_result_for_llm(req.optimization_result)
+        llm_text = get_llm_suggestion(
+            llm_input, req.target_frequencies, req.llm_model
+        )
+        response["llm_analysis"] = llm_text
+
+    return response
+
+
 @app.post("/advisor/store")
 def advisor_store(req: AdvisorStoreRequest):
     """Store a design in the advisor's memory for future reference."""
