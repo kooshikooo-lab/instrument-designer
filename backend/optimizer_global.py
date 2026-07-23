@@ -32,25 +32,31 @@ class GlobalFingeringOptimizer:
         hole_diameter: float = 11.0,
         hole_length: float = 5.0,
         closed_top: bool = True,
-        n_register: int = 1,
+        n_register: int = 2,
         bore_length: float = None,
         n_bore_cp: int = 0,
         fixed_holes: List[Tuple[float, float, float]] = None,
+        hole_diameters: List[float] = None,
+        hole_lengths: List[float] = None,
+        register_weights: Tuple[float, float] = (0.15, 1.0),
     ):
         """
         Args:
-            targets_hz: target frequencies for each fingering
+            targets_hz: target frequencies for each fingering (1st register)
             fingering_chart: list of [N x M] binary states ("open"/"closed") 
             bore_radius: uniform bore radius in mm
             outer_diameter: instrument outer diameter in mm
-            hole_diameter: tonehole diameter in mm (uniform)
-            hole_length: tonehole chimney height in mm (uniform)
+            hole_diameter: tonehole diameter in mm (uniform, used if hole_diameters not given)
+            hole_length: tonehole chimney height in mm (uniform, used if hole_lengths not given)
             closed_top: True for clarinets
-            n_register: which register to target
+            n_register: primary register to optimize for (default 2 = 2nd register)
             bore_length: fixed bore length (None = auto from fundamental)
             n_bore_cp: bore control points (0 = uniform)
             fixed_holes: list of (position, diameter, length) for holes NOT being optimized
-                         (e.g., register hole)
+            hole_diameters: per-hole diameters (one per free hole, overrides hole_diameter)
+            hole_lengths: per-hole chimney heights (one per free hole, overrides hole_length)
+            register_weights: (w1, w2) weights for 1st/2nd register in cost function
+                              default (0.15, 1.0): 2nd register dominates
         """
         self.targets = targets_hz
         self.fingering_chart = fingering_chart
@@ -61,47 +67,52 @@ class GlobalFingeringOptimizer:
         self.outer_diameter = outer_diameter
         self.hole_diameter = hole_diameter
         self.hole_length = hole_length
+        self.hole_diameters = hole_diameters
+        self.hole_lengths = hole_lengths
         self.closed_top = closed_top
         self.n_register = n_register
         self.n_bore_cp = n_bore_cp
         self.fixed_holes = fixed_holes or []
+        self.register_weights = register_weights
+        self.targets_2nd = [f * 3.0 for f in targets_hz]  # 3rd harmonic
         
-        # Determine which holes are fixed vs free
-        # fixed_holes indices refer to the LAST entries in the fingering chart
         self.n_fixed = len(self.fixed_holes)
         
-        # Auto bore length from fundamental
         if bore_length is None:
             c = SPEED_OF_SOUND
             self.bore_length = c / (4 * targets_hz[0]) if closed_top else c / (2 * targets_hz[0])
         else:
             self.bore_length = bore_length
     
-    def _evaluate(self, free_positions, verbose=False):
-        """Evaluate RMS cents error for all fingerings.
+    def _evaluate(self, free_positions, verbose=False, return_both=False):
+        """Evaluate weighted RMS cents error across both registers.
+        
+        The primary objective is 2nd register (3rd harmonic) where holes are effective.
+        1st register acts as a regularizer with smaller weight.
         
         free_positions: positions of the free (variable) holes, sorted
-        Returns: RMS cents error (relative to median offset)
+        return_both: if True, return (rms_1st, rms_2nd, combined)
+        Returns: combined cost (or tuple if return_both)
         """
         all_pos = sorted(list(free_positions) + [h[0] for h in self.fixed_holes])
-        all_dia = [self.hole_diameter] * len(free_positions) + [h[1] for h in self.fixed_holes]
-        all_len = [self.hole_length] * len(free_positions) + [h[2] for h in self.fixed_holes]
+        if self.hole_diameters:
+            free_dias = list(self.hole_diameters[:len(free_positions)])
+        else:
+            free_dias = [self.hole_diameter] * len(free_positions)
+        if self.hole_lengths:
+            free_lens = list(self.hole_lengths[:len(free_positions)])
+        else:
+            free_lens = [self.hole_length] * len(free_positions)
+        all_dia = free_dias + [h[1] for h in self.fixed_holes]
+        all_len = free_lens + [h[2] for h in self.fixed_holes]
         
-        # Sort by position
         idx = np.argsort(all_pos)
         all_pos_s = [all_pos[i] for i in idx]
         all_dia_s = [all_dia[i] for i in idx]
         all_len_s = [all_len[i] for i in idx]
         
-        # Map free holes to their indices in the sorted array
-        # This is needed to build correct fingerings
-        # The fingering chart maps to free holes first, then fixed holes
-        # We need to reorder to match sorted positions
-        
         free_count = len(free_positions)
-        fixed_count = len(self.fixed_holes)
         
-        # Build instrument
         radii = np.full(10 if self.n_bore_cp == 0 else self.n_bore_cp, self.bore_radius)
         
         try:
@@ -110,56 +121,61 @@ class GlobalFingeringOptimizer:
                 self.outer_diameter, closed_top=self.closed_top, cone_step=0.5,
             )
         except:
-            return 1e10
+            return (1e10, 1e10, 1e10) if return_both else 1e10
         
-        # Build fingering vectors for each note
-        # Map from chart (free holes then fixed) to sorted position order
-        cents = []
+        cents_1st = []
+        cents_2nd = []
+        
         for note_idx in range(self.n_notes):
             chart_row = self.fingering_chart[note_idx]
-            # chart_row: first free_count entries = free holes, rest = fixed holes
-            # We need to map to sorted positions
             fingering = []
             free_idx = 0
-            fixed_idx = 0
             for pos in all_pos_s:
-                # Is this position a free hole or a fixed hole?
                 if pos in [h[0] for h in self.fixed_holes]:
-                    # Fixed hole
                     fh_idx = [h[0] for h in self.fixed_holes].index(pos)
                     fingering.append(chart_row[free_count + fh_idx])
                 else:
-                    # Free hole
                     fingering.append(chart_row[free_idx])
                     free_idx += 1
             
             try:
-                wl = inst.find_resonance(SPEED_OF_SOUND / self.targets[note_idx], 
-                                         fingering, self.n_register)
-                actual = inst.frequency_from_wavelength(wl)
-                if actual > 0 and math.isfinite(actual):
-                    cents.append(1200.0 * math.log2(actual / self.targets[note_idx]))
-                else:
-                    cents.append(1e6)
+                for reg, cents_arr, targets in [
+                    (1, cents_1st, self.targets),
+                    (2, cents_2nd, self.targets_2nd),
+                ]:
+                    wl = inst.find_resonance(SPEED_OF_SOUND / targets[note_idx],
+                                             fingering, reg)
+                    actual = inst.frequency_from_wavelength(wl)
+                    if actual > 0 and math.isfinite(actual):
+                        cents_arr.append(1200.0 * math.log2(actual / targets[note_idx]))
+                    else:
+                        cents_arr.append(1e6)
             except:
-                cents.append(1e6)
+                cents_1st.append(1e6)
+                cents_2nd.append(1e6)
         
-        c = np.array(cents)
-        if np.any(np.abs(c) > 1e5):
-            return 1e10
+        c1 = np.array(cents_1st)
+        c2 = np.array(cents_2nd)
         
-        # Remove median offset (absolute tuning by mouthpiece)
-        offset = np.median(c)
-        corrected = c - offset
-        rms = float(np.sqrt(np.mean(corrected ** 2)))
+        if np.any(np.abs(c1) > 1e5) or np.any(np.abs(c2) > 1e5):
+            return (1e10, 1e10, 1e10) if return_both else 1e10
+        
+        offset_1 = np.median(c1)
+        offset_2 = np.median(c2)
+        rms_1 = float(np.sqrt(np.mean((c1 - offset_1) ** 2)))
+        rms_2 = float(np.sqrt(np.mean((c2 - offset_2) ** 2)))
+        
+        w1, w2 = self.register_weights
+        combined = w1 * rms_1 + w2 * rms_2
         
         if verbose:
-            print(f"  RMS={rms:.2f}c offset={offset:+.0f}c")
-            names_note = [f"N{i}" for i in range(self.n_notes)]
-            for i in range(self.n_notes):
-                print(f"    {names_note[i]}: t={self.targets[i]:.1f} err={cents[i]:+.0f}c")
+            print(f"  Reg1: RMS={rms_1:.2f}c offset={offset_1:+.0f}c (w={w1})")
+            print(f"  Reg2: RMS={rms_2:.2f}c offset={offset_2:+.0f}c (w={w2})")
+            print(f"  Combined: {combined:.4f}")
         
-        return rms
+        if return_both:
+            return rms_1, rms_2, combined
+        return combined
     
     def _objective(self, x):
         """Objective for DE: x = hole positions (unsorted)."""
@@ -264,31 +280,32 @@ class GlobalFingeringOptimizer:
         # Final eval with verbose
         if verbose:
             print(f"\n  Final evaluation:")
-        final_cost = self._evaluate(best_pos, verbose=verbose)
+        r1, r2, combined = self._evaluate(best_pos, verbose=verbose, return_both=True)
         
         dt = time.time() - t0
         
         return {
-            "success": final_cost < 50.0,
+            "success": combined < 50.0,
             "bore_length_mm": self.bore_length,
             "free_hole_positions": best_pos,
-            "final_rms_cents": final_cost,
+            "final_rms_1st_cents": r1,
+            "final_rms_2nd_cents": r2,
+            "final_rms_cents": combined,
             "wall_time": dt,
         }
 
 
 # ======================================================================
-# Demo: Chromatic clarinet with cross-fingerings
+# Demo: 2nd-register optimization for chromatic clarinet
 # ======================================================================
 if __name__ == "__main__":
     print("="*60)
-    print("GLOBAL FINGERING OPTIMIZER — Chromatic Demo")
+    print("GLOBAL FINGERING OPTIMIZER — 2nd Register Optimization")
     print("="*60)
     
-    # Register hole at 80mm, fixed, always closed for 1st register
     FIXED_REGISTER = [(80.0, 2.5, 3.0)]
     
-    # Start small: 7-hole D major diatonic (proven working case)
+    # Diatonic: 7-hole D major (proven working case for 2nd register)
     N_FREE = 7
     N_FIXED = 1
     
@@ -303,7 +320,10 @@ if __name__ == "__main__":
         row[N_FREE] = "closed"
         chart.append(row)
     
-    print(f"\n  Fingerings: {len(chart)} notes × {len(chart[0])} holes (9 free + 1 fixed register)")
+    print(f"\n  Fingerings: {len(chart)} notes")
+    print(f"  Primary: 2nd register (3rd harmonic @ 220-440Hz)")
+    print(f"  Regularizer: 1st register (fundamental @ 73-147Hz)")
+    print(f"  Weights (1st, 2nd): (0.15, 1.0)")
     
     opt = GlobalFingeringOptimizer(
         targets_hz=targets,
@@ -313,11 +333,16 @@ if __name__ == "__main__":
         hole_diameter=11.0,
         hole_length=5.0,
         closed_top=True,
-        n_register=1,
-        bore_length=1211.3,  # optimized with register hole
+        n_register=2,
+        bore_length=1211.3,
         fixed_holes=FIXED_REGISTER,
+        register_weights=(0.15, 1.0),
     )
     
-    result = opt.optimize(initial_positions=[180, 300, 346, 455, 545, 624, 652], bounds_per_hole=80, verbose=True)
-    print(f"\n  Result: RMS={result['final_rms_cents']:.2f}c")
-    print(f"  Holes: {[f'{p:.0f}' for p in result['free_hole_positions']]}")
+    result = opt.optimize(initial_positions=[180, 300, 346, 455, 545, 624, 652], 
+                          bounds_per_hole=80, verbose=True)
+    print(f"\n  Result:")
+    print(f"    Reg1 RMS={result['final_rms_1st_cents']:.2f}c")
+    print(f"    Reg2 RMS={result['final_rms_2nd_cents']:.2f}c")
+    print(f"    Combined={result['final_rms_cents']:.2f}")
+    print(f"    Holes: {[f'{p:.0f}' for p in result['free_hole_positions']]}")
