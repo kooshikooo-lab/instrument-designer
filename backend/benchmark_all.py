@@ -98,11 +98,14 @@ c = SPEED_OF_SOUND
 
 
 def eval_all(radii, bore_length, hp, hd, hl, cfg):
-    """Evaluate and return RMS cents.
-    
+    """Evaluate and return RMS cents (absolute, not median-corrected).
+
+    Uses absolute RMS to prevent the optimizer from achieving 0c by
+    making all notes uniformly wrong (masked by median correction).
+
     n_register depends on closed_top:
     - closed-open (clarinet): n_register=1 (fundamental is 1st resonance)
-    - open-open (sax/flute): n_register=2 (fundamental is 2nd resonance 
+    - open-open (sax/flute): n_register=2 (fundamental is 2nd resonance
       in TMM due to stepped-cylinder phantom 1st resonance)
     """
     inst = tmm_instrument_from_radii(
@@ -118,7 +121,7 @@ def eval_all(radii, bore_length, hp, hd, hl, cfg):
     ca = np.array(cents)
     if np.any(np.abs(ca) > 1e5):
         return 1e10
-    return float(np.sqrt(np.mean((ca - np.median(ca)) ** 2)))
+    return float(np.sqrt(np.mean(ca ** 2)))
 
 
 def sequential(cfg):
