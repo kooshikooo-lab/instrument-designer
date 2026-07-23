@@ -1,38 +1,33 @@
 # Bass Clarinet Design Automation — Status
 
-## Code
-- `backend/tmm_acoustics.py` — TMM engine (phase-based, ported from chalumier)
-- `backend/optimizer_global.py` — **Two-register** global fingering optimizer (DE + L-BFGS-B)
-- `backend/tmm_optimizer_sequential.py` — Sequential Bordeaux optimizer (≤8 holes)
-- `backend/bass_clarinet_full_test.py` — 7-hole D major + register validation
-- `config/bass_clarinet_7hole.json` — Working config (uniform cylinder)
+## Results Summary
 
-## Results
-
-| Configuration | Reg1 RMS | Reg2 RMS | Notes |
+| Configuration | Reg1 RMS | Reg2 RMS | Method |
 |---|---|---|---|
-| 7-hole diatonic, sequential | 6.19c | 9.51c | Two-register optimizer |
-| 12-hole chromatic, sequential | 15.50c | 15.57c | Physics-limited |
-| 12-hole with cross-fingerings | 47.33c | 46.41c | Poorly designed chart |
+| 7-hole diatonic, uniform 11mm | 6.19c | 9.51c | Two-register optimizer |
+| 12-hole chromatic, sequential | 15.38c | 15.46c | Physics-limited, any hole size |
+| 12-hole with cross-fingerings | 47.33c | 46.41c | Ad-hoc chart, needs proper design |
 
-## What We Know
+## Key Findings (Week of 2026-07-23)
 
-**Confirmed (ChatGPT research 2026-07-23):**
-1. **tanner/untanner = normalized admittance** in tangent form. Physically correct.
-2. **-0.5 phase for open hole = R=-1 reflection** at open end. Correct.
-3. **70-150Hz is the strongest regime** (plane-wave cutoff ~8kHz, ka~0.007-0.015).
-4. **Uniform offset for 11mm holes** is the expected physics — small holes at low frequencies have high Q shunt impedance (Q >> 100). Not a model bug.
-5. **20mm holes give non-uniform errors** — confirms model sensitivity to local interactions.
-6. **Holes should be graduated**: 10-12mm (lowest), 9-11mm (middle), 7-9mm (upper).
+**TMM model is correct.** tanner/untanner = normalized admittance in tangent form. -0.5 phase for open hole = R=-1 reflection. Valid deep in plane-wave regime (8kHz cutoff, 70Hz operating).
 
-**Current Blockers:**
-1. **12-hole sequential chromatic is physics-limited** (15-20c RMS). Sequential fingering can't produce fine semitones with small holes at low frequencies.
-2. **Cross-fingerings need proper design** — my ad-hoc patterns (46c) are worse than sequential. Need research on real clarinet cross-fingering systems.
-3. **OpenRouter API expired** — can't use AI-assisted coding.
+**Sequential chromatic is hard-limited.** 12 sequential fingerings on 1211mm bore can't achieve <15c RMS regardless of hole size (tested 8-20mm). The last note (D3) consistently has -300 to -350c error. This is a physics limit of the sequential fingering approach.
+
+**Graduated diameters don't help sequential.** Optimal for 12 holes converges to ~10.5mm uniform (inverse of real clarinet graduation: slightly smaller at bell). The small (8mm) holes near reed hurt more than large (14mm) holes near bell help.
+
+**Cross-fingerings are the only path forward.** Real clarinets achieve chromatic intonation through 150+ years of refined fingering patterns. We need a proper fingering chart before optimization can succeed.
+
+## Research Prompts Created (Ready for ChatGPT/Claude)
+1. `prompt_tmm_validation.md` — TMM model theory validation (already analyzed)
+2. `prompt_chromatic_optimization.md` — Algorithms for chromatic optimization
+3. `prompt_hole_sizes.md` — Graduated hole sizes from literature
+4. `prompt_fingerings.md` — Cross-fingering design (basic)
+5. `prompt_cross_fingerings.md` — Detailed cross-fingering chart for 12 holes (NEW)
 
 ## Next Steps
-1. **Research**: Submit cross-fingering design prompt to ChatGPT (need proper chart based on Boehm/Oehler systems)
-2. **Research**: Submit graduated hole sizes prompt
-3. **Code**: Implement proper cross-fingering chart from research
-4. **Code**: Add hole diameter as optimization variable (parametrized graduation)
-5. **Code**: Add bore taper as optimization variable (for better twelfths)
+1. Submit `prompt_cross_fingerings.md` to ChatGPT for a proper fingering chart
+2. Implement the chart once confirmed
+3. Re-run 12-hole global optimizer with proper cross-fingerings
+4. Add bore taper as optimization variable
+5. Validate with OpenWind FEM
