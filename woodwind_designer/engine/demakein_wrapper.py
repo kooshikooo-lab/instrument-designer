@@ -62,6 +62,8 @@ except ImportError:
 
 if HAVE_DEMAKEIN:
     import demakein.config as _demakein_config
+    from demakein.make_flute import Make_flute
+    from demakein.make_shawm import Make_reed_instrument
     _ORIG_WRITE_COLORED = _demakein_config.write_colored_text
     def _SAFE_WRITE_COLORED(*args, **kwargs):
         import sys, io
@@ -71,6 +73,19 @@ if HAVE_DEMAKEIN:
             sys.stderr = io.StringIO()
         return _ORIG_WRITE_COLORED(*args, **kwargs)
     _demakein_config.write_colored_text = _SAFE_WRITE_COLORED
+
+    _DESIGN_TO_MAKER = {
+        "folk_flute": Make_flute,
+        "folk_whistle": Make_flute,
+        "recorder": Make_flute,
+        "dorian_whistle": Make_flute,
+        "pflute": Make_flute,
+        "three_hole_whistle": Make_flute,
+        "reedpipe": Make_reed_instrument,
+        "folk_shawm": Make_reed_instrument,
+        "shawm": Make_reed_instrument,
+        "reed_drone": Make_reed_instrument,
+    }
 
 
 @dataclass
@@ -281,6 +296,19 @@ class DemakeinDesigner:
                 mode = "Quick Draft" if quick else "Full optimization"
                 on_progress(f"{mode} in progress (may take several minutes)...")
             designer.run()
+
+            if on_progress:
+                on_progress("Generating 3D model (STL)...")
+
+            maker_cls = _DESIGN_TO_MAKER.get(preset)
+            if maker_cls:
+                try:
+                    maker = maker_cls(design_dir)
+                    maker.run()
+                except Exception as make_err:
+                    if on_progress:
+                        on_progress(f"Warning: STL generation failed: {make_err}")
+
             stl_files = sorted(Path(design_dir).rglob("*.stl"))
 
             config_yaml = ""
@@ -297,8 +325,10 @@ class DemakeinDesigner:
                          "chimney_height": round(h, 4)}
                         for p, d, h in zip(inst.hole_positions, inst.hole_diameters, inst.hole_lengths)
                     ]
+                    bore_length_mm = round(inst.length, 4)
                     yaml_cfg = {
-                        "bore_length": round(inst.length / 1000.0, 4),
+                        "bore_length": bore_length_mm,
+                        "bore_length_unit": "mm",
                         "bore_profile": bore_profile,
                         "tone_holes": tone_holes,
                     }

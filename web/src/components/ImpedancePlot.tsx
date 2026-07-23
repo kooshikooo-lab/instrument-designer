@@ -1,0 +1,219 @@
+﻿import { useEffect, useRef } from "react";
+import { IMPEDANCE_DATA } from "../data/impedance-data";
+import type { PitchResult } from "../utils/pitch";
+
+interface ImpedancePlotProps {
+  preset?: string;
+  frequencies?: number[];
+  impedance?: number[];
+  label?: string;
+  measuredPitch?: PitchResult | null;
+  predictedFrequencies?: number[];
+}
+
+export default function ImpedancePlot({
+  preset,
+  frequencies: propFrequencies,
+  impedance: propImpedance,
+  label: propLabel,
+  measuredPitch,
+  predictedFrequencies,
+}: ImpedancePlotProps) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const presetData = preset ? IMPEDANCE_DATA[preset] : null;
+
+  const frequencies = propFrequencies ?? presetData?.frequencies ?? [];
+  const impedance = propImpedance ?? presetData?.impedanceMagnitude ?? [];
+
+  const label = propLabel ?? (presetData ? `Acoustic Impedance (${presetData.preset})` : "Acoustic Impedance");
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || frequencies.length === 0) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const W = canvas.width;
+    const H = canvas.height;
+    const pad = { top: 30, right: 20, bottom: 40, left: 60 };
+    const plotW = W - pad.left - pad.right;
+    const plotH = H - pad.top - pad.bottom;
+
+    const fMin = frequencies[0];
+    const fMax = frequencies[frequencies.length - 1];
+    const zMin = 0;
+    const zMax = Math.max(...impedance) * 1.1;
+
+    ctx.clearRect(0, 0, W, H);
+
+    ctx.fillStyle = "#0a0a0a";
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.strokeStyle = "#262626";
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 5; i++) {
+      const y = pad.top + (plotH * i) / 5;
+      ctx.beginPath();
+      ctx.moveTo(pad.left, y);
+      ctx.lineTo(W - pad.right, y);
+      ctx.stroke();
+    }
+
+    ctx.fillStyle = "#737373";
+    ctx.font = "10px monospace";
+    ctx.textAlign = "right";
+    for (let i = 0; i <= 5; i++) {
+      const val = zMax - (zMax * i) / 5;
+      const y = pad.top + (plotH * i) / 5;
+      ctx.fillText(val.toFixed(0), pad.left - 8, y + 3);
+    }
+
+    ctx.textAlign = "center";
+    const numLabels = 6;
+    for (let i = 0; i <= numLabels; i++) {
+      const f = fMin + ((fMax - fMin) * i) / numLabels;
+      const x = pad.left + (plotW * i) / numLabels;
+      ctx.fillText(`${(f / 1000).toFixed(1)}k`, x, H - pad.bottom + 20);
+    }
+
+    ctx.fillStyle = "#a3a3a3";
+    ctx.font = "11px system-ui";
+    ctx.textAlign = "center";
+    ctx.fillText(label, W / 2, 18);
+
+    ctx.fillStyle = "#525252";
+    ctx.font = "10px system-ui";
+    ctx.textAlign = "center";
+    ctx.fillText("Frequency (Hz)", W / 2, H - 4);
+
+    ctx.save();
+    ctx.translate(12, H / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = "center";
+    ctx.fillText("|Z| (Pa┬Às/m\u00B3)", 0, 0);
+    ctx.restore();
+
+    ctx.beginPath();
+    ctx.strokeStyle = "#bc6915";
+    ctx.lineWidth = 1.5;
+    ctx.lineJoin = "round";
+    for (let i = 0; i < frequencies.length; i++) {
+      const x = pad.left + ((frequencies[i] - fMin) / (fMax - fMin)) * plotW;
+      const y = pad.top + plotH - ((impedance[i] - zMin) / (zMax - zMin)) * plotH;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    const gradient = ctx.createLinearGradient(0, pad.top, 0, pad.top + plotH);
+    gradient.addColorStop(0, "rgba(188,105,21,0.15)");
+    gradient.addColorStop(1, "rgba(188,105,21,0)");
+    ctx.lineTo(pad.left + plotW, pad.top + plotH);
+    ctx.lineTo(pad.left, pad.top + plotH);
+    ctx.closePath();
+    ctx.fillStyle = gradient;
+    ctx.fill();
+
+    const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+    const A4 = 440.0;
+
+    const peakIndices: number[] = [];
+    for (let i = 2; i < impedance.length - 2; i++) {
+      if (
+        impedance[i] > impedance[i - 1] && impedance[i] > impedance[i + 1] &&
+        impedance[i] > impedance[i - 2] && impedance[i] > impedance[i + 2] &&
+        impedance[i] > zMax * 0.15
+      ) {
+        peakIndices.push(i);
+      }
+    }
+
+    const sortedPeaks = [...peakIndices].sort((a, b) => impedance[b] - impedance[a]);
+    const topPeaks = sortedPeaks.slice(0, 8);
+
+    ctx.font = "9px monospace";
+    ctx.textAlign = "center";
+    for (const pi of topPeaks) {
+      const freq = frequencies[pi];
+      const x = pad.left + ((freq - fMin) / (fMax - fMin)) * plotW;
+      const y = pad.top + plotH - ((impedance[pi] - zMin) / (zMax - zMin)) * plotH;
+
+      const semitones = 12 * Math.log2(freq / A4);
+      const noteNum = Math.round(semitones) + 69;
+      const noteName = NOTE_NAMES[((noteNum % 12) + 12) % 12];
+      const octave = Math.floor(noteNum / 12) - 1;
+      const cents = Math.round((semitones - Math.round(semitones)) * 100);
+      const centsStr = cents === 0 ? "" : ` ${cents > 0 ? "+" : ""}${cents}`;
+
+      ctx.fillStyle = "#fbbf24";
+      ctx.beginPath();
+      ctx.arc(x, y, 3, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#fbbf24";
+      ctx.font = "bold 9px monospace";
+      ctx.fillText(`${noteName}${octave}${centsStr}`, x, y - 8);
+
+      ctx.fillStyle = "#92400e";
+      ctx.font = "8px monospace";
+      ctx.fillText(`${freq.toFixed(0)} Hz`, x, y - 18);
+    }
+
+    if (measuredPitch && measuredPitch.frequency >= fMin && measuredPitch.frequency <= fMax) {
+      const x = pad.left + ((measuredPitch.frequency - fMin) / (fMax - fMin)) * plotW;
+
+      ctx.setLineDash([4, 3]);
+      ctx.strokeStyle = "#22d3ee";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x, pad.top);
+      ctx.lineTo(x, pad.top + plotH);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = "#22d3ee";
+      ctx.font = "bold 11px monospace";
+      ctx.textAlign = "center";
+      ctx.fillText(`${measuredPitch.note}${measuredPitch.octave}`, x, pad.top - 4);
+      ctx.font = "10px monospace";
+      ctx.fillStyle = "#67e8f9";
+      ctx.fillText(`${measuredPitch.frequency.toFixed(0)} Hz`, x, pad.top - 16);
+    }
+
+    if (predictedFrequencies && predictedFrequencies.length > 0) {
+      ctx.setLineDash([2, 2]);
+      ctx.lineWidth = 1.5;
+      for (const pf of predictedFrequencies) {
+        if (pf < fMin || pf > fMax) continue;
+        const x = pad.left + ((pf - fMin) / (fMax - fMin)) * plotW;
+
+        ctx.strokeStyle = "#a78bfa";
+        ctx.beginPath();
+        ctx.moveTo(x, pad.top);
+        ctx.lineTo(x, pad.top + plotH);
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
+    }
+  }, [frequencies, impedance, label, measuredPitch, predictedFrequencies]);
+
+  if (frequencies.length === 0) {
+    return (
+      <div className="bg-neutral-900 rounded-xl border border-neutral-800 overflow-hidden p-8 text-center">
+        <p className="text-sm text-neutral-500">Select a preset to view acoustic impedance data</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-neutral-900 rounded-xl border border-neutral-800 overflow-hidden">
+      <canvas
+        ref={canvasRef}
+        width={600}
+        height={300}
+        className="w-full h-auto"
+      />
+    </div>
+  );
+}

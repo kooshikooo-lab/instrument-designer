@@ -47,12 +47,14 @@ A tool to design, simulate, and 3D-print playable woodwind instruments (flutes, 
 ## Key Features
 
 - **42 instruments** in library (flutes, recorders, ocarinas, whistles, didgeridoos, etc.)
-- **3D STL viewer** — real-time orbit controls, zoom, pan
-- **Parametric generator** — adjustable bore length, diameter, wall thickness
-- **Demakein integration** — run bore optimization locally (Tauri) or remotely (FastAPI)
-- **OpenWInD integration** — acoustic impedance validation
-- **Slicer integration** — PrusaSlicer/OrcaSlicer CLI for automated G-code generation
-- **Filterable instrument browser** — search, subcategory, type, difficulty, tags
+- **3D STL viewer** — Three.js with orbit controls, zoom, pan, auto-rotating demo bore when no STL loaded
+- **Parametric generator** — JSCAD-powered adjustable bore length, diameter, wall thickness with custom binary STL serializer
+- **Demakein integration** — preset selector with 12 presets, transposition, bore generation with job polling; also run locally (Tauri) or remotely (FastAPI)
+- **OpenWInD integration** — acoustic impedance plot (canvas-based visualization with resonance peaks) as well as OpenWInD CLI validation
+- **Sound playback** — Web Audio API tone generation with per-note buttons, scale playback
+- **Filterable instrument browser** — search + 4 dropdown filters (subcategory, type, difficulty, tags)
+- **Preset wiring** — select instrument from library, auto-loads preset into design tab
+- **Slicer integration** — PrusaSlicer/OrcaSlicer CLI for automated G-code generation (Tauri backend)
 
 ---
 
@@ -131,6 +133,20 @@ instrument-designer/
 
 ---
 
+## Components
+
+| Component | File | Description |
+|-----------|------|-------------|
+| ImpedancePlot | `ImpedancePlot.tsx` | Canvas-based acoustic impedance visualization with resonance peaks |
+| TonePlayer | `TonePlayer.tsx` | Web Audio API tone generation, per-note buttons, scale playback |
+| STLViewer | `STLViewer.tsx` | Three.js 3D viewer with demo bore geometry fallback |
+| ParametricGenerator | `ParametricGenerator.tsx` | JSCAD bore generator with custom `geometryToSTL()` |
+| DesignTab | `DesignTab.tsx` | Wires preset → Demakein controls → ImpedancePlot → TonePlayer → Generator |
+| InstrumentBrowser | `InstrumentBrowser.tsx` | Library search + 4 filter dropdowns |
+| InstrumentDetail | `InstrumentDetail.tsx` | Instrument detail with TonePlayer embedded |
+
+---
+
 ## How to Run
 
 ### Option B — Web App
@@ -159,13 +175,16 @@ python -m woodwind_designer
 
 ## Next Steps
 
-1. **Push branches to GitHub** (requires `gh auth login` or SSH key)
+## Next Steps
+
+1. **Push branches to GitHub** (run `gh auth login` in terminal)
 2. **Integrate Build123d** for STEP export (best Python CAD for bore generation)
-3. **Add OpenWInD impedance plot** to design tab (matplotlib → canvas or plotly.js)
-4. **Add OpenSCAD** as alternative parametric backend
-5. **Slicer integration** — auto-slice after STL generation
-6. **Instrument sound playback** — Web Audio API for tone preview
-7. **User accounts** — save designs, share with community
+3. **Add OpenSCAD** as alternative parametric backend
+4. **Slicer integration** — auto-slice after STL generation
+5. **User accounts** — save designs, share with community
+6. **Connect real OpenWInD data** to impedance plot (currently demo data); also add OpenWInD impedance plot to design tab (matplotlib → canvas or plotly.js)
+7. **Test Tauri release build** — `npx tauri build` for distributable .exe
+8. **Instrument sound playback** — Web Audio API for tone preview
 
 ---
 

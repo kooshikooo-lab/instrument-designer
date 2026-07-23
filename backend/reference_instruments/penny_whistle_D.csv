@@ -1,0 +1,11 @@
+# Penny Whistle in D - Reference Bore Profile
+# Cylindrical bore, ~300mm length
+# Key of D, fundamental ~587 Hz (D5)
+# Format: position(m) radius(m)
+0.000 0.0075
+0.050 0.0075
+0.100 0.0075
+0.150 0.0075
+0.200 0.0075
+0.250 0.0075
+0.300 0.0075

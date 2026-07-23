@@ -1,0 +1,17 @@
+# Clarinet in Bb - Reference Bore Profile
+# Cylindrical bore with slight bell flare
+# Total bore length: ~660mm
+# Key of Bb, written C4 sounds Bb3 (~233 Hz)
+# Format: position(m) radius(m)
+0.000 0.00725
+0.066 0.00725
+0.132 0.00725
+0.198 0.00725
+0.264 0.00725
+0.330 0.00725
+0.396 0.00725
+0.462 0.00725
+0.528 0.00725
+0.594 0.00740
+0.627 0.00780
+0.660 0.00900
