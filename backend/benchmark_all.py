@@ -98,13 +98,20 @@ c = SPEED_OF_SOUND
 
 
 def eval_all(radii, bore_length, hp, hd, hl, cfg):
-    """Evaluate and return RMS cents."""
+    """Evaluate and return RMS cents.
+    
+    n_register depends on closed_top:
+    - closed-open (clarinet): n_register=1 (fundamental is 1st resonance)
+    - open-open (sax/flute): n_register=2 (fundamental is 2nd resonance 
+      in TMM due to stepped-cylinder phantom 1st resonance)
+    """
     inst = tmm_instrument_from_radii(
         radii, bore_length, hp, hd, hl,
         cfg["outer_diameter"], cfg["closed_top"], 0.5,
     )
     tw = [c / f for f in cfg["targets"]]
-    freqs = inst.compute_fingered_frequencies(tw, cfg["fingerings"], 1)
+    n_reg = 1 if cfg["closed_top"] else 2
+    freqs = inst.compute_fingered_frequencies(tw, cfg["fingerings"], n_reg)
     cents = []
     for a, t in zip(freqs, cfg["targets"]):
         cents.append(1200.0 * math.log2(a / t) if a > 0 and math.isfinite(a) else 1e10)
@@ -126,6 +133,7 @@ def sequential(cfg):
     targets = sorted(cfg["targets"])
     fundamental = min(targets)
     closed_top = cfg["closed_top"]
+    n_reg = 1 if closed_top else 2
 
     bore_radii = np.full(8, cfg["bore_radius"])
     L_est = c / (4.0 * fundamental) if closed_top else c / (2.0 * fundamental)
@@ -135,7 +143,7 @@ def sequential(cfg):
         try:
             inst = tmm_instrument_from_radii(bore_radii, L, [], [], [],
                 cfg["outer_diameter"], closed_top, 0.5)
-            wl = inst.find_resonance(c / fundamental, [], 1)
+            wl = inst.find_resonance(c / fundamental, [], n_reg)
             f = inst.frequency_from_wavelength(wl)
             if f <= 0 or not math.isfinite(f): return 1e10
             return abs(1200.0 * math.log2(f / fundamental))
@@ -181,7 +189,7 @@ def sequential(cfg):
                         cfg["outer_diameter"], closed_top, 0.5)
                     fing = ["open"]
 
-                wl = inst.find_resonance(c / target, fing, 1)
+                wl = inst.find_resonance(c / target, fing, n_reg)
                 f = inst.frequency_from_wavelength(wl)
                 err = abs(1200.0 * math.log2(f / target)) if f > 0 else 1e10
                 if err < best_err:

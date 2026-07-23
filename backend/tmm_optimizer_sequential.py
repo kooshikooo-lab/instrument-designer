@@ -267,19 +267,25 @@ class SequentialBoreOptimizer:
         bore_radius: float = 7.25,
         outer_diameter: float = 22.0,
         closed_top: bool = True,
-        n_register: int = 1,
         hole_diameter: float = 7.0,
         hole_length: float = 3.75,
         bore_length_bounds: Tuple[float, float] = (100.0, 2000.0),
         n_bore_cp: int = 0,
         bore_radius_bounds: Tuple[float, float] = (2.0, 20.0),
+        n_register: Optional[int] = None,
     ):
         self.target_freqs = target_frequencies
         self.fingering_sets = fingering_sets
         self.bore_radius = bore_radius
         self.outer_diameter = outer_diameter
         self.closed_top = closed_top
-        self.n_register = n_register
+        # Auto-detect register: open-open pipes have a phantom 1st resonance
+        # in TMM (stepped-cylinder artifact). The actual fundamental is at
+        # n_register=2. Closed-open pipes use n_register=1 correctly.
+        if n_register is None:
+            self.n_register = 1 if closed_top else 2
+        else:
+            self.n_register = n_register
         self.hole_diameter = hole_diameter
         self.hole_length = hole_length
         self.bore_length_bounds = bore_length_bounds
