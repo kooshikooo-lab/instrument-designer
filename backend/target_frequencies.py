@@ -20,6 +20,7 @@ INSTRUMENT_TYPES: dict[str, str] = {
     # Flutes — open-open pipe, all harmonics
     "folk_flute": "open-open",
     "folk_whistle": "open-open",
+    "tin_whistle": "open-open",
     "recorder": "open-open",
     "dorian_whistle": "open-open",
     "three_hole_whistle": "open-open",
@@ -156,6 +157,12 @@ PRESET_TARGETS: dict[str, dict] = {
         "note": "D5",
         "range": ("D5", "D7"),
         "description": "Folk flute in D — 2 octaves, all harmonics",
+    },
+    "tin_whistle": {
+        "type": "open-open",
+        "note": "D5",
+        "range": ("D5", "C#6"),
+        "description": "Tin whistle in D — 6 holes, all harmonics",
     },
     "recorder": {
         "type": "open-open",

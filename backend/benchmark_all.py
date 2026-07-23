@@ -92,6 +92,41 @@ INSTRUMENTS = {
             ["open", "open", "open", "open", "open", "open", "closed"],
         ],
     },
+    "tin_whistle_D": {
+        "desc": "Tin whistle in D (open-open, cylindrical)",
+        "closed_top": False,
+        "targets": [587.3, 659.3, 740.0, 784.0, 880.0, 987.8, 1108.7],
+        "names": ["D5", "E5", "F#5", "G5", "A5", "B5", "C#6"],
+        "bore_radius": 6.5, "outer_diameter": 16.0,
+        "hole_diameter": 4.5, "hole_length": 2.5,
+        "fingerings": [
+            ["closed"] * 6,
+            ["open", "closed", "closed", "closed", "closed", "closed"],
+            ["open", "open", "closed", "closed", "closed", "closed"],
+            ["open", "open", "open", "closed", "closed", "closed"],
+            ["open", "open", "open", "open", "closed", "closed"],
+            ["open", "open", "open", "open", "open", "closed"],
+            ["open", "open", "open", "open", "open", "open"],
+        ],
+    },
+    "recorder_C": {
+        "desc": "Soprano recorder in C (open-open, conical)",
+        "closed_top": False,
+        "targets": [523.3, 587.3, 659.3, 698.5, 784.0, 880.0, 987.8, 1046.5],
+        "names": ["C5", "D5", "E5", "F5", "G5", "A5", "B5", "C6"],
+        "bore_radius": 5.5, "outer_diameter": 14.0,
+        "hole_diameter": 4.0, "hole_length": 2.0,
+        "fingerings": [
+            ["closed"] * 7,
+            ["open", "closed", "closed", "closed", "closed", "closed", "closed"],
+            ["open", "open", "closed", "closed", "closed", "closed", "closed"],
+            ["open", "open", "open", "closed", "closed", "closed", "closed"],
+            ["open", "open", "open", "open", "closed", "closed", "closed"],
+            ["open", "open", "open", "open", "open", "closed", "closed"],
+            ["open", "open", "open", "open", "open", "open", "closed"],
+            ["open", "open", "open", "open", "open", "open", "open"],
+        ],
+    },
 }
 
 c = SPEED_OF_SOUND
@@ -211,7 +246,11 @@ def sequential(cfg):
 
 
 def sequential_refined(cfg):
-    """Sequential + global DE + 3-stage L-BFGS-B refinement with non-crossing bounds."""
+    """Sequential + global DE + 3-stage L-BFGS-B refinement with non-crossing bounds.
+
+    Includes hole diameter optimization: diameters are design variables
+    co-optimized with positions in DE and refined in L-BFGS-B.
+    """
     rms_seq, L_seq, hp_seq, t_seq = sequential(cfg)
     t0 = time.time()
 
@@ -223,15 +262,36 @@ def sequential_refined(cfg):
     hd = [cfg["hole_diameter"]] * n_h
     hl = [cfg["hole_length"]] * n_h
 
+    # Hole diameter bounds: [min, max] per hole
+    # Min: ~40% of bore radius (small but audible)
+    # Max: ~90% of bore radius (large, nearly full-bore)
+    bore_r = cfg["bore_radius"]
+    hd_min = bore_r * 0.4
+    hd_max = bore_r * 0.9
+
+    def safe_eval_all(radii, L, hp, hd, hl, cfg):
+        try:
+            return eval_all(radii, L, hp, hd, hl, cfg)
+        except (TypeError, ValueError, OverflowError):
+            return 1e10
+
     # Phase 2b: Global hole re-optimization for open-open instruments.
     # Sequential single-hole placement creates large gaps that L-BFGS-B can't fix.
+    # Now co-optimizes hole positions AND diameters.
     if not cfg["closed_top"]:
         print(f"    Phase 2b: Global hole re-optimization (differential evolution)")
         radii_de = np.full(n_cp, cfg["bore_radius"])
+
         def obj_de(x):
-            hp_sorted = sorted(x.tolist())
-            return eval_all(radii_de, L, hp_sorted, hd, hl, cfg)
-        # Overlapping bounds covering the full bore (proven to work)
+            hp_sorted = []
+            hd_sorted = []
+            idx_sorted = np.argsort(x[:n_h].tolist())
+            for j in idx_sorted:
+                hp_sorted.append(x[j])
+                hd_sorted.append(x[n_h + j])
+            return safe_eval_all(radii_de, L, hp_sorted, hd_sorted, hl, cfg)
+
+        # Overlapping bounds for positions + diameter bounds
         de_bounds = []
         for i in range(n_h):
             lo = int(i * L / (n_h * 1.5 + 1))
@@ -241,16 +301,24 @@ def sequential_refined(cfg):
             if hi <= lo:
                 hi = lo + 10
             de_bounds.append((lo, hi))
+        # Add diameter bounds
+        for i in range(n_h):
+            de_bounds.append((hd_min, hd_max))
+
         # Clip initial positions to within bounds
-        x0_de = np.array(hp)
+        x0_de = np.array(hp + hd)
         for i in range(n_h):
             x0_de[i] = np.clip(x0_de[i], de_bounds[i][0], de_bounds[i][1])
+            x0_de[n_h + i] = np.clip(x0_de[n_h + i], hd_min, hd_max)
         result_de = differential_evolution(obj_de, de_bounds, x0=x0_de, seed=42,
                                           maxiter=100, popsize=max(10, n_h * 2),
                                           tol=1e-6, mutation=(0.5, 1.0),
                                           recombination=0.7, polish=True)
-        hp = sorted(result_de.x.tolist())
-        print(f"      RMS={result_de.fun:.2f}c  Holes: {[f'{p:.0f}' for p in hp]}")
+        # Extract optimized positions and diameters
+        de_idx = np.argsort(result_de.x[:n_h].tolist())
+        hp = [result_de.x[j] for j in de_idx]
+        hd = [result_de.x[n_h + j] for j in de_idx]
+        print(f"      RMS={result_de.fun:.2f}c  Holes: {[f'{p:.0f}mm/{d:.1f}mm' for p, d in zip(hp, hd)]}")
 
     # Build non-crossing bounds for holes
     GAP = 5.0
@@ -266,52 +334,61 @@ def sequential_refined(cfg):
 
     # Stage 1: Bore length only (1 variable, L-BFGS-B)
     def obj_bore_length(x):
-        return eval_all(radii, x[0], hp, hd, hl, cfg)
+        return safe_eval_all(radii, x[0], hp, hd, hl, cfg)
     r = sp_min(obj_bore_length, [L], method='L-BFGS-B',
                bounds=[(L*0.85, L*1.15)], options={"maxiter": 100, "ftol": 1e-8})
     L = r.x[0]
 
     # Stage 2: Bore-radii only (n_cp variables, L-BFGS-B)
     if n_cp > 0:
-        rad_bounds = [(3.0, 15.0)] * n_cp
+        rad_lo = max(3.0, bore_r * 0.5)
+        rad_hi = min(15.0, bore_r * 2.0)
+        rad_bounds = [(rad_lo, rad_hi)] * n_cp
         def obj_radii(x):
-            return eval_all(np.maximum(x, 3.0), L, hp, hd, hl, cfg)
+            return safe_eval_all(np.maximum(x, rad_lo), L, hp, hd, hl, cfg)
         r = sp_min(obj_radii, radii, method='L-BFGS-B',
                     bounds=rad_bounds,
                     options={"maxiter": 200, "ftol": 1e-8})
-        radii = np.maximum(r.x, 3.0)
+        radii = np.maximum(r.x, rad_lo)
 
-    # Stage 3: Hole positions only (n_h variables, L-BFGS-B with ordering)
+    # Stage 3: Hole positions + diameters (n_h*2 variables, L-BFGS-B with ordering)
     if n_h > 0:
         hole_bounds = [(hole_lo[i], hole_hi[i]) for i in range(n_h)]
-        def obj_holes(x):
-            return eval_all(radii, L, x.tolist(), hd, hl, cfg)
-        r = sp_min(obj_holes, np.array(hp), method='L-BFGS-B',
-                    bounds=hole_bounds,
+        hole_diam_bounds = [(hd_min, hd_max)] * n_h
+        def obj_holes_and_diams(x):
+            return safe_eval_all(radii, L, x[:n_h].tolist(), x[n_h:].tolist(), hl, cfg)
+        x0_hd = np.array(hp + hd)
+        all_hole_bounds = hole_bounds + hole_diam_bounds
+        r = sp_min(obj_holes_and_diams, x0_hd, method='L-BFGS-B',
+                    bounds=all_hole_bounds,
                     options={"maxiter": 200, "ftol": 1e-8})
-        hp = r.x.tolist()
+        hp = r.x[:n_h].tolist()
+        hd = r.x[n_h:].tolist()
 
     # Stage 4: Simultaneous fine-tune (L-BFGS-B, all variables)
     all_bounds = [(L*0.85, L*1.15)]
-    all_bounds += [(3.0, 15.0)] * n_cp
+    all_bounds += rad_bounds if n_cp > 0 else []
     all_bounds += hole_bounds if n_h > 0 else []
+    all_bounds += hole_diam_bounds if n_h > 0 else []
 
     def obj_all(x):
         L_i = x[0]
-        rad_i = np.maximum(x[1:1+n_cp], 3.0)
+        rad_i = np.maximum(x[1:1+n_cp], rad_lo) if n_cp > 0 else radii
         hp_i = x[1+n_cp:1+n_cp+n_h]
-        return eval_all(rad_i, L_i, hp_i.tolist(), hd, hl, cfg)
+        hd_i = x[1+n_cp+n_h:1+n_cp+2*n_h]
+        return safe_eval_all(rad_i, L_i, hp_i.tolist(), hd_i.tolist(), hl, cfg)
 
-    x0 = np.concatenate([[L], radii, np.array(hp)])
+    x0 = np.concatenate([[L], radii, np.array(hp), np.array(hd)])
     r = sp_min(obj_all, x0, method='L-BFGS-B',
                 bounds=all_bounds,
                 options={"maxiter": 300, "ftol": 1e-10})
     L = r.x[0]
-    radii = np.maximum(r.x[1:1+n_cp], 3.0)
-    hp = r.x[1+n_cp:].tolist()
+    radii = np.maximum(r.x[1:1+n_cp], rad_lo) if n_cp > 0 else radii
+    hp = r.x[1+n_cp:1+n_cp+n_h].tolist()
+    hd = r.x[1+n_cp+n_h:1+n_cp+2*n_h].tolist()
 
-    rms = eval_all(radii, L, hp, hd, hl, cfg)
-    return rms, L, hp, time.time() - t0 + t_seq
+    rms = safe_eval_all(radii, L, hp, hd, hl, cfg)
+    return rms, L, hp, hd, time.time() - t0 + t_seq
 
 
 # Run
@@ -325,11 +402,17 @@ for name, cfg in INSTRUMENTS.items():
     for label, fn in [("Sequential", sequential), ("Seq+Refine", sequential_refined)]:
         print(f"\n  --- {label} ---")
         try:
-            rms, L, hp, dt = fn(cfg)
+            result = fn(cfg)
+            rms, L, hp, dt = result[0], result[1], result[2], result[-1]
+            hd = result[3] if label == "Seq+Refine" else None
             r[label] = {"rms": rms, "time": dt, "bore": L, "holes": len(hp)}
+            if hd is not None:
+                r[label]["hole_diameters"] = hd
             print(f"  RMS={rms:.2f}c | L={L:.0f}mm | {len(hp)} holes | {dt:.1f}s")
         except Exception as e:
+            import traceback
             print(f"  FAILED: {e}")
+            traceback.print_exc()
             r[label] = {"rms": 1e10, "time": 0, "bore": 0, "holes": 0}
     all_results[name] = r
 

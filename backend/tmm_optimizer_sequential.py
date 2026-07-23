@@ -361,6 +361,7 @@ class SequentialBoreOptimizer:
         # Sequential single-hole placement creates large gaps (e.g. 288mm for xaphoon)
         # that L-BFGS-B can't fix. Differential evolution re-optimizes ALL hole
         # positions simultaneously with full fingering evaluation, closing gaps.
+        # Also co-optimizes hole diameters for better fine intonation.
         if not self.closed_top:
             if verbose:
                 print(f"\n  Phase 2b: Global hole re-optimization (differential evolution)")
@@ -368,12 +369,17 @@ class SequentialBoreOptimizer:
             n_h = len(all_positions)
             bore_length_for_de = bore_length
 
+            # Hole diameter bounds
+            hd_min = self.bore_radius * 0.4
+            hd_max = self.bore_radius * 0.9
+
             def _de_hole_objective(x):
-                hp = sorted(x.tolist())
+                hp = sorted(x[:n_h].tolist())
+                hd = [x[n_h + j] for j in np.argsort(x[:n_h].tolist()).tolist()]
                 try:
                     inst = tmm_instrument_from_radii(
                         bore_radii, bore_length_for_de,
-                        hp, all_diameters, all_lengths,
+                        hp, hd, all_lengths,
                         self.outer_diameter, closed_top=self.closed_top, cone_step=0.5,
                     )
                     tw = [SPEED_OF_SOUND / f for f in self.target_freqs]
@@ -392,9 +398,7 @@ class SequentialBoreOptimizer:
                 except Exception:
                     return 1e10
 
-            # Bounds: proven overlapping ranges scaled to bore length
-            # Each hole gets a zone covering ~2/n_h of the bore with overlap
-            # This matches the bounds that achieved 0.00c RMS in testing
+            # Bounds: positions + diameters
             de_bounds = []
             for i in range(n_h):
                 lo = int(i * bore_length_for_de / (n_h * 1.5 + 1))
@@ -404,13 +408,21 @@ class SequentialBoreOptimizer:
                 if hi <= lo:
                     hi = lo + 10
                 de_bounds.append((lo, hi))
+            for i in range(n_h):
+                de_bounds.append((hd_min, hd_max))
 
             t_de = time.time()
 
-            # Population size: at least 10x the number of variables
+            # Initial guess: positions + diameters
+            x0_de = np.array(all_positions + all_diameters)
+            for i in range(n_h):
+                x0_de[i] = np.clip(x0_de[i], de_bounds[i][0], de_bounds[i][1])
+                x0_de[n_h + i] = np.clip(x0_de[n_h + i], hd_min, hd_max)
+
             popsize = max(10, n_h * 2)
             result_de = differential_evolution(
                 _de_hole_objective, de_bounds,
+                x0=x0_de,
                 seed=42,
                 maxiter=100, popsize=popsize,
                 tol=1e-6, mutation=(0.5, 1.0), recombination=0.7,
@@ -418,10 +430,13 @@ class SequentialBoreOptimizer:
             )
             dt_de = time.time() - t_de
 
-            all_positions = sorted(result_de.x.tolist())
+            # Extract optimized positions and diameters
+            de_idx = np.argsort(result_de.x[:n_h].tolist())
+            all_positions = [result_de.x[j] for j in de_idx]
+            all_diameters = [result_de.x[n_h + j] for j in de_idx]
             if verbose:
                 print(f"      RMS={result_de.fun:.2f}c  {dt_de:.0f}s")
-                print(f"      Holes: {[f'{p:.0f}' for p in all_positions]}")
+                print(f"      Holes: {[f'{p:.0f}mm d={d:.1f}mm' for p, d in zip(all_positions, all_diameters)]}")
                 gaps = [all_positions[i+1] - all_positions[i] for i in range(len(all_positions)-1)]
                 print(f"      Gaps: {[f'{g:.0f}' for g in gaps]}")
 
@@ -436,17 +451,23 @@ class SequentialBoreOptimizer:
         else:
             bore_radii = np.full(max(len(all_positions) + 2, 4), self.bore_radius)
 
+        # Hole diameter bounds for refinement
+        hd_min = self.bore_radius * 0.4
+        hd_max = self.bore_radius * 0.9
+
         def _refine_objective(x):
             bl = x[0]
             if n_cp > 0:
                 br = list(x[1:1+n_cp])
                 positions = list(x[1+n_cp:1+n_cp+len(all_positions)])
+                diameters = list(x[1+n_cp+len(all_positions):1+n_cp+2*len(all_positions)])
             else:
                 br = bore_radii
                 positions = list(x[1:1+len(all_positions)])
+                diameters = list(x[1+len(all_positions):1+2*len(all_positions)])
             try:
                 inst = tmm_instrument_from_radii(
-                    br, bl, positions, all_diameters, all_lengths,
+                    br, bl, positions, diameters, all_lengths,
                     self.outer_diameter, closed_top=self.closed_top, cone_step=0.5,
                 )
                 target_wavelengths = [SPEED_OF_SOUND / f for f in self.target_freqs]
@@ -482,12 +503,16 @@ class SequentialBoreOptimizer:
         # Bore radii bounds
         bore_bounds_list = [self.bore_radius_bounds] * n_cp if n_cp > 0 else []
 
+        # Hole diameter bounds
+        hole_diam_bounds = [(hd_min, hd_max)] * n_h
+
         # Stage 1: Bore length only (1 variable)
         if verbose:
             print(f"    Stage 1: Bore length")
         bore_len_bounds = [(bore_length * 0.85, bore_length * 1.15)]
+        hole_bounds = [(hole_lo[i], hole_hi[i]) for i in range(n_h)]
         r1 = minimize(lambda x: _refine_objective(np.concatenate(
-            [x, bore_radii, all_positions] if n_cp > 0 else [x, all_positions])),
+            [x, bore_radii, all_positions, all_diameters] if n_cp > 0 else [x, all_positions, all_diameters])),
             [bore_length], method='L-BFGS-B', bounds=bore_len_bounds,
             options={"maxiter": 100, "ftol": 1e-8})
         bore_length = r1.x[0]
@@ -500,25 +525,26 @@ class SequentialBoreOptimizer:
                 print(f"    Stage 2: Bore radii ({n_cp} segments)")
             r2 = minimize(
                 lambda x: _refine_objective(np.concatenate(
-                    [[bore_length], x, all_positions])),
+                    [[bore_length], x, all_positions, all_diameters])),
                 bore_radii, method='L-BFGS-B', bounds=bore_bounds_list,
                 options={"maxiter": 200, "ftol": 1e-8})
             bore_radii = list(r2.x)
             if verbose:
                 print(f"      cost={r2.fun:.4f}")
 
-        # Stage 3: Hole positions only (n_h variables, L-BFGS-B with ordering)
+        # Stage 3: Hole positions + diameters (n_h*2 variables)
         if verbose:
-            print(f"    Stage 3: Hole positions ({n_h} holes)")
-        hole_bounds = [(hole_lo[i], hole_hi[i]) for i in range(n_h)]
-        x0_holes = np.array(all_positions)
+            print(f"    Stage 3: Hole positions + diameters ({n_h} holes)")
+        x0_holes_diams = np.array(all_positions + all_diameters)
+        all_hole_bounds = hole_bounds + hole_diam_bounds
         r3 = minimize(
             lambda x: _refine_objective(np.concatenate(
                 [[bore_length], bore_radii, x] if n_cp > 0 else [[bore_length], x])),
-            x0_holes, method='L-BFGS-B', bounds=hole_bounds,
+            x0_holes_diams, method='L-BFGS-B', bounds=all_hole_bounds,
             options={"maxiter": 200, "ftol": 1e-8},
         )
-        all_positions = list(r3.x)
+        all_positions = list(r3.x[:n_h])
+        all_diameters = list(r3.x[n_h:])
         if verbose:
             print(f"      cost={r3.fun:.4f}")
 
@@ -526,11 +552,11 @@ class SequentialBoreOptimizer:
         if verbose:
             print(f"    Stage 4: Simultaneous")
         if n_cp > 0:
-            all_bounds = bore_len_bounds + bore_bounds_list + hole_bounds
-            x0_all = np.concatenate([[bore_length], bore_radii, all_positions])
+            all_bounds = bore_len_bounds + bore_bounds_list + all_hole_bounds
+            x0_all = np.concatenate([[bore_length], bore_radii, all_positions, all_diameters])
         else:
-            all_bounds = bore_len_bounds + hole_bounds
-            x0_all = np.concatenate([[bore_length], all_positions])
+            all_bounds = bore_len_bounds + all_hole_bounds
+            x0_all = np.concatenate([[bore_length], all_positions, all_diameters])
         r4 = minimize(_refine_objective, x0_all, method='L-BFGS-B',
                       bounds=all_bounds,
                       options={"maxiter": 300, "ftol": 1e-10})
@@ -538,8 +564,10 @@ class SequentialBoreOptimizer:
         if n_cp > 0:
             bore_radii = list(r4.x[1:1+n_cp])
             all_positions = list(r4.x[1+n_cp:1+n_cp+n_h])
+            all_diameters = list(r4.x[1+n_cp+n_h:1+n_cp+2*n_h])
         else:
             all_positions = list(r4.x[1:1+n_h])
+            all_diameters = list(r4.x[1+n_h:1+2*n_h])
         if verbose:
             print(f"      cost={r4.fun:.4f}")
 
