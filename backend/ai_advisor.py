@@ -538,6 +538,18 @@ def sequential_result_for_llm(result: dict) -> dict:
 OLLAMA_BASE = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
 
 
+def _query_openrouter(prompt: str) -> Optional[str]:
+    """Query OpenRouter free models. Returns None if unavailable."""
+    try:
+        from backend.ai_assistant import AIAssistant
+        assistant = AIAssistant(provider='openrouter', model='')
+        if not assistant.api_key:
+            return None
+        return assistant.ask(prompt)
+    except Exception:
+        return None
+
+
 def _query_ollama(prompt: str, model: str = "llama3.2") -> Optional[str]:
     """Query Ollama for a natural language response. Returns None if unavailable."""
     import urllib.request
@@ -600,7 +612,9 @@ Be concise and actionable. Focus on the highest-impact improvements first."""
 
 def get_llm_suggestion(optimization_result: dict, target_frequencies: list[float],
                        model: str = "llama3.2") -> Optional[str]:
-    """Get an LLM-powered analysis of optimization results."""
+    """Get an LLM-powered analysis of optimization results.
+    
+    Tries Ollama first, then falls back to OpenRouter free models."""
     best = optimization_result.get("best_candidates", [{}])[0] if optimization_result.get("best_candidates") else {}
     matched = best.get("matched_frequencies", [])
 
@@ -627,18 +641,23 @@ Provide a concise analysis with:
 3. Recommended parameter changes for the next optimization run"""
 
     prompt = f"{ADVISOR_SYSTEM_PROMPT}\n\n{context}"
-    return _query_ollama(prompt, model)
+    result = _query_ollama(prompt, model)
+    if result:
+        return result
+    return _query_openrouter(prompt)
 
 
 def get_advisor_status() -> dict:
     """Check advisor capabilities."""
     ollama = _check_ollama_available()
+    openrouter_key = os.environ.get("OPENROUTER_API_KEY", "")
     history = get_design_history(limit=5)
     return {
         "rule_based": True,
-        "llm_available": ollama["available"],
-        "llm_models": ollama["models"],
+        "llm_available": ollama["available"] or bool(openrouter_key),
+        "llm_models": ollama["models"] if ollama["available"] else (["openrouter:free"] if openrouter_key else []),
         "ollama_url": OLLAMA_BASE,
+        "openrouter_available": bool(openrouter_key),
         "memory_designs": len(history),
         "memory_db": str(MEMORY_DB),
     }
