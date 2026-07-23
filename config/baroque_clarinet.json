@@ -1,0 +1,63 @@
+{
+  "name": "Baroque Clarinet (2-key)",
+  "description": "Early 18th century clarinet with 7 finger holes + 2 keys (A, Bb) + register key. Good prototype for register mechanism.",
+  "bore_length_mm": 598,
+  "bore_radius_mm": 12.5,
+  "outer_diameter_mm": 28,
+  "wall_thickness_mm": 2.5,
+  "register_hole": {
+    "position_mm": 45,
+    "diameter_mm": 2.0,
+    "length_mm": 3.0
+  },
+  "finger_holes": [
+    {"index": 0, "name": "LH1", "position_mm": 95, "diameter_mm": 8.5, "length_mm": 4.0, "key": false},
+    {"index": 1, "name": "LH2", "position_mm": 135, "diameter_mm": 8.5, "length_mm": 4.0, "key": false},
+    {"index": 2, "name": "LH3", "position_mm": 175, "diameter_mm": 9.0, "length_mm": 4.0, "key": false},
+    {"index": 3, "name": "LH4_thumb", "position_mm": 215, "diameter_mm": 9.0, "length_mm": 4.0, "key": false},
+    {"index": 4, "name": "RH1", "position_mm": 260, "diameter_mm": 9.5, "length_mm": 4.5, "key": false},
+    {"index": 5, "name": "RH2", "position_mm": 305, "diameter_mm": 9.5, "length_mm": 4.5, "key": false},
+    {"index": 6, "name": "RH3", "position_mm": 350, "diameter_mm": 10.0, "length_mm": 4.5, "key": false}
+  ],
+  "keys": [
+    {"name": "A_key", "hole_index": 7, "position_mm": 395, "diameter_mm": 7.0, "length_mm": 4.0, "default_closed": true, "finger": "LH_pinky"},
+    {"name": "Bb_key", "hole_index": 8, "position_mm": 430, "diameter_mm": 7.0, "length_mm": 4.0, "default_closed": true, "finger": "RH_pinky"}
+  ],
+  "fingering_chart": {
+    "chalumeau": {
+      "C4":  [0,0,0,0,0,0,0, 0,0, 0],
+      "C#4": [0,0,0,0,0,0,1, 0,0, 0],
+      "D4":  [0,0,0,0,0,1,1, 0,0, 0],
+      "D#4": [0,0,0,0,1,0,1, 0,0, 0],
+      "E4":  [0,0,0,0,1,1,1, 0,0, 0],
+      "F4":  [0,0,0,1,1,1,1, 0,0, 0],
+      "F#4": [0,0,1,0,1,1,1, 0,0, 0],
+      "G4":  [0,0,1,1,1,1,1, 0,0, 0],
+      "G#4": [0,1,0,1,1,1,1, 0,0, 0],
+      "A4":  [0,1,1,1,1,1,1, 0,0, 0],
+      "Bb4": [0,1,1,1,1,1,1, 0,1, 0],
+      "B4":  [1,0,1,1,1,1,1, 0,0, 0],
+      "C5":  [1,1,1,1,1,1,1, 0,0, 0]
+    },
+    "clarion": {
+      "C5":  [0,0,0,0,0,0,0, 0,0, 1],
+      "C#5": [0,0,0,0,0,0,1, 0,0, 1],
+      "D5":  [0,0,0,0,0,1,1, 0,0, 1],
+      "D#5": [0,0,0,0,1,0,1, 0,0, 1],
+      "E5":  [0,0,0,0,1,1,1, 0,0, 1],
+      "F5":  [0,0,0,1,1,1,1, 0,0, 1],
+      "F#5": [0,0,1,0,1,1,1, 0,0, 1],
+      "G5":  [0,0,1,1,1,1,1, 0,0, 1],
+      "G#5": [0,1,0,1,1,1,1, 0,0, 1],
+      "A5":  [0,1,1,1,1,1,1, 0,0, 1],
+      "Bb5": [0,1,1,1,1,1,1, 0,1, 1],
+      "B5":  [1,0,1,1,1,1,1, 0,0, 1],
+      "C6":  [1,1,1,1,1,1,1, 0,0, 1]
+    }
+  },
+  "targets_hz": {
+    "chalumeau": [261.63, 277.18, 293.66, 311.13, 329.63, 349.23, 369.99, 392.00, 415.30, 440.00, 466.16, 493.88, 523.25],
+    "clarion": [523.25, 554.37, 587.33, 622.25, 659.25, 698.46, 739.99, 783.99, 830.61, 880.00, 932.33, 987.77, 1046.50]
+  },
+  "notes": "Baroque clarinet typically in C or D. 7 finger holes + 2 keys (A, Bb). Register key at ~45mm. Cross-fingerings for chromatics. Simpler than modern clarinet - good for prototyping register mechanism. Chalumeau register uses 1st impedance peak, clarion uses 3rd peak (12th above)."
+}

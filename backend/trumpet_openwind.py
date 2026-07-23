@@ -84,37 +84,54 @@ class TrumpetBore:
     @classmethod
     def default_bb(cls) -> 'TrumpetBore':
         """
-        Create a default Bb trumpet bore geometry.
+        Create a default Bb trumpet bore geometry with explicit mouthpiece.
         
-        Based on Bach 180-37 ML measurements:
+        Based on Bach 180-37 ML measurements + Bach 7C mouthpiece:
         - ML bore: 0.459" = 11.66mm dia = 5.83mm radius
         - Bell: 122.24mm dia = 61.12mm radius  
         - Leadpipe venturi: 0.345" = 8.76mm dia = 4.38mm radius
-        - Total tube length: 1.392m (interpolated for Bb3=233Hz)
-          Real unfolded length is ~1.475m but includes mouthpiece we don't model.
-          1.335m gave 243Hz (+73c), 1.475m gives 220Hz (-100c), 1.392m = Bb3 exact.
+        - Tube (without mouthpiece): 1.335m (gives 243Hz open)
+        - Mouthpiece (Bach 7C): cup (17mm, r=8.5) + throat (8mm, r=1.83) + backbore (55mm, 1.83→2.9 taper)
+        - Receiver: 25mm taper connecting backbore to leadpipe
+        - Total unfolded length ~1.480m
         
-        The bore profile is: leadpipe taper -> cylinder -> bell flare (Bessel).
+        CRITICAL: Do NOT lengthen the tube to force Bb3=233Hz. The mouthpiece
+        will lower ~15-35c (243→236-239Hz). Remaining 5-10c is from receiver
+        geometry, bell profile, temperature. Keep 1.335m tube + mouthpiece
+        rather than interpolating to 1.392m (which distorts higher resonances).
+        
+        The bore profile is: cup -> throat -> backbore -> receiver ->
+        leadpipe taper -> cylinder (valves) -> bell flare (Bessel).
         """
-        # Main bore geometry (meters)
-        # Total length 1.392m — interpolated from 1.335m (gave 243Hz) 
-        # and real 1.475m (gives 220Hz). Open now hits Bb3=233Hz exactly.
+        # Mouthpiece + bore geometry (meters)
+        # Total: 0.105m mouthpiece/receiver + 1.335m tube = ~1.440m
+        # Real unfolded ~1.475m includes tuning slide extra length
         # Format: [start_x, end_x, start_radius, end_radius, shape, ...]
         segments = [
-            # Mouthpiece receiver (conical taper)
-            [0, 0.05, 0.003, 0.00438, 'linear'],
+            # Mouthpiece cup (acoustic compliance)
+            [0, 0.017, 0.0085, 0.0085, 'linear'],
+            
+            # Mouthpiece throat (inertance)
+            [0.017, 0.025, 0.00183, 0.00183, 'linear'],
+            
+            # Mouthpiece backbore (tapered expansion)
+            [0.025, 0.080, 0.00183, 0.00290, 'linear'],
+            
+            # Receiver (connects mouthpiece to leadpipe)
+            [0.080, 0.105, 0.00290, 0.00438, 'linear'],
             
             # Leadpipe (expanding taper from venturi to ML bore)
-            [0.05, 0.25, 0.00438, 0.00583, 'linear'],
+            [0.105, 0.305, 0.00438, 0.00583, 'linear'],
             
             # Central bore (cylindrical, includes valve section)
-            [0.25, 0.75, 0.00583, 0.00583, 'linear'],
+            [0.305, 0.805, 0.00583, 0.00583, 'linear'],
             
             # Bell flare (Bessel horn - critical for harmonic compression)
-            [0.75, 1.392, 0.00583, 0.06112, 'bessel', 0.7],
+            [0.805, 1.440, 0.00583, 0.06112, 'bessel', 0.7],
         ]
         
         # Valve definitions (pistons)
+        # Positions shifted by +0.105m from tube-only model due to mouthpiece/receiver
         # Format: ['variety', 'label', 'position', 'reconnection', 'radius', 'length']
         # position = where valve diverts air from main bore
         # reconnection = where valve tube reconnects to main bore  
@@ -125,19 +142,19 @@ class TrumpetBore:
         # where bypassed = reconnection - position
         # and extra for n semitones = L_total * (2^(n/12) - 1)
         #
-        # For Bb trumpet (L=1.392m, interpolated from model):
-        #   V1 (whole step, +2 st): extra = 1.392 * 0.1225 = 0.170m
-        #   V2 (semitone, +1 st):  extra = 1.392 * 0.0595 = 0.083m
-        #   V3 (minor 3rd, +3 st): extra = 1.392 * 0.189 = 0.263m
+        # For Bb trumpet (L=1.440m total):
+        #   V1 (whole step, +2 st): extra = 1.440 * 0.1225 = 0.176m
+        #   V2 (semitone, +1 st):  extra = 1.440 * 0.0595 = 0.086m
+        #   V3 (minor 3rd, +3 st): extra = 1.440 * 0.189 = 0.272m
         # Also: each valve's entry must be AFTER previous valve's reconnection.
         valves = [
             ['variety', 'label', 'position', 'reconnection', 'radius', 'length'],
-            # V1: bypass=0.16m, extra=0.170m, total=0.330m
-            ['valve', 'piston1', 0.30, 0.46, 0.005, 0.330],
-            # V2: bypass=0.07m, extra=0.083m, total=0.153m
-            ['valve', 'piston2', 0.47, 0.54, 0.005, 0.153],
-            # V3: bypass=0.27m, extra=0.263m, total=0.533m
-            ['valve', 'piston3', 0.55, 0.82, 0.005, 0.533],
+            # V1: bypass=0.16m, extra=0.176m, total=0.336m
+            ['valve', 'piston1', 0.405, 0.565, 0.005, 0.336],
+            # V2: bypass=0.07m, extra=0.086m, total=0.156m
+            ['valve', 'piston2', 0.575, 0.645, 0.005, 0.156],
+            # V3: bypass=0.27m, extra=0.272m, total=0.542m
+            ['valve', 'piston3', 0.655, 0.925, 0.005, 0.542],
         ]
         
         # Fingering chart for 8 valve combinations

@@ -121,6 +121,48 @@ The 7-hole model leaves a long uninterrupted tube (359mm from last hole to bell 
 - ChatGPT analysis based on: Benade (1976), Keefe (1982), Nederveen (1998), Dalmont & Kergomard (1990s-2010s)
 - Full context in prompt_bell_distortion.md
 
+## Cross-Fingering Design for 12-Hole Chromatic (2026-07-23, ChatGPT)
+
+### Key Design Principle
+- DO NOT imitate Boehm clarinet (constrained by 19th-century keywork, human hands)
+- CLASSIFY holes by acoustic function, not mechanical sequence:
+  - **7 primary holes** (H1-H7): define effective tube length (roughly diatonic)
+  - **3 corrective holes** (H8-H10): cross-fingering and impedance shaping for chromatic notes
+  - **2 tuning vents** (H11-H12): fine adjustment of difficult notes
+- The fingering chart is NOT cumulative — it's a topology where auxiliary holes participate selectively
+
+### Complete Fingering Chart (13 notes × 13 holes)
+Register (R) always closed for chalumeau register.
+H1 = closest to reed, H12 = farthest from reed (bell end).
+
+| Note | R | H1 | H2 | H3 | H4 | H5 | H6 | H7 | H8 | H9 | H10 | H11 | H12 |
+|------|---|---|---|---|---|---|---|---|---|---|-----|-----|-----|
+| D    | 0 | 0  | 0  | 0  | 0  | 0  | 0  | 0  | 0  | 0  | 0   | 0   | 0   |
+| D#   | 0 | 0  | 0  | 0  | 0  | 0  | 0  | 1  | 0  | 1  | 0   | 0   | 0   |
+| E    | 0 | 0  | 0  | 0  | 0  | 0  | 0  | 1  | 0  | 0  | 0   | 0   | 0   |
+| F    | 0 | 0  | 0  | 0  | 0  | 0  | 1  | 1  | 0  | 0  | 0   | 0   | 0   |
+| F#   | 0 | 0  | 0  | 0  | 0  | 1  | 0  | 1  | 1  | 0  | 0   | 0   | 0   |
+| G    | 0 | 0  | 0  | 0  | 0  | 1  | 1  | 1  | 0  | 0  | 0   | 0   | 0   |
+| G#   | 0 | 0  | 0  | 0  | 1  | 0  | 1  | 1  | 1  | 0  | 0   | 0   | 0   |
+| A    | 0 | 0  | 0  | 0  | 1  | 1  | 1  | 1  | 0  | 0  | 0   | 0   | 0   |
+| Bb   | 0 | 0  | 0  | 1  | 0  | 1  | 1  | 1  | 1  | 0  | 0   | 0   | 0   |
+| B    | 0 | 0  | 0  | 1  | 1  | 1  | 1  | 1  | 0  | 0  | 0   | 0   | 0   |
+| C    | 0 | 0  | 1  | 0  | 1  | 1  | 1  | 1  | 1  | 0  | 0   | 1   | 0   |
+| C#   | 0 | 1  | 0  | 1  | 1  | 1  | 1  | 1  | 0  | 1  | 0   | 0   | 1   |
+| D    | 0 | 1  | 1  | 1  | 1  | 1  | 1  | 1  | 0  | 0  | 0   | 0   | 0   |
+
+### Expected Performance
+- Professional clarinets typically have 5-20c residual intonation errors
+- Optimizers distribute errors across the instrument rather than eliminating them
+- <5c RMS across a full chromatic octave is an AMBITIOUS research target, not established by literature
+- The topology-based approach (functional hole classification) is the correct method
+
+### References
+- Benade (1976) Ch.20-24 — tonehole lattices, cross-fingerings, register vents
+- Nederveen (1998) — tonehole interactions, end corrections
+- Keefe (1982) JASA 72(3) 676-687 — single tonehole theory
+- Debut, Kergomard, Laloë (2003/2005) — optimization over complete fingering systems
+
 ## TMM Theory: tanner/untanner Formulation (2026-07-23, ChatGPT Analysis)
 
 ### Core Derivation

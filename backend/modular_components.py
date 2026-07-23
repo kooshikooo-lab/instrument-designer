@@ -527,9 +527,10 @@ class PVCInstrument:
 BASS_CLARINET_REF = {
     "name": "Bass Clarinet in Bb",
     "key": "Bb",
-    "range": "Bb1 to G5",
-    "bore_diameter_mm": 25.0,  # ~12.5mm radius
-    "total_length_mm": 1800,   # Including U-bend
+    "range": "low C (sounding Bb1, 58 Hz) down to Eb (standard)",
+    "note": "Most bass clarinets bottom at written low Eb (sounding Db2, 69 Hz) or D (D2, 73 Hz). Extended low-C models go to Bb1 (58 Hz). 1.2m tube = ~65-70Hz closed-open fundamental (low D/Eb). 1.47m tube = ~58Hz (low C/Bb1). 1.8m was wrong (double-counted U-bend).",
+    "bore_diameter_mm": 25.0,  # ~12.5mm radius — correct per research (martinfreres.net)
+    "total_length_mm": 1200,   # Standard (low Eb/D). Extended (low C) = 1470mm. Was 1800mm — wrong.
     "components": {
         "mouthpiece": {
             "type": "reed",
@@ -567,7 +568,7 @@ BASS_CLARINET_REF = {
         "upper_holes": (10.0, 13.0),   # mm range
         "lower_holes": (13.0, 17.0),   # mm range
         "bell_keys": (19.0, 26.0),     # mm range
-        "register_key": (8.0, 10.0),   # mm
+        "register_key": (3.2, 3.8),   # mm — ChatGPT research: Debut et al. scaled to 25mm bore. Was 8-10mm (wrong).
     },
     "tone_hole_sizes": {
         "upper_small": (8.0, 10.0),
