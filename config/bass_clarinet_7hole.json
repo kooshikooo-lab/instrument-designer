@@ -1,0 +1,37 @@
+{
+  "name": "Bass Clarinet in Bb (7-hole D major diatonic prototype)",
+  "description": "Optimized 7-hole diatonic bass clarinet with register hole. Both registers validated.",
+  "status": "ACTIVE - working prototype",
+  "bore": {
+    "length_mm": 1211.3,
+    "radius_mm": 12.5,
+    "outer_diameter_mm": 37.0,
+    "profile": "uniform cylinder",
+    "closed_top": true
+  },
+  "register_hole": {
+    "position_mm": 80.0,
+    "diameter_mm": 2.5,
+    "chimney_mm": 3.0,
+    "source": "optimized from position/diameter scan with 7 toneholes"
+  },
+  "toneholes": [
+    {"position_mm": 175.9, "diameter_mm": 11.0, "chimney_mm": 5.0},
+    {"position_mm": 292.9, "diameter_mm": 11.0, "chimney_mm": 5.0},
+    {"position_mm": 337.5, "diameter_mm": 11.0, "chimney_mm": 5.0},
+    {"position_mm": 444.6, "diameter_mm": 11.0, "chimney_mm": 5.0},
+    {"position_mm": 532.0, "diameter_mm": 11.0, "chimney_mm": 5.0},
+    {"position_mm": 609.8, "diameter_mm": 11.0, "chimney_mm": 5.0},
+    {"position_mm": 636.4, "diameter_mm": 11.0, "chimney_mm": 5.0}
+  ],
+  "target_notes": ["D2","E2","F#2","G2","A2","B2","C#3","D3"],
+  "target_frequencies_hz": [73.416, 82.407, 92.499, 97.999, 110.000, 123.471, 138.591, 146.832],
+  "performance": {
+    "first_register_rms_relative_cents": 0.04,
+    "first_register_offset_cents": -63,
+    "second_register_rms_relative_cents": 7.96,
+    "second_register_offset_cents": -71,
+    "twelfths_rms_cents": 9.5,
+    "method": "SequentialBoreOptimizer + L-BFGS-B refinement with register hole"
+  }
+}
