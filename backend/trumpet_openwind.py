@@ -90,14 +90,15 @@ class TrumpetBore:
         - ML bore: 0.459" = 11.66mm dia = 5.83mm radius
         - Bell: 122.24mm dia = 61.12mm radius  
         - Leadpipe venturi: 0.345" = 8.76mm dia = 4.38mm radius
-        - Total tube length: ~1335mm (matches Bb3 = 233 Hz)
+        - Total tube length: 1.392m (interpolated for Bb3=233Hz)
+          Real unfolded length is ~1.475m but includes mouthpiece we don't model.
+          1.335m gave 243Hz (+73c), 1.475m gives 220Hz (-100c), 1.392m = Bb3 exact.
         
         The bore profile is: leadpipe taper -> cylinder -> bell flare (Bessel).
-        From pulse reflectometry: "After initial widening, the profile is 
-        approximately cylindrical. The radius remains fairly constant through 
-        the valve section. At the bell, the radius increases rapidly."
         """
         # Main bore geometry (meters)
+        # Total length 1.392m — interpolated from 1.335m (gave 243Hz) 
+        # and real 1.475m (gives 220Hz). Open now hits Bb3=233Hz exactly.
         # Format: [start_x, end_x, start_radius, end_radius, shape, ...]
         segments = [
             # Mouthpiece receiver (conical taper)
@@ -110,7 +111,7 @@ class TrumpetBore:
             [0.25, 0.75, 0.00583, 0.00583, 'linear'],
             
             # Bell flare (Bessel horn - critical for harmonic compression)
-            [0.75, 1.335, 0.00583, 0.06112, 'bessel', 0.7],
+            [0.75, 1.392, 0.00583, 0.06112, 'bessel', 0.7],
         ]
         
         # Valve definitions (pistons)
@@ -124,19 +125,19 @@ class TrumpetBore:
         # where bypassed = reconnection - position
         # and extra for n semitones = L_total * (2^(n/12) - 1)
         #
-        # For Bb trumpet (L=1.335m):
-        #   V1 (whole step, +2 st): extra = 1.335 * 0.1225 = 0.164m
-        #   V2 (semitone, +1 st):  extra = 1.335 * 0.0595 = 0.079m
-        #   V3 (minor 3rd, +3 st): extra = 1.335 * 0.189 = 0.252m
+        # For Bb trumpet (L=1.392m, interpolated from model):
+        #   V1 (whole step, +2 st): extra = 1.392 * 0.1225 = 0.170m
+        #   V2 (semitone, +1 st):  extra = 1.392 * 0.0595 = 0.083m
+        #   V3 (minor 3rd, +3 st): extra = 1.392 * 0.189 = 0.263m
         # Also: each valve's entry must be AFTER previous valve's reconnection.
         valves = [
             ['variety', 'label', 'position', 'reconnection', 'radius', 'length'],
-            # V1: bypass=0.16m, extra=0.164m, total=0.324m
-            ['valve', 'piston1', 0.30, 0.46, 0.005, 0.324],
-            # V2: bypass=0.07m, extra=0.079m, total=0.149m
-            ['valve', 'piston2', 0.47, 0.54, 0.005, 0.149],
-            # V3: bypass=0.27m, extra=0.252m, total=0.522m
-            ['valve', 'piston3', 0.55, 0.82, 0.005, 0.522],
+            # V1: bypass=0.16m, extra=0.170m, total=0.330m
+            ['valve', 'piston1', 0.30, 0.46, 0.005, 0.330],
+            # V2: bypass=0.07m, extra=0.083m, total=0.153m
+            ['valve', 'piston2', 0.47, 0.54, 0.005, 0.153],
+            # V3: bypass=0.27m, extra=0.263m, total=0.533m
+            ['valve', 'piston3', 0.55, 0.82, 0.005, 0.533],
         ]
         
         # Fingering chart for 8 valve combinations
