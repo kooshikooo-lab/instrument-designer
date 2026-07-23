@@ -1,45 +1,38 @@
 # Bass Clarinet Design Automation — Status
 
-## Code Structure
+## Code
 - `backend/tmm_acoustics.py` — TMM engine (phase-based, ported from chalumier)
-- `backend/optimizer_global.py` — **NEW**: Global fingering-chart optimizer (DE + L-BFGS-B)
-- `backend/tmm_optimizer_sequential.py` — Sequential Bordeaux optimizer (works for ≤8 holes)
-- `backend/bass_clarinet_full_test.py` — Validated 7-hole D major + register (uniform cyl)
-- `config/bass_clarinet_7hole.json` — Working 7-hole config (9.5c RMS twelfths)
-- `config/bass_clarinet_7hole_bell.json` — 7-hole + quadratic bell (41c twelfths)
+- `backend/optimizer_global.py` — **Two-register** global fingering optimizer (DE + L-BFGS-B)
+- `backend/tmm_optimizer_sequential.py` — Sequential Bordeaux optimizer (≤8 holes)
+- `backend/bass_clarinet_full_test.py` — 7-hole D major + register validation
+- `config/bass_clarinet_7hole.json` — Working config (uniform cylinder)
 
-## What Works
-1. **7-hole D major diatonic** — 0.00c RMS 1st register, 7.96c RMS 2nd register, 9.5c RMS twelfths
-2. **Register hole** — optimized 80mm/2.5mm/3mm (position/diameter/chimney)
-3. **Global optimizer** — reproduces sequential results for 7-hole case
-4. **2nd register optimization** — 7.96c RMS with 11mm holes on 25mm bore
-5. **Phase sweep diagnostics** — working for model validation
+## Results
 
-## What's Blocking
-1. **12+ hole chromatic** — best result 15-20c RMS (vs 0.00c for 7-hole)
-   - Sequential optimizer clusters last holes (200-600c errors)
-   - Global optimizer (DE) finds 20.67c RMS, takes 2.5 min
-   - Global optimizer (L-BFGS-B only) finds 15.43c RMS
-2. **Bell flare validation** — 41c RMS may be TMM artifact, need OpenWind comparison
-3. **OpenRouter API** — expired, need replacement for AI-assisted coding
+| Configuration | Reg1 RMS | Reg2 RMS | Notes |
+|---|---|---|---|
+| 7-hole diatonic, sequential | 6.19c | 9.51c | Two-register optimizer |
+| 12-hole chromatic, sequential | 15.50c | 15.57c | Physics-limited |
+| 12-hole with cross-fingerings | 47.33c | 46.41c | Poorly designed chart |
 
-## Theoretical Questions (Research Needed)
-1. **TMM tonehole model** — Is the phase-based approach with tanner/untanner correct at 70-150Hz?
-2. **Chromatic optimization** — What algorithms work for 12+ holes?
-3. **Hole size graduation** — Optimal size progression from reed to bell
-4. **Cross-fingerings** — What patterns produce better chromatic tuning?
+## What We Know
 
-## Key Decisions
-- **11mm holes on 25mm bore** — correct for bass clarinet proportions (S_hole/S_bore = 19%)
-- **n_register=2 for 12th** — 3rd harmonic on closed-open pipe
-- **Register at 80mm/2.5mm** — optimal from position/diameter scan
-- **Bell deferred to OpenWind** — TMM may overestimate bell distortion
-- **Global optimization needed** — sequential breaks for 12+ holes
+**Confirmed (ChatGPT research 2026-07-23):**
+1. **tanner/untanner = normalized admittance** in tangent form. Physically correct.
+2. **-0.5 phase for open hole = R=-1 reflection** at open end. Correct.
+3. **70-150Hz is the strongest regime** (plane-wave cutoff ~8kHz, ka~0.007-0.015).
+4. **Uniform offset for 11mm holes** is the expected physics — small holes at low frequencies have high Q shunt impedance (Q >> 100). Not a model bug.
+5. **20mm holes give non-uniform errors** — confirms model sensitivity to local interactions.
+6. **Holes should be graduated**: 10-12mm (lowest), 9-11mm (middle), 7-9mm (upper).
+
+**Current Blockers:**
+1. **12-hole sequential chromatic is physics-limited** (15-20c RMS). Sequential fingering can't produce fine semitones with small holes at low frequencies.
+2. **Cross-fingerings need proper design** — my ad-hoc patterns (46c) are worse than sequential. Need research on real clarinet cross-fingering systems.
+3. **OpenRouter API expired** — can't use AI-assisted coding.
 
 ## Next Steps
-1. Research: submit 4 prompts to ChatGPT/Claude (TMM validation, chromatic optimization, hole sizes, fingerings)
-2. Code: implement graduated hole sizes in optimizer
-3. Code: add cross-fingering chart support
-4. Code: try DE with fewer variables (optimize diameters AND positions)
-5. Code: implement phase-based cost function (faster than peak-matching)
-6. Push: git commit + LAN chat to laptop
+1. **Research**: Submit cross-fingering design prompt to ChatGPT (need proper chart based on Boehm/Oehler systems)
+2. **Research**: Submit graduated hole sizes prompt
+3. **Code**: Implement proper cross-fingering chart from research
+4. **Code**: Add hole diameter as optimization variable (parametrized graduation)
+5. **Code**: Add bore taper as optimization variable (for better twelfths)
