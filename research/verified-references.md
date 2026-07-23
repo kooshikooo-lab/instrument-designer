@@ -120,3 +120,59 @@ The 7-hole model leaves a long uninterrupted tube (359mm from last hole to bell 
 ### Sources
 - ChatGPT analysis based on: Benade (1976), Keefe (1982), Nederveen (1998), Dalmont & Kergomard (1990s-2010s)
 - Full context in prompt_bell_distortion.md
+
+## TMM Theory: tanner/untanner Formulation (2026-07-23, ChatGPT Analysis)
+
+### Core Derivation
+- `tanner(phase) = tan(π·phase)` is the normalized acoustic admittance Y = j·tan(kL) of a lossless transmission line, derived from the 1D wave equation p(x) = Ae^{-jkx} + Be^{jkx}
+- Characteristic impedance Z_c = ρc/S appears naturally; area ratios (a_i/a_0) in junction3 come from continuity of pressure + conservation of volume velocity U = Y·p
+- The tanner/untanner formulation is a change of variables (tan(kL) instead of kL) that makes propagation/junction algebra simple, NOT a different physical model
+- Source: Keefe (1981) JASA 70(1), 58-62; Nederveen (1998) Ch.2; directly from 1D wave equation
+
+### junction3 Formula
+- `untanner(a1/a0·tanner(p1-s1) + a2/a0·tanner(p2-s2)) + s1 + s2` = parallel admittance addition at a 3-port junction
+- Physical basis: p_0 = p_1 = p_2 (pressure continuity) and U_0 = U_1 + U_2 (volume conservation)
+- Since Y ∝ tan(kL) in normalized admittance, the tangent terms add linearly with area weighting
+- Source: Keefe (1982) JASA 72(3), 676-687; Kergomard & Dalmont, Bordeaux TMM papers
+
+### Open Hole Phase = -0.5
+- An ideal pressure-release boundary (open end) has reflection coefficient R = -1 → 180° phase reversal
+- The chalumier phase variable measures half-wavelengths, so 180° = -0.5 phase
+- tan(-π/2) → -∞ corresponds to infinite acoustic admittance (zero impedance) — exactly correct for an open end
+- Source: Benade (1976) Ch.18-20; Nederveen (1998)
+
+### Plane-Wave Validity at 70-150Hz
+- Cutoff frequency f_c ≈ 1.84·c/(π·d) ≈ 8kHz for d=25mm bore
+- 70-150Hz is <2% of cutoff → plane-wave propagation is essentially exact
+- Not where the model should fail — strongest regime
+- Source: Keefe (1981); Nederveen (1998); Benade (1976)
+
+### Tonehole Q at 70-150Hz (11mm hole, 25mm bore)
+- Hole acts primarily as acoustic inertance M = ρ·L_eff/S
+- ka ≈ 0.007 at 70Hz, ≈0.015 at 150Hz (ka << 1)
+- Radiation resistance scales as (ka)² → negligible
+- Q is high: tens to >100 depending on chimney/losses
+- Open tonehole is NOT a strongly dissipative vent at these frequencies
+- Source: Levine & Schwinger (1948) Phys. Rev. 73, 383-406; Keefe (1982)
+
+### When the Model Fails
+- Above ~1-2kHz for clarinet-sized holes (finite radiation impedance, chimney resonances, viscothermal boundary layers, higher duct modes, junction cavity volume, pad cup volume)
+- NOT at 70-150Hz
+- chalumier omits: frequency-dependent radiation impedance, viscothermal losses, junction cavity compliance, pad cup volumes, nonlinear reed coupling
+- Source: Keefe (1982); Dalmont, Nederveen & Joly (2003) J. Sound Vib.
+
+### Interpretation of Observed Behavior
+- **11mm holes → uniform offset (~-78c)** = systematic effective-length error (end correction, mouthpiece calibration, or phase origin), NOT model failure
+- **20mm holes → non-uniform errors** = expected when hole admittances become large enough for individual tonehole interactions to matter
+- **2nd register non-uniform** = 3rd harmonic is intrinsically more sensitive to local perturbations than fundamental
+- Overall: TMM model is correct; the 12-hole chromatic problem (15-20c RMS) is an optimization/fingering/hole-size issue, not a model physics issue
+
+### References for Research Library
+1. Benade, A.H. (1976). *Fundamentals of Musical Acoustics.* Oxford University Press.
+2. Nederveen, C.J. (1998). *Acoustical Aspects of Woodwind Instruments.* NIU Press.
+3. Keefe, D.H. (1981). JASA 70(1), 58-62 — Cylindrical duct transmission lines.
+4. Keefe, D.H. (1982). JASA 72(3), 676-687 — Single woodwind tonehole theory.
+5. Levine, H. & Schwinger, J. (1948). Phys. Rev. 73, 383-406 — Open pipe radiation.
+6. Dalmont, J-P., Nederveen, C.J. & Joly, N. (2003). J. Sound Vib. — Radiation impedance.
+7. Kergomard, J. & Chaigne, A. (1990s-2010s). Various JASA/Acta Acustica — Woodwind TMM.
+8. chalumier source: https://github.com/demakein/chalumier
