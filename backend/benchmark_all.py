@@ -1,7 +1,7 @@
 """Full benchmark: Sequential + refinement on all instruments."""
 import sys, os, time, math
 import numpy as np
-from scipy.optimize import minimize as sp_min
+from scipy.optimize import minimize as sp_min, differential_evolution
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from backend.tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
@@ -152,7 +152,6 @@ def sequential(cfg):
             return abs(1200.0 * math.log2(f / fundamental))
         except: return 1e10
 
-    from scipy.optimize import minimize as sp_min
     r = sp_min(bore_obj, [L_est], method='L-BFGS-B',
                bounds=[(L_est * 0.7, L_est * 1.3)],
                options={"maxiter": 50, "ftol": 1e-8})
@@ -212,7 +211,7 @@ def sequential(cfg):
 
 
 def sequential_refined(cfg):
-    """Sequential + 3-stage L-BFGS-B refinement with non-crossing bounds."""
+    """Sequential + global DE + 3-stage L-BFGS-B refinement with non-crossing bounds."""
     rms_seq, L_seq, hp_seq, t_seq = sequential(cfg)
     t0 = time.time()
 
@@ -223,6 +222,35 @@ def sequential_refined(cfg):
     hp = list(hp_seq)
     hd = [cfg["hole_diameter"]] * n_h
     hl = [cfg["hole_length"]] * n_h
+
+    # Phase 2b: Global hole re-optimization for open-open instruments.
+    # Sequential single-hole placement creates large gaps that L-BFGS-B can't fix.
+    if not cfg["closed_top"]:
+        print(f"    Phase 2b: Global hole re-optimization (differential evolution)")
+        radii_de = np.full(n_cp, cfg["bore_radius"])
+        def obj_de(x):
+            hp_sorted = sorted(x.tolist())
+            return eval_all(radii_de, L, hp_sorted, hd, hl, cfg)
+        # Overlapping bounds covering the full bore (proven to work)
+        de_bounds = []
+        for i in range(n_h):
+            lo = int(i * L / (n_h * 1.5 + 1))
+            hi = int((i + 2) * L / (n_h * 1.5 + 1))
+            lo = max(lo, 20)
+            hi = min(hi, int(L - 20))
+            if hi <= lo:
+                hi = lo + 10
+            de_bounds.append((lo, hi))
+        # Clip initial positions to within bounds
+        x0_de = np.array(hp)
+        for i in range(n_h):
+            x0_de[i] = np.clip(x0_de[i], de_bounds[i][0], de_bounds[i][1])
+        result_de = differential_evolution(obj_de, de_bounds, x0=x0_de, seed=42,
+                                          maxiter=100, popsize=max(10, n_h * 2),
+                                          tol=1e-6, mutation=(0.5, 1.0),
+                                          recombination=0.7, polish=True)
+        hp = sorted(result_de.x.tolist())
+        print(f"      RMS={result_de.fun:.2f}c  Holes: {[f'{p:.0f}' for p in hp]}")
 
     # Build non-crossing bounds for holes
     GAP = 5.0
