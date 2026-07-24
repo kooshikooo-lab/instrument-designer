@@ -35,6 +35,10 @@ export async function tauriHttpPost(url: string, body: unknown): Promise<string>
   return invokeTauri<string>("http_post", { url, body });
 }
 
+export async function tauriHttpPostBinary(url: string, body: unknown): Promise<number[]> {
+  return invokeTauri<number[]>("http_post_binary", { url, body });
+}
+
 export async function tauriSaveFileDialog(
   defaultName: string,
   filterName: string,

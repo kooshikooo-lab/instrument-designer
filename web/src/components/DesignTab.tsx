@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect, type ReactNode } from "react";
 import { DEMAKEIN_PRESETS, DEMAKEIN_PRESET_GROUPS } from "../data/instruments";
 import { TUNING_PRESETS, TUNING_CATEGORIES } from "../data/tuning-presets";
-import { checkHealth, startDesign, getDesignStatus, getDesignDownloadUrl, exportStep, startOptimization, getOptimizationStatus, getOptimizationPresets, getCacheStats, clearCache, getAdvisorStatus, analyzeDesign, storeDesignInMemory, exportBoreSvg, downloadSvg } from "../utils/api";
+import { checkHealth, startDesign, getDesignStatus, getDesignDownloadUrl, exportStep, startOptimization, getOptimizationStatus, getOptimizationPresets, getCacheStats, clearCache, getAdvisorStatus, analyzeDesign, storeDesignInMemory, exportBoreSvg, downloadSvg, exportCadquery, listCadqueryInstruments } from "../utils/api";
 import type { PitchResult } from "../utils/pitch";
 import type { OptimizationResult, OptimizationPreset, AdvisorResult, AdvisorSuggestion } from "../utils/api";
 import STLViewer from "./STLViewer";
@@ -70,6 +70,8 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
   const [generatedBlob, setGeneratedBlob] = useState<Blob | null>(null);
   const [generatedFilename, setGeneratedFilename] = useState<string>("");
   const [stepExporting, setStepExporting] = useState(false);
+  const [cadqueryExporting, setCadqueryExporting] = useState(false);
+  const [cadqueryPresets, setCadqueryPresets] = useState<Record<string, { bore_length: number; bore_diameter: number | number[]; closed_top: boolean; holes: number }>>({});
   const [serverBlob, setServerBlob] = useState<Blob | null>(null);
   const [serverFilename, setServerFilename] = useState<string>("");
   const [measuredPitch, setMeasuredPitch] = useState<PitchResult | null>(null);
@@ -94,6 +96,10 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
   const [advisorResult, setAdvisorResult] = useState<AdvisorResult | null>(null);
   const [advisorAnalyzing, setAdvisorAnalyzing] = useState(false);
   const [advisorUseLlm, setAdvisorUseLlm] = useState(false);
+
+  useEffect(() => {
+    listCadqueryInstruments().then((p) => setCadqueryPresets(p)).catch(() => {});
+  }, []);
 
   useEffect(() => {
     getOptimizationPresets().then((p) => setOptPresets(p)).catch(() => {});
@@ -158,10 +164,15 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
   const handleStepExport = async () => {
     setStepExporting(true);
     try {
+      // Build a simple cylindrical bore profile from preset or defaults
+      const boreLength = 200;
+      const boreRadius = 10;
+      const boreProfile: [number, number][] = [
+        [0, boreRadius],
+        [boreLength, boreRadius],
+      ];
       const blob = await exportStep({
-        preset: preset || "custom",
-        length: 200,
-        bore_diameter: 20,
+        bore_profile: boreProfile,
         wall_thickness: 3,
       });
       const url = URL.createObjectURL(blob);
@@ -174,6 +185,26 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
       console.error("STEP export failed:", e);
     } finally {
       setStepExporting(false);
+    }
+  };
+
+  const handleCadqueryExport = async (presetName?: string) => {
+    setCadqueryExporting(true);
+    try {
+      const params: Record<string, unknown> = presetName
+        ? { preset: presetName }
+        : { preset: presetName || Object.keys(cadqueryPresets)[0] || "koncovka_C" };
+      const blob = await exportCadquery(params);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${(params.preset as string) || "custom"}.stl`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("CadQuery export failed:", e);
+    } finally {
+      setCadqueryExporting(false);
     }
   };
 
@@ -416,6 +447,30 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
         >
           {stepExporting ? "Exporting..." : "Export STEP"}
         </button>
+        <div className="relative group">
+          <button
+            onClick={() => handleCadqueryExport()}
+            disabled={cadqueryExporting}
+            className="px-6 py-2.5 bg-purple-600 hover:bg-purple-500 disabled:bg-neutral-800 disabled:text-neutral-600 text-sm text-white rounded-lg transition-colors font-medium"
+          >
+            {cadqueryExporting ? "Exporting..." : "Export STL (CadQuery)"}
+          </button>
+          {Object.keys(cadqueryPresets).length > 0 && (
+            <div className="absolute right-0 top-full mt-1 z-50 hidden group-hover:block bg-neutral-900 border border-neutral-700 rounded-lg shadow-xl p-2 min-w-[220px]">
+              <div className="text-[10px] text-neutral-500 uppercase tracking-wider px-2 pb-1">Presets</div>
+              {Object.entries(cadqueryPresets).map(([name, info]) => (
+                <button
+                  key={name}
+                  onClick={() => handleCadqueryExport(name)}
+                  className="w-full text-left px-2 py-1.5 text-xs text-neutral-300 hover:bg-neutral-800 rounded flex justify-between"
+                >
+                  <span>{name.replace(/_/g, " ")}</span>
+                  <span className="text-neutral-500">{info.bore_length}mm</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {(progress.length > 0 || status) && (
