@@ -140,10 +140,34 @@ class BoreOptimizer(Optimizer):
 
         dt = time.time() - t0
 
+        # Compute final RMS and peak cents
+        temp_net = self._make_network(best_length)
+        target_wavelengths = [self.network.speed_of_sound / f for f in self.targets]
+        try:
+            freqs = self.solver.compute_frequencies(
+                temp_net, target_wavelengths, self.fingering_sets, self.n_register
+            )
+            cents = []
+            for target, actual in zip(self.targets, freqs):
+                if actual > 0 and np.isfinite(actual):
+                    cents.append(1200.0 * np.log2(actual / target))
+                else:
+                    cents.append(1e6)
+            cents_arr = np.array(cents)
+            offset = np.median(cents_arr)
+            corrected = cents_arr - offset
+            rms_cents = float(np.sqrt(np.mean(corrected ** 2)))
+            peak_cents = float(np.max(np.abs(corrected)))
+        except Exception:
+            rms_cents = best_cost
+            peak_cents = 0.0
+
         return OptimizationResult(
             success=best_cost < 50.0,
             parameters={"bore_length": best_length},
             cost=best_cost,
+            rms_cents=rms_cents,
+            peak_cents=peak_cents,
             n_evaluations=self._n_evaluations,
             wall_time=dt,
         )
