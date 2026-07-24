@@ -382,8 +382,9 @@ if __name__ == "__main__":
     chart = []
     for i in range(8):
         row = ["closed"] * (N_FREE + N_FIXED)
+        # Bell-first ascending: open from LAST index (nearest bell) first
         for j in range(i):
-            row[j] = "open"
+            row[N_FREE - 1 - j] = "open"
         row[N_FREE] = "closed"
         chart.append(row)
     

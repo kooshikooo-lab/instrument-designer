@@ -1,0 +1,102 @@
+# Desktop → Laptop Status Update
+# Date: 2026-07-24
+
+## Architecture Redesign (Branch: refactor/architecture-redesign)
+
+We started a major architecture redesign following ChatGPT's recommendations.
+This branch restructures the codebase into a modular, instrument-agnostic platform.
+
+### New Directory Structure
+
+```
+backend/
+├── core/                    # Core data model
+│   ├── __init__.py
+│   ├── network.py          # AcousticNetwork, Segment, Port, Boundary, Fingering
+│   └── coordinates.py      # CoordinateTransform (chalumier ↔ internal ↔ openwind)
+├── physics/                 # Physics plugin interfaces
+│   ├── __init__.py
+│   ├── propagation.py      # PropagationModel (LosslessPropagation, ViscothermalPropagation)
+│   ├── junction.py         # JunctionModel (LosslessJunction)
+│   ├── tonehole.py         # ToneholeModel (SimpleTonehole)
+│   ├── radiation.py        # RadiationModel (BesselRadiation, NoRadiation)
+│   ├── losses.py           # LossModel (NoLoss, KeefeLoss)
+│   └── excitation.py       # ExcitationModel (ReedExcitation, LipExcitation, AirJetExcitation)
+├── solvers/                 # Solver implementations
+│   ├── __init__.py
+│   └── tmm_solver.py       # TMMSolver (wraps chalumier TMM with plugin interface)
+├── instruments/             # Instrument definitions
+│   ├── __init__.py
+│   ├── clarinet.py          # ClarinetBuilder
+│   ├── bass_clarinet.py     # BassClarinetBuilder
+│   └── brass.py             # BrassBuilder
+├── optimization/            # Optimization framework
+│   ├── __init__.py
+│   ├── base.py              # Optimizer, OptimizationResult
+│   ├── bore_optimizer.py    # BoreOptimizer
+│   └── fingering_optimizer.py  # FingeringOptimizer
+├── tests/                   # Property tests
+│   ├── __init__.py
+│   └── test_properties.py   # Coordinate + physics property tests
+├── tmm_acoustics.py         # Original chalumier TMM port (unchanged)
+├── optimizer_global.py      # Original optimizer (unchanged, bell-first fixed)
+├── benchmark_chalumeau.py   # Original benchmark (unchanged, bell-first fixed)
+└── benchmark_bass_clarinet.py
+chalumier/                   # Chalumier Kotlin source (cloned)
+openwind/                    # OpenWInD Python FEM (cloned)
+```
+
+### Key Design Decisions
+
+1. **Solver-agnostic**: The solver does NOT know if it's solving a clarinet or trumpet.
+   It receives an AcousticNetwork graph and solves it.
+
+2. **CoordinateTransform module**: All coordinate conversions go through one place.
+   No code outside that module converts coordinates.
+
+3. **Physics plugins**: Each physical effect (propagation, junction, tonehole, radiation, losses, excitation)
+   is a separate plugin with an abstract interface. TMM and FEM implement the same interface.
+
+4. **Instrument builders**: ClarinetBuilder, BassClarinetBuilder, BrassBuilder all produce
+   AcousticNetwork objects. The solver processes them identically.
+
+5. **Property tests**: Verify coordinate inverses, analytical tube solutions, etc.
+
+### What's Changed on This Branch
+
+- TMM walk direction FIXED (bell→reed, matching chalumier)
+- All fingering charts FIXED to bell-first ascending
+- New modular architecture created
+- Physics principles documented in PHYSICS_PRINCIPLES.md
+- HELP_PROMPT.md created for external assistance
+- chat-logs/chatgpt-architecture-recommendations.txt saved
+
+### What's Still TODO
+
+- Run property tests to verify TMM solver works through the new interface
+- Verify TMM matches chalumier on simple cases (uniform cylinder, single hole)
+- Build OpenWInD FEM solver implementing the same plugin interface
+- Build correction model (TMM error vs FEM)
+- Complete bass clarinet optimization with corrected fingering charts
+
+### What You Should Do on Laptop
+
+1. Pull the refactor/architecture-redesign branch
+2. Run the property tests: `python -m unittest backend/tests/test_properties.py -v`
+3. Try the TMM solver through the new interface:
+   ```python
+   from backend.core.network import AcousticNetwork, Segment, Boundary, NodeType, BoundaryType, ExcitationType
+   from backend.solvers.tmm_solver import TMMSolver
+   
+   net = AcousticNetwork(
+       segments=[Segment(length=1200, radius_in=12.5, radius_out=12.5)],
+       ports=[],
+       boundary_reed=Boundary(type=BoundaryType.REED, excitation=ExcitationType.REED),
+       boundary_bell=Boundary(type=BoundaryType.BELL, position=1200),
+   )
+   solver = TMMSolver()
+   wl = solver.find_resonance(net, 4675.0, [], n_register=1)
+   print(f"Fundamental: {343200/wl:.1f} Hz (expected ~71.5 Hz)")
+   ```
+4. Start implementing OpenWInD FEM solver with the same plugin interface
+5. Run your tmm_optimizer_sequential.py through the new interface
