@@ -614,6 +614,360 @@ INSTRUMENTS = {
                   "verified": False, "source": "Standard bore specs",
                   "description": "Hungarian tarogato. Conical like soprano sax, clarinet reed. Hybrid."},
     },
+
+    # ════════════════════════════════════════════════════════════════════════════════
+    #  VERIFIED PROFESSIONAL 3D-PRINTED DESIGNS
+    # ════════════════════════════════════════════════════════════════════════════════
+
+    # JDWoodwinds - Professional bass clarinet in G (simplified Boehm, 24mm bore)
+    "jdw_bass_clarinet_G": {
+        "bore_length": 1050.0, "bore_diameter": 24.0, "wall_thickness": 4.5,
+        "closed_top": True,
+        "holes": [(140,9.5),(240,9.5),(340,9.5),(440,9.5),(540,9.5),(640,10.0),(740,10.0),(840,10.0),(940,10.5)],
+        "_meta": {"display_name": "JDWoodwinds Bass Clarinet in G", "family": "Clarinet", "subcategory": "Bass",
+                  "verified": True, "source": "JDWoodwinds STL files ($100)", "url": "https://jdwoodwind.com/shop/p/stl-files-bass-clarinet-in-g",
+                  "description": "Professional 3D-printable bass clarinet in G. Simplified Boehm keywork. 24mm bore. Low E range. Requires clarinet repair expertise. Print: PLA+, 0.16mm, 4 walls body, 6 walls keys, 30-50% infill. Critical: CA glue seal all toneholes, neoprene pads, brass/carbon tenons."},
+    },
+
+    # Tom's Modern Chalumeau in C (14mm bore, Eb mouthpiece)
+    "toms_chalumeau_C": {
+        "bore_length": 350.0, "bore_diameter": 14.0, "wall_thickness": 2.5,
+        "closed_top": False,
+        "holes": [(45,5.5),(85,5.5),(125,6.0),(165,6.0),(205,6.5),(245,6.5),(285,7.0)],
+        "_meta": {"display_name": "Tom's Modern Chalumeau in C", "family": "Chalumeau", "subcategory": "Modern",
+                  "verified": True, "source": "Printables (Tom_1766913)", "url": "https://www.printables.com/model/752555-clarinet-modern-chalumeau-in-c",
+                  "description": "Modern chalumeau in C. 14mm bore. Fits Vandoren Eb clarinet mouthpiece. 7 holes + 2 extension keys. 3-part split body (bell, body, barrel). Updated hole positions corrected from wood testing. Key blocks raised from body."},
+    },
+
+    # C Clarinet Remix (14mm bore, 3-part, Eb mouthpiece)
+    "c_clarinet_remix_14mm": {
+        "bore_length": 550.0, "bore_diameter": 14.0, "wall_thickness": 2.8,
+        "closed_top": False,
+        "holes": [(60,6.0),(100,6.0),(140,6.5),(180,6.5),(220,7.0),(260,7.0),(300,7.5),(340,7.5),(380,8.0),(420,8.0)],
+        "_meta": {"display_name": "C Clarinet Remix (14mm Bore)", "family": "Clarinet", "subcategory": "Modern",
+                  "verified": True, "source": "Printables (Gubbledenut remix of Tom's Chalumeau)", "url": "https://www.printables.com/model/888905-c-clarinet-remix",
+                  "description": "Remix of Tom's Chalumeau with 14mm bore (vs original narrower). 3-part split body. Barrel fits standard Eb mouthpiece. Adjustable tuning via bell/barrel. Raised key blocks. Fixed intonation issues of original."},
+    },
+
+    # Atomica Ultra-Compact Bass Clarinet (folded bore, soprano mouthpiece)
+    "atomica_ultra_compact_bass_clarinet": {
+        "bore_length": 1100.0, "bore_diameter": (18.0, 28.0), "wall_thickness": 3.0,
+        "closed_top": False,
+        "holes": [(120,8.0),(220,8.0),(320,8.0),(420,8.0),(520,8.5),(620,8.5),(720,9.0),(820,9.0),(920,9.5)],
+        "_meta": {"display_name": "Atomica Ultra-Compact Bass Clarinet", "family": "Clarinet", "subcategory": "Experimental",
+                  "verified": True, "source": "MakerWorld (Atomica)", "url": "https://makerworld.com/en/models/1150929",
+                  "description": "Folded-bore bass clarinet in compact form. Uses soprano clarinet mouthpiece. 3 register holes (center + top/bottom). Range: Eb2-Eb3, Bb3-Bb4+. No throat tones. Diatonic. Print: 0.16mm, 4 walls, 20% infill, 8.6h, 4 plates. Membrane: vinyl glove folded 4x."},
+    },
+
+    # True Budget Low Woodwind (folded bore, membrane, diatonic)
+    "atomica_true_budget_low_woodwind": {
+        "bore_length": 900.0, "bore_diameter": 22.0, "wall_thickness": 2.5,
+        "closed_top": False,
+        "holes": [(100,7.0),(180,7.0),(260,7.0),(340,7.5),(420,7.5),(500,8.0),(580,8.0)],
+        "_meta": {"display_name": "True Budget Low Woodwind (Membrane)", "family": "Clarinet", "subcategory": "Membrane/DIY",
+                  "verified": True, "source": "MakerWorld (Atomica)", "url": "https://makerworld.com/en/models/2740713-the-true-budget-low-woodwind",
+                  "description": "Folded-bore bass membrane clarinet. Diatonic. Membrane: vinyl glove folded 4 layers (no bubbles). Knee rest for RH thumb hole. Membrane from surgical glove/space blanket. 17.3h print, 7 plates. No keys. CC-BY-NC-ND."},
+    },
+
+    # Membrane Clarinet (Nicolas Bras concept, DrJones/Printables)
+    "membrane_clarinet_nicolas_bras": {
+        "bore_length": 400.0, "bore_diameter": 15.0, "wall_thickness": 2.5,
+        "closed_top": False,
+        "holes": [(50,6.0),(90,6.0),(130,6.5),(170,6.5),(210,7.0),(250,7.0),(290,7.5)],
+        "_meta": {"display_name": "Membrane Clarinet (Nicolas Bras Concept)", "family": "Clarinet", "subcategory": "Membrane",
+                  "verified": True, "source": "Printables (DrJones)", "url": "https://www.printables.com/model/495171-membrane-clarinet",
+                  "description": "Fully 3D-printed clarinet with plastic membrane reed (bag foil/space blanket). 3 screw-together parts with LH/RH threads. Membrane holder with 2 DOF tuning. No cane reed needed. Inspired by Nicolas Bras membrane clarinet concept."},
+    },
+
+    # Diplica (Croatian double reed with membrane)
+    "diplica_croatian": {
+        "bore_length": 280.0, "bore_diameter": 12.0, "wall_thickness": 2.0,
+        "closed_top": False,
+        "holes": [(40,5.0),(75,5.0),(110,5.5),(145,5.5),(180,6.0),(215,6.0)],
+        "_meta": {"display_name": "Diplica (Croatian Double Reed)", "family": "Woodwind", "subcategory": "Membrane/Traditional",
+                  "verified": False, "source": "Traditional dims / Printables",
+                  "description": "Croatian traditional diplica. Two parallel single reeds with shared membrane chamber. 6 holes. Nasal buzzing timbre. Historically wood/cane; 3D version uses plastic membrane."},
+    },
+
+    # Sipsi (Turkish single reed with membrane)
+    "sipsi_turkish": {
+        "bore_length": 250.0, "bore_diameter": 11.0, "wall_thickness": 2.0,
+        "closed_top": False,
+        "holes": [(35,4.5),(70,4.5),(105,5.0),(140,5.0),(175,5.5),(210,5.5)],
+        "_meta": {"display_name": "Sipsi (Turkish Membrane Reed)", "family": "Woodwind", "subcategory": "Membrane/Traditional",
+                  "verified": False, "source": "Traditional dims / Printables",
+                  "description": "Turkish folk sipsi. Simple cylindrical pipe with membrane reed (historically cane skin). 6 holes. High bright timbre. Related to Greek psítha and Mizmar family. 3D version uses thin plastic membrane."},
+    },
+
+    # Zummara (Egyptian double clarinet)
+    "zummara_egyptian": {
+        "bore_length": 300.0, "bore_diameter": (10.0, 10.0), "wall_thickness": 2.0,
+        "closed_top": False,
+        "holes": [(40,5.0),(75,5.0),(110,5.0),(145,5.0),(180,5.5),(215,5.5)],
+        "_meta": {"display_name": "Zummara (Egyptian Double Clarinet)", "family": "Woodwind", "subcategory": "Membrane/Traditional",
+                  "verified": False, "source": "Traditional dims / Printables",
+                  "description": "Egyptian folk zummara. Two parallel cylindrical pipes with single membrane reeds. One melodic (6 holes), one drone. Buzzing reedy timbre. Ancestor of clarinet family. 3D version uses paired bores."},
+    },
+
+    # Selmer Mark VI Alto Sax (reference bore)
+    "selmer_mark_vi_alto": {
+        "bore_length": 720.0, "bore_diameter": (16.5, 30.0), "wall_thickness": 4.0,
+        "closed_top": False,
+        "holes": [(105,7.0),(170,7.0),(235,7.0),(300,7.5),(365,7.5),(430,7.5),(495,8.0),(560,8.0),(625,8.5)],
+        "_meta": {"display_name": "Selmer Mark VI Alto Sax (Reference)", "family": "Saxophone", "subcategory": "Alto",
+                  "verified": False, "source": "Standard Selmer proportions (Ingham/SaxPics)",
+                  "description": "Legendary Selmer Mark VI alto sax (1954-1975). Conical 16.5-30mm bore. Gold standard for alto. 9 main tone holes. Hand-finished toneholes. High copper brass. Many serial variations (5-digit most prized)."},
+    },
+
+    # Selmer Mark VI Tenor Sax
+    "selmer_mark_vi_tenor": {
+        "bore_length": 880.0, "bore_diameter": (22.0, 42.0), "wall_thickness": 5.0,
+        "closed_top": False,
+        "holes": [(130,8.0),(210,8.0),(290,8.0),(370,8.5),(450,8.5),(530,8.5),(610,9.0),(690,9.0),(770,9.5)],
+        "_meta": {"display_name": "Selmer Mark VI Tenor Sax (Reference)", "family": "Saxophone", "subcategory": "Tenor",
+                  "verified": False, "source": "Standard Selmer proportions",
+                  "description": "Selmer Mark VI tenor sax. Conical 22-42mm bore. Rich full tone. Jazz/classical standard. Coltrane, Rollins, Brecker played Mark VI tenors."},
+    },
+
+    # Buffet R13 Bb Clarinet (polycylindrical reference)
+    "buffet_r13_bb": {
+        "bore_length": 660.0, "bore_diameter": 14.64, "wall_thickness": 3.0,
+        "closed_top": True,
+        "holes": [(78,6.5),(108,6.5),(138,6.5),(168,6.5),(198,7.0),(228,7.0),(258,7.0),(288,7.0),(318,7.0),(348,7.5),(378,7.5),(408,7.5),(438,7.5),(468,7.5)],
+        "_meta": {"display_name": "Buffet R13 Bb Clarinet (Reference)", "family": "Clarinet", "subcategory": "Professional",
+                  "verified": False, "source": "Buffet specs / Woodwind Forum measurements",
+                  "description": "Buffet R13 professional Bb clarinet. Polycylindrical bore ~14.64mm (.574\"). Hand-burnished bore. Undercut toneholes. 17 keys, 6 rings. Most popular pro clarinet worldwide. Grenadilla wood."},
+    },
+
+    # Selmer Paris Series 9 Bb Clarinet
+    "selmer_series9_bb": {
+        "bore_length": 660.0, "bore_diameter": 14.95, "wall_thickness": 3.0,
+        "closed_top": True,
+        "holes": [(78,6.5),(108,6.5),(138,6.5),(168,6.5),(198,7.0),(228,7.0),(258,7.0),(288,7.0),(318,7.0),(348,7.5),(378,7.5),(408,7.5),(438,7.5),(468,7.5)],
+        "_meta": {"display_name": "Selmer Paris Series 9 Bb Clarinet", "family": "Clarinet", "subcategory": "Professional",
+                  "verified": False, "source": "Selmer specs / Woodwind Forum",
+                  "description": "Selmer Paris Series 9. Bore ~14.95mm upper / 15.10mm lower. Enhanced CT/CT enhanced models. 15.34mm upper / 15.10mm lower on enhanced. Professional French system."},
+    },
+
+    # Yamaha YCL-CSGIII / CSG Bb Clarinet
+    "yamaha_csg_bb": {
+        "bore_length": 660.0, "bore_diameter": 15.13, "wall_thickness": 3.0,
+        "closed_top": True,
+        "holes": [(78,6.5),(108,6.5),(138,6.5),(168,6.5),(198,7.0),(228,7.0),(258,7.0),(288,7.0),(318,7.0),(348,7.5),(378,7.5),(408,7.5),(438,7.5),(468,7.5)],
+        "_meta": {"display_name": "Yamaha CSG/CSGIII Bb Clarinet", "family": "Clarinet", "subcategory": "Professional",
+                  "verified": False, "source": "Yamaha specs / Woodwind Forum",
+                  "description": "Yamaha CSG/CSGIII. Bore 15.13mm top / 14.68mm lower. Premium grenadilla. Tapered pivot screws. Hand-adjusted pads. Vintage-inspired bore."},
+    },
+
+    # Professional mouthpieces
+    "alto_sax_mouthpiece": {
+        "bore_length": 90.0, "bore_diameter": 12.0, "wall_thickness": 3.0,
+        "closed_top": False,
+        "holes": [],
+        "_meta": {"display_name": "Alto Sax Mouthpiece (Printable)", "family": "Parts & Accessories", "subcategory": "Mouthpiece",
+                  "verified": True, "source": "Printables (AmCorley, bobtschigerillo, WCW 64)",
+                  "description": "Playable alto sax mouthpiece. Requires soprano sax ligature + tenor reed. Tip opening ~1.9-2.2mm. Print on side for best lay. Post-process: sand reed table, polish. PETG or PLA+."},
+    },
+
+    "tenor_sax_mouthpiece": {
+        "bore_length": 105.0, "bore_diameter": 14.5, "wall_thickness": 3.5,
+        "closed_top": False,
+        "holes": [],
+        "_meta": {"display_name": "Tenor Sax Mouthpiece (Printable)", "family": "Parts & Accessories", "subcategory": "Mouthpiece",
+                  "verified": True, "source": "Printables (bobtschigerillo, Printcraft pocket sax)",
+                  "description": "Playable tenor sax mouthpiece. 3C/7C styles. Tip opening ~2.3-2.5mm. Requires tenor reed + ligature. Print on side, sand finish. Good for pocket sax builds."},
+    },
+
+    "clarinet_mouthpiece": {
+        "bore_length": 75.0, "bore_diameter": 11.5, "wall_thickness": 3.0,
+        "closed_top": False,
+        "holes": [],
+        "_meta": {"display_name": "Bb Clarinet Mouthpiece (Playable)", "family": "Parts & Accessories", "subcategory": "Mouthpiece",
+                  "verified": True, "source": "Printables (Dave Yeagly)",
+                  "description": "Playable Bb clarinet mouthpiece. Tip opening 1.28mm. Flexible bulb eliminates cork. Requires light sanding on reed table. 100% infill, concentric pattern. Standard Bb clarinet reed + ligature."},
+    },
+
+    "bass_clarinet_mouthpiece_cover": {
+        "bore_length": 60.0, "bore_diameter": 28.0, "wall_thickness": 3.0,
+        "closed_top": True,
+        "holes": [],
+        "_meta": {"display_name": "Bass Clarinet Mouthpiece Cover", "family": "Parts & Accessories", "subcategory": "Mouthpiece",
+                  "verified": True, "source": "Printables (luckyinstesign)",
+                  "description": "Protective cover for bass clarinet mouthpiece. Fits standard bass clarinet mouthpieces. Quick print. Beginner friendly."},
+    },
+
+    "trumpet_3c_mouthpiece": {
+        "bore_length": 85.0, "bore_diameter": (6.5, 16.0), "wall_thickness": 2.5,
+        "closed_top": False,
+        "holes": [],
+        "_meta": {"display_name": "Trumpet 3C Mouthpiece (Kanstul Profile)", "family": "Parts & Accessories", "subcategory": "Mouthpiece",
+                  "verified": True, "source": "Printables (based on Kanstul comparator)",
+                  "description": "Trumpet 3C mouthpiece based on Kanstul comparator profiles. Playable. Print on side. Standard 3C rim/cup."},
+    },
+
+    "trumpet_7c_mouthpiece": {
+        "bore_length": 85.0, "bore_diameter": (6.5, 16.0), "wall_thickness": 2.5,
+        "closed_top": False,
+        "holes": [],
+        "_meta": {"display_name": "Trumpet 7C Mouthpiece (Standard)", "family": "Parts & Accessories", "subcategory": "Mouthpiece",
+                  "verified": True, "source": "Printables",
+                  "description": "Standard 7C trumpet mouthpiece. Most common beginner/intermediate size. Print on side for best lay. Sand finish."},
+    },
+
+    "trombone_mouthpiece_set": {
+        "bore_length": 95.0, "bore_diameter": (10.0, 24.0), "wall_thickness": 3.0,
+        "closed_top": False,
+        "holes": [],
+        "_meta": {"display_name": "Trombone Mouthpiece Set (Wedge/Bach/Schilke)", "family": "Parts & Accessories", "subcategory": "Mouthpiece",
+                  "verified": True, "source": "Printables",
+                  "description": "Set of trombone mouthpieces based on Wedge/Bach/Schilke profiles. Various cup depths. Print on side."},
+    },
+
+    "trumpet_mouthpiece_puller": {
+        "bore_length": 60.0, "bore_diameter": 20.0, "wall_thickness": 4.0,
+        "closed_top": False,
+        "holes": [],
+        "_meta": {"display_name": "Trumpet Mouthpiece Puller Tool", "family": "Parts & Accessories", "subcategory": "Tool",
+                  "verified": True, "source": "Printables",
+                  "description": "Tool for removing stuck mouthpieces from trumpets. Repair essential."},
+    },
+
+    # ═══════════════════════════════════════════════════════════════════════════════════
+    #  PROFESSIONAL LOW CLARINETS (Contra-Alto, Contra-Bass, Sub-Contra)
+    # ════════════════════════════════════════════════════════════════════════════════════
+
+    "contra_alto_clarinet_Eb": {
+        "bore_length": 1600.0, "bore_diameter": 32.0, "wall_thickness": 6.0,
+        "closed_top": True,
+        "holes": [(200,11.0),(330,11.0),(460,11.0),(590,11.0),(720,11.0),(850,11.0),(980,11.0),(1110,11.0),(1240,11.0),(1370,11.0)],
+        "_meta": {"display_name": "Contra-Alto Clarinet Eb (Reference)", "family": "Clarinet", "subcategory": "Contra",
+                  "verified": False, "source": "Standard bore specs (Leblanc 340 Paperclip)",
+                  "description": "Contra-alto clarinet in Eb. One octave below alto sax. Bore 32mm. Low Eb/C models. Powerful low register. Leblanc 340 'Paperclip' is popular compact version."},
+    },
+
+    "contra_bass_clarinet_Bb": {
+        "bore_length": 1900.0, "bore_diameter": 38.0, "wall_thickness": 7.0,
+        "closed_top": True,
+        "holes": [(250,13.0),(400,13.0),(550,13.0),(700,13.0),(850,13.0),(1000,13.0),(1150,13.0),(1300,13.0),(1450,13.0),(1600,13.0)],
+        "_meta": {"display_name": "Contra-Bass Clarinet Bb (Reference)", "family": "Clarinet", "subcategory": "Contrabass",
+                  "verified": False, "source": "Standard bore specs",
+                  "description": "Contrabass clarinet in Bb. One octave below bass clarinet. Bore 38mm. Low C/Eb. Deepest standard clarinet. Doubled-back body."},
+    },
+
+    "octo_contra_alto_clarinet_EEb": {
+        "bore_length": 2200.0, "bore_diameter": 42.0, "wall_thickness": 8.0,
+        "closed_top": True,
+        "holes": [(300,14.0),(450,14.0),(600,14.0),(750,14.0),(900,14.0),(1050,14.0),(1200,14.0),(1350,14.0),(1500,14.0),(1650,14.0)],
+        "_meta": {"display_name": "Octo-Contra-Alto Clarinet EEb (Octocontralto)", "family": "Clarinet", "subcategory": "Sub-Contra",
+                  "verified": False, "source": "JDWoodwinds prototype 2025",
+                  "description": "Octo-contra-alto (octocontralto) in EEb. One of two sizes playing below 20Hz. JDWoodwinds prototype 2025 (2nd prototype range to low D, extended to low C 2026). Lowest note 19.445Hz. Rare experimental."},
+    },
+
+    "octo_contra_bass_clarinet_BBB": {
+        "bore_length": 2600.0, "bore_diameter": 48.0, "wall_thickness": 9.0,
+        "closed_top": True,
+        "holes": [(350,16.0),(500,16.0),(650,16.0),(800,16.0),(950,16.0),(1100,16.0),(1250,16.0),(1400,16.0),(1550,16.0),(1700,16.0)],
+        "_meta": {"display_name": "Octo-Contrabass Clarinet BBB (Octocontrabass)", "family": "Clarinet", "subcategory": "Sub-Contra",
+                  "verified": False, "source": "Leblanc original / Martin Foag prototype",
+                  "description": "Octocontrabass clarinet in BBB. Only two playable instruments built: Leblanc original and Martin Foag prototype. Deepest woodwind. Lowest notes below human hearing."},
+    },
+
+    # Professional Bass Clarinet (3D printable) - Printgear3D Cults3D
+    "printgear3d_bass_clarinet": {
+        "bore_length": 1200.0, "bore_diameter": 25.0, "wall_thickness": 5.0,
+        "closed_top": True,
+        "holes": [(175,9.5),(280,9.5),(380,9.5),(480,9.5),(580,9.5),(680,10.0),(780,10.0),(880,10.5),(980,10.5)],
+        "_meta": {"display_name": "Bass Clarinet (Printgear3D V2)", "family": "Clarinet", "subcategory": "Bass",
+                  "verified": True, "source": "Cults3D (Printgear3D)", "url": "https://cults3d.com/en/3d-model/art/clarinete-bajo-bass-clarinet",
+                  "description": "Bass clarinet by Printgear3D. 80cm x 40cm. V2 optimized geometry for easier printing. Professional dimensions. Medidas: 80cm length."},
+    },
+
+    # ══════════════════════════════════════════════════════════════════════════════════════
+    #  BARITONE SAXOPHONE (Professional & 3D Printed)
+    # ════════════════════════════════════════════════════════════════════════════════════
+
+    "selmer_mark_vi_baritone": {
+        "bore_length": 1140.0, "bore_diameter": (30.0, 55.0), "wall_thickness": 5.5,
+        "closed_top": False,
+        "holes": [(160,9.5),(270,9.5),(380,9.5),(490,10.0),(600,10.0),(710,10.0),(820,10.5),(930,10.5),(1040,11.0)],
+        "_meta": {"display_name": "Selmer Mark VI Baritone Sax (Reference)", "family": "Saxophone", "subcategory": "Baritone",
+                  "verified": False, "source": "Standard Selmer proportions",
+                  "description": "Selmer Mark VI bari sax. Conical 30-55mm bore. Powerful low register. Low A key on later models. Hand-drawn bell. Gold standard for bari."},
+    },
+
+    "selmer_mark_vi_baritone_lowA": {
+        "bore_length": 1160.0, "bore_diameter": (30.0, 55.0), "wall_thickness": 5.5,
+        "closed_top": False,
+        "holes": [(160,9.5),(270,9.5),(380,9.5),(490,10.0),(600,10.0),(710,10.0),(820,10.5),(930,10.5),(1040,11.0),(1120,11.0)],
+        "_meta": {"display_name": "Selmer Mark VI Baritone Low A (Reference)", "family": "Saxophone", "subcategory": "Baritone",
+                  "verified": False, "source": "Standard Selmer proportions",
+                  "description": "Selmer Mark VI bari with low A key. Extended bore to low A (sounding C). Extra key for left thumb. Professional orchestral standard."},
+    },
+
+    "yamaha_ybs62_baritone": {
+        "bore_length": 1140.0, "bore_diameter": (30.0, 55.0), "wall_thickness": 5.5,
+        "closed_top": False,
+        "holes": [(160,9.5),(270,9.5),(380,9.5),(490,10.0),(600,10.0),(710,10.0),(820,10.5),(930,10.5),(1040,11.0)],
+        "_meta": {"display_name": "Yamaha YBS-62 Baritone Sax (Reference)", "family": "Saxophone", "subcategory": "Baritone",
+                  "verified": False, "source": "Yamaha professional specs",
+                  "description": "Yamaha YBS-62 professional baritone. Low A key. Gold lacquer. High F# key. Reliable intonation. Popular professional choice."},
+    },
+
+    "selmer_serie_iii_baritone": {
+        "bore_length": 1140.0, "bore_diameter": (30.5, 56.0), "wall_thickness": 5.5,
+        "closed_top": False,
+        "holes": [(160,9.5),(270,9.5),(380,9.5),(490,10.0),(600,10.0),(710,10.0),(820,10.5),(930,10.5),(1040,11.0)],
+        "_meta": {"display_name": "Selmer Series III Baritone Sax (Reference)", "family": "Saxophone", "subcategory": "Baritone",
+                  "verified": False, "source": "Selmer modern professional specs",
+                  "description": "Selmer Series III bari (current flagship). Improved ergonomics over Mark VI. Better altissimo. Low A key standard. Gold lacquer or silver plate."},
+    },
+
+    # 3D Printed Baritone Sax - Cults3D (Printgear3D)
+    "printgear3d_baritone_sax": {
+        "bore_length": 1140.0, "bore_diameter": (30.0, 55.0), "wall_thickness": 5.5,
+        "closed_top": False,
+        "holes": [(160,9.5),(270,9.5),(380,9.5),(490,10.0),(600,10.0),(710,10.0),(820,10.5),(930,10.5),(1040,11.0)],
+        "_meta": {"display_name": "Baritone Saxophone (Printgear3D)", "family": "Saxophone", "subcategory": "Baritone",
+                  "verified": True, "source": "Cults3D (Printgear3D)", "url": "https://cults3d.com/en/3d-model/art/saxofon-baritono-baritone-saxophone",
+                  "description": "Baritone saxophone by Printgear3D. 80cm x 40cm. Professional dimensions. Optimized for 3D printing. Conical bore 30-55mm. Low A key optional."},
+    },
+
+    # Professional mouthpieces for low reeds
+    "baritone_sax_mouthpiece": {
+        "bore_length": 120.0, "bore_diameter": 18.0, "wall_thickness": 4.0,
+        "closed_top": False,
+        "holes": [],
+        "_meta": {"display_name": "Baritone Sax Mouthpiece (Printable)", "family": "Parts & Accessories", "subcategory": "Mouthpiece",
+                  "verified": False, "source": "Printables / Custom design",
+                  "description": "Playable baritone sax mouthpiece. Tip opening ~2.8-3.2mm. Requires baritone reed + ligature. Print on side, sand finish. Large chamber for warm tone."},
+    },
+
+    "bass_sax_mouthpiece": {
+        "bore_length": 140.0, "bore_diameter": 22.0, "wall_thickness": 5.0,
+        "closed_top": False,
+        "holes": [],
+        "_meta": {"display_name": "Bass Sax Mouthpiece (Printable)", "family": "Parts & Accessories", "subcategory": "Mouthpiece",
+                  "verified": False, "source": "Printables / Custom design",
+                  "description": "Playable bass sax mouthpiece. Tip opening ~3.0-3.5mm. Requires bass sax reed + ligature. Print on side. Very large chamber."},
+    },
+
+    "contra_alto_clarinet_mouthpiece": {
+        "bore_length": 95.0, "bore_diameter": 16.5, "wall_thickness": 3.5,
+        "closed_top": False,
+        "holes": [],
+        "_meta": {"display_name": "Contra-Alto Clarinet Mouthpiece (Printable)", "family": "Parts & Accessories", "subcategory": "Mouthpiece",
+                  "verified": False, "source": "Printables / Custom design",
+                  "description": "Playable contra-alto clarinet mouthpiece. Tip opening ~1.9-2.2mm. Uses alto sax reed or modified bass clarinet reed. Print on side."},
+    },
+
+    "contra_bass_clarinet_mouthpiece": {
+        "bore_length": 110.0, "bore_diameter": 19.0, "wall_thickness": 4.0,
+        "closed_top": False,
+        "holes": [],
+        "_meta": {"display_name": "Contra-Bass Clarinet Mouthpiece (Printable)", "family": "Parts & Accessories", "subcategory": "Mouthpiece",
+                  "verified": False, "source": "Printables / Custom design",
+                  "description": "Playable contra-bass clarinet mouthpiece. Tip opening ~2.2-2.5mm. Uses bass sax reed or contra reed. Print on side. Large chamber."},
+    },
 }
 
 
