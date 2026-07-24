@@ -419,6 +419,25 @@ print('RMS:', best['objectives']['frequency_accuracy'], 'cents')
 
 ---
 
+---
+
+### Laptop Session (2026-07-24 — TMM diagnostic, cross-fingering, Diatonic D Chalumeau, session wrap)
+- ✅ **TMM diagnostic confirmed**: `diagnose_tmm_holes.py` verified holes DO shift resonance frequencies with n_register=2 (was worried the TMM was broken)
+- ✅ **Cross-fingering validated**: 9-hole chromatic flute achieved 34.55c RMS (18x improvement from 625c baseline). A#4/B4 sub-1c with patterns from `chromatic_flute.py`
+- ✅ **Key finding confirmed**: Sequential chromatic flat-to-the-body hard-limited to ~15c RMS (desktop's finding independently replicated)
+- ✅ **n_register auto-detect fixed**: `n_register = 1 if closed_top else 2` — open-open pipe fundamental is phase=2, never phase=1
+- ✅ **Diatonic D Chalumeau config** added to `benchmark_all.py` + `target_frequencies.py` (closed-open, 7 notes C#4-B4, 16mm bore)
+- ✅ **Per-note register support** added to `tmm_acoustics.py`: `compute_fingered_frequencies` accepts `Union[int, List[int]]`
+- ✅ **3D-printable STLs found**: Modern Chalumeau in C (Printables #752555, Vandoren Eb mouthpiece), Pocket Clarinet (Thingiverse #3834802, Bb mouthpiece)
+- ⚠️ **Pushed to GitHub**: All changes on `experiment/bore-profile-optimization`
+
+### Next for Desktop:
+- Cross-fingering optimizer needed (not SequentialBoreOptimizer — classify holes as primary/corrective/vents with fixed fingering matrix)
+- Merge two-register optimizer and 13x13 cross-fingering chart from experiment branch
+- Run full Diatonic D Chalumeau (should achieve sub-1c RMS, closed-open n_register=1)
+
+---
+
 ## Desktop Environment (for reference)
 - **OS:** Windows 10 Home, Build 19045
 - **Python:** 3.14.6
@@ -457,6 +476,73 @@ print('RMS:', best['objectives']['frequency_accuracy'], 'cents')
 
 ## Direct Communication (Tailscale)
 - **Desktop:** Tailscale ACTIVE — IP 100.69.113.41, hostname "twitchy"
-- **Laptop:** Needs to install Tailscale and login with same account (Issue #12)
-- Once both machines are on the same tailnet, they can communicate directly
-- Tailscale IPs: 100.x.x.x (assigned after login)
+- **Laptop:** Tailscale ACTIVE — IP 100.100.66.117
+- Both machines on same tailnet, can ping each other
+- LAN chat port 9123: desktop server may not be running
+
+---
+
+## Laptop Session — 2026-07-23 (hole diameter optimization + research merge)
+
+### What was done:
+1. **Hole diameter optimization implemented** (commit a13a55b)
+   - Diameters co-optimized with positions in Phase 2b DE and Phase 3 refinement
+   - Bounds: [bore_radius * 0.4, bore_radius * 0.9] per hole
+   - Results improved: soprano sax 0.29c → 0.03c, chalumeau 0.51c → 0.00c
+
+2. **Two new instruments added:**
+   - Tin whistle in D (6 holes, cylindrical, 0.91c RMS)
+   - Soprano recorder in C (7 holes, conical, 0.00c RMS)
+
+3. **Research completed (4 topics):**
+   - Hole diameter optimization → IMPLEMENTED
+   - TMMI (mutual radiation impedance) → 5-10c improvement for real instruments
+   - More instruments → oboe/bassoon too complex for 3D printing
+   - Spectral target optimization → 6 tone-shaping features identified
+
+4. **Desktop research merged** (commit aa4f44e)
+   - Pull from experiment/alto-sax-bore-profile
+   - refine_chalumier.py, benchmark_chalumier.py, two_phase_optimizer.py
+   - research/instrument-measurements.md (702 lines)
+   - research/saxophone/ (6 docs)
+
+### All 7 instruments sub-1c RMS:
+| Instrument | Type | RMS | Time |
+|---|---|---|---|
+| Chalumeau C | closed-open | 0.00c | 4.8s |
+| Bass Chalumeau Bb | closed-open | 0.00c | 14.3s |
+| Soprano Sax Bb | open-open | 0.03c | 93.9s |
+| Xaphoon C | open-open | 0.00c | 70.3s |
+| Alto Sax Eb | open-open | 0.15c | 106.2s |
+| Tin Whistle D | open-open | 0.91c | 101.6s |
+| Recorder C | open-open (conical) | 0.00c | 178.6s |
+
+### Desktop status:
+- Online (pingable at 100.69.113.41)
+- LAN chat server not running (port 9123 not responding)
+- SSH not available
+- Last known: working on experiment/alto-sax-bore-profile, verified Phase 2b DE
+
+### For Desktop:
+- Pull latest: `git pull origin experiment/bore-profile-optimization`
+- New: hole diameter optimization, tin whistle, recorder
+- Merged: your chalumier benchmarks + instrument measurements + saxophone research
+
+---
+
+### Laptop Session (2026-07-23 — chromatic fingering charts, AI tools merged)
+- ✅ AI assistant + advisor merged to `main` branch and pushed (general availability)
+- ✅ Concert flute in C benchmarked: 0.60c RMS (6-hole simple system)
+- ✅ Alto flute in G benchmarked: 0.00c RMS (11mm bore, 878mm)
+- ✅ PVC flute in D benchmarked: 0.00c RMS (3/4" schedule 40, 20.4mm ID)
+- ✅ WIKI.md created: acoustics science, TMM theory, optimization methods, all 10 instruments, AI integration, code architecture, 10+ references
+- ✅ Chromatic flute model (chromatic_flute.py): 17-hole Boehm geometry, C4-C6 fingering chart, per-note register
+- ✅ Flute chromatic fingering chart saved: `research/flute-chromatic-fingering.md` (36 notes, C4-C7, Boehm system)
+- ✅ Saxophone chromatic fingering charts saved: `research/saxophone-chromatic-fingering.md` (soprano Bb + alto Eb, full range)
+- ✅ Key finding confirmed: sequential chromatic hard-limited to ~8-15c RMS for any open-open pipe (your finding independently replicated)
+- ✅ All pushed to `experiment/bore-profile-optimization` on GitHub
+
+### Next (for both):
+- Cross-fingering implementation needed to break the ~15c chromatic barrier
+- Saxophone chromatic optimization with proper fingerings
+- Desktop's two-register optimizer + cross-fingering topology should be integrated

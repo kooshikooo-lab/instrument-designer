@@ -20,6 +20,7 @@ INSTRUMENT_TYPES: dict[str, str] = {
     # Flutes — open-open pipe, all harmonics
     "folk_flute": "open-open",
     "folk_whistle": "open-open",
+    "tin_whistle": "open-open",
     "recorder": "open-open",
     "dorian_whistle": "open-open",
     "three_hole_whistle": "open-open",
@@ -157,6 +158,30 @@ PRESET_TARGETS: dict[str, dict] = {
         "range": ("D5", "D7"),
         "description": "Folk flute in D — 2 octaves, all harmonics",
     },
+    "tin_whistle": {
+        "type": "open-open",
+        "note": "D5",
+        "range": ("D5", "C#6"),
+        "description": "Tin whistle in D — 6 holes, all harmonics",
+    },
+    "concert_flute": {
+        "type": "open-open",
+        "note": "C4",
+        "range": ("C4", "D5"),
+        "description": "Concert flute in C (Boehm) — 6-hole simple system model",
+    },
+    "alto_flute": {
+        "type": "open-open",
+        "note": "G3",
+        "range": ("G3", "F#4"),
+        "description": "Alto flute in G — 6-hole simple system",
+    },
+    "pvc_flute": {
+        "type": "open-open",
+        "note": "D4",
+        "range": ("D4", "C#5"),
+        "description": "PVC flute in D (3/4\" schedule 40 pipe, 20.4mm ID)",
+    },
     "recorder": {
         "type": "open-open",
         "note": "C5",
@@ -192,6 +217,12 @@ PRESET_TARGETS: dict[str, dict] = {
         "note": "Bb3",
         "range": ("Bb3", "Bb5"),
         "description": "Bb clarinet — odd harmonics only",
+    },
+    "diatonic_chalumeau": {
+        "type": "closed-open",
+        "note": "C#4",
+        "range": ("C#4", "C#5"),
+        "description": "Diatonic D chalumeau (baroque, 16mm bore, La Belle Note style)",
     },
     "soprano_sax": {
         "type": "open-open",
