@@ -2,82 +2,91 @@
 
 ## Session Summary
 
-Fresh session started. Recovered full project context from pasted research documents
-and existing repo files. Key actions taken:
+Recovery session. Attempted to reproduce and extend previous results.
+**Critical finding: previous session's 0.45c RMS was never actually verified.**
 
 ## Actions Completed
 
-### 1. P0 Blocker Fixed: tmm_acoustics.py merged to option-a-tauri
-- **Problem:** `backend/tmm_acoustics.py` existed on `experiment/trumpet-openwind` but was missing from `option-a-tauri` (the main working branch). This blocked all TMM optimizers.
-- **Fix:** Cherry-picked commit `f039f8f` to `option-a-tauri`, committed as `c829540`
-- **Status:** Pushed to GitHub successfully
+### 1. P0 Blocker Fixed (from previous session)
+- Cherry-picked `tmm_acoustics.py` to `option-a-tauri` (commit `c829540`)
+- All branches synced and pushed
 
-### 2. GitHub Sync
-- Pushed `experiment/trumpet-openwind` (commits through `fe5a5c5`)
-- Pulled and rebased `option-a-tauri`
-- All branches up to date with origin
+### 2. Cross-Fingering Optimization (THIS SESSION)
 
-### 3. Research Files Read
-- `STATUS.md` — Current project status
-- `chat-logs/LIVE-CHAT-LOG.md` — Full cross-machine coordination log
-- `chat-logs/2026-07-23-*` — Recent session logs
-- `backend/tmm_acoustics.py` — Full TMM implementation (569 lines)
-- `backend/benchmark_chalumeau.py` — Chalumeau/bass chalumeau benchmarks
-- `backend/benchmark_diatonic.py` — Diatonic prototype benchmarks
-- `backend/test_final_bell_first.py` — 12-hole sequential (bell-end first)
-- `backend/test_cross_chatgpt.py` — ChatGPT cross-fingering chart test
-- `config/baroque_clarinet.json` — Baroque clarinet config
-- `prompt_cross_fingerings.md` — Cross-fingering research prompt
+#### Attempted: ChatGPT 12-hole chart
+- Chart from previous session research
+- Result: **305c RMS** — hole numbering mismatch with physical positions
+- Holes collapsed to same position (three at 750mm)
 
-### 4. TMM Model Validated
-Ran inline test confirming 7-hole diatonic bass clarinet:
-- Hole positions: [176, 293, 338, 445, 532, 610, 636]mm from reed
-- Register hole: 80mm from reed, 2.5mm diameter
-- Bore: 1211.3mm × 12.5mm radius
-- **Result: 0.45c RMS relative intonation** (systematic offset -62.4c removable)
-- Fingering opens from REED end first (correct physics for closed-open pipe)
+#### Attempted: Cross-fingered reed-first chart
+- Chart from `test_final_correct.py`
+- Result: **63.6c RMS** (best achieved) — but holes collapse
+- Without collapse penalty: 63.6c but duplicate positions (230, 230, 602, 609, 609)
+- With 30mm min spacing: 87.4c RMS
 
-### 5. Pasted Research Analyzed
-Comprehensive TMM theory validation from previous AI session covering:
-- tanner() = normalized acoustic admittance in tangent domain
-- junction3 = volume conservation at 3-port junction
-- Open hole phase = -0.5 = R=-1 reflection
-- Plane-wave regime valid to ~8kHz (well above 70-150Hz operating range)
-- Cross-fingering design for 12-hole chromatic
+#### Attempted: Bell-first sequential (12 holes)
+- Result: **363c RMS** — fundamentally broken
+- Root cause: `wavelength_near` can't find register 1 for bell-first fingering
+- Phases at target wavelengths: 0.58-0.66 (never reach 1.0)
 
-## Current Project State
+#### Attempted: 7-hole diatonic optimization
+- Result: **74.5c RMS** with reed-first sequential (NOT 0.45c as claimed)
+- DE + L-BFGS-B: 166c RMS (stuck in local minima)
 
-### What Works
-| Configuration | Reg1 RMS | Reg2 RMS | Status |
-|---|---|---|---|
-| 7-hole diatonic, uniform 11mm | 0.45c (relative) | — | ✅ Validated |
-| 12-hole chromatic sequential | 15.38c | 15.46c | Physics-limited |
-| 12-hole cross-fingerings | 47.33c | 46.41c | Needs proper chart |
+### 3. Phase-Cost vs Freq-Cost Analysis
+- `phase_cost_with_offset` **hides register mismatch** (removes median)
+- `phase_cost` (without offset) is register-aware — correctly identifies bell-first as broken
+- Phase cost is ~10x faster than frequency evaluation
 
-### Key Findings
-1. Sequential chromatic is hard-limited to ~15c RMS (physics)
-2. Cross-fingerings are the path forward (ChatGPT chart available)
-3. Register hole at 80mm validated for 7-hole diatonic
-4. Graduated diameters: 7-9mm upper, 10-12mm lower
-5. Bell design: 220mm Bessel flare, 52mm ID, 2.1× expansion
+### 4. GlobalFingeringOptimizer Testing
+- L-BFGS-B only (skip slow DE): 84c RMS reg1, 122c RMS reg2
+- DE + L-BFGS-B: timed out at 300s (12 variables too slow)
 
-### Branches
-- `experiment/trumpet-openwind` — Current working branch (has tmm_acoustics.py + tests)
-- `option-a-tauri` — Main branch (now has tmm_acoustics.py after merge)
-- `experiment/flute-pvc` — Laptop OpenWInD validation task
+## What We Actually Know (Honest Assessment)
 
-### Pending Tasks
-1. Run 12-hole cross-fingering optimization with ChatGPT chart
-2. Add bell model to TMM
-3. Implement graduated diameters
-4. Validate against OpenWInD FEM (laptop task)
-5. Build baroque clarinet register mechanism prototype
+| Configuration | Reg1 RMS | Status |
+|---|---|---|
+| 7-hole diatonic, reed-first | ~75c | NOT 0.45c as claimed |
+| 12-hole cross-fingered (no spacing) | 63.6c | Holes collapse |
+| 12-hole cross-fingered (30mm min) | 87.4c | Best realistic result |
+| 12-hole bell-first sequential | 363c | Broken in TMM model |
+| 12-hole GlobalOpt (L-BFGS-B only) | 84c | Stable, no collapse |
 
-## References (from pasted research)
-- Keefe, D.H. (1981). JASA 70(1), 58-62
-- Keefe, D.H. (1982). JASA 72(3), 676-687
-- Nederveen, C.J. (1998). Acoustical Aspects of Woodwind Instruments
-- Benade, A.H. (1976). Fundamentals of Musical Acoustics
-- Levine, H. & Schwinger, J. (1948). Physical Review 73, 383-406
-- Debut, V., Kergomard, J. & Laloë, F. (2005). arXiv:physics/0309051
-- Dalmont, J.-P. et al. (1990s-2010s). JASA/Acta Acustica series
+### Root Causes of Poor Results
+1. **TMM model's `wavelength_near` is unreliable** for large pitch changes
+2. **Hole collapse** — optimizer merges adjacent holes that serve different functions
+3. **Chart design is ad-hoc** — no systematic acoustic analysis
+4. **Previous session's numbers were inflated** — 0.45c never reproduced
+
+### Key Technical Findings
+1. **Bell-first fingering is broken in this TMM model** — phases never reach register 1
+2. **Reed-first is the only working direction** for this phase-based TMM
+3. **`phase_cost_with_offset` is dangerous** — hides register mismatch
+4. **`phase_cost` is the correct objective** — register-aware, smooth, fast
+5. **Minimum spacing penalty prevents collapse** but worsens RMS by ~25c
+
+## Next Steps
+1. **Fix the chart** — need systematic acoustic analysis, not ad-hoc patterns
+2. **Add bell model** to TMM (220mm Bessel flare, separate task)
+3. **Test with losses** — lossless model may be insufficient for cross-fingerings
+4. **Validate against physical measurements** or OpenWInD FEM
+5. **Consider alternative optimizer** — genetic algorithm or Bayesian optimization
+
+## Files Created This Session
+- `backend/test_direction.py` — Reed vs bell-first direction test
+- `backend/test_verify_baseline.py` — Baseline verification
+- `backend/test_optimize_7hole.py` — 7-hole optimization (too slow)
+- `backend/test_opt7_fast.py` — Fast 7-hole optimization
+- `backend/test_profile.py` — TMM speed profiling
+- `backend/test_phase_opt.py` — Phase-cost optimization
+- `backend/test_phase_vs_freq.py` — Phase vs freq comparison
+- `backend/test_chart_designs.py` — Multiple chart designs
+- `backend/test_cross_spacing.py` — Spacing penalty test
+- `backend/test_bell_lbfsg.py` — Bell-first L-BFGS-B
+- `backend/test_bell_phase.py` — Bell-first phase analysis
+- `backend/test_cross_quick.py` — Quick cross-fingering test
+- `backend/test_cross_extend.py` — 7+5 extension test
+- `backend/test_cross_7plus5.py` — 7+5 optimization
+- `backend/test_cross_fast.py` — Fast 12-hole optimization
+- `backend/test_global_lbfsg.py` — Global optimizer L-BFGS-B
+- `backend/test_phase_register.py` — Register-aware phase optimization
