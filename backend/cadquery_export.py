@@ -272,21 +272,21 @@ INSTRUMENTS = {
                   "verified": False, "source": "Standard bore specs (Benade)",
                   "description": "Standard 10-hole bass clarinet. Bore 23.5mm, range Bb1-C4."},
     },
-    "contraalto_clarinet_Eb": {
+    "contra_alto_clarinet_Eb": {
         "bore_length": 1600.0, "bore_diameter": 32.0, "wall_thickness": 6.0,
         "closed_top": True,
         "holes": [(200,11.0),(330,11.0),(460,11.0),(590,11.0),(720,11.0),(850,11.0),(980,11.0),(1110,11.0),(1240,11.0),(1370,11.0)],
-        "_meta": {"display_name": "Contra-Alto Clarinet Eb", "family": "Clarinet", "subcategory": "Contra",
+        "_meta": {"display_name": "Contra-Alto Clarinet Eb", "family": "Clarinet", "subcategory": "Contra-Alto",
                   "verified": False, "source": "Standard bore specs",
                   "description": "Contra-alto clarinet. One octave below alto sax. Powerful low register."},
     },
-    "contrabass_clarinet_Bb": {
+    "contra_bass_clarinet_Bb": {
         "bore_length": 1900.0, "bore_diameter": 38.0, "wall_thickness": 7.0,
         "closed_top": True,
         "holes": [(250,13.0),(400,13.0),(550,13.0),(700,13.0),(850,13.0),(1000,13.0),(1150,13.0),(1300,13.0),(1450,13.0),(1600,13.0)],
-        "_meta": {"display_name": "Contrabass Clarinet Bb", "family": "Clarinet", "subcategory": "Contrabass",
+        "_meta": {"display_name": "Contra-Bass Clarinet Bb", "family": "Clarinet", "subcategory": "Contra-Bass",
                   "verified": False, "source": "Standard bore specs",
-                  "description": "Contrabass clarinet. One octave below bass. Deepest clarinet."},
+                  "description": "Contra-bass clarinet. One octave below bass. Deepest clarinet."},
     },
 
     # ═══════════════════════════════════════════════════════════
@@ -840,7 +840,7 @@ INSTRUMENTS = {
         "bore_length": 1600.0, "bore_diameter": 32.0, "wall_thickness": 6.0,
         "closed_top": True,
         "holes": [(200,11.0),(330,11.0),(460,11.0),(590,11.0),(720,11.0),(850,11.0),(980,11.0),(1110,11.0),(1240,11.0),(1370,11.0)],
-        "_meta": {"display_name": "Contra-Alto Clarinet Eb (Reference)", "family": "Clarinet", "subcategory": "Contra",
+        "_meta": {"display_name": "Contra-Alto Clarinet Eb (Reference)", "family": "Clarinet", "subcategory": "Contra-Alto",
                   "verified": False, "source": "Standard bore specs (Leblanc 340 Paperclip)",
                   "description": "Contra-alto clarinet in Eb. One octave below alto sax. Bore 32mm. Low Eb/C models. Powerful low register. Leblanc 340 'Paperclip' is popular compact version."},
     },
@@ -849,9 +849,9 @@ INSTRUMENTS = {
         "bore_length": 1900.0, "bore_diameter": 38.0, "wall_thickness": 7.0,
         "closed_top": True,
         "holes": [(250,13.0),(400,13.0),(550,13.0),(700,13.0),(850,13.0),(1000,13.0),(1150,13.0),(1300,13.0),(1450,13.0),(1600,13.0)],
-        "_meta": {"display_name": "Contra-Bass Clarinet Bb (Reference)", "family": "Clarinet", "subcategory": "Contrabass",
+        "_meta": {"display_name": "Contra-Bass Clarinet Bb (Reference)", "family": "Clarinet", "subcategory": "Contra-Bass",
                   "verified": False, "source": "Standard bore specs",
-                  "description": "Contrabass clarinet in Bb. One octave below bass clarinet. Bore 38mm. Low C/Eb. Deepest standard clarinet. Doubled-back body."},
+                  "description": "Contra-bass clarinet in Bb. One octave below bass clarinet. Bore 38mm. Low C/Eb. Deepest standard clarinet. Doubled-back body."},
     },
 
     "octo_contra_alto_clarinet_EEb": {

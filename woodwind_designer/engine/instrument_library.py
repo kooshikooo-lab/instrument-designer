@@ -1210,14 +1210,14 @@ LIBRARY: list[InstrumentEntry] = [
 
     # Octo-Contrabass Clarinet BBB (Reference)
     InstrumentEntry(
-        name="Octo-Contrabass Clarinet BBB (Octocontrabass)",
+        name="Octo-Contra-Bass Clarinet BBB (Octocontrabass)",
         family="Wind", subcategory="Clarinet", type_label="Sub-Contra",
         range="Sub-Contra", key="BBB",
         source="Leblanc original / Martin Foag prototype",
         image_url="",
         audio_url="",
         download_url="",
-        tags=["experimental", "clarinet", "octo-contrabass", "bbb", "deepest", "reference"],
+        tags=["experimental", "clarinet", "octo-contra-bass", "bbb", "deepest", "reference"],
         difficulty="Expert",
         description="Octocontrabass clarinet in BBB. Only two playable instruments built: "
                     "Leblanc original and Martin Foag prototype. Deepest woodwind. "
@@ -1258,9 +1258,9 @@ LIBRARY: list[InstrumentEntry] = [
 
     # Contra-Alto/Contra-Bass Clarinet Mouthpiece
     InstrumentEntry(
-        name="Contra Clarinet Mouthpiece (Playable)",
+        name="Contra-Bass Clarinet Mouthpiece (Playable)",
         family="Wind", subcategory="Parts & Accessories", type_label="Mouthpiece",
-        range="Contra", key="N/A",
+        range="Contra-Bass", key="N/A",
         source="Printables / Community",
         image_url="",
         audio_url="",
