@@ -47,8 +47,8 @@ class Segment:
 
     Attributes:
         length: segment length in mm
-        radius_in: radius at input end (toward reed/closed end)
-        radius_out: radius at output end (toward bell/open end)
+        radius_in: radius at input end (bell / open end, position 0)
+        radius_out: radius at output end (reed / closed end, position L)
         n_points: number of discretization points for FEM
     """
     length: float
@@ -70,7 +70,7 @@ class Port:
     """A side branch (tonehole, register vent, etc).
 
     Attributes:
-        position: position along the bore (in internal coordinates: 0=reed, L=bell)
+        position: position along the bore (in internal coordinates: 0=bell, L=reed)
         radius: hole radius in mm
         length: chimney height in mm
         is_open: whether the hole is currently open
@@ -117,7 +117,7 @@ class AcousticNetwork:
     The solver does NOT know what instrument this represents.
 
     Attributes:
-        segments: bore sections, ordered from reed (position 0) to bell (position L)
+        segments: bore sections, ordered from bell (position 0) to reed (position L)
         ports: side branches (toneholes, register vents)
         boundary_reed: boundary condition at reed end
         boundary_bell: boundary condition at bell end

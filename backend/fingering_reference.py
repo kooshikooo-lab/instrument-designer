@@ -1,4 +1,23 @@
-"""Complete fingering reference for bass clarinet / clarinet family."""
+"""Complete fingering reference for bass clarinet / clarinet family.
+
+COORDINATE CONVENTION (follows chalumier/demakein):
+  Position 0 = bell (open end), Position L = reed (closed end)
+  hole_positions[i] = physical position of hole i along the bore
+  fingerings[i] = open/closed state of hole i (maps to hole_positions[i])
+
+  Chalumier: index 0 = nearest bell, index N-1 = nearest reed
+  Standard clarinet chart: H1 = nearest reed, H12 = nearest bell
+
+  To convert between conventions, reverse the array ordering.
+
+PHYSICS:
+  Each fingering configuration produces a specific effective bore length.
+  The same pitch can often be produced by different fingering combinations
+  (cross-fingerings, alternate fingerings). These vary in intonation due to:
+  - Tonehole lattice cutoff frequency (frequency-dependent wave propagation)
+  - Standing wave extension past first open hole (Adachi 2016)
+  - Impedance peak characteristics (harmonicity, amplitude)
+"""
 import sys
 sys.path.insert(0, 'backend')
 from tmm_acoustics import SPEED_OF_SOUND
@@ -6,7 +25,7 @@ from tmm_acoustics import SPEED_OF_SOUND
 # Bass clarinet parameters
 BORE_RADIUS = 12.5  # mm
 BORE_LENGTH = 1211.3  # mm (written D2 fundamental)
-REGISTER_HOLE_POS = 80.0  # mm from reed
+REGISTER_HOLE_POS = 1131.0  # mm from bell (= 80mm from reed, bore=1211mm)
 REGISTER_HOLE_DIA = 2.5  # mm
 REGISTER_HOLE_LEN = 3.0  # mm
 
@@ -25,6 +44,37 @@ written_pitches = {
     "D5":  587.330, "D#5": 622.254, "E5":  659.255, "F5":  698.456,
     "F#5": 739.989, "G5":  783.991, "G#5": 830.609, "A5":  880.000,
 }
+
+# ============================================================================
+# Hole positions — CHALUMIER CONVENTION (index 0 = nearest bell)
+# ============================================================================
+# These are physical positions along the bore in mm from bell (position 0).
+# The optimizer uses this convention: fingerings[i] maps to hole_positions[i].
+
+# H7 (nearest reed) to H1 (nearest bell) — physical positions from bell
+# Original positions (mm from reed): [176, 293, 338, 445, 532, 610, 636]
+# Converted to mm from bell, reversed to chalumier order (nearest bell first)
+HOLE_POSITIONS_CHALUMIER = [575, 601, 679, 766, 873, 918, 1035]  # H7..H1
+
+# Extended holes for chromatic cross-fingerings (H8-H12, nearest bell)
+# Original (mm from reed): [700, 760, 820, 880, 940]
+# Converted (mm from bell): [511, 451, 391, 331, 271]
+HOLE_POSITIONS_EXTENDED = [271, 331, 391, 451, 511]  # H12..H8 (nearest bell first)
+
+# All 12 holes in chalumier order (nearest bell to nearest reed)
+HOLE_POSITIONS_ALL = HOLE_POSITIONS_EXTENDED + HOLE_POSITIONS_CHALUMIER
+
+# Graduated hole diameters (bell→reed): typical professional clarinet
+# Bottom holes (near bell) larger for venting, top holes smaller for tuning
+GRADUATED_DIAMETERS = [18.0, 17.0, 16.5, 16.0, 15.5, 15.0, 14.0, 13.0, 12.0, 11.5, 11.0, 10.5]
+HOLE_LENGTHS = [5.0] * 12  # chimney height in mm
+
+
+# ============================================================================
+# Fingering chart — STANDARD CLARINET NOTATION (H1 = nearest reed)
+# ============================================================================
+# This is for human readability. To use with the optimizer, reverse the
+# array order so index 0 = nearest bell (chalumier convention).
 
 # Standard 12-tonehole fingering chart (written pitch)
 # H1 = top (closest to reed), H12 = bottom (closest to bell)
@@ -70,21 +120,26 @@ FINGERING_CHART_CLARION = {
     # Altissimo: many alternate fingerings exist
 }
 
-# Hole positions from working 7-hole optimization (sequential, reed→bell)
-# These are the PRIMARY hole positions (H1-H7)
-BASE_HOLE_POSITIONS = [176, 293, 338, 445, 532, 610, 636]  # mm from reed
 
-# Additional holes for chromatic cross-fingerings (H8-H12)
-# H8, H9 = corrective chromatic holes (between H5-H7)
-# H10 = additional corrective
-# H11 = vent for C3
-# H12 = low C extension (near bell)
-EXTENDED_HOLE_POSITIONS = BASE_HOLE_POSITIONS + [700, 760, 820, 880, 940]
+def chart_to_chalumier(chart_dict):
+    """Convert H1=reed fingering chart to chalumier convention (index 0=bell).
 
-# Graduated hole diameters (top→bottom): typical professional clarinet
-# Top holes smaller for tuning stability, bottom holes larger for venting
-GRADUATED_DIAMETERS = [10.5, 11.0, 11.5, 12.0, 13.0, 14.0, 15.0, 15.5, 16.0, 16.5, 17.0, 18.0]
-HOLE_LENGTHS = [5.0] * 12  # chimney height in mm
+    Reverses the fingering array order so fingerings[i] maps to
+    hole_positions[i] in chalumier order (nearest bell first).
+    """
+    result = {}
+    for note, row in chart_dict.items():
+        # Reverse hole states (H1..H12 -> H12..H1), keep register bit
+        holes = row[:12]
+        reg = row[12] if len(row) > 12 else 0
+        result[note] = list(reversed(holes)) + [reg]
+    return result
+
+
+# Fingering charts in chalumier convention (index 0 = nearest bell)
+CHALUMEAU_CHART_CHALUMIER = chart_to_chalumier(FINGERING_CHART_CHALUMEAU)
+CLARION_CHART_CHALUMIER = chart_to_chalumier(FINGERING_CHART_CLARION)
+
 
 # Convert fingering chart to string format for optimizer
 def chart_to_strings(chart_dict):
@@ -128,11 +183,11 @@ if __name__ == "__main__":
             print(f"  {note:>4} ({freq:>7.2f} Hz):  {holes_str}  R={reg}")
     
     print()
-    print("HOLE POSITIONS (mm from reed):")
+    print("HOLE POSITIONS (mm from bell, 0=bell, L=reed):")
     print("-" * 80)
     for i, pos in enumerate(EXTENDED_HOLE_POSITIONS):
         d = GRADUATED_DIAMETERS[i] if i < len(GRADUATED_DIAMETERS) else 11.0
         print(f"  H{i+1:2d}: {pos:>4.0f}mm  dia={d:.1f}mm")
     
     print()
-    print("REGISTER HOLE: R @ 80mm (2.5mm dia, 3mm len) - CLOSED for chalumeau")
+    print("REGISTER HOLE: R @ 1131mm from bell (80mm from reed, 2.5mm dia, 3mm len) - CLOSED for chalumeau")

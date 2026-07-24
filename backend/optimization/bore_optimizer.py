@@ -98,7 +98,7 @@ class BoreOptimizer(Optimizer):
         else:
             net.segments[0].length = bore_length
 
-        net.boundary_bell.position = bore_length
+        net.boundary_bell.position = 0.0
         return net
 
     def optimize(self, verbose: bool = False) -> OptimizationResult:
