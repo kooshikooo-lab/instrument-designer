@@ -133,7 +133,7 @@ class AcousticNetwork:
         type=BoundaryType.BELL, excitation=ExcitationType.NONE, position=0.0
     ))
     fingerings: List[Fingering] = field(default_factory=list)
-    speed_of_sound: float = 343200.0  # mm/s at 20°C
+    speed_of_sound: float = 346100.0  # mm/s (chalumier value, ~346.1 m/s at 20°C)
 
     @property
     def total_length(self) -> float:

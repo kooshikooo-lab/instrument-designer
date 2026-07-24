@@ -78,11 +78,26 @@ class FingeringOptimizer(Optimizer):
         from ..core.network import Port, NodeType
         net = copy.deepcopy(self.network)
 
+        # Get only tonehole ports (exclude register vent) for default values
+        tonehole_ports = [p for p in self.network.ports if p.node_type == NodeType.TONEHOLE]
+
         n_ports = len(positions)
         new_ports = []
         for i in range(n_ports):
-            rad = diameters[i] / 2.0 if diameters else self.network.ports[i].radius
-            ln = lengths[i] if lengths else self.network.ports[i].length
+            if diameters:
+                rad = diameters[i] / 2.0
+            elif i < len(tonehole_ports):
+                rad = tonehole_ports[i].radius
+            else:
+                rad = 7.0  # fallback default
+
+            if lengths:
+                ln = lengths[i]
+            elif i < len(tonehole_ports):
+                ln = tonehole_ports[i].length
+            else:
+                ln = 5.0  # fallback default
+
             new_ports.append(Port(
                 position=positions[i],
                 radius=rad,
