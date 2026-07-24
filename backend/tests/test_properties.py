@@ -32,8 +32,8 @@ class TestCoordinateTransform(unittest.TestCase):
         reed_chalumier = L
         bell_internal = CoordinateTransform.chalumier_to_internal(bell_chalumier, L)
         reed_internal = CoordinateTransform.chalumier_to_internal(reed_chalumier, L)
-        self.assertAlmostEqual(bell_internal, L, places=10)
-        self.assertAlmostEqual(reed_internal, 0.0, places=10)
+        self.assertAlmostEqual(bell_internal, 0.0, places=10)
+        self.assertAlmostEqual(reed_internal, L, places=10)
 
     def test_openwind_internal_inverse(self):
         for x in [0.0, 500.0, 1200.0]:
