@@ -8,12 +8,13 @@ import time
 import os
 import sys
 
+import cadquery as cq
+from cadquery import exporters
+
 def test_cylindrical_bore_with_holes():
     """Generate a simple clarinet-like bore with 6 tone holes."""
-    import cadquery as cq
-    from cadquery import exporters
 
-    print("CadQuery version:", cadquery.__version__)
+    print("CadQuery version:", cq.__version__)
 
     # Instrument parameters (mm)
     bore_length = 600.0
@@ -83,8 +84,6 @@ def test_cylindrical_bore_with_holes():
 
 def test_conical_bore():
     """Generate a conical bore (saxophone-like) with tone holes."""
-    import cadquery as cq
-    from cadquery import exporters
 
     print("\n--- Conical Bore Test ---")
 
@@ -105,7 +104,7 @@ def test_conical_bore():
         .circle(large_diameter / 2)
         .loft()
     )
-    print(f"  Conical bore: {small_diameter}mm → {large_diameter}mm, {bore_length}mm")
+    print(f"  Conical bore: {small_diameter}mm to {large_diameter}mm, {bore_length}mm")
 
     # Create outer cone
     outer = (
@@ -163,8 +162,6 @@ def test_conical_bore():
 
 def test_parametric_instrument():
     """Test parametric generation from bore profile data."""
-    import cadquery as cq
-    from cadquery import exporters
 
     print("\n--- Parametric Bore Profile Test ---")
 
