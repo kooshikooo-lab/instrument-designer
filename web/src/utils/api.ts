@@ -1,4 +1,4 @@
-﻿import { isTauri, tauriHttpGet, tauriHttpPost } from "./tauri";
+﻿import { isTauri, tauriHttpGet, tauriHttpPost, tauriHttpPostBinary } from "./tauri";
 
 const API_BASE = "http://localhost:8000";
 
@@ -37,14 +37,6 @@ export interface DesignJob {
   result?: { output_dir: string; files: string[] };
 }
 
-export interface StepExportParams {
-  preset: string;
-  length: number;
-  bore_diameter: number;
-  wall_thickness: number;
-  segments?: number;
-}
-
 // ── Health ───────────────────────────────────────────────────────────
 
 export async function checkHealth(): Promise<{ status: string; version: string }> {
@@ -78,13 +70,70 @@ export function getDesignDownloadUrl(jobId: string): string {
 
 // ── STEP Export ──────────────────────────────────────────────────────
 
+export interface StepExportParams {
+  bore_profile: [number, number][];
+  wall_thickness?: number;
+  tone_holes?: { position: number; diameter: number; chimney_height?: number }[];
+}
+
 export async function exportStep(params: StepExportParams): Promise<Blob> {
-  const res = await apiPost("/export/step", params);
+  if (isTauri()) {
+    const bytes = await tauriHttpPostBinary(`${API_BASE}/export/step`, params);
+    return new Blob([new Uint8Array(bytes)], { type: "application/step" });
+  }
+  const res = await fetch(`${API_BASE}/export/step`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
   if (!res.ok) throw new Error(`STEP export failed: ${res.statusText}`);
   return res.blob();
 }
 
+// ── CadQuery Export ────────────────────────────────────────────────
+
+export interface CadQueryExportParams {
+  preset?: string;
+  bore_length?: number;
+  bore_diameter?: number | number[];
+  wall_thickness?: number;
+  holes?: number[][];
+  closed_top?: boolean;
+}
+
+export async function listCadqueryInstruments(): Promise<Record<string, {
+  bore_length: number;
+  bore_diameter: number | number[];
+  closed_top: boolean;
+  holes: number;
+  display_name: string;
+  family: string;
+  subcategory: string;
+  verified: boolean;
+  description: string;
+}>> {
+  const res = await apiGet("/export/cadquery/instruments");
+  return res.json();
+}
+
+export async function exportCadquery(params: CadQueryExportParams): Promise<Blob> {
+  if (isTauri()) {
+    const bytes = await tauriHttpPostBinary(`${API_BASE}/export/cadquery`, params);
+    return new Blob([new Uint8Array(bytes)], { type: "application/sla" });
+  }
+  const res = await fetch(`${API_BASE}/export/cadquery`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
+  if (!res.ok) throw new Error(`CadQuery export failed: ${res.statusText}`);
+  return res.blob();
+}
+
 // ── Impedance ────────────────────────────────────────────────────────
+// TODO: Backend route /impedance/compute not implemented.
+// TMM solver can compute impedance — needs wiring to design_server.py.
+// Pre-computed data exists in impedance-data.ts (client-side).
 
 export async function computeImpedance(preset: string): Promise<{
   frequencies: number[];
@@ -97,6 +146,9 @@ export async function computeImpedance(preset: string): Promise<{
   return res.json();
 }
 
+// TODO: Backend route /impedance/precomputed/{preset} not implemented.
+// Pre-computed data exists in impedance-data.ts — use that instead.
+
 export async function getPrecomputedImpedance(preset: string): Promise<{
   frequencies: number[];
   impedance_magnitude: number[];
@@ -107,6 +159,8 @@ export async function getPrecomputedImpedance(preset: string): Promise<{
 }
 
 // ── Sound Simulation ─────────────────────────────────────────────────
+// TODO: Backend route /simulate/sound not implemented.
+// Client-side equivalent exists: TonePlayer.tsx uses Web Audio API.
 
 export interface SimulateSoundParams {
   preset: string;
@@ -122,6 +176,8 @@ export async function simulateSound(params: SimulateSoundParams): Promise<Blob> 
 }
 
 // ── Audio Analysis ───────────────────────────────────────────────────
+// TODO: Backend route /analyze/audio not implemented.
+// Client-side equivalent exists: MicrophoneAnalyzer.tsx uses Web Audio API.
 
 export interface ImpedancePeak {
   frequency: number;
@@ -425,11 +481,9 @@ export async function startAutoDesign(
 }
 
 export async function getAutoDesignStatus(jobId: string): Promise<AutoDesignJob> {
-  const res = await apiGet(`/design-desk/instruments`);
-  if (!res.ok) throw new Error("Auto design status check failed");
-  const statusRes = await apiGet(`/optimize/${jobId}/status`);
-  if (!statusRes.ok) throw new Error("Auto design status failed");
-  return statusRes.json();
+  const res = await apiGet(`/design-desk/auto/${jobId}/status`);
+  if (!res.ok) throw new Error("Auto design status failed");
+  return res.json();
 }
 
 export async function getDesignDeskInstruments(): Promise<Record<string, string>> {

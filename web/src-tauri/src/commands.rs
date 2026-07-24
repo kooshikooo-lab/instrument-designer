@@ -86,6 +86,21 @@ pub async fn http_post(url: String, body: serde_json::Value) -> Result<String, S
         .map_err(|e| format!("Failed to read response: {}", e))
 }
 
+#[tauri::command]
+pub async fn http_post_binary(url: String, body: serde_json::Value) -> Result<Vec<u8>, String> {
+    let client = reqwest::Client::new();
+    let resp = client
+        .post(&url)
+        .json(&body)
+        .send()
+        .await
+        .map_err(|e| format!("HTTP POST binary failed: {}", e))?;
+    resp.bytes()
+        .await
+        .map(|b| b.to_vec())
+        .map_err(|e| format!("Failed to read binary response: {}", e))
+}
+
 // ── File Dialogs ──────────────────────────────────────────────────────
 
 #[tauri::command]

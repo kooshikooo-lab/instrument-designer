@@ -211,6 +211,10 @@ class TMMInstrument:
         closed_top: bool = False,
         cone_step: float = 0.5,
         speed_of_sound: float = SPEED_OF_SOUND,
+        reed_virtual_length: float = 0.0,
+        whistle_clip: float = 0.0,
+        whistle_windway_diameter: float = 0.0,
+        whistle_windway_length: float = 0.0,
     ):
         self.closed_top = closed_top
         self.cone_step = cone_step
@@ -219,6 +223,12 @@ class TMMInstrument:
         # Build inner and outer profiles
         self.inner = Profile(inner_positions, inner_diameters)
         self.outer = Profile(inner_positions, outer_diameters)
+
+        # Apply patchInstrument transforms (chalumier convention)
+        if whistle_clip > 0.0:
+            self._apply_whistle_clip(whistle_clip, whistle_windway_diameter, whistle_windway_length)
+        if reed_virtual_length > 0.0:
+            self._apply_reed_tube(reed_virtual_length)
 
         self.hole_positions = list(hole_positions)
         self.hole_diameters = list(hole_diameters)
@@ -231,6 +241,63 @@ class TMMInstrument:
 
         # Precompute action chain for phase-based resonance
         self._prepare_phase()
+
+    def _apply_whistle_clip(
+        self,
+        clip_fraction: float,
+        windway_diameter: float = 0.0,
+        windway_length: float = 0.0,
+    ):
+        """
+        Apply WhistleDesigner.patchInstrument() bore clipping.
+
+        Clips the bore short by bore_diameter * clip_fraction at the top end,
+        then optionally extends with a windway section.
+        """
+        bore_diameter = self.inner.at(self.inner.pos[-1], use_high=True)
+        clip_length = bore_diameter * clip_fraction
+        new_length = self.inner.pos[-1] - clip_length
+
+        # Clip bore to new length
+        clipped_pos = []
+        clipped_low = []
+        clipped_high = []
+        for i, p in enumerate(self.inner.pos):
+            if p <= new_length:
+                clipped_pos.append(p)
+                clipped_low.append(self.inner.low[i])
+                clipped_high.append(self.inner.high[i])
+        if clipped_pos[-1] < new_length:
+            clipped_pos.append(new_length)
+            d = self.inner.at(new_length)
+            clipped_low.append(d)
+            clipped_high.append(d)
+
+        if windway_diameter > 0.0 and windway_length > 0.0:
+            clipped_pos.append(new_length + windway_length)
+            clipped_low.append(windway_diameter)
+            clipped_high.append(windway_diameter)
+
+        self.inner = Profile(clipped_pos, clipped_low, clipped_high)
+
+    def _apply_reed_tube(self, reed_virtual_length: float):
+        """
+        Apply ReedInstrumentDesigner.patchInstrument() reed tube.
+
+        For closed-top reed instruments (clarinets, saxophones):
+        Appends a conical reed tube at the reed end (top) of the bore.
+        reedLength = boreDiameter * reedVirtualLength
+        reedTop = boreDiameter * reedVirtualTop (default 1.0 = same as bore)
+        """
+        bore_diameter = self.inner.at(self.inner.pos[-1], use_high=True)
+        reed_length = bore_diameter * reed_virtual_length
+        reed_top = bore_diameter  # reedVirtualTop = 1.0 by default
+
+        # Append reed tube profile after existing bore
+        new_end = self.inner.pos[-1] + reed_length
+        self.inner.pos.append(new_end)
+        self.inner.low.append(reed_top)
+        self.inner.high.append(reed_top)
 
     def _prepare_phase(self):
         """
@@ -337,6 +404,7 @@ class TMMInstrument:
         step_increase: float = 1.05,
         max_steps: int = 100,
         target_register: int = 1,
+        scorer=None,
     ) -> float:
         """
         Find the nearest resonant wavelength to the given guess.
@@ -347,9 +415,10 @@ class TMMInstrument:
         step = 2.0 ** (step_cents / 1200.0)
         half_step = math.sqrt(step)
 
-        def scorer(w):
-            p = self.resonance_phase(w, fingerings)
-            return p - target_register
+        if scorer is None:
+            def scorer(w):
+                p = self.resonance_phase(w, fingerings)
+                return p - target_register
 
         probes = [wavelength / half_step, wavelength * half_step]
         scores = [scorer(probes[0]), scorer(probes[1])]
@@ -387,6 +456,49 @@ class TMMInstrument:
             return probes[-1]
         return probes[0]
 
+    def true_wavelength_near(
+        self,
+        wavelength: float,
+        fingerings: List[str],
+        step_cents: float = 1.0,
+        step_increase: float = 1.05,
+        max_steps: int = 100,
+    ) -> float:
+        """
+        Find the nearest resonant wavelength regardless of register.
+
+        Port of Instrument.trueWavelengthNear() from chalumier.
+        Scorer: ((resonancePhase + 0.5) % 1.0) - 0.5
+        This wraps phase into [-0.5, 0.5) and finds the zero crossing,
+        which corresponds to the nearest resonance in ANY register.
+        """
+        def scorer(w):
+            p = self.resonance_phase(w, fingerings)
+            return ((p + 0.5) % 1.0) - 0.5
+
+        return self.wavelength_near(wavelength, fingerings, step_cents, step_increase, max_steps, scorer=scorer)
+
+    def true_nth_wavelength_near(
+        self,
+        wavelength: float,
+        fingerings: List[str],
+        n: int,
+        step_cents: float = 1.0,
+        step_increase: float = 1.5,
+        max_steps: int = 20,
+    ) -> float:
+        """
+        Find resonant wavelength targeting a specific register n.
+
+        Port of Instrument.trueNthWavelengthNear() from chalumier.
+        Scorer: resonancePhase - n
+        """
+        def scorer(w):
+            p = self.resonance_phase(w, fingerings)
+            return p - float(n)
+
+        return self.wavelength_near(wavelength, fingerings, step_cents, step_increase, max_steps, scorer=scorer)
+
     def find_resonance(
         self,
         wavelength_near: float,
@@ -402,7 +514,7 @@ class TMMInstrument:
             fingerings: list of 'open' or 'closed' for each hole
             n_register: register number (1 = fundamental, 2 = first overtone, etc.)
         """
-        return self.wavelength_near(wavelength_near, fingerings, target_register=n_register)
+        return self.true_nth_wavelength_near(wavelength_near, fingerings, n_register)
 
     def frequency_from_wavelength(self, wavelength_mm: float) -> float:
         """Convert wavelength (mm) to frequency (Hz)."""

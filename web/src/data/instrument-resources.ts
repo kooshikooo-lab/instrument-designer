@@ -130,7 +130,7 @@ export const INSTRUMENT_RESOURCES: Record<string, InstrumentResources> = {
     ],
     links: [
       { title: "Glissonic Official Site", url: "https://glissonic.com/", type: "shop", description: "Order the Glissotar and learn more" },
-      { title: "Glissotar Playing Demo", url: "https://www.youtube.com/watch?v=35HX0DXYB_0", type: "video", description: "D├íniel V├íczi demonstrating the Glissotar" },
+      { title: "Glissotar Playing Demo", url: "https://www.youtube.com/watch?v=35HX0DXYB_0", type: "video", description: "Dániel Víczi demonstrating the Glissotar" },
       { title: "Guthman Competition 2022", url: "https://guthman.gatech.edu/2022-competition", type: "article", description: "Where Glissotar won First Prize and People's Choice" },
       { title: "Organology.net ÔÇö Glissotar", url: "https://organology.net/instrument/glissotar/", type: "article", description: "Detailed organological description" },
     ],
@@ -881,7 +881,7 @@ export const INSTRUMENT_RESOURCES: Record<string, InstrumentResources> = {
     ],
   },
 
-  "Seljefl├©yte (Norwegian Willow Flute)": {
+  "Seljefløyte (Norwegian Willow Flute)": {
     tips: [
       "Transverse embouchure ÔÇö played sideways like a modern flute",
       "Traditionally made from willow bark in spring (when bark peels easily)",
@@ -965,19 +965,19 @@ export const INSTRUMENT_RESOURCES: Record<string, InstrumentResources> = {
     ],
   },
 
-  "T├írogat├│ (Reed-Conical Hybrid)": {
+  "Tárogató (Reed-Conical Hybrid)": {
     tips: [
-      "Hungarian hybrid ÔÇö single reed (like clarinet) + conical bore (like saxophone)",
+      "Hungarian hybrid — single reed (like clarinet) + conical bore (like saxophone)",
       "Sound: warmer than saxophone, more powerful than clarinet",
       "Uses standard saxophone reeds (size depends on model)",
-      "Key of Bb is most common ÔÇö same transposition as tenor sax and Bb clarinet",
+      "Key of Bb is most common — same transposition as tenor sax and Bb clarinet",
       "Still played in Hungarian folk music and military bands",
     ],
     links: [
-      { title: "Wikipedia ÔÇö T├írogat├│", url: "https://en.wikipedia.org/wiki/T%C3%A1rogat%C3%B3", type: "article", description: "History and construction of the t├írogat├│" },
+      { title: "Wikipedia — Tárogató", url: "https://en.wikipedia.org/wiki/T%C3%A1rogat%C3%B3", type: "article", description: "History and construction of the tárogató" },
     ],
     faq: [
-      { question: "Can I use a clarinet mouthpiece on a t├írogat├│?", answer: "The bore dimensions differ between t├írogat├│ and clarinet, so mouthpieces are not directly interchangeable. However, some players have adapted clarinet mouthpieces with custom cork fitting." },
+      { question: "Can I use a clarinet mouthpiece on a tárogató?", answer: "The bore dimensions differ between tárogató and clarinet, so mouthpieces are not directly interchangeable. However, some players have adapted clarinet mouthpieces with custom cork fitting." },
     ],
   },
 

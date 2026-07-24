@@ -523,7 +523,7 @@ export const INSTRUMENTS: Instrument[] = [
     download_url: "",
     tags: ["advanced", "experimental", "glissando", "continuous", "purpleheart", "premium"],
     difficulty: "Advanced",
-    description: "The original Glissotar by D├íniel V├íczi. Conical bore with sliding ribbon mechanism for continuous pitch. Made of purpleheart hardwood. Won First Prize + People's Choice at Guthman Competition 2022. 8 years of development.",
+    description: "The original Glissotar by Dániel Víczi. Conical bore with sliding ribbon mechanism for continuous pitch. Made of purpleheart hardwood. Won First Prize + People's Choice at Guthman Competition 2022. 8 years of development.",
   },
   {
     name: "Glissotar Jam (3D-Printed)",
@@ -561,7 +561,7 @@ export const INSTRUMENTS: Instrument[] = [
     download_url: "",
     tags: ["beginner", "experimental", "glissando", "recorder-form", "educational", "kickstarter"],
     difficulty: "Beginner",
-    description: "Recorder-style instrument with glissonic continuous pitch system. Designed for beginners, educators, and families. Intuitive acoustic instrument with microtonal freedom and glissando potential. Part of the Glissonic family by D├íniel V├íczi.",
+    description: "Recorder-style instrument with glissonic continuous pitch system. Designed for beginners, educators, and families. Intuitive acoustic instrument with microtonal freedom and glissando potential. Part of the Glissonic family by Dániel Víczi.",
   },
   {
     name: "Kazoo",
@@ -938,7 +938,7 @@ export const INSTRUMENTS: Instrument[] = [
     description: "Romanian/Ukrainian overtone flute, 30-100cm, bore 12-20mm. Simplest overtone flute type ÔÇö no holes or 1 half-tone hole. Material: wood, reed, or PVC. Sound: simple, folk-like. Very easy to make ÔÇö any hollow tube works. Key of G typical.",
   },
   {
-    name: "Seljefl├©yte (Norwegian Willow Flute)",
+    name: "Seljefløyte (Norwegian Willow Flute)",
     family: "Wind", subcategory: "Overtone Flute", type_label: "Overtone Flute",
     range: "Soprano", key: "D",
     source: "Scandinavian folk tradition",
@@ -947,7 +947,7 @@ export const INSTRUMENTS: Instrument[] = [
     download_url: "",
     tags: ["beginner", "overtone", "norwegian", "scandinavian", "willow", "transverse"],
     difficulty: "Beginner",
-    description: "Scandinavian overtone flute, 25-50cm, bore 15-20mm. Traditionally made from willow bark in spring. Transverse embouchure (played sideways). Sound: bright, pastoral. Norwegian: seljefl├©yte, Finnish: pajupilli, Swedish: salgfl├Âjt. PVC modern version with 3D printed transverse head.",
+    description: "Scandinavian overtone flute, 25-50cm, bore 15-20mm. Traditionally made from willow bark in spring. Transverse embouchure (played sideways). Sound: bright, pastoral. Norwegian: seljefløyte, Finnish: pajupilli, Swedish: salgflöjt. PVC modern version with 3D printed transverse head.",
   },
   {
     name: "Tabor Pipe (Overtone with Holes)",
@@ -987,7 +987,7 @@ export const INSTRUMENTS: Instrument[] = [
     description: "Renaissance hybrid (15th-17th century): wooden body with brass-style cup mouthpiece + 6 finger holes. Hornbostel-Sachs 422.2. Brass embouchure (lip vibration) + woodwind fingering. Brilliant, penetrating sound. 3D printed replicas from CT scans exist (Royal College of Music + Ricardo Simian).",
   },
   {
-    name: "T├írogat├│ (Reed-Conical Hybrid)",
+    name: "Tárogató (Reed-Conical Hybrid)",
     family: "Wind", subcategory: "Hybrid", type_label: "Single-Reed Aerophone",
     range: "Alto", key: "Bb",
     source: "Hungarian folk tradition",

@@ -17,6 +17,7 @@ pub fn run() {
             server_status,
             http_get,
             http_post,
+            http_post_binary,
             save_file_dialog,
             open_file_dialog,
             save_stl_to_disk,

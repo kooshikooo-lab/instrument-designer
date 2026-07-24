@@ -50,7 +50,7 @@ class TestTMMPhysics(unittest.TestCase):
             segments=[Segment(length=length, radius_in=radius, radius_out=radius)],
             ports=[],
             boundary_reed=Boundary(type=BoundaryType.REED, excitation=ExcitationType.REED),
-            boundary_bell=Boundary(type=BoundaryType.BELL, excitation=ExcitationType.NONE, position=length),
+            boundary_bell=Boundary(type=BoundaryType.BELL, excitation=ExcitationType.NONE, position=0.0),
         )
 
     def test_zero_holes_matches_analytical(self):

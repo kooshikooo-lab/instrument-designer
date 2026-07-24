@@ -87,12 +87,12 @@ class BrassBuilder:
         boundary_mouthpiece = Boundary(
             type=BoundaryType.REED,  # closed end
             excitation=ExcitationType.LIP,
-            position=0.0,
+            position=self._segments[0].length if self._segments else 0.0,
         )
         boundary_bell = Boundary(
             type=BoundaryType.BELL,
             excitation=ExcitationType.NONE,
-            position=self._segments[0].length if self._segments else 0.0,
+            position=0.0,
         )
 
         return AcousticNetwork(

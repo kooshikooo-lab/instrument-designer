@@ -35,7 +35,7 @@ class ClarinetBuilder:
         Args:
             length: total bore length in mm
             radius: bore radius in mm
-            taper: radius increase from reed to bell (0 = cylindrical)
+            taper: radius increase from bell to reed (0 = cylindrical)
         """
         self._segments = [
             Segment(
@@ -51,7 +51,7 @@ class ClarinetBuilder:
         """Set bore geometry from a profile (for non-uniform bores).
 
         Args:
-            positions: bore positions in internal coordinates (0=reed, L=bell)
+            positions: bore positions in internal coordinates (0=bell, L=reed)
             radii: bore radii at those positions
         """
         self._segments = []
@@ -73,7 +73,7 @@ class ClarinetBuilder:
         """Add toneholes.
 
         Args:
-            positions: hole positions in internal coordinates (0=reed, L=bell)
+            positions: hole positions in internal coordinates (0=bell, L=reed)
             radii: hole radii in mm
             lengths: chimney heights in mm
         """
@@ -91,7 +91,7 @@ class ClarinetBuilder:
         """Set register vent ( octave hole).
 
         Args:
-            position: position in internal coordinates (0=reed)
+            position: position in internal coordinates (0=bell)
             radius: hole radius in mm
             length: chimney height in mm
         """
@@ -116,19 +116,19 @@ class ClarinetBuilder:
         if self._register_vent is not None:
             ports.append(self._register_vent)
 
-        # Sort ports by position (reed to bell)
+        # Sort ports by position (bell to reed)
         ports.sort(key=lambda p: p.position)
 
         # Create boundaries
         boundary_reed = Boundary(
             type=BoundaryType.REED,
             excitation=ExcitationType.REED,
-            position=0.0,
+            position=self._segments[0].length if self._segments else 0.0,
         )
         boundary_bell = Boundary(
             type=BoundaryType.BELL,
             excitation=ExcitationType.NONE,
-            position=self._segments[0].length if self._segments else 0.0,
+            position=0.0,
         )
 
         return AcousticNetwork(
