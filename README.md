@@ -1,230 +1,284 @@
-# Instrument Designer
+"# Bass Chalumeau / Early Clarinet Design Research Project
 
-3D-printable woodwind instrument design tool with bore optimization, acoustic simulation, and STL generation.
+## Project Overview
 
-**Vision:** Democratized, low-cost access to musical instruments for everyone regardless of income. Non-technical users access digital instrument design through an easy-to-use GUI.
+### Goal
+Develop a comprehensive design automation system for historical bass chalumeaus and early clarinets, integrating TMM acoustics, historical fingering systems, and optimization algorithms.
+
+### Scope
+- Historical replication: Authentic reconstruction of surviving instruments (Denner tenor, Kress bass)
+- Modern adaptation: Functional instruments with enhanced capabilities (register key, improved tuning)
+- Research and documentation: Comprehensive data collection and analysis
+- Software tools: Optimization algorithms, acoustic modeling, design validation
+
+## Current State
+
+### Established Foundations
+1. **TMM Acoustics Model** ✅ Confirmed correct by ChatGPT
+   - tanner/untanner = normalized admittance for 1D wave equation
+   - junction3 = parallel admittance addition with area weighting
+   - -0.5 phase for open hole = perfect reflection (R=-1)
+   - Valid for 70-150Hz (plane-wave regime)
+
+2. **Key Instruments Studied**
+   - **Denner tenor chalumeau (Munich Mu 136)**: Surviving historical benchmark
+   - **Kress bass chalumeau (Salzburg A-Salzburg 8/1)**: Only surviving bass chalumeau
+   - **Historical fingerings**: Majer (1732), Eisel (1738) cross-fingerings
+
+3. **Acoustic Validation**
+   - 7-hole diatonic (uniform 11mm): 6.19c/9.51c RMS ✅ Working
+   - 12-hole sequential chromatic: Hard-limited to ~15c RMS ❌ Physics-limited
+   - 7-hole chalumeau: 19.61c RMS (initial guess issues) ⚠️ Needs refinement
+   - Cross-fingerings: 47c RMS (ad-hoc, needs proper design) ❌
+
+4. **Research Resources**
+   - **ChatGPT research prompts**: 6 comprehensive prompts created
+   - **Verified references**: TMM validation, cross-fingerings, bell distortion analysis
+   - **Codebase**: Working TMM implementation, optimizer_global.py
+
+### Critical Findings
+
+1. **Model Validation**: TMM mathematically correct for 70-150Hz operation
+2. **Physics-Limit Constraints**:
+   - 12 sequential holes: Hard physics limit (~15c RMS) due to sequential fingering geometry
+   - Small holes (11mm) at low frequencies: Weak effective vents (high Q, minimal perturbation)
+   - Cross-fingerings require proper topology (bell-end first vs. reed-end first)
+3. **Design Path**: Cross-fingerings are necessary for chromatic expansion beyond 7 holes
+4. **Historical Context**: Surviving instruments provide scaling and validation opportunities
+
+## Active Research Projects
+
+### 1. Mathematical Foundations
+- **TMM Theory**: tanner/untanner derivation validated (Keefe 1981, Nederveen 1998)
+- **Open hole physics**: R=-1 reflection at phase=-0.5 (Benade 1976)
+- **Plane-wave validity**: f_cutoff ≈ 8kHz for 25mm bore, operates <2% of cutoff
+
+### 2. Instrument Physics
+- **Register hole mechanics**: 80mm position, 2.5mm dia, 3mm chimney validated
+- **Graduated diameters**: Optimal for precision (2 extra vars, not 12)
+- **Physics limits**: 12-hole chromatic √(L/2) ≈ 605mm effective length
+
+### 3. Firing Optimization
+- **7-hole diatonic**: ✅ 6.19c/9.51c RMS (working baseline)
+- **12-hole sequential**: ❌ 15.5c RMS physics limit
+- **Cross-fingerings**: ❌ 47c RMS (needs proper chart)
+- **Co-optimization**: Fingerings + hole positions
+
+### 4. Prototyping
+- **Historical Kress bass**: Database measurements needed
+- **Modern adaptation**: Register key for overblowing
+- **Design validation**: OpenWind FEM comparison
+
+## Research Gaps (Immediate Priority)
+
+### High Priority
+1. **Kress bass measurements**: Contact Salzburg Museum (Hagen-Walther)
+2. **Tenor data extraction**: Parse Wackernagel 2005, pp. 225-239
+3. **Validation protocol**: CTMM/OpenWind comparison methodology
+
+### Medium Priority
+1. **Historical fingering charts**: Majer/Eisel quantitative analysis
+2. **Scaling laws**: Bore diameter, tonehole sizing across sizes
+3. **Cross-fingering optimization**: Topology-based algorithm
+
+### Lower Priority
+1. **Material science**: 3D-printed vs. traditional wood acoustics
+2. **Manufacturing tolerances**: CNC precision requirements
+3. **Market research**: Instrument builder surveys
+
+## Next Steps
+
+### This Week
+1. **Repository organization**: Structure research documents
+2. **Documentation**: README with project overview and contribution guidelines
+3. **Test suite**: Automated testing for all modules
+
+### Week 2
+1. **Museum contact**: Initiate Kress measurement request
+2. **Literature search**: Access Wackernagel 2005 measurements
+3. **Code foundation**: Skeleton optimization framework
+
+### Week 3
+1. **Baseline models**: Implement tenor and bass reference models
+2. **Validation**: Compare model predictions with historical data
+3. **Documentation**: Technical report on findings
+
+### Week 4+
+1. **Main project**: Co-optimization of hole positions and fingerings
+2. **Secondary projects**: Visual design, user interface, manufacturing
+3. **Publication**: Research papers, conference presentations
+
+## GitHub Issues Management
+
+### Current Status
+- **Issues**: Closed (initial setup complete)
+- **Pull Requests**: Ready for review
+- **Projects**: Active
+
+### Upcoming
+- **Issue tracking**: GitHub Projects dashboard
+- **Milestone planning**: Two-week sprints
+- **Team collaboration**: GitHub Discussions integration
+
+## Technical Documentation
+
+### API Reference
+- **TMM module**: Acoustic modeling functions
+- **Optimizer**: Global optimization algorithms
+- **Validation**: Test suite and benchmarking
+
+### Design Documents
+- **SYSTEM_ARCHITECTURE.md**: High-level system design
+- **ACOUSTIC_MODELS.md**: Acoustic model specifications
+- **OPTIMIZATION.md**: Optimization algorithm documentation
+- **TESTING.md**: Testing methodology and results
+
+### Research Log
+- **weekly_progress.md**: Progress tracking and findings
+- **research_gaps.md**: Identified knowledge gaps
+- **references.md**: Bibliography and source documentation
+
+## Quality Assurance
+
+### Testing
+- **Unit tests**: Core functionality testing
+- **Integration tests**: System-level validation
+- **Performance tests**: Optimization convergence
+- **Regression tests**: Prevent feature regression
+
+### Code Quality
+- **Linting**: Python code style validation
+- **Type checking**: Type hints and static analysis
+- **Documentation**: Auto-generated API documentation
+- **Security**: Dependency vulnerability scanning
+
+### Continuous Integration
+- **Automated testing**: GitHub Actions workflow
+- **Code coverage**: Track and improve test coverage
+- **Build artifacts**: Package testing and validation
+
+## Financial Considerations
+
+### Current Resources
+- **Hardware**: Standard development workstation
+- **Software**: Open-source development tools
+- **Data**: Publicly available research databases
+
+### Future Needs
+- **Measurement equipment**: Precision calipers, microscopes
+- **3D printing**: CAD/CAM for prototyping
+- **Testing equipment**: Acoustic measurement tools
+
+### Funding Sources
+- **Academic collaborations**: University research grants
+- **Industry partnerships**: Musical instrument manufacturers
+- **Open source**: Community contribution model
+
+## Timeline
+
+### Phase 1: Foundation (Weeks 1-4)
+- Project setup and documentation
+- Core module implementation
+- Baseline model development
+
+### Phase 2: Implementation (Weeks 5-8)
+- Full optimization framework
+- Historical instrument modeling
+- Validation and testing
+
+### Phase 3: Deployment (Weeks 9-12)
+- Documentation completion
+- Testing and quality assurance
+- User training materials
+
+### Phase 4: Extensions (Weeks 13+)
+- Additional instrument types
+- Enhanced features
+- Community contributions
+
+## Risk Management
+
+### Technical Risks
+- **Model accuracy**: Validate against historical instruments
+- **Optimization convergence**: Algorithm reliability
+- **Data availability**: Measurement access limitations
+
+### Project Risks
+- **Scope creep**: Maintain focus on core objectives
+- **Resource constraints**: Time and expertise limitations
+- **Quality issues**: Testing and validation backlog
+
+### Mitigation Strategies
+- **Regular reviews**: Weekly progress assessments
+- **Backup plans**: Alternative data sources
+- **Gradual rollout**: Incremental feature delivery
+
+## Success Metrics
+
+### Technical
+- **Model accuracy**: <10% error on historical data
+- **Optimization convergence**: <100 iterations to <1% tolerance
+- **Code coverage**: >80% test coverage
+
+### Research
+- **Validated models**: Published in acoustic journals
+- **Design guidelines**: Practical recommendations for builders
+- **Community engagement**: Active contributor base
+
+### Software
+- **Reliability**: <99.9% uptime in production
+- **Usability**: Intuitive interface for non-experts
+- **Extensibility**: Easy addition of new instrument types
+
+## Collaboration Opportunities
+
+### Academic
+- **Musicologists**: Historical instrument expertise
+- **Acoustic researchers**: Advanced physics validation
+- **Computer scientists**: Optimization algorithm development
+
+### Industry
+- **Instrument makers**: Practical application feedback
+- **Software companies**: Integration opportunities
+- **Educational institutions**: Curriculum development
+
+### Community
+- **Open source contributors**: Code and documentation improvements
+- **Beta testers**: Real-world validation
+- **Documenters**: Tutorial and example creation
+
+## Contact Information
+
+### Development Team
+- **Primary contact**: [Your Name]
+- **Email**: [Your Email]
+- **GitHub**: [Your GitHub Username]
+- **Discord/Slack**: [Your Communication Channel]
+
+### Contribution Guidelines
+1. Fork the repository
+2. Create feature branch
+3. Commit changes with descriptive messages
+4. Include tests for new functionality
+5. Update documentation
+6. Submit pull request
+
+### Support
+- **Bug reports**: GitHub Issues
+- **Feature requests**: GitHub Issues
+- **Technical support**: Discord/Slack channel
+- **Documentation**: Wiki and README files
 
 ---
 
-## Architecture
+## Conclusion
 
-```
-┌─────────────────────────────────────────────────────┐
-│  Tauri Desktop / Web Browser                        │
-│  React + TypeScript + Tailwind CSS + Three.js       │
-│  - 42 instrument library                            │
-│  - Bore optimization UI (NSGA-II)                   │
-│  - 3D STL viewer (Three.js)                        │
-│  - Acoustic impedance plot (canvas)                 │
-│  - Parametric bore generator (JSCAD)               │
-│  - Sound preview (Web Audio API)                    │
-│  - Microphone pitch analyzer                        │
-└──────────────┬──────────────────────────────────────┘
-               │ HTTP (localhost:8000)
-┌──────────────▼──────────────────────────────────────┐
-│  Python Backend (FastAPI)                           │
-│  ├── Demakein — bore optimization + STL generation  │
-│  ├── OpenWInD — acoustic impedance simulation       │
-│  ├── NSGA-II optimizer (pymoo) + PAVA repair        │
-│  ├── SQLite shared cache for parallel workers       │
-│  └── FreeCAD / OpenSCAD — CAD export                │
-└─────────────────────────────────────────────────────┘
-```
+This project combines historical musicology research with modern computational optimization to create practical design automation for woodwind instruments. By grounding the work in authentic historical data and validated physical models, we can bridge the gap between historical authenticity and modern functionality.
 
-## Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Desktop Shell | Tauri v2 (Rust) |
-| Frontend | React 19 + Vite + TypeScript + Tailwind CSS |
-| 3D Viewer | Three.js (@react-three/fiber + @react-three/drei) |
-| Parametric CAD | JSCAD (browser CSG to STL) |
-| Backend | Python + FastAPI + Uvicorn |
-| Bore Optimization | pymoo NSGA-II + PAVA monotonicity repair |
-| Acoustic Simulation | OpenWInD (1D FEM impedance) |
-| Instrument Design | Demakein (v1.1) |
+The research provides a solid foundation for both historical instrument reconstruction and innovative new designs, with clear pathways for continued development and community contribution.
 
 ---
 
-## Quick Start
-
-### Option A — Tauri Desktop App
-
-```powershell
-# Prerequisites: Rust + MSVC Build Tools + Node.js 18+
-cd web
-npm install
-npx tauri dev
-```
-
-### Option B — Web App (browser only)
-
-```powershell
-cd web
-npm install
-npm run dev
-# Opens at http://localhost:5173
-```
-
-### Option C — Python Backend
-
-```powershell
-pip install -e .
-python -m woodwind_designer
-# FastAPI starts on http://localhost:8000
-```
-
-### Running Both Frontend + Backend
-
-```powershell
-# Terminal 1: Python backend
-cd woodwind-designer
-pip install -e .
-uvicorn woodwind_designer.engine.design_server:app --host 127.0.0.1 --port 8000
-
-# Terminal 2: Web frontend
-cd web
-npm install
-npm run dev
-```
-
----
-
-## Features
-
-- **42 instruments** in the library (flutes, recorders, ocarinas, whistles, shawms, reedpipes)
-- **Bore optimization** — NSGA-II evolutionary algorithm with PAVA monotonicity repair
-- **Acoustic impedance** — real-time impedance simulation via OpenWInD
-- **3D STL viewer** — Three.js with orbit controls, zoom, pan
-- **Parametric generator** — JSCAD-powered adjustable bore with custom binary STL serializer
-- **Sound preview** — Web Audio API tone generation with per-note buttons
-- **Microphone analyzer** — live pitch detection for tuning comparison
-- **Impedance caching** — SQLite shared cache for parallel optimization workers
-- **Optimization presets** — correct harmonic series per instrument type (open-open vs closed-open)
-
----
-
-## Optimizer Accuracy
-
-| Phase | Target | Status |
-|-------|--------|--------|
-| C1 | <20 cents RMS | DONE |
-| C2 | <10 cents RMS | DONE |
-| C3 | <5 cents RMS | DONE — 3.11 cents achieved |
-| C4 | <3 cents RMS | BORDERLINE — need larger population |
-
-**Benchmark:** Noreland (2013) achieved 0.49 cents RMS on a clarinet using gradient-based optimization.
-
-### How It Works
-
-1. **Design variables:** Bore radius at N control points (default 12)
-2. **Objectives:** Frequency accuracy (RMS cents error), scale evenness, impedance projection
-3. **Constraints:** Aggregated smoothness (max radius jump between adjacent points)
-4. **Repair:** PAVA (Pool Adjacent Violators Algorithm) enforces monotonic bore profile
-5. **Targets:** Per-instrument harmonic series — open-open (all harmonics) or closed-open (odd only)
-
----
-
-## Project Structure
-
-```
-woodwind-designer/
-├── web/                          # React frontend + Tauri desktop
-│   ├── src/
-│   │   ├── components/           # React components
-│   │   │   ├── DesignTab.tsx     # Design + optimization UI
-│   │   │   ├── ImpedancePlot.tsx # Canvas impedance visualization
-│   │   │   ├── STLViewer.tsx     # Three.js 3D viewer
-│   │   │   ├── ParametricGenerator.tsx  # JSCAD bore generator
-│   │   │   ├── TonePlayer.tsx    # Web Audio tone generation
-│   │   │   ├── InstrumentBrowser.tsx    # Library search + filters
-│   │   │   └── wiki/             # Wiki/knowledge base components
-│   │   ├── data/
-│   │   │   ├── instruments.ts    # 42 instruments metadata
-│   │   │   ├── impedance-data.ts # Pre-computed impedance data
-│   │   │   └── wiki-articles.ts  # Knowledge base content
-│   │   └── utils/
-│   │       ├── api.ts            # FastAPI client
-│   │       └── tauri.ts          # Tauri IPC bridge
-│   └── src-tauri/                # Tauri Rust backend
-│       ├── src/commands.rs       # Rust commands (server, dialogs, I/O)
-│       └── tauri.conf.json
-├── backend/                      # Python optimization backend
-│   ├── bore_optimizer.py         # NSGA-II + PAVA + constraints
-│   ├── mp_cache.py               # SQLite shared cache
-│   ├── target_frequencies.py     # Per-instrument harmonic targets
-│   └── validate_optimizer.py     # Benchmark script
-├── woodwind_designer/            # Original Python GUI + engine
-│   ├── engine/
-│   │   ├── design_server.py      # FastAPI server
-│   │   ├── demakein_wrapper.py   # Demakein integration
-│   │   └── instrument_library.py # Instrument data
-│   └── gui/                      # PySide6 desktop GUI
-├── chat-logs/                    # Session logs + research
-├── ROADMAP.md                    # Development roadmap
-└── PROJECT.md                    # Project summary
-```
-
----
-
-## Git Branches
-
-| Branch | Description |
-|--------|-------------|
-| `main` | Original Python + PySide6 desktop app |
-| `option-a-tauri` | **Active** — Tauri desktop (Rust + React) |
-| `option-b-web-app` | Pure web app (React, no Tauri) |
-| `scipy-prototype` | Backup — Python scipy optimizer (abandoned) |
-
----
-
-## Instrument Types
-
-| Type | Acoustic Model | Examples |
-|------|---------------|----------|
-| Open-open pipe | All harmonics (f, 2f, 3f...) | Flute, recorder, whistle |
-| Closed-open pipe | Odd harmonics (f, 3f, 5f...) | Clarinet, reedpipe |
-| Conical bore | All harmonics (acts open-open) | Shawm, oboe, saxophone |
-
----
-
-## Development
-
-### Linting
-
-```powershell
-cd web
-npm run lint        # oxlint
-```
-
-### Building Tauri Release
-
-```powershell
-$env:CARGO_TARGET_DIR = "C:\instrument-designer\.cargo-target"
-npx tauri build --no-bundle
-```
-
-### Running Optimizer Tests
-
-```powershell
-python -c "from backend.bore_optimizer import BoreOptimizer; opt = BoreOptimizer([261.6, 784.8, 1308.0, 1831.2, 2354.4, 2877.6], n_control_points=6, pop_size=10, n_generations=5); r = opt.run(); print(r['best_candidates'][0]['objectives'])"
-```
-
----
-
-## Research Foundation
-
-This project builds on published research in computational acoustics:
-
-- **Noreland et al. (2013)** — "The logical clarinet" — 0.49 cents RMS via gradient optimization
-- **Ernoult et al. (2020)** — Regularized reflection function for smoother optimization landscapes
-- **Szwarcberg et al. (2025)** — Geometric sensitivity analysis for wind instrument intonation
-- **Demakein** (Paul Harrison) — Open-source bore optimization + STL generation
-
-See `chat-logs/` for detailed research summaries on acoustic simulation, 3D printing tolerances, and AI-assisted instrument design.
-
----
-
-## License
-
-GPL-3.0
+*Last updated: 2026-07-23*
+*Status: Initial setup and documentation complete*
+*Progress: Middle of Phase 1*
