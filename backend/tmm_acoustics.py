@@ -35,7 +35,7 @@ import math
 import numpy as np
 from typing import List, Tuple, Optional, Union, Callable
 
-# Matches chalumier's SPEED_OF_SOUND exactly (cm/s)
+# Matches chalumier's SPEED_OF_SOUND exactly (mm/s)
 SPEED_OF_SOUND = 346100.0
 
 FOUR_PI = 4.0 * math.pi
