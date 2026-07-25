@@ -1,31 +1,44 @@
-﻿import { isTauri, tauriHttpGet, tauriHttpPost, tauriHttpPostBinary } from "./tauri";
+﻿import { ensureBackendRunning } from "./tauri";
 
-const API_BASE = "http://localhost:8000";
+let apiBasePromise: Promise<string> | null = null;
+
+function getApiBaseUrl(): Promise<string> {
+  if (!apiBasePromise) {
+    apiBasePromise = ensureBackendRunning();
+  }
+  return apiBasePromise;
+}
 
 // ── Transport abstraction ────────────────────────────────────────────
 
 async function apiGet(path: string): Promise<Response> {
-  if (isTauri()) {
-    const json = await tauriHttpGet(`${API_BASE}${path}`);
-    return new Response(json, { status: 200, headers: { "Content-Type": "application/json" } });
-  }
-  return fetch(`${API_BASE}${path}`);
+  const base = await getApiBaseUrl();
+  return fetch(`${base}${path}`);
 }
 
 async function apiPost(path: string, body: unknown): Promise<Response> {
-  if (isTauri()) {
-    const json = await tauriHttpPost(`${API_BASE}${path}`, body);
-    return new Response(json, { status: 200, headers: { "Content-Type": "application/json" } });
-  }
-  return fetch(`${API_BASE}${path}`, {
+  const base = await getApiBaseUrl();
+  return fetch(`${base}${path}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
 }
 
-export function apiDownloadUrl(path: string): string {
-  return `${API_BASE}${path}`;
+async function apiPostBinary(path: string, body: unknown): Promise<Blob> {
+  const base = await getApiBaseUrl();
+  const res = await fetch(`${base}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`Binary POST failed: ${res.statusText}`);
+  return res.blob();
+}
+
+export async function apiDownloadUrl(path: string): Promise<string> {
+  const base = await getApiBaseUrl();
+  return `${base}${path}`;
 }
 
 // ── Types ────────────────────────────────────────────────────────────
@@ -64,8 +77,9 @@ export async function getDesignStatus(jobId: string): Promise<DesignJob> {
   return res.json();
 }
 
-export function getDesignDownloadUrl(jobId: string): string {
-  return `${API_BASE}/design/${jobId}/download`;
+export async function getDesignDownloadUrl(jobId: string): Promise<string> {
+  const base = await getApiBaseUrl();
+  return `${base}/design/${jobId}/download`;
 }
 
 // ── STEP Export ──────────────────────────────────────────────────────
@@ -77,17 +91,7 @@ export interface StepExportParams {
 }
 
 export async function exportStep(params: StepExportParams): Promise<Blob> {
-  if (isTauri()) {
-    const bytes = await tauriHttpPostBinary(`${API_BASE}/export/step`, params);
-    return new Blob([new Uint8Array(bytes)], { type: "application/step" });
-  }
-  const res = await fetch(`${API_BASE}/export/step`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(params),
-  });
-  if (!res.ok) throw new Error(`STEP export failed: ${res.statusText}`);
-  return res.blob();
+  return apiPostBinary("/export/step", params);
 }
 
 // ── CadQuery Export ────────────────────────────────────────────────
@@ -117,23 +121,10 @@ export async function listCadqueryInstruments(): Promise<Record<string, {
 }
 
 export async function exportCadquery(params: CadQueryExportParams): Promise<Blob> {
-  if (isTauri()) {
-    const bytes = await tauriHttpPostBinary(`${API_BASE}/export/cadquery`, params);
-    return new Blob([new Uint8Array(bytes)], { type: "application/sla" });
-  }
-  const res = await fetch(`${API_BASE}/export/cadquery`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(params),
-  });
-  if (!res.ok) throw new Error(`CadQuery export failed: ${res.statusText}`);
-  return res.blob();
+  return apiPostBinary("/export/cadquery", params);
 }
 
 // ── Impedance ────────────────────────────────────────────────────────
-// TODO: Backend route /impedance/compute not implemented.
-// TMM solver can compute impedance — needs wiring to design_server.py.
-// Pre-computed data exists in impedance-data.ts (client-side).
 
 export async function computeImpedance(preset: string): Promise<{
   frequencies: number[];
@@ -146,9 +137,6 @@ export async function computeImpedance(preset: string): Promise<{
   return res.json();
 }
 
-// TODO: Backend route /impedance/precomputed/{preset} not implemented.
-// Pre-computed data exists in impedance-data.ts — use that instead.
-
 export async function getPrecomputedImpedance(preset: string): Promise<{
   frequencies: number[];
   impedance_magnitude: number[];
@@ -159,8 +147,6 @@ export async function getPrecomputedImpedance(preset: string): Promise<{
 }
 
 // ── Sound Simulation ─────────────────────────────────────────────────
-// TODO: Backend route /simulate/sound not implemented.
-// Client-side equivalent exists: TonePlayer.tsx uses Web Audio API.
 
 export interface SimulateSoundParams {
   preset: string;
@@ -175,9 +161,7 @@ export async function simulateSound(params: SimulateSoundParams): Promise<Blob> 
   return res.blob();
 }
 
-// ── Audio Analysis ───────────────────────────────────────────────────
-// TODO: Backend route /analyze/audio not implemented.
-// Client-side equivalent exists: MicrophoneAnalyzer.tsx uses Web Audio API.
+// ── Audio Analysis ──────────────────────────────────────────────────
 
 export interface ImpedancePeak {
   frequency: number;
@@ -200,7 +184,7 @@ export async function analyzeAudio(preset: string, topPeaks?: number): Promise<A
   return res.json();
 }
 
-// ─── Optimization API ─────────────────────────────────────────────────────
+// ─── Optimization API ────────────────────────────────────────────────────
 
 export interface OptimizeRequest {
   target_frequencies: number[];
@@ -296,7 +280,19 @@ export async function getOptimizationPresets(): Promise<Record<string, Optimizat
 
 // ── Cache Stats ────────────────────────────────────────────────────
 
-// ── Sequential Optimization (Bordeaux Method) ─────────────────────
+export async function getCacheStats(): Promise<{ cache_size: number; status: string }> {
+  const res = await apiGet("/optimize/cache/stats");
+  if (!res.ok) throw new Error(`Cache stats failed`);
+  return res.json();
+}
+
+export async function clearCache(): Promise<{ status: string }> {
+  const res = await apiPost("/optimize/cache/clear", {});
+  if (!res.ok) throw new Error(`Cache clear failed`);
+  return res.json();
+}
+
+// ─── Sequential Optimization (Bordeaux Method) ─────────────────────
 
 export interface SequentialOptimizeRequest {
   target_frequencies: number[];
@@ -344,148 +340,6 @@ export async function getSequentialOptimizationStatus(jobId: string): Promise<Se
   return res.json();
 }
 
-// ── Cache Stats ────────────────────────────────────────────────────
-
-export async function getCacheStats(): Promise<{ cache_size: number; status: string }> {
-  const res = await apiGet("/optimize/cache/stats");
-  if (!res.ok) throw new Error(`Cache stats failed`);
-  return res.json();
-}
-
-export async function clearCache(): Promise<{ status: string }> {
-  const res = await apiPost("/optimize/cache/clear", {});
-  if (!res.ok) throw new Error(`Cache clear failed`);
-  return res.json();
-}
-
-// ─── AI Design Advisor API ──────────────────────────────────────────────
-
-export interface AdvisorSuggestion {
-  category: string;
-  priority: string;
-  title: string;
-  description: string;
-  action: string;
-  impact: string;
-}
-
-export interface AdvisorResult {
-  score: number;
-  grade: string;
-  analysis: string;
-  suggestions: AdvisorSuggestion[];
-  comparison: Record<string, string>;
-  llm_analysis: string | null;
-}
-
-export interface AdvisorStatus {
-  rule_based: boolean;
-  llm_available: boolean;
-  llm_models: string[];
-  ollama_url: string;
-  memory_designs: number;
-}
-
-export async function getAdvisorStatus(): Promise<AdvisorStatus> {
-  const res = await apiGet("/advisor/status");
-  if (!res.ok) throw new Error("Failed to get advisor status");
-  return res.json();
-}
-
-export async function analyzeDesign(
-  optimizationResult: Record<string, unknown>,
-  targetFrequencies: number[],
-  useLlm?: boolean,
-  llmModel?: string,
-): Promise<AdvisorResult> {
-  const res = await apiPost("/advisor/analyze", {
-    optimization_result: optimizationResult,
-    target_frequencies: targetFrequencies,
-    use_llm: useLlm ?? false,
-    llm_model: llmModel ?? "llama3.2",
-  });
-  if (!res.ok) throw new Error("Advisor analysis failed");
-  return res.json();
-}
-
-export async function storeDesignInMemory(params: {
-  instrument_type?: string;
-  target_frequencies?: number[];
-  bore_profile?: unknown[];
-  n_control_points?: number;
-  pop_size?: number;
-  n_generations?: number;
-  frequency_accuracy?: number;
-  scale_evenness?: number;
-  projection?: number;
-  n_evaluations?: number;
-  bore_length?: number;
-  notes?: string;
-}): Promise<{ status: string }> {
-  const res = await apiPost("/advisor/store", params);
-  if (!res.ok) throw new Error("Failed to store design");
-  return res.json();
-}
-
-export async function getDesignHistory(limit?: number): Promise<{ designs: Record<string, unknown>[] }> {
-  const res = await apiGet(`/advisor/history${limit ? `?limit=${limit}` : ""}`);
-  if (!res.ok) throw new Error("Failed to get design history");
-  return res.json();
-}
-
-// ─── Automated Design Agent (Design Desk) ───────────────────────────────
-
-export interface AutoDesignIteration {
-  iteration: number;
-  pop_size: number;
-  n_generations: number;
-  n_control_points: number;
-  frequency_accuracy: number;
-  n_evaluations: number;
-  bore_length: number;
-  suggestions: string[];
-}
-
-export interface AutoDesignResult {
-  instrument_type: string;
-  target_frequencies: number[];
-  best_accuracy: number;
-  iterations: AutoDesignIteration[];
-  total_evaluations: number;
-  final_bore_profile: unknown[];
-  final_bore_length: number;
-  success: boolean;
-  log: string[];
-}
-
-export interface AutoDesignJob {
-  job_id: string;
-  status: string;
-  progress: string[];
-  result?: AutoDesignResult;
-  error?: string;
-}
-
-export async function startAutoDesign(
-  instrumentType: string,
-  maxIterations?: number,
-  targetAccuracy?: number,
-): Promise<{ job_id: string }> {
-  const res = await apiPost("/design-desk/auto", {
-    instrument_type: instrumentType,
-    max_iterations: maxIterations ?? 3,
-    target_accuracy: targetAccuracy ?? 3.0,
-  });
-  if (!res.ok) throw new Error(`Auto design start failed: ${res.statusText}`);
-  return res.json();
-}
-
-export async function getAutoDesignStatus(jobId: string): Promise<AutoDesignJob> {
-  const res = await apiGet(`/design-desk/auto/${jobId}/status`);
-  if (!res.ok) throw new Error("Auto design status failed");
-  return res.json();
-}
-
 export async function getDesignDeskInstruments(): Promise<Record<string, string>> {
   const res = await apiGet("/design-desk/instruments");
   if (!res.ok) throw new Error("Failed to get design desk instruments");
@@ -493,7 +347,7 @@ export async function getDesignDeskInstruments(): Promise<Record<string, string>
   return data.instruments;
 }
 
-// ─── SVG Export ─────────────────────────────────────────────────────────
+// ── SVG Export ──────────────────────────────────────────────────────
 
 export async function exportBoreSvg(
   boreProfile: [number, number][],
