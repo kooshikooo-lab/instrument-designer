@@ -364,6 +364,10 @@ class SequentialBoreOptimizer:
         # that L-BFGS-B can't fix. Differential evolution re-optimizes ALL hole
         # positions simultaneously with full fingering evaluation, closing gaps.
         # Also co-optimizes hole diameters for better fine intonation.
+        de_rms = None
+        de_positions = None
+        de_diameters = None
+        de_bore_length = None
         if not self.closed_top:
             if verbose:
                 print(f"\n  Phase 2b: Global hole re-optimization (differential evolution)")
@@ -437,6 +441,10 @@ class SequentialBoreOptimizer:
             de_idx = np.argsort(result_de.x[:n_h].tolist())
             all_positions = [result_de.x[j] for j in de_idx]
             all_diameters = [result_de.x[n_h + j] for j in de_idx]
+            de_rms = result_de.fun
+            de_positions = list(all_positions)
+            de_diameters = list(all_diameters)
+            de_bore_length = bore_length
             if verbose:
                 print(f"      RMS={result_de.fun:.2f}c  {dt_de:.0f}s")
                 print(f"      Holes: {[f'{p:.0f}mm d={d:.1f}mm' for p, d in zip(all_positions, all_diameters)]}")
@@ -574,6 +582,14 @@ class SequentialBoreOptimizer:
             all_diameters = list(r4.x[1+n_h:1+2*n_h])
         if verbose:
             print(f"      cost={r4.fun:.4f}")
+
+        # Compare DE vs refined: keep the better result
+        if de_rms is not None and de_rms < r4.fun:
+            if verbose:
+                print(f"\n  DE result ({de_rms:.4f}) better than refined ({r4.fun:.4f}), using DE")
+            bore_length = de_bore_length
+            all_positions = de_positions
+            all_diameters = de_diameters
 
         # Final evaluation
         bore_radii_list = list(bore_radii) if not isinstance(bore_radii, list) else bore_radii
