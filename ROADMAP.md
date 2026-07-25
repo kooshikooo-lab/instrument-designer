@@ -30,7 +30,7 @@
 Everything here is software-only — no printing required. The goal is a fast,
 accurate optimizer that matches or exceeds demakein/chalumier on reference instruments.
 
-**Target: <3 cents computational error, <60 seconds per design.**
+**Target: <3 cents computational error, <60 seconds per design, balanced intonation + timbre.**
 
 ### 1a. TMM Optimizer — DONE
 Phase-based TMM optimizer is working and validated:
@@ -114,6 +114,54 @@ where TMM can't find resonances. DE with overlapping bounds (`lo=i*L/(n_h*1.5+1)
 Sequencing: smoothness constraint first, then more control points.
 - [ ] Test with more control points (12 → 20-30 for complex profiles)
   - Only after monotonicity constraint is in place
+
+### 1g. Metric Standardization & Timbre Optimization
+
+**Critical finding (2026-07-25):** Median correction in cost functions measures **scale evenness**, not **pitch accuracy**. These are fundamentally different things with different timbre implications. Ernoult et al. (2020) proved intonation and timbre are inherently at odds — optimizing both requires a Pareto front approach.
+
+**The problem:**
+- Desktop's `optimizer_global.py` and `phase_cost_with_offset` use median-corrected RMS → measures evenness
+- Laptop's `benchmark_all.py` uses absolute RMS → measures accuracy
+- These numbers are NOT comparable (0.01c evenness ≠ 0.01c accuracy)
+- Median correction hides systematic errors that affect ensemble playing
+
+**The physics:** Impedance peak positions (intonation) and peak heights (timbre) are determined by the same physical parameters. You cannot independently optimize one without affecting the other.
+
+- [ ] Remove median correction from ALL optimizers
+  - `optimizer_global.py:_evaluate()` — remove `np.median(c1)` offset
+  - `tmm_acoustics.py:phase_cost_with_offset()` — remove median subtraction
+  - `two_phase_optimizer.py` — remove median correction at line 62
+- [ ] Report both metrics separately in benchmark:
+  - **Absolute RMS (c):** `sqrt(mean(cent_deviations²))` — accuracy
+  - **MAD (c):** `mean(|cent_deviations|)` — robust accuracy
+  - **SD (c):** `std(cent_deviations)` — evenness
+  - **Max deviation (c):** worst note
+  - **Per-note table:** full profile for debugging
+- [ ] Add timbre proxy to optimizer: impedance peak amplitude ratios (a₂/a₁)
+  - a₂/a₁ determines register stability and brightness
+  - Target: varies linearly from ~2 (low register) to ~1 (high register)
+- [ ] Update benchmark_all.py to report full metric suite
+- [ ] Bi-objective optimization (stretch goal): intonation + timbre Pareto front
+  - Reference: Petiot et al. (2025) trumpet bi-objective optimization
+  - Reference: Tournemenne et al. (2019) brass instrument optimization
+
+**Why this matters:**
+- An instrument can be perfectly even but 15c sharp (median-corrected: 0c, absolute: 15c)
+- An instrument can be accurate but uneven (median-corrected: 5c, absolute: 2c)
+- Professional makers explicitly trade intonation for timbre (Buffet R-13 vs RC)
+- Brighter timbre is perceived as sharper (perception coupling)
+- Noreland et al. (2013) optimized only intonation and admitted including timbre would produce different designs
+
+**Key references:**
+- Ernoult et al. (2020) JASA — intonation + timbre tradeoff: https://doi.org/10.1121/10.0002449
+- Noreland et al. (2013) — "Logical Clarinet": https://arxiv.org/abs/1209.3637
+- Bastien et al. (2025) JASA — intonation profile: https://doi.org/10.1121/2.0002181
+- Petiot et al. (2025) — trumpet Pareto front: https://doi.org/10.1121/2.0002163
+- Tournemenne et al. (2019) — brass optimization: https://hal.science/hal-01504179v1
+- Wolfe (UNSW) — cutoff frequency and timbre: https://www.phys.unsw.edu.au/jw/cutoff.html
+- Keefe (1982) — tone hole theory: https://doi.org/10.1121/1.388248
+
+---
 
 ### Computational Accuracy Targets
 | Phase | Target | Requirements | Status |

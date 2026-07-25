@@ -186,16 +186,29 @@ The optimizer supports targeting any register via the `n_register` parameter. Fo
 
 ### 3.7 Cost Function
 
-The optimizer minimizes RMS cents error with median offset correction:
+The optimizer uses **absolute RMS cents error** as the primary metric:
 
 ```python
 errors = [1200 * log2(actual / target) for each note]
-offset = median(errors)
-corrected_errors = errors - offset
-rms = sqrt(mean(corrected_errors^2))
+rms = sqrt(mean(errors²))
 ```
 
-This isolates **scale evenness** from global tuning offset. A secondary `phase_cost` function (Ernoult 2020) offers a smoother alternative: it computes `sin²(π · (phase - n_register))` at target wavelengths, which is continuous even when peaks merge.
+This measures **pitch accuracy** — how far each note is from its equal temperament target at A=440 Hz.
+
+**Important (2026-07-25):** An earlier version used median-corrected RMS, which subtracted the median deviation before computing RMS. This measured **scale evenness** (relative spacing) instead of **accuracy** (absolute pitch). These are fundamentally different metrics with different timbre implications. See [Metric Standardization](metric-standardization) for the full analysis.
+
+**Full metric suite (recommended):**
+| Metric | Formula | Measures |
+|--------|---------|----------|
+| Absolute RMS | `sqrt(mean(e²))` | Accuracy |
+| MAD | `mean(\|e\|)` | Robust accuracy |
+| SD | `std(e)` | Evenness |
+| Max deviation | `max(\|e\|)` | Worst note |
+| Per-note table | `e[i]` for each note | Full profile |
+
+**Timbre proxy:** Impedance peak amplitude ratios (a₂/a₁) determine register stability and brightness. Ernoult et al. (2020) proved intonation and timbre are inherently at odds — optimizing both requires a Pareto front approach.
+
+A secondary `phase_cost` function (Ernoult 2020) offers a smoother alternative: it computes `sin²(π · (phase - n_register))` at target wavelengths, which is continuous even when peaks merge.
 
 ---
 
