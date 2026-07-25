@@ -83,3 +83,34 @@ Holes: 76.0/114.0/126.9/191.0/229.0mm
    - Stage 2: bore radii only
    - Stage 3: hole positions + diameters
    - Stage 4: simultaneous fine-tune
+
+## Session Wrap-up
+
+### Remaining: Recorder absolute RMS discrepancy
+- Optimizer claims 0.02c absolute RMS internally
+- Independent verification shows ~1.3c absolute RMS
+- Median-corrected RMS is ~1.0c
+- Suspected cause: optimizer's _refine_objective evaluates differently from final verification
+- Needs investigation (closures capturing stale variables?)
+
+### Tailscale Server Setup
+- Port 9123 via `lan_chat.py` — established and running (PID 21648)
+- Used `pythonw` wrapper (`start_server.py`) for persistent background process
+- Firewall rule "PythonServer9999" added but `lan_chat.py` uses port 9123
+- Server log: `C:\Users\Admin\Desktop\server_log.txt`
+
+### Git Commits This Session
+- `c9e6619` — feat: sequential optimizer achieves 0.03c RMS
+- `43ff069` — docs: session log for TMM optimizer fixes
+
+### GitHub Issue Updates
+- Issue #1 (Project Hub): Posted progress update
+- Issue #15 (Backup Comms): Not updated (LAN chat working)
+
+### Session Key Takeaway
+The 5 bugs found and fixed today:
+1. `is_open` string comparison (was checking against wrong enum value)
+2. `wavelength_near` linear vs modular phase scorer
+3. Closed-open fingering: must open ALL placed holes (Bordeaux method)
+4. Grid search beats L-BFGS-B for individual hole placement
+5. Absolute RMS vs median-corrected RMS in objective function
