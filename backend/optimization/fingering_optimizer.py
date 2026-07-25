@@ -8,7 +8,8 @@ from scipy.optimize import differential_evolution, minimize
 from typing import List, Dict, Any, Optional
 
 from .base import Optimizer, OptimizationResult
-from ..core.network import AcousticNetwork, Tonehole
+from ..core.network import AcousticNetwork
+from ..physics.tonehole import SimpleTonehole as Tonehole
 from ..solvers.tmm_solver import TMMSolver
 
 
