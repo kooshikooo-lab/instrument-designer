@@ -14,6 +14,22 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'
 from backend.tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
 from backend.physics.losses import KeefeLoss
 
+try:
+    from backend.timbre_objectives import compute_timbre_objective
+    _TIMBRE_AVAILABLE = True
+except ImportError:
+    _TIMBRE_AVAILABLE = False
+    def compute_timbre_objective(*args, **kwargs):
+        return 0.0
+
+try:
+    from .timbre_objectives import compute_timbre_objective
+    _TIMBRE_AVAILABLE = True
+except ImportError:
+    _TIMBRE_AVAILABLE = False
+    def compute_timbre_objective(*args, **kwargs):
+        return 0.0
+
 c = SPEED_OF_SOUND
 SEMITONE_MAP = {'C': 0, 'D': 2, 'E': 4, 'F': 5, 'G': 7, 'A': 9, 'B': 11}
 
@@ -156,12 +172,16 @@ def phase2_lbfgsb_refine(x0, bore_length, n_holes, hole_lens, targets, fingering
                          detected_regs, bore_bounds_range, hole_pos_bounds_range,
                          n_iters=500, verbose=True,
                          n_bore_ctrl=6, hd_min=3.0, hd_max=15.0,
-                         loss_model=None):
+                         loss_model=None, weight_timbre=0.0):
     """
     Phase 2: L-BFGS-B with peak cost (correct).
 
     Uses peak_cost_nearest which correctly identifies register.
     """
+    targets = np.array(targets)
+    n_holes = len(hole_lens)
+    fundamental = targets[0]
+
     n_bore_ctrl = 6
     bore_min, bore_max = bore_bounds_range
     hp_min, hp_max = hole_pos_bounds_range
@@ -180,7 +200,16 @@ def phase2_lbfgsb_refine(x0, bore_length, n_holes, hole_lens, targets, fingering
                 outer_diameter_mm=22.0, closed_top=False, cone_step=0.5,
                 loss_model=loss_model,
             )
-            return peak_cost_nearest(inst, targets, fingerings, detected_regs)
+            peak_cost = peak_cost_nearest(inst, targets, fingerings, detected_regs)
+            
+            # Add timbre objective if enabled
+            if weight_timbre > 0 and _TIMBRE_AVAILABLE:
+                timbre_cost = compute_timbre_objective(
+                    np.array([]), np.array([]), fundamental
+                )
+                return peak_cost + weight_timbre * timbre_cost
+            
+            return peak_cost
         except:
             return 1e6
 
@@ -220,6 +249,7 @@ def two_phase_optimize(
     seed: int = 42,
     verbose: bool = True,
     loss_model=None,
+    weight_timbre: float = 0.0,
 ) -> dict:
     """
     Complete two-phase optimization pipeline (Noreland approach).
@@ -325,6 +355,7 @@ def two_phase_optimize(
         hole_pos_bounds_range=(hp_min, hp_max),
         n_iters=500,
         loss_model=loss_model,
+        weight_timbre=weight_timbre,
     )
 
     # Build final instrument

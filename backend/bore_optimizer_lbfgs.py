@@ -32,6 +32,14 @@ os.environ.setdefault("OMP_NUM_THREADS", "1")
 os.environ.setdefault("MKL_NUM_THREADS", "1")
 os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
 
+try:
+    from .timbre_objectives import compute_timbre_objective
+    _TIMBRE_AVAILABLE = True
+except ImportError:
+    _TIMBRE_AVAILABLE = False
+    def compute_timbre_objective(*args, **kwargs):
+        return 0.0
+
 
 def _pava_isotonic(x):
     """Find closest monotonically non-decreasing sequence via PAVA. O(n)."""
@@ -162,6 +170,7 @@ class LBFGSBoreOptimizer:
         weight_evenness=0.3,
         weight_projection=0.1,
         weight_smoothness=10.0,
+        weight_timbre=0.0,  # new: timbre objective weight
     ):
         self.target_freqs = np.array(sorted(target_frequencies))
         self.n_cp = n_control_points
@@ -173,6 +182,7 @@ class LBFGSBoreOptimizer:
         self.weight_evenness = weight_evenness
         self.weight_projection = weight_projection
         self.weight_smoothness = weight_smoothness
+        self.weight_timbre = weight_timbre
 
         if bore_length is None:
             v = 331.3 + 0.606 * temperature
@@ -234,7 +244,13 @@ class LBFGSBoreOptimizer:
         jumps = np.abs(np.diff(radii))
         smoothness = float(np.sum(np.maximum(0, jumps - (self.max_r - self.min_r) * 0.1)))
 
-        return freq_rms + self.weight_evenness * evenness + self.weight_projection * projection + self.weight_smoothness * smoothness
+        # Timbre objective: inharmonicity + phase-slope sharpness
+        fundamental = float(self.target_freqs[0]) if len(self.target_freqs) > 0 else 0.0
+        timbre_cost = 0.0
+        if _TIMBRE_AVAILABLE and fundamental > 0:
+            timbre_cost = float(compute_timbre_objective(peak_freqs, peak_mags, fundamental))
+
+        return freq_rms + self.weight_evenness * evenness + self.weight_projection * projection + self.weight_smoothness * smoothness + self.weight_timbre * timbre_cost
 
     def _initial_guess(self):
         """Generate initial guess: monotonic bore from low-frequency approximation."""
