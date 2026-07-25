@@ -795,10 +795,8 @@ class CorrectedPowellOptimizer:
                 cents_errors.append(1e10)
 
         cents_arr = np.array(cents_errors)
-        offset = np.median(cents_arr)
-        corrected = cents_arr - offset
-        rms = float(np.sqrt(np.mean(corrected ** 2)))
-        peak = float(np.max(np.abs(corrected)))
+        rms = float(np.sqrt(np.mean(cents_arr ** 2)))
+        peak = float(np.max(np.abs(cents_arr)))
         wall_time = time.time() - t0
 
         if verbose:
