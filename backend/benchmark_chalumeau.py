@@ -32,13 +32,16 @@ INSTRUMENTS = {
         "hole_positions": [50.0, 90.0, 130.0, 170.0, 210.0, 250.0],
         "hole_diameters": [7.0] * 6,
         "hole_lengths": [3.75] * 6,
+        # Chalumier convention: index 0 = nearest bell, index N-1 = nearest reed
+        # fingerings[i] maps to hole_positions[i]
+        # Ascending: open from index 0 (bell end) first
         "fingering_sets": [
-            ["closed", "closed", "closed", "closed", "closed", "closed"],
-            ["open",   "closed", "closed", "closed", "closed", "closed"],
-            ["open",   "open",   "closed", "closed", "closed", "closed"],
-            ["open",   "open",   "open",   "closed", "closed", "closed"],
-            ["open",   "open",   "open",   "open",   "closed", "closed"],
-            ["open",   "open",   "open",   "open",   "open",   "closed"],
+            ["closed", "closed", "closed", "closed", "closed", "closed"],  # all closed = lowest
+            ["open",   "closed", "closed", "closed", "closed", "closed"],  # bell hole opens first
+            ["open",   "open",   "closed", "closed", "closed", "closed"],  # 2 bell holes
+            ["open",   "open",   "open",   "closed", "closed", "closed"],  # 3 bell holes
+            ["open",   "open",   "open",   "open",   "closed", "closed"],  # 4 bell holes
+            ["open",   "open",   "open",   "open",   "open",   "closed"],  # 5 bell holes
         ],
         "n_register": 1,
     },
@@ -52,6 +55,7 @@ INSTRUMENTS = {
         "hole_positions": [60.0, 120.0, 180.0, 240.0, 300.0, 360.0, 420.0, 520.0],
         "hole_diameters": [8.0] * 8,
         "hole_lengths": [4.0] * 8,
+        # Chalumier convention: index 0 = nearest bell, index N-1 = nearest reed
         "fingering_sets": [
             ["closed"] * 8,
             ["open",   "closed", "closed", "closed", "closed", "closed", "closed", "closed"],

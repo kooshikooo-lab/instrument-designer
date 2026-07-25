@@ -1,11 +1,21 @@
-const API_BASE = "http://localhost:8000";
+const API_BASE_DEV = "http://localhost:8000";
+const API_BASE_TAURI = "http://127.0.0.1:8000";
 
 export function isTauri(): boolean {
   return typeof window !== "undefined" && "__TAURI__" in window;
 }
 
 export function getApiBase(): string {
-  return API_BASE;
+  return isTauri() ? API_BASE_TAURI : API_BASE_DEV;
+}
+
+// In Tauri mode, start the sidecar backend server and return the base URL
+export async function ensureBackendRunning(): Promise<string> {
+  if (isTauri()) {
+    const { tauriStartServer } = await import("./tauri");
+    await tauriStartServer(8000);
+  }
+  return getApiBase();
 }
 
 // ── Tauri-native commands (used when running in Tauri) ──────────────
@@ -33,6 +43,10 @@ export async function tauriHttpGet(url: string): Promise<string> {
 
 export async function tauriHttpPost(url: string, body: unknown): Promise<string> {
   return invokeTauri<string>("http_post", { url, body });
+}
+
+export async function tauriHttpPostBinary(url: string, body: unknown): Promise<number[]> {
+  return invokeTauri<number[]>("http_post_binary", { url, body });
 }
 
 export async function tauriSaveFileDialog(

@@ -752,6 +752,78 @@ def list_design_desk_instruments():
     return {"instruments": {k: v["description"] for k, v in INSTRUMENT_CONFIGS.items()}}
 
 
+@app.get("/design-desk/auto/{job_id}/status")
+def get_auto_design_status(job_id: str):
+    """Get status of an auto-design job."""
+    with _lock:
+        job = _jobs.get(job_id)
+    if not job:
+        raise HTTPException(404, "Job not found")
+    return {
+        "job_id": job_id,
+        "status": job["status"],
+        "progress": job["progress"],
+        "result": job["result"],
+        "error": job.get("error"),
+    }
+
+
+# ─── STEP Export (build123d) ──────────────────────────────────────────────
+
+class StepExportRequest(BaseModel):
+    bore_profile: list[list[float]]  # [[position_mm, radius_mm], ...]
+    wall_thickness: float = 3.0
+    tone_holes: Optional[list[dict]] = None  # [{position, diameter, chimney_height}, ...]
+
+
+@app.post("/export/step")
+def export_step(req: StepExportRequest):
+    """Generate STEP file from bore profile using build123d CSG."""
+    import io
+    try:
+        from build123d import Cylinder, export_step, Align, Location, Axis
+    except ImportError:
+        raise HTTPException(500, "build123d not installed. Run: pip install build123d")
+
+    bore = req.bore_profile
+    if not bore or len(bore) < 2:
+        raise HTTPException(400, "Bore profile must have at least 2 points")
+
+    total_length = bore[-1][0] - bore[0][0]
+    mean_inner_r = sum(p[1] for p in bore) / len(bore)
+    mean_outer_r = mean_inner_r + req.wall_thickness
+
+    outer = Cylinder(radius=mean_outer_r, height=total_length,
+                     align=(Align.CENTER, Align.CENTER, Align.MIN))
+    inner = Cylinder(radius=mean_inner_r, height=total_length + 1,
+                     align=(Align.CENTER, Align.CENTER, Align.MIN))
+    result = outer - inner
+
+    if req.tone_holes:
+        for h in req.tone_holes:
+            z_pos = h["position"]
+            hole_r = h["diameter"] / 2
+            chimney = h.get("chimney_height", req.wall_thickness + 2.0)
+            hole_cyl = Cylinder(
+                radius=hole_r, height=chimney,
+                align=(Align.CENTER, Align.CENTER, Align.CENTER),
+            )
+            hole_cyl = hole_cyl.moved(Location((0, 0, z_pos - total_length / 2)))
+            hole_cyl = hole_cyl.rotate(Axis.Y, 90)
+            result = result - hole_cyl
+
+    buf = io.BytesIO()
+    export_step(result, buf)
+    buf.seek(0)
+
+    from fastapi.responses import StreamingResponse
+    return StreamingResponse(
+        iter([buf.getvalue()]),
+        media_type="application/step",
+        headers={"Content-Disposition": "attachment; filename=instrument.step"},
+    )
+
+
 # ─── SVG Export ─────────────────────────────────────────────────────────
 
 class SvgExportRequest(BaseModel):
@@ -761,6 +833,90 @@ class SvgExportRequest(BaseModel):
     hole_diameters: Optional[list[float]] = None
     bore_length: Optional[float] = None
     view: str = "side"
+
+
+@app.get("/export/cadquery/instruments")
+def list_cadquery_instruments():
+    """List available CadQuery preset instruments with metadata."""
+    import sys
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+    from backend.cadquery_export import INSTRUMENTS
+    result = {}
+    for name, spec in INSTRUMENTS.items():
+        meta = spec.get("_meta", {})
+        result[name] = {
+            "bore_length": spec["bore_length"],
+            "bore_diameter": spec["bore_diameter"],
+            "closed_top": spec["closed_top"],
+            "holes": len(spec.get("holes", [])),
+            "display_name": meta.get("display_name", name),
+            "family": meta.get("family", "Unknown"),
+            "subcategory": meta.get("subcategory", ""),
+            "verified": meta.get("verified", False),
+            "description": meta.get("description", ""),
+        }
+    return result
+
+
+class CadQueryExportRequest(BaseModel):
+    preset: Optional[str] = None
+    bore_length: Optional[float] = None
+    bore_diameter: Optional[float | list[float]] = None
+    wall_thickness: float = 3.0
+    holes: Optional[list[list[float]]] = None
+    closed_top: bool = False
+
+
+@app.post("/export/cadquery")
+def export_cadquery(req: CadQueryExportRequest):
+    """Generate STL via CadQuery from preset or custom parameters."""
+    import sys, io, time
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+    from backend.cadquery_export import generate_instrument, INSTRUMENTS
+
+    if req.preset:
+        if req.preset not in INSTRUMENTS:
+            raise HTTPException(400, f"Unknown preset: {req.preset}. Available: {list(INSTRUMENTS.keys())}")
+        spec = {k: v for k, v in INSTRUMENTS[req.preset].items() if k != "_meta"}
+        t0 = time.time()
+        solid = generate_instrument(**spec)
+        gen_time = time.time() - t0
+        filename = f"{req.preset}.stl"
+    else:
+        if req.bore_length is None or req.bore_diameter is None:
+            raise HTTPException(400, "Provide either 'preset' or both 'bore_length' and 'bore_diameter'")
+        bd = tuple(req.bore_diameter) if isinstance(req.bore_diameter, list) else req.bore_diameter
+        holes = [tuple(h) for h in req.holes] if req.holes else []
+        t0 = time.time()
+        solid = generate_instrument(
+            bore_length=req.bore_length,
+            bore_diameter=bd,
+            wall_thickness=req.wall_thickness,
+            holes=holes,
+            closed_top=req.closed_top,
+        )
+        gen_time = time.time() - t0
+        filename = "custom_instrument.stl"
+
+    from cadquery import exporters
+    import tempfile
+    with tempfile.NamedTemporaryFile(suffix=".stl", delete=False) as tmp:
+        tmp_path = tmp.name
+    try:
+        exporters.export(solid, tmp_path)
+        with open(tmp_path, "rb") as f:
+            stl_bytes = f.read()
+    finally:
+        os.unlink(tmp_path)
+
+    return StreamingResponse(
+        iter([stl_bytes]),
+        media_type="application/sla",
+        headers={
+            "Content-Disposition": f"attachment; filename={filename}",
+            "X-CadQuery-Gen-Time": f"{gen_time:.3f}",
+        },
+    )
 
 
 @app.post("/export/svg")

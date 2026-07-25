@@ -94,14 +94,19 @@ export const TUNING_PRESETS: TuningPreset[] = [
     "Replaces octave (2:1) with tritave (3:1). 13 tones per tritave. Alien, otherworldly character. Bohlen, Pierce, Barbour."),
 
   justIntonation("Partch 43-Tone", "Experimental",
-    [1, 81/80, 33/32, 21/20, 16/15, 12/11, 11/10, 10/9, 9/8, 8/7, 7/6, 6/5, 11/9, 5/4, 14/11, 9/7,
+    [1, 81/80, 49/48, 33/32, 21/20, 16/15, 12/11, 11/10, 10/9, 9/8, 8/7, 7/6, 6/5, 11/9, 5/4, 14/11, 9/7,
      21/16, 4/3, 27/20, 11/8, 7/5, 10/7, 16/11, 40/27, 3/2, 32/21, 14/9, 8/5, 11/7, 5/3, 12/7, 7/4,
-     11/6, 15/8, 27/14, 16/9, 9/5, 20/11, 56/30, 28/15, 63/32],
+     11/6, 15/8, 27/14, 16/9, 9/5, 20/11, 56/30, 28/15, 63/32, 2],
     "Harry Partch's 43-tone just intonation scale. Pure harmonic ratios using primes 2,3,5,7,11. Unique, expressive, requires custom instruments."),
 
   justIntonation("Superflat (19-Harmonic)", "Experimental",
-    Array.from({ length: 19 }, (_, i) => (i + 1) / (i === 0 ? 1 : i + 1)),
-    "All 19 harmonics used as notes. Extremely dense tuning. Microtonal exploration. Experimental drone music."),
+    [...new Set(
+      Array.from({ length: 19 }, (_, i) => {
+        const h = i + 1;
+        return h / Math.pow(2, Math.floor(Math.log2(h)));
+      }),
+    )].sort((a, b) => a - b),
+    "First 19 harmonics, octave-reduced to unique ratios within one octave. Dense harmonic tuning. Microtonal exploration. Experimental drone music."),
 ];
 
 export const TUNING_CATEGORIES = [...new Set(TUNING_PRESETS.map((t) => t.category))];

@@ -22,7 +22,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; connect-src 'self' http://localhost:* ws://localhost:*; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; font-src 'self' data:"
+      "csp": "default-src 'self'; connect-src 'self' http://localhost:* ws://localhost:* http://127.0.0.1:* ws://127.0.0.1:*; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; font-src 'self' data:"
     }
   },
   "bundle": {
@@ -35,8 +35,25 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "resources": [
+      "../../backend/**/*",
+      "../../woodwind_designer/**/*",
+      "../../config/**/*"
+    ],
     "android": {
       "debugApplicationIdSuffix": ".debug"
+    }
+  },
+  "plugins": {
+    "shell": {
+      "allowlist": [
+        {
+          "name": "python",
+          "cmd": "python",
+          "args": ["-m", "uvicorn", "woodwind_designer.engine.design_server:app", "--host", "127.0.0.1", "--port", "8000"],
+          "sidecar": false
+        }
+      ]
     }
   }
 }

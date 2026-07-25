@@ -1,8 +1,8 @@
 """
-Transfer Matrix Method (TMM) acoustics — phase-based resonance model.
+Transfer Matrix Method (TMM) acoustics â€” phase-based resonance model.
 
 Faithfully ported from chalumier's ResonanceMath.kt and Instrument.kt
-(Mark C. Chu-Carroll, Paul Francis Harrison — Apache 2.0 license).
+(Mark C. Chu-Carroll, Paul Francis Harrison â€” Apache 2.0 license).
 
 This module computes resonant frequencies of wind instruments using the
 phase-based TMM approach from demakein. It supports:
@@ -33,12 +33,26 @@ Usage:
 
 import math
 import numpy as np
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Union, Callable
 
 # Matches chalumier's SPEED_OF_SOUND exactly (cm/s)
 SPEED_OF_SOUND = 346100.0
 
 FOUR_PI = 4.0 * math.pi
+
+# ============================================================================
+# Loss model integration
+# ============================================================================
+
+try:
+    from backend.physics.losses import KeefeLoss, NoLoss
+    _LOSSES_AVAILABLE = True
+except ImportError:
+    _LOSSES_AVAILABLE = False
+    class KeefeLoss:
+        def bore_loss(self, length, radius, wavelength): return 1.0
+        def hole_loss(self, hole_radius, hole_length, wavelength): return 1.0
+    NoLoss = KeefeLoss
 
 
 # ============================================================================
@@ -62,8 +76,41 @@ def untanner(x: float) -> float:
 
 
 def pipe_reply_phase(phase_end: float, length_on_wavelength: float) -> float:
-    """Advance phase through a pipe segment of given length/wavelength."""
+    """Advance phase through a pipe segment of given length/wavelength (lossless)."""
     return phase_end + length_on_wavelength * 2.0
+
+
+def pipe_reply_phase_with_loss(
+    phase_end: float,
+    length: float,
+    radius: float,
+    wavelength: float,
+    loss_model=None,
+) -> float:
+    """Advance phase through a pipe segment with optional viscothermal losses.
+
+    Args:
+        phase_end: incoming phase (real number)
+        length: segment length in mm
+        radius: bore radius in mm
+        wavelength: acoustic wavelength in mm
+        loss_model: optional loss model (KeefeLoss or None)
+
+    Returns:
+        Phase after propagation including loss-induced phase shift
+    """
+    # Lossless phase advance
+    phase = phase_end + 2.0 * length / wavelength
+
+    # Add loss-induced phase shift if loss model provided
+    if loss_model is not None and radius > 0 and length > 0:
+        loss_factor = loss_model.bore_loss(length, radius, wavelength)
+        # Loss factor is complex: exp(-γ * length)
+        # The argument gives the additional phase shift from losses
+        if isinstance(loss_factor, complex):
+            phase += -loss_factor.imag  # arg(exp(-γL)) = -Im(γL)
+
+    return phase
 
 
 def junction2_reply_phase(a0: float, a1: float, p1: float) -> float:
@@ -111,7 +158,7 @@ def hole_length_correction(hole_diameter: float, bore_diameter: float, closed: b
 
 
 # ============================================================================
-# Profile — stepped bore representation
+# Profile â€” stepped bore representation
 # ============================================================================
 
 class Profile:
@@ -184,7 +231,7 @@ class Hole:
 
 
 # ============================================================================
-# TMM Instrument — resonance computation
+# TMM Instrument â€” resonance computation
 # ============================================================================
 
 class TMMInstrument:
@@ -211,6 +258,11 @@ class TMMInstrument:
         closed_top: bool = False,
         cone_step: float = 0.5,
         speed_of_sound: float = SPEED_OF_SOUND,
+        reed_virtual_length: float = 0.0,
+        whistle_clip: float = 0.0,
+        whistle_windway_diameter: float = 0.0,
+        whistle_windway_length: float = 0.0,
+        loss_model: Optional[object] = None,
     ):
         self.closed_top = closed_top
         self.cone_step = cone_step
@@ -220,10 +272,17 @@ class TMMInstrument:
         self.inner = Profile(inner_positions, inner_diameters)
         self.outer = Profile(inner_positions, outer_diameters)
 
+        # Apply patchInstrument transforms (chalumier convention)
+        if whistle_clip > 0.0:
+            self._apply_whistle_clip(whistle_clip, whistle_windway_diameter, whistle_windway_length)
+        if reed_virtual_length > 0.0:
+            self._apply_reed_tube(reed_virtual_length)
+
         self.hole_positions = list(hole_positions)
         self.hole_diameters = list(hole_diameters)
         self.hole_lengths = list(hole_lengths)
         self.n_holes = len(hole_positions)
+        self.loss_model = loss_model
 
         # Build stepped inner profile
         self.stepped_inner = self.inner.as_stepped(cone_step)
@@ -231,6 +290,63 @@ class TMMInstrument:
 
         # Precompute action chain for phase-based resonance
         self._prepare_phase()
+
+    def _apply_whistle_clip(
+        self,
+        clip_fraction: float,
+        windway_diameter: float = 0.0,
+        windway_length: float = 0.0,
+    ):
+        """
+        Apply WhistleDesigner.patchInstrument() bore clipping.
+
+        Clips the bore short by bore_diameter * clip_fraction at the top end,
+        then optionally extends with a windway section.
+        """
+        bore_diameter = self.inner.at(self.inner.pos[-1], use_high=True)
+        clip_length = bore_diameter * clip_fraction
+        new_length = self.inner.pos[-1] - clip_length
+
+        # Clip bore to new length
+        clipped_pos = []
+        clipped_low = []
+        clipped_high = []
+        for i, p in enumerate(self.inner.pos):
+            if p <= new_length:
+                clipped_pos.append(p)
+                clipped_low.append(self.inner.low[i])
+                clipped_high.append(self.inner.high[i])
+        if clipped_pos[-1] < new_length:
+            clipped_pos.append(new_length)
+            d = self.inner.at(new_length)
+            clipped_low.append(d)
+            clipped_high.append(d)
+
+        if windway_diameter > 0.0 and windway_length > 0.0:
+            clipped_pos.append(new_length + windway_length)
+            clipped_low.append(windway_diameter)
+            clipped_high.append(windway_diameter)
+
+        self.inner = Profile(clipped_pos, clipped_low, clipped_high)
+
+    def _apply_reed_tube(self, reed_virtual_length: float):
+        """
+        Apply ReedInstrumentDesigner.patchInstrument() reed tube.
+
+        For closed-top reed instruments (clarinets, saxophones):
+        Appends a conical reed tube at the reed end (top) of the bore.
+        reedLength = boreDiameter * reedVirtualLength
+        reedTop = boreDiameter * reedVirtualTop (default 1.0 = same as bore)
+        """
+        bore_diameter = self.inner.at(self.inner.pos[-1], use_high=True)
+        reed_length = bore_diameter * reed_virtual_length
+        reed_top = bore_diameter  # reedVirtualTop = 1.0 by default
+
+        # Append reed tube profile after existing bore
+        new_end = self.inner.pos[-1] + reed_length
+        self.inner.pos.append(new_end)
+        self.inner.low.append(reed_top)
+        self.inner.high.append(reed_top)
 
     def _prepare_phase(self):
         """
@@ -267,7 +383,7 @@ class TMMInstrument:
             seg_length = pos - position
 
             # Pipe segment action
-            self.actions.append(('pipe', seg_length))
+            self.actions.append(('pipe', seg_length, diameter))
             position = pos
 
             if descriptor == 'step':
@@ -306,8 +422,15 @@ class TMMInstrument:
 
         for action in self.actions:
             if action[0] == 'pipe':
-                _, seg_length = action
+                _, seg_length, seg_diameter = action
                 phase = pipe_reply_phase(phase, seg_length / wavelength)
+                # Apply viscothermal loss model if available
+                if self.loss_model is not None and seg_diameter > 0:
+                    radius = seg_diameter / 2.0
+                    loss_factor = self.loss_model.bore_loss(seg_length, radius, wavelength)
+                    if isinstance(loss_factor, complex):
+                        # Phase of exp(-gamma * length) = -Im(gamma * length)
+                        phase += -loss_factor.imag
 
             elif action[0] == 'junction2':
                 _, area_a, area_b = action
@@ -337,6 +460,7 @@ class TMMInstrument:
         step_increase: float = 1.05,
         max_steps: int = 100,
         target_register: int = 1,
+        scorer=None,
     ) -> float:
         """
         Find the nearest resonant wavelength to the given guess.
@@ -347,9 +471,10 @@ class TMMInstrument:
         step = 2.0 ** (step_cents / 1200.0)
         half_step = math.sqrt(step)
 
-        def scorer(w):
-            p = self.resonance_phase(w, fingerings)
-            return p - target_register
+        if scorer is None:
+            def scorer(w):
+                p = self.resonance_phase(w, fingerings)
+                return p - target_register
 
         probes = [wavelength / half_step, wavelength * half_step]
         scores = [scorer(probes[0]), scorer(probes[1])]
@@ -387,6 +512,49 @@ class TMMInstrument:
             return probes[-1]
         return probes[0]
 
+    def true_wavelength_near(
+        self,
+        wavelength: float,
+        fingerings: List[str],
+        step_cents: float = 1.0,
+        step_increase: float = 1.05,
+        max_steps: int = 100,
+    ) -> float:
+        """
+        Find the nearest resonant wavelength regardless of register.
+
+        Port of Instrument.trueWavelengthNear() from chalumier.
+        Scorer: ((resonancePhase + 0.5) % 1.0) - 0.5
+        This wraps phase into [-0.5, 0.5) and finds the zero crossing,
+        which corresponds to the nearest resonance in ANY register.
+        """
+        def scorer(w):
+            p = self.resonance_phase(w, fingerings)
+            return ((p + 0.5) % 1.0) - 0.5
+
+        return self.wavelength_near(wavelength, fingerings, step_cents, step_increase, max_steps, scorer=scorer)
+
+    def true_nth_wavelength_near(
+        self,
+        wavelength: float,
+        fingerings: List[str],
+        n: int,
+        step_cents: float = 1.0,
+        step_increase: float = 1.5,
+        max_steps: int = 20,
+    ) -> float:
+        """
+        Find resonant wavelength targeting a specific register n.
+
+        Port of Instrument.trueNthWavelengthNear() from chalumier.
+        Scorer: resonancePhase - n
+        """
+        def scorer(w):
+            p = self.resonance_phase(w, fingerings)
+            return p - float(n)
+
+        return self.wavelength_near(wavelength, fingerings, step_cents, step_increase, max_steps, scorer=scorer)
+
     def find_resonance(
         self,
         wavelength_near: float,
@@ -402,7 +570,7 @@ class TMMInstrument:
             fingerings: list of 'open' or 'closed' for each hole
             n_register: register number (1 = fundamental, 2 = first overtone, etc.)
         """
-        return self.wavelength_near(wavelength_near, fingerings, target_register=n_register)
+        return self.true_nth_wavelength_near(wavelength_near, fingerings, n_register)
 
     def frequency_from_wavelength(self, wavelength_mm: float) -> float:
         """Convert wavelength (mm) to frequency (Hz)."""
@@ -418,22 +586,29 @@ class TMMInstrument:
         self,
         target_wavelengths: List[float],
         fingering_sets: List[List[str]],
-        n_register: int = 1,
+        n_register: Union[int, List[int]] = 1,
     ) -> List[float]:
         """
         Compute resonant frequencies for a set of fingerings.
 
+        Each note can use a different register via a list of n_register
+        values (one per fingering).
+
         Args:
             target_wavelengths: initial wavelength guesses for each fingering
             fingering_sets: list of fingering configurations
-            n_register: which register to target
+            n_register: which register(s) to target.
+                int: same register for all notes.
+                List[int]: one register per note.
 
         Returns:
             List of resonant frequencies in Hz
         """
         freqs = []
-        for target_wl, fingerings in zip(target_wavelengths, fingering_sets):
-            wl = self.find_resonance(target_wl, fingerings, n_register=n_register)
+        is_list = isinstance(n_register, list)
+        for i, (target_wl, fingerings) in enumerate(zip(target_wavelengths, fingering_sets)):
+            reg = n_register[i] if is_list else n_register
+            wl = self.find_resonance(target_wl, fingerings, n_register=reg)
             freq = self.frequency_from_wavelength(wl)
             freqs.append(freq)
         return freqs
@@ -442,7 +617,7 @@ class TMMInstrument:
         self,
         target_frequencies: List[float],
         fingering_sets: List[List[str]],
-        n_register: int = 1,
+        n_register: Union[int, List[int]] = 1,
     ) -> float:
         """
         Phase-based cost function (Ernoult 2020).
@@ -455,21 +630,21 @@ class TMMInstrument:
         Args:
             target_frequencies: list of target frequencies in Hz
             fingering_sets: list of fingering configurations (one per target)
-            n_register: which register to target
+            n_register: which register(s) to target.
+                int: same register for all notes.
+                List[int]: one register per note.
 
         Returns:
             Cost value (0.0 = perfect match)
         """
         costs = []
-        for target_freq, fingerings in zip(target_frequencies, fingering_sets):
+        is_list = isinstance(n_register, list)
+        for i, (target_freq, fingerings) in enumerate(zip(target_frequencies, fingering_sets)):
             target_wl = self.speed_of_sound / target_freq
+            reg = n_register[i] if is_list else n_register
             try:
                 phase = self.resonance_phase(target_wl, fingerings)
-                # Phase should be integer at resonance (n_register)
-                # Distance from nearest integer register
-                deviation = phase - n_register
-                # Use sinusoidal cost: 0 at integer, peaks at half-integer
-                # This is smooth and differentiable everywhere
+                deviation = phase - reg
                 costs.append(math.sin(math.pi * deviation) ** 2)
             except Exception:
                 costs.append(1.0)
@@ -479,7 +654,7 @@ class TMMInstrument:
         self,
         target_frequencies: List[float],
         fingering_sets: List[List[str]],
-        n_register: int = 1,
+        n_register: Union[int, List[int]] = 1,
     ) -> float:
         """
         Phase-based cost with global offset correction.
@@ -491,17 +666,21 @@ class TMMInstrument:
         Args:
             target_frequencies: list of target frequencies in Hz
             fingering_sets: list of fingering configurations (one per target)
-            n_register: which register to target
+            n_register: which register(s) to target.
+                int: same register for all notes.
+                List[int]: one register per note.
 
         Returns:
             Cost value (0.0 = perfect evenness)
         """
         deviations = []
-        for target_freq, fingerings in zip(target_frequencies, fingering_sets):
+        is_list = isinstance(n_register, list)
+        for i, (target_freq, fingerings) in enumerate(zip(target_frequencies, fingering_sets)):
             target_wl = self.speed_of_sound / target_freq
+            reg = n_register[i] if is_list else n_register
             try:
                 phase = self.resonance_phase(target_wl, fingerings)
-                deviations.append(phase - n_register)
+                deviations.append(phase - reg)
             except Exception:
                 deviations.append(0.0)
 
@@ -529,6 +708,7 @@ def tmm_instrument_from_radii(
     outer_diameter_mm: float = 22.0,
     closed_top: bool = False,
     cone_step: float = 0.5,
+    loss_model: Optional[object] = None,
 ) -> TMMInstrument:
     """
     Create a TMMInstrument from an array of bore radii.
@@ -542,6 +722,7 @@ def tmm_instrument_from_radii(
         outer_diameter_mm: outer diameter of the instrument body (mm)
         closed_top: True for clarinets (closed reed end)
         cone_step: maximum step size for profile smoothing
+        loss_model: optional viscothermal loss model (e.g., KeefeLoss)
 
     Returns:
         TMMInstrument instance
@@ -566,4 +747,6 @@ def tmm_instrument_from_radii(
         hole_lengths=hole_lengths_mm,
         closed_top=closed_top,
         cone_step=cone_step,
+        loss_model=loss_model,
     )
+

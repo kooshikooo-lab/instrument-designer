@@ -170,6 +170,18 @@ PRESET_TARGETS: dict[str, dict] = {
         "range": ("C4", "D5"),
         "description": "Concert flute in C (Boehm) — 6-hole simple system model",
     },
+    "alto_flute": {
+        "type": "open-open",
+        "note": "G3",
+        "range": ("G3", "F#4"),
+        "description": "Alto flute in G — 6-hole simple system",
+    },
+    "pvc_flute": {
+        "type": "open-open",
+        "note": "D4",
+        "range": ("D4", "C#5"),
+        "description": "PVC flute in D (3/4\" schedule 40 pipe, 20.4mm ID)",
+    },
     "recorder": {
         "type": "open-open",
         "note": "C5",
@@ -205,6 +217,12 @@ PRESET_TARGETS: dict[str, dict] = {
         "note": "Bb3",
         "range": ("Bb3", "Bb5"),
         "description": "Bb clarinet — odd harmonics only",
+    },
+    "diatonic_chalumeau": {
+        "type": "closed-open",
+        "note": "C#4",
+        "range": ("C#4", "C#5"),
+        "description": "Diatonic D chalumeau (baroque, 16mm bore, La Belle Note style)",
     },
     "soprano_sax": {
         "type": "open-open",

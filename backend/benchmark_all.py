@@ -7,6 +7,88 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from backend.tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
 
 INSTRUMENTS = {
+    "chromatic_flute_C": {
+        "desc": "Concert flute in C (Boehm, 17 holes, chromatic C4-C6)",
+        "closed_top": False,
+        "targets": [
+            261.63, 277.18, 293.66, 311.13, 329.63, 349.23,
+            369.99, 392.00, 415.30, 440.00, 466.16, 493.88,
+            523.25, 554.37, 587.33, 622.25, 659.25, 698.46,
+            739.99, 783.99, 830.61, 880.00, 932.33, 987.77,
+            1046.50,
+        ],
+        "names": [
+            "C4","C#4","D4","D#4","E4","F4","F#4","G4","G#4","A4","A#4","B4",
+            "C5","C#5","D5","D#5","E5","F5","F#5","G5","G#5","A5","A#5","B5","C6",
+        ],
+        "bore_radius": 9.5, "outer_diameter": 22.0,
+        "hole_diameter": 12.5, "hole_length": 3.0,
+        "fingerings": [
+            ["closed"]*17,  # C4
+            ["open"]+["closed"]*16,  # C#4
+            ["open"]*2+["closed"]*15,  # D4
+            ["open"]*3+["closed"]*14,  # D#4
+            ["open"]*4+["closed"]*13,  # E4
+            ["open"]*5+["closed"]*12,  # F4
+            ["open"]*6+["closed"]*11,  # F#4
+            ["open"]*7+["closed"]*10,  # G4
+            ["open"]*8+["closed"]*9,   # G#4
+            ["open"]*9+["closed"]*8,   # A4
+            ["open"]*10+["closed"]*7,  # A#4
+            ["open"]*11+["closed"]*6,  # B4
+            ["closed"]*17,  # C5 (same as C4, upper register)
+            ["open"]+["closed"]*16,  # C#5
+            ["open"]*2+["closed"]*15,  # D5
+            ["open"]*3+["closed"]*14,  # D#5
+            ["open"]*4+["closed"]*13,  # E5
+            ["open"]*5+["closed"]*12,  # F5
+            ["open"]*6+["closed"]*11,  # F#5
+            ["open"]*7+["closed"]*10,  # G5
+            ["open"]*8+["closed"]*9,   # G#5
+            ["open"]*9+["closed"]*8,   # A5
+            ["open"]*10+["closed"]*7,  # A#5
+            ["open"]*11+["closed"]*6,  # B5
+            ["open"]*12+["closed"]*5,  # C6
+        ],
+        # Registers: 2 for C4-B4, 3 for C5-C6
+        "_n_registers": [2]*12 + [3]*13,
+        "_chromatic": True,
+        "ranges": {
+            "C4_B4": {
+                "targets": [
+                    261.63, 277.18, 293.66, 311.13, 329.63, 349.23,
+                    369.99, 392.00, 415.30, 440.00, 466.16, 493.88,
+                ],
+                "names": ["C4","C#4","D4","D#4","E4","F4","F#4","G4","G#4","A4","A#4","B4"],
+                "fingerings": [
+                    ["closed"]*17, ["open"]+["closed"]*16,
+                    ["open"]*2+["closed"]*15, ["open"]*3+["closed"]*14,
+                    ["open"]*4+["closed"]*13, ["open"]*5+["closed"]*12,
+                    ["open"]*6+["closed"]*11, ["open"]*7+["closed"]*10,
+                    ["open"]*8+["closed"]*9, ["open"]*9+["closed"]*8,
+                    ["open"]*10+["closed"]*7, ["open"]*11+["closed"]*6,
+                ],
+                "n_registers": [2]*12,
+            },
+            "C5_C6": {
+                "targets": [
+                    523.25, 554.37, 587.33, 622.25, 659.25, 698.46,
+                    739.99, 783.99, 830.61, 880.00, 932.33, 987.77, 1046.50,
+                ],
+                "names": ["C5","C#5","D5","D#5","E5","F5","F#5","G5","G#5","A5","A#5","B5","C6"],
+                "fingerings": [
+                    ["closed"]*17, ["open"]+["closed"]*16,
+                    ["open"]*2+["closed"]*15, ["open"]*3+["closed"]*14,
+                    ["open"]*4+["closed"]*13, ["open"]*5+["closed"]*12,
+                    ["open"]*6+["closed"]*11, ["open"]*7+["closed"]*10,
+                    ["open"]*8+["closed"]*9, ["open"]*9+["closed"]*8,
+                    ["open"]*10+["closed"]*7, ["open"]*11+["closed"]*6,
+                    ["open"]*12+["closed"]*5,
+                ],
+                "n_registers": [3]*13,
+            },
+        },
+    },
     "chalumeau_C": {
         "desc": "Chalumeau in C (closed-open)",
         "closed_top": True,
@@ -126,6 +208,57 @@ INSTRUMENTS = {
             ["open", "open", "open", "open", "open", "open"],
         ],
     },
+    "alto_flute_G": {
+        "desc": "Alto flute in G (open-open, cylindrical)",
+        "closed_top": False,
+        "targets": [196.0, 220.0, 246.9, 261.6, 293.7, 329.6, 369.9],
+        "names": ["G3", "A3", "B3", "C4", "D4", "E4", "F#4"],
+        "bore_radius": 11.0, "outer_diameter": 18.0,
+        "hole_diameter": 9.0, "hole_length": 3.0,
+        "fingerings": [
+            ["closed"] * 6,
+            ["open", "closed", "closed", "closed", "closed", "closed"],
+            ["open", "open", "closed", "closed", "closed", "closed"],
+            ["open", "open", "open", "closed", "closed", "closed"],
+            ["open", "open", "open", "open", "closed", "closed"],
+            ["open", "open", "open", "open", "open", "closed"],
+            ["open", "open", "open", "open", "open", "open"],
+        ],
+    },
+    "pvc_flute_D": {
+        "desc": "PVC flute in D (3/4\" schedule 40, open-open)",
+        "closed_top": False,
+        "targets": [293.7, 329.6, 369.9, 392.0, 440.0, 493.9, 554.4],
+        "names": ["D4", "E4", "F#4", "G4", "A4", "B4", "C#5"],
+        "bore_radius": 10.2, "outer_diameter": 14.0,
+        "hole_diameter": 8.0, "hole_length": 3.0,
+        "fingerings": [
+            ["closed"] * 6,
+            ["open", "closed", "closed", "closed", "closed", "closed"],
+            ["open", "open", "closed", "closed", "closed", "closed"],
+            ["open", "open", "open", "closed", "closed", "closed"],
+            ["open", "open", "open", "open", "closed", "closed"],
+            ["open", "open", "open", "open", "open", "closed"],
+            ["open", "open", "open", "open", "open", "open"],
+        ],
+    },
+    "diatonic_D_chalumeau": {
+        "desc": "Diatonic D chalumeau (baroque, closed-open, La Belle Note style)",
+        "closed_top": True,
+        "targets": [277.2, 293.7, 329.6, 370.0, 392.0, 440.0, 493.9],
+        "names": ["C#4", "D4", "E4", "F#4", "G4", "A4", "B4"],
+        "bore_radius": 8.0, "outer_diameter": 14.0,
+        "hole_diameter": 5.0, "hole_length": 3.0,
+        "fingerings": [
+            ["closed"] * 6,
+            ["open", "closed", "closed", "closed", "closed", "closed"],
+            ["open", "open", "closed", "closed", "closed", "closed"],
+            ["open", "open", "open", "closed", "closed", "closed"],
+            ["open", "open", "open", "open", "closed", "closed"],
+            ["open", "open", "open", "open", "open", "closed"],
+            ["open", "open", "open", "open", "open", "open"],
+        ],
+    },
     "recorder_C": {
         "desc": "Soprano recorder in C (open-open, conical)",
         "closed_top": False,
@@ -165,7 +298,10 @@ def eval_all(radii, bore_length, hp, hd, hl, cfg):
         cfg["outer_diameter"], cfg["closed_top"], 0.5,
     )
     tw = [c / f for f in cfg["targets"]]
-    n_reg = 1 if cfg["closed_top"] else 2
+    if cfg.get("_chromatic", False) and "_n_registers" in cfg:
+        n_reg = cfg["_n_registers"]
+    else:
+        n_reg = 1 if cfg["closed_top"] else 2
     freqs = inst.compute_fingered_frequencies(tw, cfg["fingerings"], n_reg)
     cents = []
     for a, t in zip(freqs, cfg["targets"]):
@@ -408,40 +544,88 @@ def sequential_refined(cfg):
     return rms, L, hp, hd, time.time() - t0 + t_seq
 
 
-# Run
-all_results = {}
-for name, cfg in INSTRUMENTS.items():
+if __name__ == "__main__":
+    # Run
+    all_results = {}
+    for name, cfg in INSTRUMENTS.items():
+        print(f"\n{'#'*60}")
+        print(f"# {cfg['desc']}")
+        print(f"{'#'*60}")
+
+        # Chromatic instruments use per-note registers (not compatible with
+        # sequential optimizer — the 17-hole geometry is for validation only).
+        # Evaluate them directly via eval_all.
+        if cfg.get("_chromatic", False):
+            print(f"\n  --- Direct evaluation (chromatic instrument) ---")
+            try:
+                # Build instrument from the model
+                model = cfg.get("_chromatic_model")
+                if model is None:
+                    from backend.chromatic_flute import ChromaticFluteModel
+                    model = ChromaticFluteModel()
+                inst = model.build_instrument()
+                tw = [c / f for f in cfg["targets"]]
+                n_reg = cfg.get("_n_registers", 2)
+                freqs = inst.compute_fingered_frequencies(tw, cfg["fingerings"], n_reg)
+                cents = []
+                for a, t in zip(freqs, cfg["targets"]):
+                    cents.append(1200.0 * math.log2(a / t) if a > 0 and math.isfinite(a) else 1e10)
+                ca = np.array(cents)
+                rms = float(np.sqrt(np.mean(ca ** 2))) if np.all(np.isfinite(ca)) else 1e10
+                r = {
+                    "Eval": {"rms": rms, "time": 0, "bore": 613, "holes": 17},
+                }
+                # Also report per-range
+                ranges = cfg.get("ranges", {})
+                for rname, rcfg in ranges.items():
+                    if not rcfg.get("targets"):
+                        continue
+                    rtw = [c / f for f in rcfg["targets"]]
+                    rfreqs = inst.compute_fingered_frequencies(
+                        rtw, rcfg["fingerings"], rcfg["n_registers"])
+                    rcents = []
+                    for a, t in zip(rfreqs, rcfg["targets"]):
+                        rcents.append(1200.0 * math.log2(a / t) if a > 0 and math.isfinite(a) else 1e10)
+                    rca = np.array(rcents)
+                    rrms = float(np.sqrt(np.mean(rca ** 2))) if np.all(np.isfinite(rca)) else 1e10
+                    r[f"Eval_{rname}"] = {"rms": rrms, "time": 0, "bore": 613, "holes": 17}
+                    print(f"    {rname}: RMS={rrms:.2f}c")
+                print(f"    Full range: RMS={rms:.2f}c")
+            except Exception as e:
+                import traceback
+                print(f"    FAILED: {e}")
+                traceback.print_exc()
+                r = {"Eval": {"rms": 1e10, "time": 0, "bore": 0, "holes": 0}}
+            all_results[name] = r
+            continue
+
+        r = {}
+        for label, fn in [("Sequential", sequential), ("Seq+Refine", sequential_refined)]:
+            print(f"\n  --- {label} ---")
+            try:
+                result = fn(cfg)
+                rms, L, hp, dt = result[0], result[1], result[2], result[-1]
+                hd = result[3] if label == "Seq+Refine" else None
+                r[label] = {"rms": rms, "time": dt, "bore": L, "holes": len(hp)}
+                if hd is not None:
+                    r[label]["hole_diameters"] = hd
+                print(f"  RMS={rms:.2f}c | L={L:.0f}mm | {len(hp)} holes | {dt:.1f}s")
+            except Exception as e:
+                import traceback
+                print(f"  FAILED: {e}")
+                traceback.print_exc()
+                r[label] = {"rms": 1e10, "time": 0, "bore": 0, "holes": 0}
+        all_results[name] = r
+
+    # Summary
     print(f"\n{'#'*60}")
-    print(f"# {cfg['desc']}")
+    print("# SUMMARY")
     print(f"{'#'*60}")
-
-    r = {}
-    for label, fn in [("Sequential", sequential), ("Seq+Refine", sequential_refined)]:
-        print(f"\n  --- {label} ---")
-        try:
-            result = fn(cfg)
-            rms, L, hp, dt = result[0], result[1], result[2], result[-1]
-            hd = result[3] if label == "Seq+Refine" else None
-            r[label] = {"rms": rms, "time": dt, "bore": L, "holes": len(hp)}
-            if hd is not None:
-                r[label]["hole_diameters"] = hd
-            print(f"  RMS={rms:.2f}c | L={L:.0f}mm | {len(hp)} holes | {dt:.1f}s")
-        except Exception as e:
-            import traceback
-            print(f"  FAILED: {e}")
-            traceback.print_exc()
-            r[label] = {"rms": 1e10, "time": 0, "bore": 0, "holes": 0}
-    all_results[name] = r
-
-# Summary
-print(f"\n{'#'*60}")
-print("# SUMMARY")
-print(f"{'#'*60}")
-print(f"\n  {'Instrument':<22} {'Method':<14} {'RMS':>8} {'Time':>8}")
-print(f"  {'-'*22} {'-'*14} {'-'*8} {'-'*8}")
-for name, results in all_results.items():
-    for method, data in results.items():
-        rms = data["rms"]
-        s = f"{rms:.2f}" if rms < 1e5 else "FAIL"
-        print(f"  {name:<22} {method:<14} {s:>8} {data['time']:>7.1f}s")
-    print()
+    print(f"\n  {'Instrument':<22} {'Method':<14} {'RMS':>8} {'Time':>8}")
+    print(f"  {'-'*22} {'-'*14} {'-'*8} {'-'*8}")
+    for name, results in all_results.items():
+        for method, data in results.items():
+            rms = data["rms"]
+            s = f"{rms:.2f}" if rms < 1e5 else "FAIL"
+            print(f"  {name:<22} {method:<14} {s:>8} {data['time']:>7.1f}s")
+        print()

@@ -1,0 +1,50 @@
+{
+  "project": "Woodwind Design Automation - Bass Clarinet Focus",
+  "status": "Phase 1 Complete - Research & Validation",
+  "last_updated": "2026-07-24",
+  "key_findings": {
+    "tmm_model": "VALIDATED - tanner/untanner = normalized admittance (Y=j·tan(kL)). Junction3 = parallel admittance addition. -0.5 phase = R=-1 reflection. Valid for 70-150Hz (plane-wave regime, 8kHz cutoff for 25mm bore).",
+    "register_hole": "80mm from reed, 2.5mm dia, 3mm chimney - validated by Szwarcberg 2024 for 588mm bore; scaled to 1211mm = ~165mm but 80mm works for 7-hole model.",
+    "sequential_12hole": "PHYSICS LIMITED - 15.5c RMS on 2nd register regardless of hole size (8-20mm) or graduation. Bell-end-first fails (holes ineffective at 70-150Hz). Reed-end-first sequential works but doesn't match real bass clarinet fingering.",
+    "real_bass_clarinet": "22-25 toneholes with cross-fingerings, not 12 sequential. 7-hole diatonic based on Denner tenor (Munich Mu 136) scaled 1.335x: 6.19c/9.51c RMS.",
+    "cross_fingerings": "Required for chromatic expansion beyond 7 holes. Need functional classification: 7 primary + 3 corrective + 2 vents (ChatGPT chart). But need >12 holes or larger holes for effectiveness at 70-150Hz.",
+    "bass_chalumeau": "Kress bass (Salzburg A-Salzburg 8/1) = ONLY surviving bass chalumeau. No register key, no overblowing. Munich Mu 136 = Denner TENOR, not bass. Range C3-G4."
+  },
+  "working_models": {
+    "7_hole_diatonic": {
+      "bore": "1211mm x 25mm",
+      "holes": [175.9, 292.9, 337.5, 444.6, 532.0, 609.8, 636.4],
+      "diameter": 11.0,
+      "register": "80mm, 2.5mm, 3mm",
+      "results": "1st reg: 0.04c RMS, 2nd reg: 7.96c RMS, twelfths: 9.5c RMS"
+    },
+    "12_hole_sequential": {
+      "bore": "1211mm x 25mm", 
+      "limit": "15.5c RMS on 2nd register (hard physics limit)",
+      "note": "Reed-end sequential works; bell-end-first fails. Not real bass clarinet fingering."
+    }
+  },
+  "next_steps": [
+    "Implement ChatGPT cross-fingering chart (13x13) with proper hole positions",
+    "Add bore taper optimization (1-3 vars for conical profile)", 
+    "Validate with OpenWind FEM comparison",
+    "Add bell flare back once chromatic fingerings work",
+    "Research: contact Salzburg Museum for Kress bass measurements",
+    "Extend to full 22-25 hole Boehm system"
+  ],
+  "references": {
+    "primary": [
+      "Benade (1976) Fundamentals of Musical Acoustics Ch.20-24",
+      "Nederveen (1998) Acoustical Aspects of Woodwind Instruments",
+      "Keefe (1982) JASA 72(3) 676-687 - tonehole theory",
+      "Debut-Kergomard-Laloë (2005) Appl. Acoust. 66, 365-409",
+      "Szwarcberg (2024) arXiv:2404.07540 - register hole physics",
+      "Szwarcberg (2025) arXiv:2601.01981 - register tube measurements"
+    ],
+    "measurements": [
+      "Munich Mu 136 (Denner tenor): bore 14.5mm, length 620mm, holes ~5mm",
+      "Kress bass (Salzburg): only surviving bass chalumeau",
+      "Modern bass clarinets: 23-24mm bore, 22-25 holes, 1211mm length"
+    ]
+  }
+}

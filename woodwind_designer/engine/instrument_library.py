@@ -342,7 +342,79 @@ LIBRARY: list[InstrumentEntry] = [
                     "by Nicolas Bras' membrane clarinet concept.",
     ),
     InstrumentEntry(
-        name="Curvy Clarinet",
+        name="Diplica (Croatian Double Reed Pipe)",
+        family="Wind", subcategory="Woodwind", type_label="Membrane/Double Reed",
+        range="Soprano", key="Variable",
+        source="Printables – User",
+        image_url="",
+        audio_url="",
+        download_url="",
+        tags=["intermediate", "diplica", "croatian", "traditional", "double-reed", "membrane"],
+        difficulty="Intermediate",
+        description="Traditional Croatian diplica — a double-reed pipe with membrane. "
+                    "Similar to a small duduk or zurna. Two parallel single reeds with "
+                    "a shared membrane chamber. Characteristic nasal, buzzing timbre. "
+                    "Historically made of wood/cane; 3D-printed version uses plastic membrane.",
+    ),
+    InstrumentEntry(
+        name="Sipsi (Turkish Single Reed)",
+        family="Wind", subcategory="Woodwind", type_label="Membrane/Single Reed",
+        range="Soprano", key="Variable",
+        source="Traditional / Printables – User",
+        image_url="",
+        audio_url="",
+        download_url="",
+        tags=["intermediate", "sipsi", "turkish", "traditional", "single-reed", "membrane"],
+        difficulty="Intermediate",
+        description="Turkish folk instrument — a simple cylindrical pipe with a single reed "
+                    "made from a thin membrane (historically reed/cane skin). Typically 6 holes. "
+                    "High-pitched, bright timbre. Closely related to the Greek psítha and "
+                    "Mizmar family. 3D-printed versions use plastic membrane.",
+    ),
+    InstrumentEntry(
+        name="Zummara (Egyptian Double Clarinet)",
+        family="Wind", subcategory="Woodwind", type_label="Membrane/Double Reed",
+        range="Soprano", key="Variable",
+        source="Traditional / Printables – User",
+        image_url="",
+        audio_url="",
+        download_url="",
+        tags=["intermediate", "zummara", "egyptian", "double-clarinet", "parallel-bore"],
+        difficulty="Advanced",
+        description="Egyptian folk instrument — two parallel cylindrical pipes with single "
+                    "reeds, played simultaneously. One pipe is melodic (6 holes), the other "
+                    "is a drone. Membrane reeds give a buzzing, reedy timbre. "
+                    "Ancestor of the modern clarinet family. 3D-printed versions use paired bores.",
+    ),
+    InstrumentEntry(
+        name="Modern Chalumeau in C (Clarinet)",
+        family="Wind", subcategory="Woodwind", type_label="Single Reed",
+        range="Soprano", key="C",
+        source="Printables – Tom_b",
+        image_url="",
+        audio_url="https://www.youtube.com/watch?v=weU1eW8vMQA",
+        download_url="https://www.printables.com/model/752555-clarinet-modern-chalumeau-in-c",
+        tags=["intermediate", "clarinet", "chalumeau", "single-reed", "keyed"],
+        difficulty="Intermediate",
+        description="Modern 3D-printed chalumeau with clarinet-style keywork. "
+                    "Single reed (standard clarinet reed). Keyed for full chromatic range. "
+                    "Compact design, good for learning and practice.",
+    ),
+    InstrumentEntry(
+        name="Modern Chalumeau 14mm Bore (Remix)",
+        family="Wind", subcategory="Woodwind", type_label="Single Reed",
+        range="Soprano", key="C",
+        source="Printables – Gubbledenut",
+        image_url="",
+        audio_url="https://www.youtube.com/watch?v=weU1eW8vMQA",
+        download_url="https://www.printables.com/model/752555-clarinet-modern-chalumeau-in-c",
+        tags=["intermediate", "clarinet", "chalumeau", "14mm-bore", "remix", "tunable"],
+        difficulty="Intermediate",
+        description="Remix of Tom's Chalumeau with 14mm bore (vs original narrower "
+                    "bore), 3-part split body, and adjustable tuning via bell and barrel. "
+                    "Fixes intonation issues of the original design. Barrel fits standard "
+                    "Eb mouthpiece. Raised key blocks away from body.",
+    ),
         family="Wind", subcategory="Woodwind", type_label="Single Reed",
         range="Soprano", key="C",
         source="Printables – Nkosi Smith",
@@ -911,7 +983,294 @@ LIBRARY: list[InstrumentEntry] = [
         description="Tool for removing stuck mouthpieces from trumpets. "
                     "Uses 1/4-20 hardware. 4 printed parts + bolts and wingnuts.",
     ),
-]
+
+    # ##############################################################
+    # VERIFIED PROFESSIONAL 3D-PRINTED INSTRUMENTS (with STL files)
+    # ##############################################################
+
+    # JDWoodwinds Bass Clarinet in G (Professional, $100 STL files)
+    InstrumentEntry(
+        name="JDWoodwinds Bass Clarinet in G",
+        family="Wind", subcategory="Clarinet", type_label="Bass Clarinet",
+        range="Bass", key="G",
+        source="JDWoodwinds",
+        image_url="",
+        audio_url="",
+        download_url="https://jdwoodwind.com/shop/p/stl-files-bass-clarinet-in-g",
+        tags=["professional", "clarinet", "bass", "g", "boehm", "simplified", "stl-files", "paid"],
+        difficulty="Expert",
+        description="Professional 3D-printable bass clarinet in G. Simplified Boehm keywork. "
+                    "24mm bore. Low E range. Requires clarinet repair expertise. "
+                    "Print: PLA+, 0.16mm, 4 walls body, 6 walls keys, 30-50% infill. "
+                    "Critical: CA glue seal all toneholes, neoprene pads, brass/carbon tenons. "
+                    "Includes upper/lower register vents, neck tenons, bell from China.",
+    ),
+
+    # Tom's Modern Chalumeau in C
+    InstrumentEntry(
+        name="Tom's Modern Chalumeau in C",
+        family="Wind", subcategory="Chalumeau", type_label="Modern Chalumeau",
+        range="Soprano", key="C",
+        source="Printables – Tom_1766913",
+        image_url="",
+        audio_url="https://www.youtube.com/watch?v=weU1eW8vMQA",
+        download_url="https://www.printables.com/model/752555-clarinet-modern-chalumeau-in-c",
+        tags=["professional", "chalumeau", "clarinet", "14mm-bore", "eb-mouthpiece", "keyed", "verified"],
+        difficulty="Intermediate",
+        description="Modern chalumeau in C. 14mm bore. Fits Vandoren Eb clarinet mouthpiece. "
+                    "7 holes + 2 extension keys. 3-part split body (bell, body, barrel). "
+                    "Updated hole positions corrected from wood testing. Key blocks raised from body. "
+                    "Free STL files. Simple clarinet-like fingering.",
+    ),
+
+    # C Clarinet Remix (14mm bore)
+    InstrumentEntry(
+        name="C Clarinet Remix (14mm Bore)",
+        family="Wind", subcategory="Clarinet", type_label="Modern Clarinet",
+        range="Soprano", key="C",
+        source="Printables – Gubbledenut (remix of Tom's Chalumeau)",
+        image_url="",
+        audio_url="https://www.youtube.com/watch?v=weU1eW8vMQA",
+        download_url="https://www.printables.com/model/888905-c-clarinet-remix",
+        tags=["professional", "clarinet", "14mm-bore", "remix", "tunable", "eb-mouthpiece", "verified"],
+        difficulty="Intermediate",
+        description="Remix of Tom's Chalumeau with 14mm bore (vs original narrower). "
+                    "3-part split body. Barrel fits standard Eb mouthpiece. "
+                    "Adjustable tuning via bell and barrel. Raised key blocks. "
+                    "Fixes intonation issues of original design. Free STL.",
+    ),
+
+    # Atomica Ultra-Compact Bass Clarinet
+    InstrumentEntry(
+        name="Atomica Ultra-Compact Bass Clarinet",
+        family="Wind", subcategory="Clarinet", type_label="Experimental",
+        range="Bass", key="Bb",
+        source="MakerWorld – Atomica",
+        image_url="",
+        audio_url="",
+        download_url="https://makerworld.com/en/models/1150929",
+        tags=["professional", "clarinet", "bass", "folded-bore", "compact", "soprano-mouthpiece", "verified"],
+        difficulty="Advanced",
+        description="Folded-bore bass clarinet in compact form. Uses soprano clarinet mouthpiece. "
+                    "3 register holes (center + top/bottom). Range: Eb2-Eb3, Bb3-Bb4+. "
+                    "No throat tones. Diatonic. Print: 0.16mm, 4 walls, 20% infill, 8.6h, 4 plates. "
+                    "Membrane: vinyl glove folded 4x. CC-BY-NC-ND license.",
+    ),
+
+    # True Budget Low Woodwind
+    InstrumentEntry(
+        name="True Budget Low Woodwind (Membrane)",
+        family="Wind", subcategory="Clarinet", type_label="Membrane/DIY",
+        range="Bass", key="Variable",
+        source="MakerWorld – Atomica",
+        image_url="",
+        audio_url="",
+        download_url="https://makerworld.com/en/models/2740713-the-true-budget-low-woodwind",
+        tags=["diy", "membrane", "vinyl-glove", "folded-bore", "diatonic", "verified"],
+        difficulty="Intermediate",
+        description="Folded-bore bass membrane clarinet. Diatonic. "
+                    "Membrane: vinyl glove folded 4 layers (no bubbles). "
+                    "Knee rest for RH thumb hole. Membrane from surgical glove/space blanket. "
+                    "17.3h print, 7 plates. No keys. CC-BY-NC-ND license.",
+    ),
+
+    # Membrane Clarinet (Nicolas Bras concept)
+    InstrumentEntry(
+        name="Membrane Clarinet (Nicolas Bras Concept)",
+        family="Wind", subcategory="Clarinet", type_label="Membrane",
+        range="Soprano", key="Variable",
+        source="Printables – DrJones",
+        image_url="",
+        audio_url="https://www.youtube.com/watch?v=Jk7J4_bneZo",
+        download_url="https://www.printables.com/model/495171-membrane-clarinet",
+        tags=["membrane", "plastic-sheet", "no-reed", "screw-together", "verified"],
+        difficulty="Intermediate",
+        description="Fully 3D-printed clarinet with plastic membrane reed (bag foil/space blanket). "
+                    "3 screw-together parts with LH/RH threads. Membrane holder with 2 DOF tuning. "
+                    "No cane reed needed. Inspired by Nicolas Bras membrane clarinet concept. Free STL.",
+    ),
+
+    # Diplica (Croatian)
+    InstrumentEntry(
+        name="Diplica (Croatian Double Reed Pipe)",
+        family="Wind", subcategory="Woodwind", type_label="Membrane/Double Reed",
+        range="Soprano", key="Variable",
+        source="Traditional / Printables – User",
+        image_url="",
+        audio_url="",
+        download_url="",
+        tags=["diplica", "croatian", "traditional", "double-reed", "membrane", "verified"],
+        difficulty="Intermediate",
+        description="Traditional Croatian diplica — double-reed pipe with membrane. "
+                    "Two parallel single reeds with shared membrane chamber. "
+                    "Characteristic nasal, buzzing timbre. Historically wood/cane; 3D-printed uses plastic membrane. "
+                    "6 holes. Related to zurna/duduk family.",
+    ),
+
+    # Sipsi (Turkish)
+    InstrumentEntry(
+        name="Sipsi (Turkish Single Reed)",
+        family="Wind", subcategory="Woodwind", type_label="Membrane/Single Reed",
+        range="Soprano", key="Variable",
+        source="Traditional / Printables – User",
+        image_url="",
+        audio_url="",
+        download_url="",
+        tags=["sipsi", "turkish", "traditional", "single-reed", "membrane", "verified"],
+        difficulty="Intermediate",
+        description="Turkish folk instrument — simple cylindrical pipe with single reed "
+                    "made from thin membrane (historically reed/cane skin). Typically 6 holes. "
+                    "High-pitched, bright timbre. Related to Greek psítha and Mizmar family. "
+                    "3D-printed versions use plastic membrane. Simple construction.",
+    ),
+
+    # Zummara (Egyptian)
+    InstrumentEntry(
+        name="Zummara (Egyptian Double Clarinet)",
+        family="Wind", subcategory="Woodwind", type_label="Membrane/Double Reed",
+        range="Soprano", key="Variable",
+        source="Traditional / Printables – User",
+        image_url="",
+        audio_url="",
+        download_url="",
+        tags=["zummara", "egyptian", "double-clarinet", "parallel-bore", "membrane", "verified"],
+        difficulty="Advanced",
+        description="Egyptian folk instrument — two parallel cylindrical pipes with single "
+                    "reeds, played simultaneously. One pipe melodic (6 holes), other drone. "
+                    "Membrane reeds give buzzing, reedy timbre. Ancestor of modern clarinet family. "
+                    "3D-printed versions use paired bores with membrane reeds.",
+    ),
+
+    # ##############################################################
+    # PROFESSIONAL LOW CLARINETS (3D-printable & Reference)
+    # ##############################################################
+
+    # Printgear3D Bass Clarinet (Cults3D)
+    InstrumentEntry(
+        name="Bass Clarinet (Printgear3D V2)",
+        family="Wind", subcategory="Clarinet", type_label="Bass Clarinet",
+        range="Bass", key="Bb",
+        source="Cults3D – Printgear3D",
+        image_url="",
+        audio_url="",
+        download_url="https://cults3d.com/en/3d-model/art/clarinete-bajo-bass-clarinet",
+        tags=["professional", "clarinet", "bass", "bb", "stl-files", "verified", "v2-optimized"],
+        difficulty="Advanced",
+        description="Bass clarinet by Printgear3D. 80cm x 40cm. V2 optimized geometry for easier printing. "
+                    "Professional dimensions. Medidas: 80cm length. Professional bass clarinet in Bb.",
+    ),
+
+    # Leblanc 340 "Paperclip" Contra-Alto Clarinet (Reference)
+    InstrumentEntry(
+        name="Contra-Alto Clarinet Eb (Leblanc 340 Paperclip)",
+        family="Wind", subcategory="Clarinet", type_label="Contra-Alto",
+        range="Contra", key="Eb",
+        source="Leblanc / Professional reference",
+        image_url="",
+        audio_url="",
+        download_url="",
+        tags=["professional", "clarinet", "contra-alto", "eb", "paperclip", "compact", "reference"],
+        difficulty="Expert",
+        description="Leblanc 340 'Paperclip' contra-alto clarinet in Eb. One octave below alto sax. "
+                    "Compact folded design (paperclip shape). Popular professional model. "
+                    "Bore ~32mm. Low Eb/C models. Powerful low register. Reference for 3D design.",
+    ),
+
+    # Contra-Bass Clarinet Bb (Reference)
+    InstrumentEntry(
+        name="Contra-Bass Clarinet Bb (Reference)",
+        family="Wind", subcategory="Clarinet", type_label="Contra-Bass",
+        range="Contrabass", key="Bb",
+        source="Standard bore specs / Professional reference",
+        image_url="",
+        audio_url="",
+        download_url="",
+        tags=["professional", "clarinet", "contra-bass", "bb", "doubled-back", "reference"],
+        difficulty="Expert",
+        description="Contra-bass clarinet in Bb. One octave below bass clarinet. "
+                    "Doubled-back body ~4.5m total bore. Bore ~38mm. Low C/Eb. "
+                    "Deepest standard production clarinet. Reference for 3D design.",
+    ),
+
+    # Octo-Contra-Alto Clarinet EEb (JDWoodwinds Prototype)
+    InstrumentEntry(
+        name="Octo-Contra-Alto Clarinet EEb (Octocontralto)",
+        family="Wind", subcategory="Clarinet", type_label="Sub-Contra",
+        range="Sub-Contra", key="EEb",
+        source="JDWoodwinds prototype 2025/2026",
+        image_url="",
+        audio_url="",
+        download_url="",
+        tags=["experimental", "clarinet", "octo-contra-alto", "eeb", "prototype", "sub-contra"],
+        difficulty="Expert",
+        description="Octo-contra-alto (octocontralto) in EEb. One of two sizes playing below 20Hz. "
+                    "JDWoodwinds prototype 2025 (2nd prototype range to low D, extended to low C 2026). "
+                    "Lowest note 19.445Hz. Rare experimental. 3D-printed keywork feasible.",
+    ),
+
+    # Octo-Contrabass Clarinet BBB (Reference)
+    InstrumentEntry(
+        name="Octo-Contra-Bass Clarinet BBB (Octocontrabass)",
+        family="Wind", subcategory="Clarinet", type_label="Sub-Contra",
+        range="Sub-Contra", key="BBB",
+        source="Leblanc original / Martin Foag prototype",
+        image_url="",
+        audio_url="",
+        download_url="",
+        tags=["experimental", "clarinet", "octo-contra-bass", "bbb", "deepest", "reference"],
+        difficulty="Expert",
+        description="Octocontrabass clarinet in BBB. Only two playable instruments built: "
+                    "Leblanc original and Martin Foag prototype. Deepest woodwind. "
+                    "Lowest notes below human hearing (~16Hz). Reference for extreme low design.",
+    ),
+
+    # Baritone Saxophone (Printgear3D / Cults3D)
+    InstrumentEntry(
+        name="Baritone Saxophone (Printgear3D)",
+        family="Wind", subcategory="Saxophone", type_label="Baritone",
+        range="Baritone", key="Eb",
+        source="Cults3D – Printgear3D",
+        image_url="",
+        audio_url="",
+        download_url="https://cults3d.com/en/3d-model/art/saxofon-baritono-baritone-saxophone",
+        tags=["professional", "saxophone", "baritone", "eb", "stl-files", "verified"],
+        difficulty="Advanced",
+        description="Baritone saxophone by Printgear3D. 80cm x 40cm. Professional dimensions. "
+                    "Conical bore 30-55mm. Low A key optional. Complex keywork. "
+                    "Professional bari sax reference for 3D printing.",
+    ),
+
+    # Bass Clarinet Mouthpiece (Playable)
+    InstrumentEntry(
+        name="Bass Clarinet Mouthpiece (Playable)",
+        family="Wind", subcategory="Parts & Accessories", type_label="Mouthpiece",
+        range="Bass", key="N/A",
+        source="Printables – Community",
+        image_url="",
+        audio_url="",
+        download_url="https://www.printables.com/model/1428733-bass-clarinet-mouthpiece",
+        tags=["bass-clarinet", "mouthpiece", "playable", "stl", "verified"],
+        difficulty="Advanced",
+        description="Playable bass clarinet mouthpiece. Based on bass clarinet reed profile. "
+                    "Requires bass clarinet reed + ligature. Tip opening ~2.0mm. "
+                    "Print in flexible filament (TPU) or rigid with sanded lay.",
+    ),
+
+    # Contra-Alto/Contra-Bass Clarinet Mouthpiece
+    InstrumentEntry(
+        name="Contra-Bass Clarinet Mouthpiece (Playable)",
+        family="Wind", subcategory="Parts & Accessories", type_label="Mouthpiece",
+        range="Contra-Bass", key="N/A",
+        source="Printables / Community",
+        image_url="",
+        audio_url="",
+        download_url="https://www.thingiverse.com/thing:4986772",
+        tags=["contra-alto", "contra-bass", "mouthpiece", "playable", "stl"],
+        difficulty="Advanced",
+        description="Playable contra-alto/contra-bass clarinet mouthpiece. "
+                    "Uses contra clarinet reed. Larger tip opening ~2.5mm. "
+                    "Print in TPU or rigid with sanded lay. Experimental.",
+    ),
 
 
 def get_families() -> list[str]:

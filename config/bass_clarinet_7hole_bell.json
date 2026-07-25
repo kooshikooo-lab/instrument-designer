@@ -1,0 +1,38 @@
+{
+  "name": "Bass Clarinet in Bb (7-hole D major, quadratic bell)",
+  "description": "Optimized 7-hole diatonic with quadratic bell flare. Bell distorts 12th significantly.",
+  "status": "ACTIVE - bell working but 12th degraded",
+  "bore": {
+    "cylinder_length_mm": 1003.9,
+    "bell_length_mm": 160.0,
+    "bell_end_radius_mm": 22.0,
+    "total_length_mm": 1163.9,
+    "radius_mm": 12.5,
+    "outer_diameter_mm": 37.0,
+    "bell_profile": "quadratic: r(x) = r0 + (r1-r0)*(x/L)^2",
+    "closed_top": true
+  },
+  "register_hole": {
+    "position_mm": 80.0,
+    "diameter_mm": 2.5,
+    "chimney_mm": 3.0
+  },
+  "toneholes": [
+    {"position_mm": 178, "diameter_mm": 11.0, "chimney_mm": 5.0},
+    {"position_mm": 297, "diameter_mm": 11.0, "chimney_mm": 5.0},
+    {"position_mm": 343, "diameter_mm": 11.0, "chimney_mm": 5.0},
+    {"position_mm": 451, "diameter_mm": 11.0, "chimney_mm": 5.0},
+    {"position_mm": 540, "diameter_mm": 11.0, "chimney_mm": 5.0},
+    {"position_mm": 618, "diameter_mm": 11.0, "chimney_mm": 5.0},
+    {"position_mm": 645, "diameter_mm": 11.0, "chimney_mm": 5.0}
+  ],
+  "target_notes": ["D2","E2","F#2","G2","A2","B2","C#3","D3"],
+  "performance": {
+    "first_register_rms_relative_cents": 0.00,
+    "first_register_offset_cents": -97,
+    "second_register_rms_relative_cents": 21.0,
+    "second_register_offset_cents": -68,
+    "twelfths_rms_cents": 41.0,
+    "note": "Bell-induced harmonic distortion widens 12th. Acceptable for prototype."
+  }
+}

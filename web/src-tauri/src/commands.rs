@@ -1,9 +1,10 @@
 use serde::{Deserialize, Serialize};
-use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
+use tauri_plugin_shell::process::CommandChild;
+use tauri_plugin_shell::ShellExt;
 use tokio::sync::oneshot;
 
-static SERVER_CHILD: Mutex<Option<Child>> = Mutex::new(None);
+static SERVER_CHILD: Mutex<Option<CommandChild>> = Mutex::new(None);
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct InstrumentInfo {
@@ -15,31 +16,46 @@ pub struct InstrumentInfo {
     pub description: String,
 }
 
-// ── Python Server Management ──────────────────────────────────────────
+// ── Sidecar Server Management ──────────────────────────────────────────
 
 #[tauri::command]
-pub async fn server_start(port: u16) -> Result<String, String> {
-    let mut child = SERVER_CHILD.lock().map_err(|e| e.to_string())?;
+pub async fn server_start(app: tauri::AppHandle, port: u16) -> Result<String, String> {
+    // Check if already running (drop lock before await)
+    let already_running = {
+        let child = SERVER_CHILD.lock().map_err(|e| e.to_string())?;
+        child.is_some()
+    };
 
-    if child.is_some() {
+    if already_running {
         return Ok("Server already running".into());
     }
 
-    let script = format!(
-        r#"import sys; sys.path.insert(0, '.'); from woodwind_designer.engine.design_server import app; import uvicorn; uvicorn.run(app, host='127.0.0.1', port={})"#,
-        port
-    );
-
-    let c = Command::new("python")
-        .args(["-c", &script])
-        .current_dir(std::env::current_dir().map_err(|e| e.to_string())?)
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
+    // Use shell plugin to launch Python backend
+    let (mut _rx, c) = app
+        .shell()
+        .command("python")
+        .args([
+            "-m",
+            "uvicorn",
+            "woodwind_designer.engine.design_server:app",
+            "--host",
+            "127.0.0.1",
+            "--port",
+            &port.to_string(),
+        ])
         .spawn()
-        .map_err(|e| format!("Failed to start Python server: {}", e))?;
+        .map_err(|e| format!("Failed to start Python backend: {}", e))?;
 
-    *child = Some(c);
-    Ok(format!("Server starting on port {}", port))
+    // Store the child process
+    {
+        let mut child = SERVER_CHILD.lock().map_err(|e| e.to_string())?;
+        *child = Some(c);
+    }
+
+    // Wait a bit for server to start
+    tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
+
+    Ok(format!("Python backend starting on port {}", port))
 }
 
 #[tauri::command]
@@ -84,6 +100,21 @@ pub async fn http_post(url: String, body: serde_json::Value) -> Result<String, S
     resp.text()
         .await
         .map_err(|e| format!("Failed to read response: {}", e))
+}
+
+#[tauri::command]
+pub async fn http_post_binary(url: String, body: serde_json::Value) -> Result<Vec<u8>, String> {
+    let client = reqwest::Client::new();
+    let resp = client
+        .post(&url)
+        .json(&body)
+        .send()
+        .await
+        .map_err(|e| format!("HTTP POST binary failed: {}", e))?;
+    resp.bytes()
+        .await
+        .map(|b| b.to_vec())
+        .map_err(|e| format!("Failed to read binary response: {}", e))
 }
 
 // ── File Dialogs ──────────────────────────────────────────────────────

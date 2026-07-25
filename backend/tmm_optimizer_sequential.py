@@ -24,10 +24,12 @@ from typing import List, Optional, Dict, Tuple
 
 try:
     from .tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND, TMMInstrument
+    from .physics.losses import KeefeLoss
 except ImportError:
     import sys, os
     sys.path.insert(0, os.path.dirname(__file__))
     from tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND, TMMInstrument
+    from physics.losses import KeefeLoss
 
 
 # ============================================================================
@@ -47,10 +49,12 @@ def _bore_objective_all_closed(
     bore_length = float(np.asarray(bore_length).item())
     radii = np.array([bore_radius])
     try:
+        loss_model = KeefeLoss()
         inst = tmm_instrument_from_radii(
             radii, bore_length,
             [], [], [],  # no holes
             outer_diameter, closed_top=closed_top, cone_step=0.5,
+            loss_model=loss_model,
         )
         wl = inst.find_resonance(
             SPEED_OF_SOUND / target_freq,
@@ -162,10 +166,12 @@ def _hole_objective(
         fingering_sorted = ["open"]
 
     try:
+        loss_model = KeefeLoss()
         inst = tmm_instrument_from_radii(
             bore_radii, bore_length,
             positions, diameters, lengths,
             outer_diameter, closed_top=closed_top, cone_step=0.5,
+            loss_model=loss_model,
         )
         wl = inst.find_resonance(target_wavelength, fingering_sorted, n_register)
         actual = inst.frequency_from_wavelength(wl)
