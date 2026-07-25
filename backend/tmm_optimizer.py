@@ -40,9 +40,16 @@ import numpy as np
 from scipy.optimize import minimize
 from typing import List, Tuple, Dict, Optional
 
-from .tmm_acoustics import (
-    TMMInstrument, tmm_instrument_from_radii, SPEED_OF_SOUND, Hole,
-)
+try:
+    from .tmm_acoustics import (
+        TMMInstrument, tmm_instrument_from_radii, SPEED_OF_SOUND, Hole,
+    )
+except ImportError:
+    import sys, os
+    sys.path.insert(0, os.path.dirname(__file__))
+    from tmm_acoustics import (
+        TMMInstrument, tmm_instrument_from_radii, SPEED_OF_SOUND, Hole,
+    )
 
 
 # ============================================================================
@@ -89,6 +96,7 @@ def _tmm_objective(
     fingering_sets: List[List[str]],
     target_wavelengths: np.ndarray,
     register: int,
+    reed_virtual_length: float = 0.0,
 ) -> float:
     """
     TMM-based objective: RMS cents error for a bore profile.
@@ -113,6 +121,7 @@ def _tmm_objective(
             outer_diameter_mm=outer_diameter_mm,
             closed_top=closed_top,
             cone_step=cone_step,
+            reed_virtual_length=reed_virtual_length,
         )
     except Exception:
         return 1e10
@@ -123,7 +132,7 @@ def _tmm_objective(
             wl = inst.find_resonance(
                 wavelength_near=target_wavelengths[i],
                 fingerings=fingerings,
-                n_register=register,
+                n_register=1,  # Target the fundamental (1st resonance)
             )
             actual_freq = inst.frequency_from_wavelength(wl)
             if actual_freq <= 0 or not math.isfinite(actual_freq):
@@ -161,7 +170,7 @@ class TMMBoreOptimizer:
     """
     Gradient-based bore optimizer using TMM phase resonance + L-BFGS-B.
 
-    Much faster than OpenWInD-based optimizers (~100x per evaluation),
+    Much faster than OpenWInD-based optimizers (~100x speedup),
     enabling optimization of more design variables (bore + holes).
     """
 
@@ -173,7 +182,6 @@ class TMMBoreOptimizer:
         bore_length: Optional[float] = None,
         min_radius: float = 1.0,
         max_radius: float = 15.0,
-        temperature: float = 20.0,
         hole_positions: Optional[List[float]] = None,
         hole_diameters: Optional[List[float]] = None,
         hole_lengths: Optional[List[float]] = None,
@@ -181,6 +189,12 @@ class TMMBoreOptimizer:
         outer_diameter: float = 22.0,
         cone_step: float = 0.5,
         n_register: int = 1,
+        reed_virtual_length: float = 0.0,
+        # Register vent parameters
+        register_vent_position: Optional[float] = None,  # mm from reed (internal coords)
+        register_vent_diameter: Optional[float] = None,
+        register_vent_length: Optional[float] = None,
+        register_break_frequency: Optional[float] = None,  # Hz - frequency where register vent opens
     ):
         self.target_freqs = np.array(sorted(target_frequencies))
         self.fingering_sets = fingering_sets
@@ -192,8 +206,8 @@ class TMMBoreOptimizer:
         self.cone_step = cone_step
         self.n_register = n_register
 
-        # Speed of sound at temperature
-        self.speed_of_sound = 331300.0 + 606.0 * temperature  # mm/s
+        # Use chalumier's fixed speed of sound
+        self.speed_of_sound = SPEED_OF_SOUND  # mm/s
 
         # Bore length: auto-calculate from fundamental if not provided
         if bore_length is None:
@@ -209,7 +223,11 @@ class TMMBoreOptimizer:
 
         # Hole geometry
         if hole_positions is not None:
-            self.hole_positions = list(hole_positions)
+            # Convert from Chalumier coordinates (0=bell, L=reed) to internal (0=reed, L=bell)
+            self.hole_positions = [self.bore_length - p for p in hole_positions]
+            # Also reverse fingering sets to match the new hole order
+            # Chalumier: index 0 = nearest bell. Internal: index 0 = nearest reed.
+            self.fingering_sets = [list(reversed(f)) for f in fingering_sets]
             self.hole_diameters = list(hole_diameters)
             self.hole_lengths = list(hole_lengths)
         else:
@@ -217,6 +235,10 @@ class TMMBoreOptimizer:
             self.hole_positions = []
             self.hole_diameters = []
             self.hole_lengths = []
+            self.fingering_sets = fingering_sets
+
+        # Reed virtual length
+        self.reed_virtual_length = reed_virtual_length
 
         # Compute initial wavelength guesses for each fingering
         self._target_wavelengths = self._compute_initial_wavelengths()
@@ -286,6 +308,7 @@ class TMMBoreOptimizer:
                 len(self.hole_positions), self.cone_step,
                 self.fingering_sets, self._target_wavelengths,
                 self.n_register,
+                self.reed_virtual_length,
             )
 
         # Progress callback
@@ -430,49 +453,148 @@ def run_two_phase_tmm(
     phase1_fingerings = fingering_sets[:phase1_n]
 
     if verbose:
-        print(f"\n--- Phase 1: 1st Register ({phase1_n} harmonics) ---")
+        print(f"\n  --- Phase 1: 1st Register ({phase1_n} harmonics) ---")
+        print(f"  --- {label} ---")
+        print(f"{'#'*70}")
 
-    opt1 = TMMBoreOptimizer(
-        target_frequencies=phase1_targets,
-        fingering_sets=phase1_fingerings,
-        n_control_points=n_control_points,
-        bore_length=bore_length,
-        closed_top=closed_top,
-        hole_positions=hole_positions,
-        hole_diameters=hole_diameters,
-        hole_lengths=hole_lengths,
-        temperature=temperature,
-    )
+    r = {}
+    min_r = cfg["bore_radius"] * 0.5
+    max_r = cfg["bore_radius"] * 1.5
 
-    result1 = opt1.run(verbose=verbose, method="L-BFGS-B", maxiter=200)
+    # Phase 1: Bore length optimization
+    t0 = time.time()
+    try:
+        opt1 = TMMBoreOptimizer(
+            target_frequencies=cfg["targets"],
+            fingering_sets=cfg["fingering_sets"],
+            n_control_points=12,
+            bore_length=cfg["bore_length"],
+            min_radius=min_r,
+            max_radius=max_r,
+            hole_positions=cfg["hole_positions"],
+            hole_diameters=cfg["hole_diameters"],
+            hole_lengths=cfg["hole_lengths"],
+            closed_top=True,
+            outer_diameter=cfg["outer_diameter"],
+            n_register=cfg["n_register"],
+        )
+        r1 = opt1.run(verbose=True, maxiter=300)
+        t1 = time.time()
+        radii1 = np.array(r1["best_radii"])
+        rms1, peak1 = verify_instrument(radii1, cfg, "Baseline L-BFGS-B")
+    except Exception as e:
+        t1 = time.time()
+        print(f"  FAILED: {e}")
+        rms1, peak1 = 1e10, 1e10
 
-    # Phase 2: Full instrument
-    if verbose:
-        print(f"\n--- Phase 2: Full Instrument ({len(target_freqs)} harmonics) ---")
+    # Phase 2b: Global hole re-optimization for open-open instruments.
+    # Sequential greedy placement creates large gaps that L-BFGS-B can't fix.
+    # Now co-optimizes hole positions AND diameters.
+    if not cfg["closed_top"]:
+        print(f"    Phase 2b: Global hole re-optimization (differential evolution)")
+        radii_de = np.full(n_cp, cfg["bore_radius"])
 
-    opt2 = TMMBoreOptimizer(
-        target_frequencies=target_freqs,
-        fingering_sets=fingering_sets,
-        n_control_points=n_control_points,
-        bore_length=bore_length,
-        closed_top=closed_top,
-        hole_positions=hole_positions,
-        hole_diameters=hole_diameters,
-        hole_lengths=hole_lengths,
-        temperature=temperature,
-    )
+        def obj_de(x):
+            hp_sorted = []
+            hd_sorted = []
+            idx_sorted = np.argsort(x[:n_h].tolist())
+            for j in idx_sorted:
+                hp_sorted.append(x[j])
+                hd_sorted.append(x[n_h + j])
+            return safe_eval_all(radii_de, L, hp_sorted, hd_sorted, hl, cfg)
 
-    phase1_radii = np.array(result1["best_radii"])
-    result2 = opt2.run(
-        verbose=verbose, method="L-BFGS-B", maxiter=300,
-        known_good_radii=phase1_radii,
-    )
+        # Overlapping bounds for positions + diameter bounds
+        de_bounds = []
+        for i in range(n_h):
+            lo = int(i * L / (n_h * 1.5 + 1))
+            hi = int((i + 2) * L / (n_h * 1.5 + 1))
+            lo = max(lo, 20)
+            hi = min(hi, int(L - 20))
+            if hi <= lo:
+                hi = lo + 10
+            de_bounds.append((lo, hi))
+        # Add diameter bounds
+        for i in range(n_h):
+            de_bounds.append((hd_min, hd_max))
 
-    # Use whichever is better
-    if result1["final_rms_cents"] < result2["final_rms_cents"]:
-        if verbose:
-            print(f"\n  Phase 1 ({result1['final_rms_cents']:.2f} cents) "
-                  f"better than Phase 2 ({result2['final_rms_cents']:.2f} cents)")
-        return result1
+        # Clip initial positions to within bounds
+        x0_de = np.array(hp + hd)
+        for i in range(n_h):
+            x0_de[i] = np.clip(x0_de[i], de_bounds[i][0], de_bounds[i][1])
+            x0_de[n_h + i] = np.clip(x0_de[n_h + i], hd_min, hd_max)
+        result_de = differential_evolution(obj_de, de_bounds, x0=x0_de, seed=42,
+                                          maxiter=100, popsize=max(10, n_h * 2),
+                                          tol=1e-6, mutation=(0.5, 1.0),
+                                          recombination=0.7, polish=True)
+        # Extract optimized positions and diameters
+        de_idx = np.argsort(result_de.x[:n_h].tolist())
+        hp = [result_de.x[j] for j in de_idx]
+        hd = [result_de.x[n_h + j] for j in de_idx]
+        r = safe_eval_all(radii_de, L, hp, hd, hl, cfg)
+        print(f"  Phase 2b DE: RMS={r:.2f}c")
+        rms, peak = verify_instrument(radii_de, cfg, "DE hole re-optimization")
 
-    return result2
+    # Stage 3: Bore profile optimization (if n_cp > 0)
+    if n_cp > 0:
+        print(f"    Phase 3: Bore profile optimization (L-BFGS-B)")
+        rad_bounds = [(rad_lo, rad_hi)] * n_cp
+        def obj_radii(x):
+            return safe_eval_all(x, L, hp, hd, hl, cfg)
+        x0_radii = np.full(n_cp, cfg["bore_radius"])
+        r = sp_min(obj_radii, x0_radii, method='L-BFGS-B',
+                    bounds=rad_bounds, options={'maxiter': 200, 'ftol': 1e-8})
+        radii = np.maximum(r.x, rad_lo)
+        rms, peak = verify_instrument(radii, cfg, "Bore profile")
+        L = cfg["bore_length"]
+        radii = np.maximum(r.x, rad_lo)
+
+    # Stage 4: Simultaneous refinement (all variables)
+    print(f"    Phase 4: Simultaneous refinement (all variables)")
+    all_bounds = [(L*0.85, L*1.15)]
+    all_bounds += rad_bounds if n_cp > 0 else []
+    all_bounds += [(lo, hi) for (lo, hi) in hole_bounds]
+    all_bounds += [(hd_min, hd_max)] * n_h
+
+    def obj_all(x):
+        L_i = x[0]
+        rad_i = np.maximum(x[1:1+n_cp], rad_lo) if n_cp > 0 else np.array([cfg["bore_radius"]])
+        hp_i = x[1+n_cp:1+n_cp+n_h]
+        hd_i = x[1+n_cp+n_h:1+n_cp+2*n_h]
+        return safe_eval_all(rad_i, L_i, hp_i, hd_i, hl, cfg)
+
+    x0 = np.concatenate([[L], radii, np.array(hp), np.array(hd)])
+    x0 = np.clip(x0, [b[0] for b in all_bounds], [b[1] for b in all_bounds])
+    r = sp_min(obj_all, x0, method='L-BFGS-B', bounds=all_bounds,
+               options={'maxiter': 200, 'ftol': 1e-8})
+    L_opt = r.x[0]
+    radii_opt = np.maximum(r.x[1:1+n_cp], rad_lo) if n_cp > 0 else np.array([cfg["bore_radius"]])
+    hp_opt = r.x[1+n_cp:1+n_cp+n_h]
+    hd_opt = r.x[1+n_cp+n_h:1+n_cp+2*n_h]
+
+    rms = safe_eval_all(radii_opt, L_opt, hp_opt, hd_opt, hl, cfg)
+    print(f"  Simultaneous: RMS={rms:.2f}c")
+    return rms, L_opt, radii_opt, hp_opt, hd_opt, time.time() - t0 + t_seq
+
+
+if __name__ == "__main__":
+    # Run
+    all_results = {}
+    for name, cfg in INSTRUMENTS.items():
+        print(f"\n{'='*70}")
+        print(f"# {cfg['desc']}")
+        print(f"{'='*70}")
+        r = sequential_refined(cfg)
+        all_results[name] = r
+
+    # Summary
+    print(f"\n{'='*70}")
+    print("# SUMMARY")
+    print(f"{'='*70}")
+    print(f"\n  {'Instrument':<22} {'Method':<14} {'RMS':>8} {'Time':>8}")
+    print(f"  {'-'*22} {'-'*14} {'-'*8} {'-'*8}")
+    for name, results in all_results.items():
+        for method, data in results.items():
+            rms = data["rms"]
+            s = f"{rms:.2f}" if rms < 1e5 else "FAIL"
+            print(f"  {name:<22} {method:<14} {s:>8} {data['time']:>7.1f}s")
+        print()

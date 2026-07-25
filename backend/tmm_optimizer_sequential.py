@@ -148,10 +148,11 @@ def _hole_objective(
     new_idx = list(sorted_idx).index(len(existing_holes))
     
     if closed_top:
-        # Closed-open (clarinets): Bordeaux method
-        # All existing holes CLOSED, new hole OPEN
+        # Closed-open (clarinets): Bordeaux combined fingering
+        # ALL placed holes (0..k) are open — matches fingering for this note
         fingering_sorted = ["closed"] * len(positions)
-        fingering_sorted[new_idx] = "open"
+        for j in range(len(existing_holes) + 1):
+            fingering_sorted[list(sorted_idx).index(j)] = "open"
     else:
         # Open-open (sax/flute): Ernoult (2021) method
         # Evaluate ONLY with the new hole — no other holes present
@@ -189,50 +190,51 @@ def optimize_hole_position(
     verbose: bool = True,
     hole_index: int = 0,
 ) -> Dict:
-    """Optimize position of a single hole, keeping bore and existing holes fixed."""
+    """Optimize position of a single hole using grid search + L-BFGS-B refinement."""
     target_wavelength = SPEED_OF_SOUND / target_freq
 
-    # Bounds: hole must be between last hole (or 0) and bore end
-    if existing_holes:
-        min_pos = existing_holes[-1]["position"] + 10  # At least 10mm gap
-    else:
-        min_pos = 20.0  # At least 20mm from top
-    max_pos = bore_length - 20.0  # At least 20mm from end
+    # Grid search bounds (matching laptop's sequential())
+    hp = [h["position"] for h in existing_holes]
+    min_p = hp[-1] + 15 if hp else 30
+    max_p = bore_length - 30
+    if min_p >= max_p:
+        min_p = max_p - 1
 
-    if min_pos >= max_pos:
-        min_pos = max_pos - 1
-
-    bounds = [(min_pos, max_pos)]
-
-    result = minimize(
-        _hole_objective,
-        x0=[(min_pos + max_pos) / 2],
-        args=(bore_radii, bore_length, hole_diameter, hole_length,
-              outer_diameter, closed_top, target_freq, target_wavelength,
-              existing_holes, n_register),
-        method='L-BFGS-B',
-        bounds=bounds,
-        options={"maxiter": 100, "ftol": 1e-4},
-    )
-
-    # Also try a few random starts
-    best_pos = result.x[0]
-    best_err = result.fun
-    for _ in range(5):
-        trial_pos = np.random.uniform(min_pos, max_pos)
-        r2 = minimize(
-            _hole_objective,
-            x0=[trial_pos],
-            args=(bore_radii, bore_length, hole_diameter, hole_length,
-                  outer_diameter, closed_top, target_freq, target_wavelength,
-                  existing_holes, n_register),
-            method='L-BFGS-B',
-            bounds=bounds,
-            options={"maxiter": 50, "ftol": 1e-4},
-        )
-        if r2.fun < best_err:
-            best_err = r2.fun
-            best_pos = r2.x[0]
+    # Grid search: 60 positions
+    best_pos, best_err = 0, 1e10
+    for pos in np.linspace(min_p, max_p, 60):
+        try:
+            if closed_top:
+                # Combined fingering: all placed holes + new one open
+                pl = hp + [pos]
+                dl = [h["diameter"] for h in existing_holes] + [hole_diameter]
+                ll = [h["length"] for h in existing_holes] + [hole_length]
+                idx = np.argsort(pl)
+                pl_s = [pl[j] for j in idx]
+                dl_s = [dl[j] for j in idx]
+                ll_s = [ll[j] for j in idx]
+                fing = ["closed"] * len(pl)
+                for j in range(len(existing_holes) + 1):
+                    fing[list(idx).index(j)] = "open"
+                inst = tmm_instrument_from_radii(
+                    bore_radii, bore_length,
+                    pl_s, dl_s, ll_s,
+                    outer_diameter, closed_top=closed_top, cone_step=0.5,
+                )
+            else:
+                inst = tmm_instrument_from_radii(
+                    bore_radii, bore_length,
+                    [pos], [hole_diameter], [hole_length],
+                    outer_diameter, closed_top=closed_top, cone_step=0.5,
+                )
+                fing = ["open"]
+            wl = inst.find_resonance(target_wavelength, fing, n_register)
+            f = inst.frequency_from_wavelength(wl)
+            err = abs(1200.0 * math.log2(f / target_freq)) if f > 0 and math.isfinite(f) else 1e10
+            if err < best_err:
+                best_err, best_pos = err, pos
+        except Exception:
+            pass
 
     hole = {
         "position": best_pos,
@@ -393,8 +395,9 @@ class SequentialBoreOptimizer:
                         else:
                             cents.append(1e10)
                     c = np.array(cents)
-                    offset = np.median(c)
-                    return float(np.sqrt(np.mean((c - offset) ** 2)))
+                    if np.any(np.abs(c) > 1e5):
+                        return 1e10
+                    return float(np.sqrt(np.mean(c ** 2)))
                 except Exception:
                     return 1e10
 
@@ -481,8 +484,9 @@ class SequentialBoreOptimizer:
                     else:
                         cents.append(1e10)
                 c = np.array(cents)
-                offset = np.median(c)
-                return float(np.sqrt(np.mean((c - offset) ** 2)))
+                if np.any(np.abs(c) > 1e5):
+                    return 1e10
+                return float(np.sqrt(np.mean(c ** 2)))
             except Exception:
                 return 1e10
 
@@ -592,10 +596,12 @@ class SequentialBoreOptimizer:
                 cents_errors.append(1e10)
 
         cents_arr = np.array(cents_errors)
-        offset = np.median(cents_arr)
-        corrected = cents_arr - offset
-        rms = float(np.sqrt(np.mean(corrected ** 2)))
-        peak = float(np.max(np.abs(corrected)))
+        if np.any(np.abs(cents_arr) > 1e5):
+            rms = 1e10
+            peak = 1e10
+        else:
+            rms = float(np.sqrt(np.mean(cents_arr ** 2)))
+            peak = float(np.max(np.abs(cents_arr)))
 
         wall_time = time.time() - t_start
 

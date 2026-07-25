@@ -93,8 +93,11 @@ def end_flange_length_correction(outer_diameter: float, inner_diameter: float) -
     From Nederveen / chalumier.
     """
     a = inner_diameter / 2.0
+    if a <= 0:
+        return 0.0
     w = (outer_diameter - inner_diameter) / 2.0
-    return a * (0.821 - 0.13 * (0.42 + w / a) ** (-0.54))
+    base = max(0.01, 0.42 + w / a)
+    return a * (0.821 - 0.13 * base ** (-0.54))
 
 
 def hole_length_correction(hole_diameter: float, bore_diameter: float, closed: bool) -> float:
@@ -211,10 +214,14 @@ class TMMInstrument:
         closed_top: bool = False,
         cone_step: float = 0.5,
         speed_of_sound: float = SPEED_OF_SOUND,
+        reed_virtual_length: float = 0.0,
+        whistle_clip: float = 0.0,
     ):
         self.closed_top = closed_top
         self.cone_step = cone_step
         self.speed_of_sound = speed_of_sound
+        self.reed_virtual_length = reed_virtual_length
+        self.whistle_clip = whistle_clip
 
         # Build inner and outer profiles
         self.inner = Profile(inner_positions, inner_diameters)
@@ -225,12 +232,79 @@ class TMMInstrument:
         self.hole_lengths = list(hole_lengths)
         self.n_holes = len(hole_positions)
 
+        # Apply whistle clip (shorten bore at bell end)
+        if self.whistle_clip > 0.0:
+            self._apply_whistle_clip()
+
+        # Apply reed virtual length (add virtual reed tube at reed end)
+        # Apply reed virtual length (add virtual reed tube at reed end)
+        if self.reed_virtual_length > 0.0:
+            self._apply_reed_tube(self.reed_virtual_length)
+
         # Build stepped inner profile
         self.stepped_inner = self.inner.as_stepped(cone_step)
         self.length = self.stepped_inner.pos[-1]
 
         # Precompute action chain for phase-based resonance
         self._prepare_phase()
+
+    def _apply_whistle_clip(
+        self,
+        clip_fraction: float,
+        windway_diameter: float = 0.0,
+        windway_length: float = 0.0,
+    ):
+        """
+        Apply WhistleDesigner.patchInstrument() bore clipping.
+
+        Clips the bore short by bore_diameter * clip_fraction at the top end,
+        then optionally extends with a windway section.
+        """
+        bore_diameter = self.inner.at(self.inner.pos[-1], use_high=True)
+        clip_length = bore_diameter * clip_fraction
+        new_length = self.inner.pos[-1] - clip_length
+
+        # Clip bore to new length
+        clipped_pos = []
+        clipped_low = []
+        clipped_high = []
+        for i, p in enumerate(self.inner.pos):
+            if p <= new_length:
+                clipped_pos.append(p)
+                clipped_low.append(self.inner.low[i])
+                clipped_high.append(self.inner.high[i])
+        if clipped_pos[-1] < new_length:
+            clipped_pos.append(new_length)
+            d = self.inner.at(new_length)
+            clipped_low.append(d)
+            clipped_high.append(d)
+
+        if windway_diameter > 0.0 and windway_length > 0.0:
+            clipped_pos.append(new_length + windway_length)
+            clipped_low.append(windway_diameter)
+            clipped_high.append(windway_diameter)
+
+        self.inner = Profile(clipped_pos, clipped_low, clipped_high)
+
+    def _apply_reed_tube(self, reed_virtual_length: float):
+        """
+        Apply ReedInstrumentDesigner.patchInstrument() reed tube.
+
+        For closed-top reed instruments (clarinets, saxophones):
+        Appends a conical reed tube at the reed end (top) of the bore.
+        Standard clarinet reed tube: ~14.5mm diameter, length = fraction of bore length.
+        reed_virtual_length is a fraction of bore length (e.g., 0.3 = 30% of bore length).
+        """
+        # Standard clarinet reed tube diameter: 14.5mm
+        reed_diameter = 14.5  # Standard clarinet reed tube diameter in mm
+        bore_length = self.inner.pos[-1]
+        reed_length = bore_length * reed_virtual_length  # fraction of bore length
+
+        # Append reed tube profile after existing bore
+        new_end = self.inner.pos[-1] + self.inner.pos[-1] * reed_virtual_length
+        self.inner.pos.append(new_end)
+        self.inner.low.append(reed_diameter)
+        self.inner.high.append(reed_diameter)
 
     def _prepare_phase(self):
         """
@@ -302,6 +376,8 @@ class TMMInstrument:
         Returns:
             Phase value (integer at resonance)
         """
+        if wavelength <= 0:
+            return 1e10
         phase = 0.5  # Open end
 
         for action in self.actions:
@@ -315,7 +391,7 @@ class TMMInstrument:
 
             elif action[0] == 'hole':
                 _, hole_idx, area_bore, hole_area, open_length, closed_length = action
-                is_open = fingerings[hole_idx] == Hole.OPEN
+                is_open = fingerings[hole_idx] in ('O', 'o', Hole.OPEN)
 
                 if is_open:
                     hole_phase = pipe_reply_phase(-0.5, open_length / wavelength)
@@ -334,7 +410,7 @@ class TMMInstrument:
         wavelength: float,
         fingerings: List[str],
         step_cents: float = 1.0,
-        step_increase: float = 1.05,
+        step_increase: float = 1.2,
         max_steps: int = 100,
         target_register: int = 1,
     ) -> float:
@@ -349,7 +425,7 @@ class TMMInstrument:
 
         def scorer(w):
             p = self.resonance_phase(w, fingerings)
-            return p - target_register
+            return ((p + 0.5) % 1.0) - 0.5
 
         probes = [wavelength / half_step, wavelength * half_step]
         scores = [scorer(probes[0]), scorer(probes[1])]
@@ -363,6 +439,8 @@ class TMMInstrument:
             c = y1 - m * x1
             return -c / m
 
+        max_wavelength = self.length * 4.0
+
         for _ in range(max_steps):
             # Check for sign change at right end
             if scores[-2] >= 0.0 and scores[-1] < 0.0:
@@ -370,6 +448,8 @@ class TMMInstrument:
 
             # Extend left
             new_w = probes[0] / step
+            if new_w <= 0:
+                new_w = 1e-6
             probes.insert(0, new_w)
             scores.insert(0, scorer(new_w))
 
@@ -378,9 +458,15 @@ class TMMInstrument:
 
             # Extend right
             new_w = probes[-1] * step
+            if new_w > max_wavelength:
+                new_w = max_wavelength
             probes.append(new_w)
             scores.append(scorer(new_w))
             step = step ** step_increase
+
+            # Stop if we've reached the max wavelength
+            if probes[-1] >= max_wavelength:
+                break
 
         # Return best guess
         if abs(scores[-1]) < abs(scores[0]):
@@ -540,6 +626,8 @@ def tmm_instrument_from_radii(
     outer_diameter_mm: float = 22.0,
     closed_top: bool = False,
     cone_step: float = 0.5,
+    reed_virtual_length: float = 0.0,
+    whistle_clip: float = 0.0,
 ) -> TMMInstrument:
     """
     Create a TMMInstrument from an array of bore radii.
@@ -553,6 +641,8 @@ def tmm_instrument_from_radii(
         outer_diameter_mm: outer diameter of the instrument body (mm)
         closed_top: True for clarinets (closed reed end)
         cone_step: maximum step size for profile smoothing
+        reed_virtual_length: virtual reed tube length in mm (chalumier default 493mm for clarinet)
+        whistle_clip: bore clipping fraction for whistles (chalumier default 0.3)
 
     Returns:
         TMMInstrument instance
@@ -577,4 +667,6 @@ def tmm_instrument_from_radii(
         hole_lengths=hole_lengths_mm,
         closed_top=closed_top,
         cone_step=cone_step,
+        reed_virtual_length=reed_virtual_length,
+        whistle_clip=whistle_clip,
     )
