@@ -33,12 +33,26 @@ Usage:
 
 import math
 import numpy as np
-from typing import List, Tuple, Optional, Union
+from typing import List, Tuple, Optional, Union, Callable
 
 # Matches chalumier's SPEED_OF_SOUND exactly (cm/s)
 SPEED_OF_SOUND = 346100.0
 
 FOUR_PI = 4.0 * math.pi
+
+# ============================================================================
+# Loss model integration
+# ============================================================================
+
+try:
+    from backend.physics.losses import KeefeLoss, NoLoss
+    _LOSSES_AVAILABLE = True
+except ImportError:
+    _LOSSES_AVAILABLE = False
+    class KeefeLoss:
+        def bore_loss(self, length, radius, wavelength): return 1.0
+        def hole_loss(self, hole_radius, hole_length, wavelength): return 1.0
+    NoLoss = KeefeLoss
 
 
 # ============================================================================
@@ -62,8 +76,41 @@ def untanner(x: float) -> float:
 
 
 def pipe_reply_phase(phase_end: float, length_on_wavelength: float) -> float:
-    """Advance phase through a pipe segment of given length/wavelength."""
+    """Advance phase through a pipe segment of given length/wavelength (lossless)."""
     return phase_end + length_on_wavelength * 2.0
+
+
+def pipe_reply_phase_with_loss(
+    phase_end: float,
+    length: float,
+    radius: float,
+    wavelength: float,
+    loss_model=None,
+) -> float:
+    """Advance phase through a pipe segment with optional viscothermal losses.
+
+    Args:
+        phase_end: incoming phase (real number)
+        length: segment length in mm
+        radius: bore radius in mm
+        wavelength: acoustic wavelength in mm
+        loss_model: optional loss model (KeefeLoss or None)
+
+    Returns:
+        Phase after propagation including loss-induced phase shift
+    """
+    # Lossless phase advance
+    phase = phase_end + 2.0 * length / wavelength
+
+    # Add loss-induced phase shift if loss model provided
+    if loss_model is not None and radius > 0 and length > 0:
+        loss_factor = loss_model.bore_loss(length, radius, wavelength)
+        # Loss factor is complex: exp(-γ * length)
+        # The argument gives the additional phase shift from losses
+        if isinstance(loss_factor, complex):
+            phase += -loss_factor.imag  # arg(exp(-γL)) = -Im(γL)
+
+    return phase
 
 
 def junction2_reply_phase(a0: float, a1: float, p1: float) -> float:
@@ -215,6 +262,7 @@ class TMMInstrument:
         whistle_clip: float = 0.0,
         whistle_windway_diameter: float = 0.0,
         whistle_windway_length: float = 0.0,
+        loss_model: Optional[object] = None,
     ):
         self.closed_top = closed_top
         self.cone_step = cone_step
@@ -234,6 +282,7 @@ class TMMInstrument:
         self.hole_diameters = list(hole_diameters)
         self.hole_lengths = list(hole_lengths)
         self.n_holes = len(hole_positions)
+        self.loss_model = loss_model
 
         # Build stepped inner profile
         self.stepped_inner = self.inner.as_stepped(cone_step)
@@ -334,7 +383,7 @@ class TMMInstrument:
             seg_length = pos - position
 
             # Pipe segment action
-            self.actions.append(('pipe', seg_length))
+            self.actions.append(('pipe', seg_length, diameter))
             position = pos
 
             if descriptor == 'step':
@@ -373,8 +422,15 @@ class TMMInstrument:
 
         for action in self.actions:
             if action[0] == 'pipe':
-                _, seg_length = action
+                _, seg_length, seg_diameter = action
                 phase = pipe_reply_phase(phase, seg_length / wavelength)
+                # Apply viscothermal loss model if available
+                if self.loss_model is not None and seg_diameter > 0:
+                    radius = seg_diameter / 2.0
+                    loss_factor = self.loss_model.bore_loss(seg_length, radius, wavelength)
+                    if isinstance(loss_factor, complex):
+                        # Phase of exp(-gamma * length) = -Im(gamma * length)
+                        phase += -loss_factor.imag
 
             elif action[0] == 'junction2':
                 _, area_a, area_b = action
@@ -652,6 +708,7 @@ def tmm_instrument_from_radii(
     outer_diameter_mm: float = 22.0,
     closed_top: bool = False,
     cone_step: float = 0.5,
+    loss_model: Optional[object] = None,
 ) -> TMMInstrument:
     """
     Create a TMMInstrument from an array of bore radii.
@@ -665,6 +722,7 @@ def tmm_instrument_from_radii(
         outer_diameter_mm: outer diameter of the instrument body (mm)
         closed_top: True for clarinets (closed reed end)
         cone_step: maximum step size for profile smoothing
+        loss_model: optional viscothermal loss model (e.g., KeefeLoss)
 
     Returns:
         TMMInstrument instance
@@ -689,4 +747,6 @@ def tmm_instrument_from_radii(
         hole_lengths=hole_lengths_mm,
         closed_top=closed_top,
         cone_step=cone_step,
+        loss_model=loss_model,
     )
+
