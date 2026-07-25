@@ -49,8 +49,8 @@ A tool to design, simulate, and 3D-print playable woodwind instruments (flutes, 
 - **42 instruments** in library (flutes, recorders, ocarinas, whistles, didgeridoos, etc.)
 - **3D STL viewer** — Three.js with orbit controls, zoom, pan, auto-rotating demo bore when no STL loaded
 - **Parametric generator** — JSCAD-powered adjustable bore length, diameter, wall thickness with custom binary STL serializer
-- **Demakein integration** — preset selector with 12 presets, transposition, bore generation with job polling
-- **OpenWInD integration** — acoustic impedance plot (canvas-based visualization with resonance peaks)
+- **Demakein integration** — preset selector with 12 presets, transposition, bore generation with job polling; also run locally (Tauri) or remotely (FastAPI)
+- **OpenWInD integration** — acoustic impedance plot (canvas-based visualization with resonance peaks) as well as OpenWInD CLI validation
 - **Sound playback** — Web Audio API tone generation with per-note buttons, scale playback
 - **Filterable instrument browser** — search + 4 dropdown filters (subcategory, type, difficulty, tags)
 - **Preset wiring** — select instrument from library, auto-loads preset into design tab
@@ -175,13 +175,16 @@ python -m woodwind_designer
 
 ## Next Steps
 
+## Next Steps
+
 1. **Push branches to GitHub** (run `gh auth login` in terminal)
 2. **Integrate Build123d** for STEP export (best Python CAD for bore generation)
 3. **Add OpenSCAD** as alternative parametric backend
 4. **Slicer integration** — auto-slice after STL generation
 5. **User accounts** — save designs, share with community
-6. **Connect real OpenWInD data** to impedance plot (currently demo data)
+6. **Connect real OpenWInD data** to impedance plot (currently demo data); also add OpenWInD impedance plot to design tab (matplotlib → canvas or plotly.js)
 7. **Test Tauri release build** — `npx tauri build` for distributable .exe
+8. **Instrument sound playback** — Web Audio API for tone preview
 
 ---
 
