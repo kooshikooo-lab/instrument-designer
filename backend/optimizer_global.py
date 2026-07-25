@@ -171,15 +171,15 @@ class GlobalFingeringOptimizer:
         if np.any(np.abs(c1) > 1e5) or np.any(np.abs(c2) > 1e5):
             return (1e10, 1e10, 1e10) if return_both else 1e10
         
-        offset_1 = np.median(c1)
-        offset_2 = np.median(c2)
-        rms_1 = float(np.sqrt(np.mean((c1 - offset_1) ** 2)))
-        rms_2 = float(np.sqrt(np.mean((c2 - offset_2) ** 2)))
+        rms_1 = float(np.sqrt(np.mean(c1 ** 2)))
+        rms_2 = float(np.sqrt(np.mean(c2 ** 2)))
         
         w1, w2 = self.register_weights
         combined = w1 * rms_1 + w2 * rms_2
         
         if verbose:
+            offset_1 = np.median(c1)
+            offset_2 = np.median(c2)
             print(f"  Reg1: RMS={rms_1:.2f}c offset={offset_1:+.0f}c (w={w1})")
             print(f"  Reg2: RMS={rms_2:.2f}c offset={offset_2:+.0f}c (w={w2})")
             print(f"  Combined: {combined:.4f}")

@@ -81,8 +81,7 @@ class BoreOptimizer(Optimizer):
         if np.any(np.abs(cents_arr) > 1e5):
             return 1e10
 
-        offset = np.median(cents_arr)
-        return float(np.sqrt(np.mean((cents_arr - offset) ** 2)))
+        return float(np.sqrt(np.mean(cents_arr ** 2)))
 
     def _make_network(self, bore_length: float, bore_radii=None) -> AcousticNetwork:
         """Create a temporary network with modified bore."""
@@ -154,9 +153,10 @@ class BoreOptimizer(Optimizer):
                 else:
                     cents.append(1e6)
             cents_arr = np.array(cents)
+            rms_cents_abs = float(np.sqrt(np.mean(cents_arr ** 2)))
             offset = np.median(cents_arr)
             corrected = cents_arr - offset
-            rms_cents = float(np.sqrt(np.mean(corrected ** 2)))
+            rms_cents = rms_cents_abs
             peak_cents = float(np.max(np.abs(corrected)))
         except Exception:
             rms_cents = best_cost

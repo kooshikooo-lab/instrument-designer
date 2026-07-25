@@ -287,9 +287,7 @@ class BoreOptimizationProblem(ElementwiseProblem):
         matched = _match_peaks_to_targets(peak_freqs, self.target_freqs)
         
         raw_cents = np.array([m[3] for m in matched])
-        global_offset = np.median(raw_cents)
-        corrected_errors = np.abs(raw_cents - global_offset)
-        freq_accuracy = np.sqrt(np.mean(corrected_errors ** 2))
+        freq_accuracy = np.sqrt(np.mean(raw_cents ** 2))
         
         if n_peaks >= n_targets:
             matched_peak_vals = np.array([m[1] for m in matched])
@@ -377,9 +375,7 @@ def _evaluate_single_design(x):
     matched = _match_peaks_to_targets(peak_freqs, target_freqs)
     
     raw_cents = np.array([m[3] for m in matched])
-    global_offset = np.median(raw_cents)
-    corrected_errors = np.abs(raw_cents - global_offset)
-    freq_accuracy = float(np.sqrt(np.mean(corrected_errors ** 2)))
+    freq_accuracy = float(np.sqrt(np.mean(raw_cents ** 2)))
     
     n_targets = len(target_freqs)
     n_peaks = len(peak_freqs)

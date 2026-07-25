@@ -203,11 +203,8 @@ class LBFGSBoreOptimizer:
             return 1e10
 
         matched = _match_peaks(peak_freqs, self.target_freqs)
-        raw_cents = np.array([abs(m[3]) for m in matched])
-        # Global offset removal
-        offset = np.median(np.array([m[3] for m in matched]))
-        corrected = np.abs(np.array([m[3] for m in matched]) - offset)
-        return float(np.sqrt(np.mean(corrected ** 2)))
+        raw_cents = np.array([m[3] for m in matched])
+        return float(np.sqrt(np.mean(raw_cents ** 2)))
 
     def _compute_full_objective(self, radii):
         """Phase 2 objective: weighted sum of all quality metrics."""
@@ -218,9 +215,7 @@ class LBFGSBoreOptimizer:
 
         matched = _match_peaks(peak_freqs, self.target_freqs)
         raw_cents = np.array([m[3] for m in matched])
-        offset = np.median(raw_cents)
-        corrected = np.abs(raw_cents - offset)
-        freq_rms = float(np.sqrt(np.mean(corrected ** 2)))
+        freq_rms = float(np.sqrt(np.mean(raw_cents ** 2)))
 
         # Evenness: std of matched peak magnitude ratios
         n_use = min(len(self.target_freqs), len(peak_freqs))
@@ -336,7 +331,8 @@ class LBFGSBoreOptimizer:
         raw_cents = np.array([m[3] for m in matched])
         offset = np.median(raw_cents)
         corrected = np.abs(raw_cents - offset)
-        final_rms = float(np.sqrt(np.mean(corrected ** 2)))
+        final_rms_median = float(np.sqrt(np.mean(corrected ** 2)))
+        final_rms_abs = float(np.sqrt(np.mean(raw_cents ** 2)))
 
         if verbose:
             print()
@@ -345,20 +341,21 @@ class LBFGSBoreOptimizer:
             print(f"  {'='*60}")
             print(f"  Total evals: {total_evals}")
             print(f"  Wall time: {total_time:.1f}s")
-            print(f"  Final RMS: {final_rms:.4f} cents")
+            print(f"  Absolute RMS: {final_rms_abs:.4f} cents")
+            print(f"  Median RMS:   {final_rms_median:.4f} cents")
             print(f"  Global offset: {offset:+.1f} cents")
             print()
             print(f"  {'Target':>8s}  {'Actual':>8s}  {'Error':>8s}  {'Status'}")
             print(f"  {'-'*8}  {'-'*8}  {'-'*8}  {'-'*8}")
             for tf, actual, _, ec in matched:
-                corrected_ec = ec - offset
-                status = "OK" if abs(corrected_ec) < 5 else "WARN" if abs(corrected_ec) < 20 else "FAIL"
+                status = "OK" if abs(ec) < 5 else "WARN" if abs(ec) < 20 else "FAIL"
                 print(f"  {tf:8.1f}  {actual:8.1f}  {ec:+8.1f}  {status}")
             print()
             print(f"  Bore: {self.bore_length*1000:.0f}mm, entry={best_radii[0]*1000:.2f}mm, exit={best_radii[-1]*1000:.2f}mm")
 
         return {
-            "rms_cents": final_rms,
+            "rms_cents": final_rms_abs,
+            "rms_cents_median": final_rms_median,
             "global_offset": offset,
             "matched_frequencies": [(m[0], m[1], m[3]) for m in matched],
             "bore_profile": [(float(p), float(r)) for p, r in zip(

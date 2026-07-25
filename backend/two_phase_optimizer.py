@@ -52,9 +52,7 @@ def phase_cost_with_offset(inst, targets, fingerings, n_register=1):
         ca = np.array(cents_list)
         if len(ca) == 0 or np.any(np.abs(ca) > 1e5):
             return 1e10
-        # Remove constant offset (bore length error)
-        offset = np.median(ca)
-        return float(np.mean(np.abs(ca - offset)))
+        return float(np.sqrt(np.mean(ca ** 2)))
     except:
         return 1e10
 
@@ -72,8 +70,7 @@ def peak_cost_nearest(inst, targets, fingerings, detected_regs):
     ca = np.array(cents)
     if np.any(np.abs(ca) > 1e5):
         return 1e10
-    med = np.median(ca)
-    return float(np.sqrt(np.mean((ca - med) ** 2)))
+    return float(np.sqrt(np.mean(ca ** 2)))
 
 
 def detect_registers(inst, targets, fingerings, max_reg=5):
@@ -285,7 +282,7 @@ def two_phase_optimize(
         fl = ['open' if ch in ('O', 'o') else 'closed' for ch in f]
         while len(fl) < len(hole_lens):
             fl.append('open')
-        fingerings.append(fl[:len(hole_lens)])
+        fingerings_parsed.append(fl[:len(hole_lens)])
 
     targets = np.array(hole_lens)  # WRONG - targets should be frequencies
     # Actually targets is passed in correctly as frequencies
