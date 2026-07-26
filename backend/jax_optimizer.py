@@ -1,450 +1,310 @@
 """
-JAX-powered two-phase optimizer.
+JAX-enhanced bore optimizer.
 
-Phase 1: CMA-ES + JAX vmap (fast global search)
-  - CMA-ES generates candidates
-  - JAX vmap batches resonance evaluation across all candidates × fingerings
-  - Phase-based cost (smooth, register-aware)
+Strategy (matching sequential_refined from benchmark_all.py):
+  Phase 0: Sequential hole placement (smart initialization)
+  Phase 1: 4-stage L-BFGS-B refinement (bore → radii → holes → all)
+  Phase 2: (optional) CMA-ES global polish with tight bounds
 
-Phase 2: L-BFGS-B + Python TMM (correct local refinement)
-  - Uses existing peak_cost_nearest for correct register detection
-  - Fine-tunes the best Phase 1 result
-
-Key advantage: JAX vmap evaluates entire CMA-ES population in one batched call.
+Uses Python TMM throughout (proven correct, sub-3c RMS).
+JAX is used only for fast batch evaluation in Phase 2.
 """
-import os, sys, time
+import os, sys, time, math
 import numpy as np
 
 os.environ["JAX_ENABLE_X64"] = "1"
 
 import jax
 jax.config.update("jax_enable_x64", True)
-import jax.numpy as jnp
-from jax import jit, vmap
 
+from scipy.optimize import minimize as sp_min
 from backend.tmm_acoustics import (
     tmm_instrument_from_radii, SPEED_OF_SOUND,
-    circle_area, end_flange_length_correction, hole_length_correction,
 )
-from backend.physics.losses import KeefeLoss
 
 c = SPEED_OF_SOUND
 
 
 # ============================================================================
-# JAX TMM Primitives
+# Cost evaluation (matches benchmark_all.py eval_all exactly)
 # ============================================================================
 
-@jit
-def j_tanner(p):
-    return jnp.tan(p * jnp.pi)
-
-@jit
-def j_untanner(x):
-    return jnp.arctan(x) / jnp.pi
-
-@jit
-def j_pipe(phase_end, length_on_wavelength):
-    return phase_end + length_on_wavelength * 2.0
-
-@jit
-def j_j2(a0, a1, p1):
-    s = jnp.floor(p1 + 0.5)
-    return j_untanner(a1 / a0 * j_tanner(p1 - s)) + s
-
-@jit
-def j_j3(a0, a1, a2, p1, p2):
-    s1 = jnp.floor(p1 + 0.5)
-    s2 = jnp.floor(p2 + 0.5)
-    return j_untanner(
-        a1 / a0 * j_tanner(p1 - s1) + a2 / a0 * j_tanner(p2 - s2)
-    ) + s1 + s2
-
-
-# ============================================================================
-# Action-based JAX resonance (matches Python TMM exactly)
-# ============================================================================
-
-MAX_ACTIONS = 200
-
-
-def build_action_arrays(inst):
-    """Convert TMMInstrument actions to fixed-size arrays for JAX."""
-    act_types = []
-    act_params = []
-    for action in inst.actions:
-        if action[0] == 'pipe':
-            _, length, diameter = action
-            act_types.append(0)
-            act_params.append([length, diameter, 0, 0, 0])
-        elif action[0] == 'junction2':
-            _, area_a, area_b = action
-            act_types.append(1)
-            act_params.append([area_a, area_b, 0, 0, 0])
-        elif action[0] == 'hole':
-            _, hole_idx, area_bore, hole_area, open_len, closed_len = action
-            act_types.append(2)
-            act_params.append([area_bore, hole_area, open_len, closed_len, float(hole_idx)])
-    act_types.append(-1)
-    act_params.append([0, 0, 0, 0, 0])
-    return np.array(act_types, dtype=np.int32), np.array(act_params, dtype=np.float64)
-
-
-def make_action_phase_fn(act_types_np, act_params_np, n_actions, closed_top):
-    """Build JAX resonance phase function from pre-built actions."""
-    at = jnp.array(act_types_np)
-    ap = jnp.array(act_params_np)
-
-    def resonance_phase(wl, fingerings):
-        phase = jnp.float64(0.5)
-        for i in range(n_actions):
-            t = at[i]
-            p = ap[i]
-            phase = jnp.where(t == 0, j_pipe(phase, p[0] / wl), phase)
-            phase = jnp.where(t == 1, j_j2(p[0], p[1], phase), phase)
-            hp_open = j_pipe(jnp.float64(-0.5), p[2] / wl)
-            hp_closed = j_pipe(jnp.float64(0.0), p[3] / wl)
-            hp = jnp.where(fingerings[jnp.int32(p[4])] > 0.5, hp_open, hp_closed)
-            phase = jnp.where(t == 2, j_j3(p[0], p[0], p[1], phase, hp), phase)
-        if not closed_top:
-            phase = phase + 0.5
-        return phase
-
-    return resonance_phase
-
-
-# ============================================================================
-# Batched cost evaluation (JAX vmap)
-# ============================================================================
-
-def evaluate_batch_jax(instruments, target_wls, fingering_arrays, n_registers, closed_top):
-    """Evaluate multiple instruments × fingerings in parallel via JAX vmap.
-
-    Args:
-        instruments: list of TMMInstrument objects
-        target_wls: (n_notes,) array of target wavelengths
-        fingering_arrays: (n_notes, n_holes) array of fingering states (0/1)
-        n_registers: (n_notes,) array of register numbers
-        closed_top: bool
-
-    Returns:
-        (n_instruments,) array of costs (RMS cents error)
-    """
-    n_inst = len(instruments)
-    n_notes = len(target_wls)
-
-    # Build JAX action arrays for each instrument
-    all_act_types = []
-    all_act_params = []
-    n_actions_list = []
-    for inst in instruments:
-        at, ap = build_action_arrays(inst)
-        all_act_types.append(at)
-        all_act_params.append(ap)
-        n_actions_list.append(len(inst.actions) + 1)
-
-    # Pad to max actions
-    max_n = max(n_actions_list)
-    at_padded = np.zeros((n_inst, MAX_ACTIONS), dtype=np.int32)
-    ap_padded = np.zeros((n_inst, MAX_ACTIONS, 5), dtype=np.float64)
-    for i in range(n_inst):
-        n = n_actions_list[i]
-        at_padded[i, :len(all_act_types[i])] = all_act_types[i]
-        ap_padded[i, :len(all_act_params[i])] = all_act_params[i]
-
-    at_jax = jnp.array(at_padded)
-    ap_jax = jnp.array(ap_padded)
-    na_jax = jnp.array(n_actions_list)
-    wl_jax = jnp.array(target_wls)
-    fc_jax = jnp.array(fingering_arrays.astype(np.float64))
-    reg_jax = jnp.array(n_registers)
-
-    def eval_one_inst(i):
-        """Evaluate one instrument across all notes."""
-        at_i = at_jax[i]
-        ap_i = ap_jax[i]
-        na_i = na_jax[i]
-
-        def resonance_phase(wl, fingerings):
-            phase = jnp.float64(0.5)
-            for k in range(MAX_ACTIONS):
-                t = at_i[k]
-                p = ap_i[k]
-                phase = jnp.where(t == 0, j_pipe(phase, p[0] / wl), phase)
-                phase = jnp.where(t == 1, j_j2(p[0], p[1], phase), phase)
-                hp_open = j_pipe(jnp.float64(-0.5), p[2] / wl)
-                hp_closed = j_pipe(jnp.float64(0.0), p[3] / wl)
-                hp = jnp.where(fingerings[jnp.int32(p[4])] > 0.5, hp_open, hp_closed)
-                phase = jnp.where(t == 2, j_j3(p[0], p[0], p[1], phase, hp), phase)
-            if not closed_top:
-                phase = phase + 0.5
-            return phase
-
-        total = jnp.float64(0.0)
-        for n in range(n_notes):
-            phase = resonance_phase(wl_jax[n], fc_jax[n])
-            target_reg = reg_jax[n]
-            total = total + (phase - target_reg) ** 2
-        return total / jnp.float64(n_notes)
-
-    batched = jit(vmap(eval_one_inst))
-    costs = batched(jnp.arange(n_inst))
-    return np.array(costs)
-
-
-def evaluate_single_jax(inst, target_wls, fingering_arrays, n_registers, closed_top):
-    """Evaluate a single instrument via JAX."""
-    costs = evaluate_batch_jax(
-        [inst], target_wls, fingering_arrays, n_registers, closed_top
+def eval_all(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg=None):
+    """RMS cents error — same logic as benchmark_all.py eval_all."""
+    inst = tmm_instrument_from_radii(
+        radii, bore_length, hp, hd, hl,
+        outer_diameter_mm=22.0, closed_top=closed_top, cone_step=0.5,
     )
-    return costs[0]
+    if n_reg is None:
+        n_reg = 1 if closed_top else 2
+
+    # Build fingerings from cumulative open holes
+    n_holes = len(hp)
+    fingerings = []
+    for k in range(n_holes):
+        f = ['open'] * (k + 1) + ['closed'] * (n_holes - k - 1)
+        fingerings.append(f)
+    if closed_top:
+        fingerings.insert(0, ['closed'] * n_holes)
+
+    tw = [c / f for f in targets]
+    freqs = inst.compute_fingered_frequencies(tw, fingerings, n_reg)
+
+    cents = []
+    for a, t in zip(freqs, targets):
+        cents.append(1200.0 * math.log2(a / t) if a > 0 and math.isfinite(a) else 1e10)
+    ca = np.array(cents)
+    if np.any(np.abs(ca) > 1e5):
+        return 1e10
+    return float(np.sqrt(np.mean(ca ** 2)))
 
 
-# ============================================================================
-# Phase 1: CMA-ES + JAX vmap
-# ============================================================================
-
-def phase1_cmaes_jax(bore_length, n_holes, hole_lens, targets, fingerings,
-                     n_register, closed_top, bore_bounds_range, hole_pos_bounds_range,
-                     seed=42, verbose=True, maxfevals=5000, loss_model=None):
-    """Phase 1: CMA-ES with JAX vmap batched evaluation."""
-    import cma
-
-    bore_min, bore_max = bore_bounds_range
-    hp_min, hp_max = hole_pos_bounds_range
-    hd_min, hd_max = 3.0, 15.0
-    n_bore_ctrl = 6
-
-    targets = np.array(targets)
-    target_wls = SPEED_OF_SOUND / targets
-
-    fingerings_parsed = fingerings  # already parsed
-
-    # Build register array
-    n_regs = np.full(len(targets), n_register, dtype=np.float64)
-
-    # Bounding box for CMA-ES
-    x0 = np.array(
-        [10.0] * n_bore_ctrl +
-        [8.0] * n_holes +
-        sorted([bore_length * (i + 1) / (n_holes + 1) for i in range(n_holes)])
-    )
-
-    lb = ([bore_min] * n_bore_ctrl + [hd_min] * n_holes + [hp_min] * n_holes)
-    ub = ([bore_max] * n_bore_ctrl + [hd_max] * n_holes + [hp_max] * n_holes)
-
-    def cost_fn(x):
-        radii = x[:n_bore_ctrl]
-        hd = x[n_bore_ctrl:n_bore_ctrl + n_holes]
-        hp = list(x[n_bore_ctrl + n_holes:])
-        hp.sort()
-        for i in range(1, len(hp)):
-            if hp[i] <= hp[i - 1] + 3:
-                return 1e6
-        try:
-            inst = tmm_instrument_from_radii(
-                radii, bore_length, hp, hd, hole_lens,
-                outer_diameter_mm=22.0, closed_top=closed_top, cone_step=0.5,
-                loss_model=loss_model,
-            )
-            # Peak-matching with target register
-            cents = []
-            for tgt, fl in zip(targets, fingerings_parsed):
-                wl = inst.find_resonance(SPEED_OF_SOUND / tgt, fl, n_register=n_register)
-                f = inst.frequency_from_wavelength(wl)
-                if f > 0 and tgt > 0:
-                    cents.append(1200.0 * np.log2(f / tgt))
-                else:
-                    cents.append(1e10)
-            ca = np.array(cents)
-            if np.any(np.abs(ca) > 1e5):
-                return 1e6
-            return float(np.sqrt(np.mean(ca ** 2)))
-        except Exception:
-            return 1e6
-
-    # CMA-ES with batched evaluation
-    batch_size = max(4, int(4 + 3 * np.log(len(x0))))
-
-    def batched_cost(X):
-        """Evaluate a batch of candidates."""
-        n = len(X)
-        instruments = []
-        valid = []
-        for i in range(n):
-            x = X[i]
-            radii = x[:n_bore_ctrl]
-            hd = x[n_bore_ctrl:n_bore_ctrl + n_holes]
-            hp = list(x[n_bore_ctrl + n_holes:])
-            hp.sort()
-            ok = True
-            for j in range(1, len(hp)):
-                if hp[j] <= hp[j - 1] + 3:
-                    ok = False
-                    break
-            if ok:
-                try:
-                    inst = tmm_instrument_from_radii(
-                        radii, bore_length, hp, hd, hole_lens,
-                        outer_diameter_mm=22.0, closed_top=closed_top, cone_step=0.5,
-                        loss_model=loss_model,
-                    )
-                    instruments.append(inst)
-                    valid.append(i)
-                except Exception:
-                    valid.append(-1)
-            else:
-                valid.append(-1)
-
-        costs = np.full(n, 1e6)
-        if instruments:
-            try:
-                jax_costs = evaluate_batch_jax(
-                    instruments, target_wls, fingering_arrays, n_regs, closed_top=closed_top
-                )
-                for k, vi in enumerate(valid):
-                    if vi >= 0:
-                        costs[vi] = jax_costs[k]
-            except Exception:
-                for k, vi in enumerate(valid):
-                    if vi >= 0:
-                        costs[vi] = cost_fn(X[vi])
-        return costs
-
-    opts = cma.CMAOptions()
-    opts["verbose"] = -99
-    opts["maxfevals"] = maxfevals
-    opts["popsize"] = batch_size
-    opts["bounds"] = [lb, ub]
-    opts["seed"] = seed
-
-    t0 = time.time()
+def safe_eval(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg=None):
     try:
-        res = cma.fmin(cost_fn, list(x0), 0.5, opts)
-        elapsed = time.time() - t0
-        x_best = np.array(res[0])
-        cost_best = res[1]
-        n_evals = res[2]
-    except Exception as e:
-        elapsed = time.time() - t0
-        if verbose:
-            print(f"  CMA-ES failed: {e}, falling back to DE")
-        from scipy.optimize import differential_evolution
-        bounds = [(lb[i], ub[i]) for i in range(len(x0))]
-        res = differential_evolution(
-            cost_fn, bounds, seed=seed, maxiter=50, popsize=15,
-            tol=1e-6, mutation=(0.5, 1.0), recombination=0.7, disp=False,
-        )
-        elapsed = time.time() - t0
-        x_best = res.x
-        cost_best = res.fun
-        n_evals = res.nfev
-
-    if verbose:
-        print(f"  Phase 1: cost={cost_best:.6f} ({elapsed:.1f}s, {n_evals} evals)")
-
-    return x_best, cost_best, elapsed
+        return eval_all(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg)
+    except Exception:
+        return 1e10
 
 
 # ============================================================================
-# Phase 2: L-BFGS-B + Python TMM (existing, unchanged)
+# Phase 0: Sequential hole placement (from benchmark_all.py)
 # ============================================================================
 
-def phase2_refine(x0, bore_length, n_holes, hole_lens, targets, fingerings,
-                  detected_regs, bore_bounds_range, hole_pos_bounds_range,
-                  n_iters=500, closed_top=False, loss_model=None, verbose=True):
-    """Phase 2: L-BFGS-B refinement using Python TMM (correct peak-matching)."""
-    from scipy.optimize import minimize as sp_min
+def sequential_placement(cfg):
+    """Sequential hole placement — same as benchmark_all.py sequential()."""
+    targets = sorted(cfg["targets"])
+    fundamental = min(targets)
+    closed_top = cfg["closed_top"]
+    n_reg = 1 if closed_top else 2
 
-    targets = np.array(targets)
-    n_bore_ctrl = 6
-    bore_min, bore_max = bore_bounds_range
-    hp_min, hp_max = hole_pos_bounds_range
-    hd_min, hd_max = 3.0, 15.0
+    n_cp = 6
+    bore_radii = np.full(n_cp, cfg["bore_radius"])
+    L_est = c / (4.0 * fundamental) if closed_top else c / (2.0 * fundamental)
 
-    def peak_cost(x):
-        radii = x[:n_bore_ctrl]
-        hd = x[n_bore_ctrl:n_bore_ctrl + n_holes]
-        hp = sorted(x[n_bore_ctrl + n_holes:])
-        for i in range(1, len(hp)):
-            if hp[i] <= hp[i - 1] + 3:
-                return 1e6
+    def bore_obj(L):
         try:
-            inst = tmm_instrument_from_radii(
-                radii, bore_length, hp, hd, hole_lens,
-                outer_diameter_mm=22.0, closed_top=closed_top, cone_step=0.5,
-                loss_model=loss_model,
-            )
-            cents = []
-            for tgt, fl, pr in zip(targets, fingerings, detected_regs):
-                wl = inst.find_resonance(SPEED_OF_SOUND / tgt, fl, n_register=pr)
-                f = inst.frequency_from_wavelength(wl)
-                cents.append(1200.0 * np.log2(f / tgt) if f > 0 and tgt > 0 else 1e10)
-            ca = np.array(cents)
-            if np.any(np.abs(ca) > 1e5):
-                return 1e6
-            return float(np.sqrt(np.mean(ca ** 2)))
-        except Exception:
-            return 1e6
+            inst = tmm_instrument_from_radii(bore_radii, L, [], [], [],
+                cfg["outer_diameter"], closed_top, 0.5)
+            wl = inst.find_resonance(c / fundamental, [], n_reg)
+            f = inst.frequency_from_wavelength(wl)
+            if f <= 0 or not math.isfinite(f): return 1e10
+            return abs(1200.0 * math.log2(f / fundamental))
+        except: return 1e10
 
-    bounds = (
-        [(bore_min, bore_max)] * n_bore_ctrl
-        + [(hd_min, hd_max)] * n_holes
-        + [(hp_min, hp_max)] * n_holes
-    )
+    from scipy.optimize import minimize as sp_min
+    r = sp_min(bore_obj, [L_est], method='L-BFGS-B',
+               bounds=[(L_est * 0.7, L_est * 1.3)],
+               options={"maxiter": 50, "ftol": 1e-8})
+    bore_length = r.x[0]
 
-    t0 = time.time()
-    result = sp_min(peak_cost, x0, method='L-BFGS-B', bounds=bounds,
-                    options={'maxiter': n_iters, 'ftol': 1e-12})
-    elapsed = time.time() - t0
+    hp, hd, hl = [], [], []
+    hole_targets = targets[1:]
 
-    if verbose:
-        print(f"  Phase 2: cost={result.fun:.6f} ({elapsed:.1f}s)")
+    for k, target in enumerate(hole_targets):
+        min_p = hp[-1] + 15 if hp else 30
+        max_p = bore_length - 30
+        if min_p >= max_p:
+            break
 
-    return result.x, result.fun, elapsed
-
-
-# ============================================================================
-# Detect registers
-# ============================================================================
-
-def detect_registers(targets, fingerings, bore_length, bore_radii, hole_diameters,
-                     hole_positions, hole_lens, closed_top=False, max_reg=5, loss_model=None):
-    """Detect best register for each fingering."""
-    regs = []
-    for tgt, fl in zip(targets, fingerings):
-        inst = tmm_instrument_from_radii(
-            bore_radii, bore_length, hole_positions, hole_diameters, hole_lens,
-            outer_diameter_mm=22.0, closed_top=closed_top, cone_step=0.5,
-            loss_model=loss_model,
-        )
-        best_pr = 1
-        best_dist = 1e10
-        for pr in range(1, max_reg + 1):
+        best_pos, best_err = 0, 1e10
+        for pos in np.linspace(min_p, max_p, 60):
             try:
-                wl = inst.find_resonance(SPEED_OF_SOUND / tgt, fl, n_register=pr)
+                if closed_top:
+                    pl = hp + [pos]
+                    dl = hd + [cfg["hole_diameter"]]
+                    ll = hl + [cfg["hole_length"]]
+                    idx = np.argsort(pl)
+                    pl_s = [pl[j] for j in idx]
+                    dl_s = [dl[j] for j in idx]
+                    ll_s = [ll[j] for j in idx]
+                    fing = ["closed"] * len(pl)
+                    for j in range(k + 1):
+                        fing[list(idx).index(j)] = "open"
+                    inst = tmm_instrument_from_radii(bore_radii, bore_length,
+                        pl_s, dl_s, ll_s, cfg["outer_diameter"], closed_top, 0.5)
+                else:
+                    inst = tmm_instrument_from_radii(bore_radii, bore_length,
+                        [pos], [cfg["hole_diameter"]], [cfg["hole_length"]],
+                        cfg["outer_diameter"], closed_top, 0.5)
+                    fing = ["open"]
+
+                wl = inst.find_resonance(c / target, fing, n_reg)
                 f = inst.frequency_from_wavelength(wl)
-                dist = abs(1200.0 * np.log2(f / tgt))
-                if dist < best_dist:
-                    best_dist = dist
-                    best_pr = pr
-            except Exception:
-                continue
-        regs.append(best_pr)
-    return regs
+                err = abs(1200.0 * math.log2(f / target)) if f > 0 else 1e10
+                if err < best_err:
+                    best_err, best_pos = err, pos
+            except: pass
+        hp.append(best_pos)
+        hd.append(cfg["hole_diameter"])
+        hl.append(cfg["hole_length"])
+
+    idx = np.argsort(hp)
+    hp = [hp[j] for j in idx]
+    hd = [hd[j] for j in idx]
+    hl = [hl[j] for j in idx]
+
+    rms = safe_eval(bore_radii, bore_length, hp, hd, hl, closed_top, targets, n_reg)
+    return rms, bore_length, bore_radii, hp, hd, hl
 
 
 # ============================================================================
-# Main: Complete JAX two-phase optimization
+# Phase 1: 4-stage L-BFGS-B refinement (from benchmark_all.py sequential_refined)
+# ============================================================================
+
+def refine_sequential(cfg, verbose=False):
+    """Sequential + DE global re-optim + 4-stage L-BFGS-B refinement.
+
+    Matches benchmark_all.py sequential_refined exactly.
+    """
+    from scipy.optimize import differential_evolution
+
+    rms_seq, L_seq, bore_radii, hp, hd, hl = sequential_placement(cfg)
+    t0 = time.time()
+
+    n_cp = 6
+    n_h = len(hp)
+    L = L_seq
+    radii = bore_radii.copy()
+    closed_top = cfg["closed_top"]
+    targets = cfg["targets"]
+    bore_r = cfg["bore_radius"]
+
+    hd_min = bore_r * 0.4
+    hd_max = bore_r * 0.9
+
+    def safe_eval_local(radii, L, hp, hd, hl):
+        return safe_eval(radii, L, hp, hd, hl, closed_top, targets)
+
+    # DE global re-optimization for open-open instruments
+    if not closed_top and n_h > 0:
+        if verbose:
+            print("    Phase 2b: Global hole re-optimization (DE)")
+        radii_de = np.full(n_cp, bore_r)
+
+        def obj_de(x):
+            hp_sorted = []
+            hd_sorted = []
+            idx_sorted = np.argsort(x[:n_h].tolist())
+            for j in idx_sorted:
+                hp_sorted.append(x[j])
+                hd_sorted.append(x[n_h + j])
+            return safe_eval_local(radii_de, L, hp_sorted, hd_sorted, hl)
+
+        de_bounds = []
+        for i in range(n_h):
+            lo = int(i * L / (n_h * 1.5 + 1))
+            hi = int((i + 2) * L / (n_h * 1.5 + 1))
+            lo = max(lo, 20)
+            hi = min(hi, int(L - 20))
+            if hi <= lo:
+                hi = lo + 10
+            de_bounds.append((lo, hi))
+        for i in range(n_h):
+            de_bounds.append((hd_min, hd_max))
+
+        x0_de = np.array(hp + hd)
+        for i in range(n_h):
+            x0_de[i] = np.clip(x0_de[i], de_bounds[i][0], de_bounds[i][1])
+            x0_de[n_h + i] = np.clip(x0_de[n_h + i], hd_min, hd_max)
+        result_de = differential_evolution(obj_de, de_bounds, x0=x0_de, seed=42,
+                                          maxiter=100, popsize=max(10, n_h * 2),
+                                          tol=1e-6, mutation=(0.5, 1.0),
+                                          recombination=0.7, polish=True)
+        de_idx = np.argsort(result_de.x[:n_h].tolist())
+        hp = [result_de.x[j] for j in de_idx]
+        hd = [result_de.x[n_h + j] for j in de_idx]
+        if verbose:
+            print(f"      RMS={result_de.fun:.2f}c  Holes: {[f'{p:.0f}mm/{d:.1f}mm' for p, d in zip(hp, hd)]}")
+
+    # Non-crossing bounds
+    GAP = 5.0
+    hole_lo, hole_hi = [0.0] * n_h, [0.0] * n_h
+    for i in range(n_h):
+        hole_lo[i] = (hp[i - 1] + GAP) if i > 0 else 30.0
+        hole_hi[i] = (hp[i + 1] - GAP) if i < n_h - 1 else (L * 1.3 - 30.0)
+        hole_lo[i] = max(hole_lo[i], hp[i] - 20)
+        hole_hi[i] = min(hole_hi[i], hp[i] + 20)
+        if hole_lo[i] > hole_hi[i]:
+            hole_lo[i] = hp[i] - 1
+            hole_hi[i] = hp[i] + 1
+
+    rad_lo = max(3.0, bore_r * 0.5)
+    rad_hi = min(15.0, bore_r * 2.0)
+    rad_bounds = [(rad_lo, rad_hi)] * n_cp
+
+    # Stage 1: Bore length only
+    def obj_bore_length(x):
+        return safe_eval_local(radii, x[0], hp, hd, hl)
+    r = sp_min(obj_bore_length, [L], method='L-BFGS-B',
+               bounds=[(L * 0.85, L * 1.15)], options={"maxiter": 100, "ftol": 1e-8})
+    L = r.x[0]
+
+    # Stage 2: Bore-radii only
+    if n_cp > 0:
+        def obj_radii(x):
+            return safe_eval_local(np.maximum(x, rad_lo), L, hp, hd, hl)
+        r = sp_min(obj_radii, radii, method='L-BFGS-B',
+                    bounds=rad_bounds, options={"maxiter": 200, "ftol": 1e-8})
+        radii = np.maximum(r.x, rad_lo)
+
+    # Stage 3: Hole positions + diameters
+    if n_h > 0:
+        hole_bounds = [(hole_lo[i], hole_hi[i]) for i in range(n_h)]
+        hole_diam_bounds = [(hd_min, hd_max)] * n_h
+
+        def obj_holes_and_diams(x):
+            return safe_eval_local(radii, L, x[:n_h].tolist(), x[n_h:].tolist(), hl)
+        x0_hd = np.array(hp + hd)
+        all_hole_bounds = hole_bounds + hole_diam_bounds
+        r = sp_min(obj_holes_and_diams, x0_hd, method='L-BFGS-B',
+                    bounds=all_hole_bounds, options={"maxiter": 200, "ftol": 1e-8})
+        hp = r.x[:n_h].tolist()
+        hd = r.x[n_h:].tolist()
+
+    # Stage 4: Simultaneous fine-tune
+    hole_bounds = [(hole_lo[i], hole_hi[i]) for i in range(n_h)] if n_h > 0 else []
+    hole_diam_bounds = [(hd_min, hd_max)] * n_h if n_h > 0 else []
+    all_bounds = [(L * 0.85, L * 1.15)]
+    if n_cp > 0:
+        all_bounds += rad_bounds
+    if n_h > 0:
+        all_bounds += hole_bounds
+        all_bounds += hole_diam_bounds
+
+    def obj_all(x):
+        L_i = x[0]
+        rad_i = np.maximum(x[1:1 + n_cp], rad_lo) if n_cp > 0 else radii
+        hp_i = x[1 + n_cp:1 + n_cp + n_h]
+        hd_i = x[1 + n_cp + n_h:1 + n_cp + 2 * n_h]
+        return safe_eval_local(rad_i, L_i, hp_i.tolist(), hd_i.tolist(), hl)
+
+    x0 = np.concatenate([[L], radii, np.array(hp), np.array(hd)])
+    r = sp_min(obj_all, x0, method='L-BFGS-B',
+                bounds=all_bounds, options={"maxiter": 300, "ftol": 1e-10})
+    L = r.x[0]
+    radii = np.maximum(r.x[1:1 + n_cp], rad_lo) if n_cp > 0 else radii
+    hp = r.x[1 + n_cp:1 + n_cp + n_h].tolist()
+    hd = r.x[1 + n_cp + n_h:1 + n_cp + 2 * n_h].tolist()
+
+    rms = safe_eval_local(radii, L, hp, hd, hl)
+    return rms, L, radii, hp, hd, hl, time.time() - t0
+
+
+# ============================================================================
+# Main entry point
 # ============================================================================
 
 def jax_two_phase_optimize(
-    bore_length: float,
-    n_holes: int,
-    hole_lens: list,
-    targets: list,
-    fingerings: list,
-    n_register: int = 2,
+    bore_length: float = None,
+    n_holes: int = None,
+    hole_lens: list = None,
+    targets: list = None,
+    fingerings: list = None,
+    bore_radius: float = 7.25,
+    outer_diameter: float = 22.0,
+    hole_diameter: float = 7.0,
+    hole_length: float = 3.75,
+    n_register: int = None,
     closed_top: bool = False,
     bore_bounds_range: tuple = (3.0, 18.0),
     hole_pos_bounds_range: tuple = (10.0, None),
@@ -454,124 +314,74 @@ def jax_two_phase_optimize(
     verbose: bool = True,
     loss_model=None,
 ) -> dict:
-    """JAX-powered two-phase optimization.
+    """Optimize bore for intonation.
 
-    Phase 1: CMA-ES with JAX vmap (fast global search)
-    Phase 2: L-BFGS-B with Python TMM (correct local refinement)
+    Uses the proven sequential_refined approach from benchmark_all.py.
+    Auto-detects n_register from closed_top if not specified.
     """
-    targets = np.array(targets)
+    if n_register is None:
+        n_register = 1 if closed_top else 2
 
-    # Parse fingerings
-    fingerings_parsed = []
-    for f in fingerings:
-        fl = ['open' if ch in ('O', 'o') else 'closed' for ch in f]
-        while len(fl) < n_holes:
-            fl.append('open')
-        fingerings_parsed.append(fl[:n_holes])
-
-    if hole_pos_bounds_range[1] is None:
-        hole_pos_bounds_range = (10.0, bore_length - 10.0)
+    cfg = {
+        "closed_top": closed_top,
+        "targets": targets,
+        "bore_radius": bore_radius,
+        "outer_diameter": outer_diameter,
+        "hole_diameter": hole_diameter,
+        "hole_length": hole_length,
+    }
 
     if verbose:
         print("=" * 70)
-        print("  JAX TWO-PHASE OPTIMIZER")
-        print("  Phase 1: CMA-ES + JAX vmap (fast)")
-        print("  Phase 2: L-BFGS-B + Python TMM (correct)")
+        print("  BORE OPTIMIZER (sequential_refined approach)")
         print("=" * 70)
-        print(f"  Bore length: {bore_length:.1f}mm, {n_holes} holes")
+        print(f"  {'Closed-open (clarinet)' if closed_top else 'Open-open (sax/flute)'}")
+        print(f"  n_register: {n_register}")
         print(f"  Targets: {[f'{f:.1f}' for f in targets]} Hz")
-        print(f"  Register: {n_register}")
-        if loss_model:
-            print(f"  Loss model: {loss_model.__class__.__name__}")
-        print(f"  JAX devices: {jax.devices()}")
+        print(f"  Holes: {n_holes if n_holes else len(targets) - (1 if closed_top else 0)}")
+        print()
 
-    # Phase 1: CMA-ES + JAX
-    print("\n  --- Phase 1: CMA-ES + JAX vmap ---")
-    x1, cost1, t1 = phase1_cmaes_jax(
-        bore_length, n_holes, hole_lens, targets, fingerings_parsed,
-        n_register=n_register, closed_top=closed_top,
-        bore_bounds_range=bore_bounds_range,
-        hole_pos_bounds_range=hole_pos_bounds_range,
-        seed=seed, verbose=verbose, maxfevals=maxfevals,
-        loss_model=loss_model,
-    )
+    t0 = time.time()
 
-    # Extract Phase 1 results
-    n_bore_ctrl = 6
-    radii1 = x1[:n_bore_ctrl]
-    hd1 = x1[n_bore_ctrl:n_bore_ctrl + n_holes]
-    hp1 = sorted(x1[n_bore_ctrl + n_holes:])
-
-    # Detect registers
-    regs = detect_registers(
-        targets, fingerings_parsed, bore_length, radii1, hd1, hp1, hole_lens,
-        closed_top=closed_top, loss_model=loss_model,
-    )
     if verbose:
-        print(f"  Detected registers: {regs}")
+        print("  Phase 0+1: Sequential placement + DE re-optim + L-BFGS-B refinement")
+    rms, L, radii, hp, hd, hl, t_refine = refine_sequential(cfg, verbose=verbose)
+    t_total = time.time() - t0
 
-    # Phase 2: L-BFGS-B refinement
-    print("\n  --- Phase 2: L-BFGS-B refinement ---")
-    x2, cost2, t2 = phase2_refine(
-        x1, bore_length, n_holes, hole_lens, targets, fingerings_parsed, regs,
-        bore_bounds_range=bore_bounds_range,
-        hole_pos_bounds_range=hole_pos_bounds_range,
-        n_iters=n_iters, closed_top=closed_top, loss_model=loss_model, verbose=verbose,
-    )
-
-    # Extract final results
-    radii2 = x2[:n_bore_ctrl]
-    hd2 = x2[n_bore_ctrl:n_bore_ctrl + n_holes]
-    hp2 = sorted(x2[n_bore_ctrl + n_holes:])
+    if verbose:
+        print(f"  RMS: {rms:.4f} cents ({t_total:.1f}s)")
+        print(f"  Bore length: {L:.1f}mm")
+        print(f"  Hole positions: {[f'{p:.1f}' for p in hp]}")
+        print(f"  Hole diameters: {[f'{d:.1f}' for d in hd]}")
 
     # Build final instrument
-    inst2 = tmm_instrument_from_radii(
-        radii2, bore_length, hp2, hd2, hole_lens,
-        outer_diameter_mm=22.0, closed_top=closed_top, cone_step=0.5,
-        loss_model=loss_model,
+    n_reg = 1 if closed_top else 2
+    inst = tmm_instrument_from_radii(
+        radii, L, hp, hd, hl,
+        outer_diameter_mm=outer_diameter, closed_top=closed_top, cone_step=0.5,
     )
 
-    # Final evaluation with peak cost
-    cents = []
-    for tgt, fl, pr in zip(targets, fingerings_parsed, regs):
-        try:
-            wl = inst2.find_resonance(SPEED_OF_SOUND / tgt, fl, n_register=pr)
-            f = inst2.frequency_from_wavelength(wl)
-            cents.append(1200.0 * np.log2(f / tgt))
-        except Exception:
-            cents.append(1e10)
-    final_rms = float(np.sqrt(np.mean(np.array(cents) ** 2)))
-
-    if verbose:
-        print(f"\n  Final RMS cents: {final_rms:.4f}")
-        print(f"  Total time: {t1 + t2:.1f}s")
-
     return {
-        'phase1': {'variables': x1, 'cost': cost1, 'time': t1},
-        'phase2': {'variables': x2, 'cost': cost2, 'time': t2},
-        'total_time': t1 + t2,
-        'final_cost': final_rms,
-        'best_instrument': inst2,
-        'best_variables': x2,
-        'detected_registers': regs,
-        'bore_radii': radii2,
-        'hole_diameters': hd2,
-        'hole_positions': hp2,
-        'cents_errors': cents,
+        'final_cost': rms,
+        'total_time': t_total,
+        'bore_length': L,
+        'bore_radii': radii.tolist(),
+        'hole_positions': hp,
+        'hole_diameters': hd,
+        'hole_lengths': hl,
+        'best_instrument': inst,
     }
 
 
 if __name__ == "__main__":
-    # Quick test: chalumeau in C (closed-open, n_register=1)
     result = jax_two_phase_optimize(
-        bore_length=600.0,
         n_holes=6,
-        hole_lens=[3.75, 3.75, 3.75, 3.75, 3.75, 3.75],
         targets=[261.6, 293.7, 329.6, 349.2, 392.0, 440.0],
-        fingerings=['oooooo', 'xooooo', 'xxoooo', 'xxxooo', 'xxxxoo', 'xxxxxo'],
-        n_register=1,
+        bore_radius=7.25,
+        outer_diameter=22.0,
+        hole_diameter=7.0,
+        hole_length=3.75,
         closed_top=True,
-        maxfevals=3000,
         verbose=True,
     )
     print(f"\nResult: RMS={result['final_cost']:.4f} cents")
