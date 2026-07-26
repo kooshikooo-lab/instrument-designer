@@ -184,11 +184,18 @@ def run_single_benchmark(
     
     This function is designed to be serialized and run on Dask workers.
     """
+    import sys
+    # Ensure project root is in path BEFORE any backend imports
+    if r"C:\instrument-designer" not in sys.path:
+        sys.path.insert(0, r"C:\instrument-designer")
+    
     start_time = time.time()
     
     try:
-        # Import inside worker to avoid serialization issues
-        from backend.bore_optimizer_lbfgs import LBFGSBoreOptimizer
+        # Use importlib to import at runtime (not deserialization time)
+        import importlib
+        bore_opt_module = importlib.import_module('backend.bore_optimizer_lbfgs')
+        LBFGSBoreOptimizer = bore_opt_module.LBFGSBoreOptimizer
         
         # Use instrument config or override control points
         n_cp = n_control_points if n_control_points is not None else config.n_control_points
