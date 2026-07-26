@@ -484,3 +484,32 @@ export function downloadSvg(svgContent: string, filename: string) {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+
+export async function listCadqueryInstruments(): Promise<Record<string, {
+  bore_length: number;
+  bore_diameter: number;
+  closed_top: boolean;
+  holes: number;
+  display_name: string;
+  family: string;
+  subcategory: string;
+  verified: boolean;
+  description: string;
+}>> {
+  const res = await apiGet("/export/cadquery/instruments");
+  if (!res.ok) throw new Error("Failed to list CadQuery instruments");
+  return res.json();
+}
+
+export async function exportCadquery(params: {
+  preset?: string;
+  bore_length?: number;
+  bore_diameter?: number | number[];
+  wall_thickness?: number;
+  holes?: number[][];
+  closed_top?: boolean;
+}): Promise<Blob> {
+  const res = await apiPost("/export/cadquery", params);
+  if (!res.ok) throw new Error("CadQuery export failed");
+  return res.blob();
+}

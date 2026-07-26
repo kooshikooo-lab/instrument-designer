@@ -717,6 +717,7 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
               <TonePlayer
                 range={preset === "didgeridoo" ? "D2-D3" : preset === "ocarina" ? "C5-C7" : "C4-C6"}
                 instrumentName={DEMAKEIN_PRESETS[preset] || preset}
+                frequencies={optTargetKey && optPresets[optTargetKey] ? optPresets[optTargetKey].frequencies : undefined}
               />
             </div>
           )}
