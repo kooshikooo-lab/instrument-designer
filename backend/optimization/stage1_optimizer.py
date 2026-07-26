@@ -9,7 +9,7 @@ from scipy.optimize import differential_evolution
 from typing import List, Dict, Any, Optional, Tuple
 from dataclasses import dataclass
 
-from ..core.network import AcousticNetwork, Segment, Tonehole
+from ..core.network import AcousticNetwork, Segment
 from ..solvers.tmm_solver import TMMSolver
 
 

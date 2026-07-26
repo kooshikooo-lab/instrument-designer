@@ -124,8 +124,8 @@ INSTRUMENTS = {
         ],
     },
     "soprano_sax_Bb": {
-        "desc": "Soprano sax in Bb (open-open)",
-        "closed_top": False,
+        "desc": "Soprano sax in Bb (closed-open, reed)",
+        "closed_top": True,
         "targets": [466.2, 523.3, 587.3, 622.3, 698.5, 784.0, 880.0],
         "names": ["Bb4", "C5", "D5", "Eb5", "F5", "G5", "A5"],
         "bore_radius": 6.0, "outer_diameter": 20.0,
@@ -158,8 +158,8 @@ INSTRUMENTS = {
         ],
     },
     "alto_sax_Eb": {
-        "desc": "Alto sax in Eb (open-open)",
-        "closed_top": False,
+        "desc": "Alto sax in Eb (closed-open, reed)",
+        "closed_top": True,
         "targets": [311.1, 349.2, 392.0, 415.3, 466.2, 523.3, 587.3],
         "names": ["Eb4", "F4", "G4", "Ab4", "Bb4", "C5", "D5"],
         "bore_radius": 8.5, "outer_diameter": 26.0,

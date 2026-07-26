@@ -7,7 +7,7 @@ without encouraging arbitrary wandering.
 """
 import numpy as np
 from scipy.optimize import minimize
-from typing import Dict, List, Callable, Optional
+from typing import Dict, List, Callable, Optional, Tuple
 from dataclasses import dataclass
 
 

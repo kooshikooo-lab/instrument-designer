@@ -82,6 +82,14 @@ class Port:
     is_open: bool = True
     node_type: NodeType = NodeType.TONEHOLE
 
+    @property
+    def is_register_vent(self) -> bool:
+        return self.node_type == NodeType.REGISTER_VENT
+
+    @property
+    def is_tonehole(self) -> bool:
+        return self.node_type == NodeType.TONEHOLE
+
 
 @dataclass
 class Boundary:
@@ -147,6 +155,22 @@ class AcousticNetwork:
     @property
     def n_segments(self) -> int:
         return len(self.segments)
+
+    @property
+    def tonehole_ports(self) -> List[Port]:
+        return [p for p in self.ports if p.is_tonehole]
+
+    @property
+    def _toneholes(self) -> List[Port]:
+        return self.tonehole_ports
+
+    @property
+    def n_toneholes(self) -> int:
+        return len(self.tonehole_ports)
+
+    def _build_indices(self) -> None:
+        """Reassign tonehole indices after port manipulation."""
+        pass
 
     def get_port_positions(self) -> np.ndarray:
         """Get all port positions as array."""

@@ -108,7 +108,7 @@ def pipe_reply_phase_with_loss(
         # Loss factor is complex: exp(-γ * length)
         # The argument gives the additional phase shift from losses
         if isinstance(loss_factor, complex):
-            phase += -loss_factor.imag  # arg(exp(-γL)) = -Im(γL)
+            phase += math.atan2(loss_factor.imag, loss_factor.real)  # arg(exp(-γL))
 
     return phase
 
@@ -429,8 +429,7 @@ class TMMInstrument:
                     radius = seg_diameter / 2.0
                     loss_factor = self.loss_model.bore_loss(seg_length, radius, wavelength)
                     if isinstance(loss_factor, complex):
-                        # Phase of exp(-gamma * length) = -Im(gamma * length)
-                        phase += -loss_factor.imag
+                        phase += math.atan2(loss_factor.imag, loss_factor.real)
 
             elif action[0] == 'junction2':
                 _, area_a, area_b = action
@@ -687,12 +686,8 @@ class TMMInstrument:
         if not deviations:
             return 1.0
 
-        # Remove global offset (median)
-        median_dev = np.median(deviations)
-        corrected = [d - median_dev for d in deviations]
-
-        # Cost: mean squared deviation from integer
-        return float(np.mean([math.sin(math.pi * d) ** 2 for d in corrected]))
+        # Cost: absolute RMS of phase deviations (no median removal)
+        return float(np.sqrt(np.mean(np.array(deviations) ** 2)))
 
 
 # ============================================================================

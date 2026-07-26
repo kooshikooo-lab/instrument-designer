@@ -15,20 +15,16 @@ from backend.tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
 from backend.physics.losses import KeefeLoss
 
 try:
-    from backend.timbre_objectives import compute_timbre_objective
-    _TIMBRE_AVAILABLE = True
-except ImportError:
-    _TIMBRE_AVAILABLE = False
-    def compute_timbre_objective(*args, **kwargs):
-        return 0.0
-
-try:
     from .timbre_objectives import compute_timbre_objective
     _TIMBRE_AVAILABLE = True
 except ImportError:
-    _TIMBRE_AVAILABLE = False
-    def compute_timbre_objective(*args, **kwargs):
-        return 0.0
+    try:
+        from backend.timbre_objectives import compute_timbre_objective
+        _TIMBRE_AVAILABLE = True
+    except ImportError:
+        _TIMBRE_AVAILABLE = False
+        def compute_timbre_objective(*args, **kwargs):
+            return 0.0
 
 c = SPEED_OF_SOUND
 SEMITONE_MAP = {'C': 0, 'D': 2, 'E': 4, 'F': 5, 'G': 7, 'A': 9, 'B': 11}
@@ -118,7 +114,7 @@ def phase1_de_search(bore_length, n_holes, hole_lens, targets, fingerings,
                      n_register, bore_bounds_range, hole_pos_bounds_range,
                      popsize=15, maxiter=30, seed=42, verbose=True,
                      n_bore_ctrl=6, hd_min=3.0, hd_max=15.0,
-                     loss_model=None):
+                     loss_model=None, closed_top=False):
     """
     Phase 1: Differential Evolution with phase cost (fast).
 
@@ -141,7 +137,7 @@ def phase1_de_search(bore_length, n_holes, hole_lens, targets, fingerings,
         try:
             inst = tmm_instrument_from_radii(
                 radii, bore_length, hp, hd, hole_lens,
-                outer_diameter_mm=22.0, closed_top=False, cone_step=0.5,
+                outer_diameter_mm=22.0, closed_top=closed_top, cone_step=0.5,
                 loss_model=loss_model,
             )
             return inst.phase_cost_with_offset(targets, fingerings, n_register=n_register)
@@ -172,7 +168,7 @@ def phase2_lbfgsb_refine(x0, bore_length, n_holes, hole_lens, targets, fingering
                          detected_regs, bore_bounds_range, hole_pos_bounds_range,
                          n_iters=500, verbose=True,
                          n_bore_ctrl=6, hd_min=3.0, hd_max=15.0,
-                         loss_model=None, weight_timbre=0.0):
+                         loss_model=None, weight_timbre=0.0, closed_top=False):
     """
     Phase 2: L-BFGS-B with peak cost (correct).
 
@@ -197,16 +193,20 @@ def phase2_lbfgsb_refine(x0, bore_length, n_holes, hole_lens, targets, fingering
         try:
             inst = tmm_instrument_from_radii(
                 radii, bore_length, hp, hd, hole_lens,
-                outer_diameter_mm=22.0, closed_top=False, cone_step=0.5,
+                outer_diameter_mm=22.0, closed_top=closed_top, cone_step=0.5,
                 loss_model=loss_model,
             )
             peak_cost = peak_cost_nearest(inst, targets, fingerings, detected_regs)
             
-            # Add timbre objective if enabled
+            # Add timbre objective if enabled (needs impedance peaks - compute from bore)
             if weight_timbre > 0 and _TIMBRE_AVAILABLE:
-                timbre_cost = compute_timbre_objective(
-                    np.array([]), np.array([]), fundamental
+                from backend.bore_optimizer_lbfgs import _compute_impedance
+                bore_mm = np.linspace(0, bore_length, len(radii))
+                bore_m = [(float(p) * 0.001, float(r) * 0.001) for p, r in zip(bore_mm, radii)]
+                pk_freqs, pk_mags = _compute_impedance(
+                    bore_m, freq_range=(50, 3000), n_freqs=2000, temperature=20.0
                 )
+                timbre_cost = compute_timbre_objective(pk_freqs, pk_mags, fundamental)
                 return peak_cost + weight_timbre * timbre_cost
             
             return peak_cost
@@ -250,6 +250,7 @@ def two_phase_optimize(
     verbose: bool = True,
     loss_model=None,
     weight_timbre: float = 0.0,
+    closed_top: bool = None,
 ) -> dict:
     """
     Complete two-phase optimization pipeline (Noreland approach).
@@ -314,9 +315,11 @@ def two_phase_optimize(
             fl.append('open')
         fingerings_parsed.append(fl[:len(hole_lens)])
 
-    targets = np.array(hole_lens)  # WRONG - targets should be frequencies
-    # Actually targets is passed in correctly as frequencies
-    targets = np.array(targets)
+    # targets already correctly set from parameter above (line 277)
+    if closed_top is None:
+        closed_top = (n_register == 1)  # register 1 = closed-open, register 2 = open-open
+    if verbose:
+        print(f"  closed_top={closed_top} (n_register={n_register})")
 
     # Phase 1: DE with phase cost (fast)
     print("\n  --- Phase 1: DE + phase cost (fast global search) ---")
@@ -325,8 +328,8 @@ def two_phase_optimize(
         n_register=n_register,
         bore_bounds_range=(bore_min, bore_max),
         hole_pos_bounds_range=(hp_min, hp_max),
-        popsize=15, maxiter=30, seed=42,
-        loss_model=loss_model,
+        popsize=popsize, maxiter=maxiter, seed=seed,
+        loss_model=loss_model, closed_top=closed_top,
     )
 
     # Build instrument from Phase 1 result
@@ -335,7 +338,7 @@ def two_phase_optimize(
     hp1 = sorted(x1[6+len(hole_lens):])
     inst1 = tmm_instrument_from_radii(
         radii1, bore_length, hp1, hd1, hole_lens,
-        outer_diameter_mm=22.0, closed_top=False, cone_step=0.5,
+        outer_diameter_mm=22.0, closed_top=closed_top, cone_step=0.5,
         loss_model=loss_model,
     )
 
@@ -356,6 +359,7 @@ def two_phase_optimize(
         n_iters=500,
         loss_model=loss_model,
         weight_timbre=weight_timbre,
+        closed_top=closed_top,
     )
 
     # Build final instrument
