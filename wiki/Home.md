@@ -27,5 +27,6 @@ Instrument Designer optimizes bore profiles and tone hole placements for woodwin
 - [[Getting-Started]] — Installation and first design
 - [[Instrument-Library]] — All 91 instruments
 - [[3D-Printing-Guide]] — Print settings and materials
+- [[Internal-AI-Research]] — AI/ML research for instrument design
 - [[FAQ]] — Common questions
 - [[Internal:Home]] — Developer documentation (internal)

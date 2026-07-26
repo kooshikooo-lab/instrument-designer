@@ -115,3 +115,19 @@
 | Acoustical Aspects of Woodwind Instruments | Nederveen | 1998 | Tone hole theory, cutoff |
 | Acoustics of Musical Instruments | Chaigne & Kergomard | 2016 | Modern comprehensive reference |
 | Introduction to Physical Modeling Synthesis | Smith | 2010 | Free online TMM tutorial |
+
+## AI/ML for Instrument Design
+
+> See also: [[Internal-AI-Research]]
+
+| Reference | Topic | Key Finding | URL |
+|-----------|-------|-------------|-----|
+| Petiot et al. (2025) | Yamaha trumpet ML surrogates | LassoLars 0.305c RMSE, 2min training | https://doi.org/10.1121/2.0002163 |
+| Fréour et al. (2023) | Trumpet bifurcation ML | 12K samples, ~1% error, real-time | https://doi.org/10.61782/fa.2023.0281 |
+| Wang (2019) | MIT wind instrument NN | FDTD + NN inverse design, 3D-printed | https://dspace.mit.edu/handle/1721.1/123116 |
+| Yokota et al. (2024) | ResoNet PINN | Physics-informed NN for tube resonance | https://arxiv.org/html/2310.11804v4 |
+| Qasim et al. (2024) | RL physics instrument | PPO sequential design | https://arxiv.org/abs/2412.10237 |
+| OpenWInD | TMM + gradient bore reconstruction | Bore reconstruction via adjoint | https://openwind.inria.fr/ |
+| j-Wave | JAX differentiable acoustics | Full differentiable acoustic sim in JAX | https://github.com/ucl-bug/jwave |
+| BoTorch | Bayesian optimization | Multi-objective BO with GP surrogates | https://github.com/meta-pytorch/botorch |
+| pycma | CMA-ES | State-of-the-art derivative-free optimizer | https://github.com/CMA-ES/pycma |
