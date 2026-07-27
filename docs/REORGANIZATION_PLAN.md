@@ -25,12 +25,12 @@
 - [x] Added __init__.py to root tests/
 
 ### Remaining
-- [ ] Update imports in moved test files (ad-hoc sys.path hacks)
-- [ ] Fix benchmark imports (reference archived tmm_optimizer modules)
-- [ ] GitHub Actions CI setup
+- [x] Update imports in moved test files (18 files fixed)
+- [x] Fix benchmark imports (25+ files fixed)
+- [x] GitHub Actions CI setup (.github/workflows/ci.yml)
+- [x] README.md update with new structure
 - [ ] Branch cleanup (remote stale branches)
 - [ ] Worktree infrastructure scripts
-- [ ] README.md update with new structure
 
 ---
 
