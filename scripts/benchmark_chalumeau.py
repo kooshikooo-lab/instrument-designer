@@ -12,9 +12,9 @@ import numpy as np
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from backend.tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
-from backend.tmm_optimizer import TMMBoreOptimizer
-from backend.tmm_optimizer_v2 import TMMBoreOptimizerJAX
-from backend.tmm_optimizer_multi import MultiStartOptimizer
+from backend.archived_optimizers.tmm_optimizer import TMMBoreOptimizer
+from backend.archived_optimizers.tmm_optimizer_v2 import TMMBoreOptimizerJAX
+from backend.archived_optimizers.tmm_optimizer_multi import MultiStartOptimizer
 
 
 # ============================================================================

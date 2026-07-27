@@ -3,7 +3,7 @@ import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import time
 import numpy as np
-from backend.bore_optimizer_lbfgs import _pava_isotonic, _compute_impedance, _match_peaks
+from backend.archived_optimizers.bore_optimizer_lbfgs import _pava_isotonic, _compute_impedance, _match_peaks
 from scipy.optimize import minimize, differential_evolution
 
 TARGETS = [261.6, 784.8, 1308.0, 1831.2, 2354.4, 2877.6]

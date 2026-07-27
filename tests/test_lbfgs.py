@@ -4,7 +4,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 def main():
-    from backend.bore_optimizer_lbfgs import LBFGSBoreOptimizer
+    from backend.archived_optimizers.bore_optimizer_lbfgs import LBFGSBoreOptimizer
 
     targets = [261.6, 784.8, 1308.0, 1831.2, 2354.4, 2877.6]
     opt = LBFGSBoreOptimizer(

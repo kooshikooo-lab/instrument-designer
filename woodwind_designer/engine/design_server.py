@@ -354,7 +354,7 @@ def _run_tmm_optimization(job_id: str, req: TMMOptimizeRequest):
     try:
         import sys
         sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
-        from backend.tmm_optimizer_v2 import TMMBoreOptimizerJAX
+        from backend.archived_optimizers.tmm_optimizer_v2 import TMMBoreOptimizerJAX
 
         with _lock:
             _jobs[job_id]["progress"] = ["Starting TMM optimization..."]
@@ -461,7 +461,7 @@ def _run_sequential_optimization(job_id: str, req: SequentialOptimizeRequest):
     try:
         import sys
         sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
-        from backend.tmm_optimizer_sequential import SequentialBoreOptimizer
+        from backend.archived_optimizers.tmm_optimizer_sequential import SequentialBoreOptimizer
 
         with _lock:
             _jobs[job_id]["progress"] = ["Starting sequential optimization..."]

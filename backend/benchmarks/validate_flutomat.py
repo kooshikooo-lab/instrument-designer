@@ -145,7 +145,7 @@ def our_calculator_positions(
     """
     import sys
     sys.path.insert(0, '.')
-    from backend.flute_calculator import pvc_flute_holes
+    from backend.instruments.flute_calculator import pvc_flute_holes
     
     result = pvc_flute_holes(
         bore_diameter_mm=bore_diameter_mm,

@@ -240,7 +240,7 @@ def run_single_benchmark(
                 compute_phase_slope_sharpness,
                 compute_harmonic_signature,
             )
-            from backend.bore_optimizer_lbfgs import _compute_impedance
+            from backend.archived_optimizers.bore_optimizer_lbfgs import _compute_impedance
             
             # Recompute impedance on final bore
             peak_freqs, peak_mags = _compute_impedance(

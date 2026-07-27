@@ -2,7 +2,7 @@
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import numpy as np
-from backend.bore_optimizer_lbfgs import _pava_isotonic, _compute_impedance, _match_peaks
+from backend.archived_optimizers.bore_optimizer_lbfgs import _pava_isotonic, _compute_impedance, _match_peaks
 
 v = 331.3 + 0.606 * 20.0
 bore_len = v / (4 * 261.6)

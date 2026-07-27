@@ -1,7 +1,7 @@
 """Test TMM with L-BFGS optimizer for accuracy and timbre."""
 
 from backend.tmm_acoustics import TMMInstrument, SPEED_OF_SOUND
-from backend.bore_optimizer_lbfgs import LBFGSBoreOptimizer
+from backend.archived_optimizers.bore_optimizer_lbfgs import LBFGSBoreOptimizer
 from backend.two_phase_optimizer import two_phase_optimize
 from backend.physics.losses import KeefeLoss
 

@@ -14,7 +14,7 @@ from backend.tmm_acoustics import (
     TMMInstrument, tmm_instrument_from_radii, SPEED_OF_SOUND, Hole,
     circle_area, end_flange_length_correction, hole_length_correction,
 )
-from backend.tmm_optimizer import TMMBoreOptimizer, _pava_isotonic
+from backend.archived_optimizers.tmm_optimizer import TMMBoreOptimizer, _pava_isotonic
 
 
 def test_simple_flute():

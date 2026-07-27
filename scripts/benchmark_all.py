@@ -561,7 +561,7 @@ if __name__ == "__main__":
                 # Build instrument from the model
                 model = cfg.get("_chromatic_model")
                 if model is None:
-                    from backend.chromatic_flute import ChromaticFluteModel
+                    from backend.instruments.chromatic_flute import ChromaticFluteModel
                     model = ChromaticFluteModel()
                 inst = model.build_instrument()
                 tw = [c / f for f in cfg["targets"]]
