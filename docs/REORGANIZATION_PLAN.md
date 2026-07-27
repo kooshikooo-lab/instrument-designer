@@ -1,8 +1,42 @@
 # Reorganization Plan: Woodwind Design Automation
 
+## Status
+
+### Completed (2026-07-28)
+- [x] Root directory: 145 entries → 27 entries
+- [x] Backend root: 46 entries → 31 entries
+- [x] Deleted 33 duplicate test files from backend/ (kept in backend/scratch/)
+- [x] Deleted 12 duplicate diagnose files from backend/ (kept in backend/scratch/)
+- [x] Deleted 4 duplicate debug files from backend/ (kept in backend/scratch/)
+- [x] Moved 27 root-level test files to tests/
+- [x] Moved benchmark files to scripts/
+- [x] Moved debug/diagnose files to backend/scratch/
+- [x] Moved JSON exports to designs/
+- [x] Moved markdown docs to docs/
+- [x] Moved chat logs to chat-logs/
+- [x] Moved .ps1/.cmd/.bat scripts to scripts/
+- [x] Moved test output dirs to tests/
+- [x] Moved benchmark_results to scripts/
+- [x] Moved .zip files to dist/, .spec to build/
+- [x] Moved trumpet files to backend/instruments/
+- [x] Moved bore_optimizer_lbfgs to backend/archived_optimizers/
+- [x] Moved flute_calculator to backend/instruments/
+- [x] Moved tone_hole_corrections to backend/physics/
+- [x] Added __init__.py to root tests/
+
+### Remaining
+- [ ] Update imports in moved test files (ad-hoc sys.path hacks)
+- [ ] Fix benchmark imports (reference archived tmm_optimizer modules)
+- [ ] GitHub Actions CI setup
+- [ ] Branch cleanup (remote stale branches)
+- [ ] Worktree infrastructure scripts
+- [ ] README.md update with new structure
+
+---
+
 ## Problem Statement
 
-Current state: 144 entries in root directory, test files scattered everywhere, stale branches accumulating, no clear separation between experiments and production code, duplicate files across directories.
+Original state: 144 entries in root directory, test files scattered everywhere, stale branches accumulating, no clear separation between experiments and production code, duplicate files across directories.
 
 ## Research Findings Summary
 
