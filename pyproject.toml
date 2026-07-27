@@ -22,7 +22,7 @@ dependencies = [
     "fastapi>=0.110",
     "uvicorn[standard]>=0.27",
     "requests>=2.31",
-    "fpdf>=2.7",
+    "fpdf2>=2.7",
 ]
 
 [project.optional-dependencies]
