@@ -8,7 +8,7 @@ import math
 import time
 import numpy as np
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from backend.tmm_acoustics import (
     TMMInstrument, tmm_instrument_from_radii, SPEED_OF_SOUND, Hole,

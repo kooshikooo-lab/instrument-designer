@@ -1,6 +1,6 @@
 """Test variable bore profile optimization."""
-import sys, time
-sys.path.insert(0, "C:\\instrument-designer")
+import sys, os, time
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from backend.tmm_optimizer_sequential import SequentialBoreOptimizer
 
 target_freqs = [466.2, 523.3, 587.3, 622.3, 698.5, 784.0, 880.0]

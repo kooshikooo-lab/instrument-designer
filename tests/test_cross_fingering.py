@@ -1,7 +1,7 @@
 """Test: cross-fingerings for 12-hole chromatic."""
-import sys, math, time
+import sys, os, math, time
 import numpy as np
-sys.path.insert(0, 'backend')
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from optimizer_global import GlobalFingeringOptimizer
 
 FIXED_REGISTER = [(80.0, 2.5, 3.0)]

@@ -1,6 +1,6 @@
 """Test STL export pipeline."""
-import sys, time
-sys.path.insert(0, "C:\\instrument-designer")
+import sys, os, time
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from backend.tmm_optimizer_sequential import SequentialBoreOptimizer
 from backend.stl_export import export_optimizer_result, export_bore_only, export_bore_profile_json
 

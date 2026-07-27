@@ -1,6 +1,6 @@
 """Actual compute measurement — no cache."""
-import sys
-sys.path.insert(0, '.')
+import sys, os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import time
 import numpy as np
 from backend.mp_cache import cache_clear

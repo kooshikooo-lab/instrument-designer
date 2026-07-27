@@ -1,6 +1,6 @@
 """Quick optimizer comparison: 6 control points, small evals."""
-import sys
-sys.path.insert(0, '.')
+import sys, os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import time
 import numpy as np
 from backend.bore_optimizer_lbfgs import _pava_isotonic, _compute_impedance, _match_peaks

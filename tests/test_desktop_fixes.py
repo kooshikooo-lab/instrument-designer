@@ -1,6 +1,6 @@
 """Test desktop's fixes for open-open instruments"""
-import sys
-sys.path.insert(0, "C:\\instrument-designer")
+import sys, os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from backend.tmm_optimizer_sequential import SequentialBoreOptimizer
 from backend.tmm_acoustics import SPEED_OF_SOUND

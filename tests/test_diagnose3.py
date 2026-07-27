@@ -1,6 +1,6 @@
 """Test gradient accuracy away from minimum."""
-import sys, io
-sys.path.insert(0, 'backend')
+import sys, os, io
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if sys.platform == 'win32':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, line_buffering=True)
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, line_buffering=True)
