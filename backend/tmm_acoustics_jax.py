@@ -46,6 +46,27 @@ def hole_length_correction(hole_diameter: float, bore_diameter: float, closed: b
 # Vectorized action chain
 # ============================================================================
 
+def build_chain_for_optimizer(bore_length, bore_radii, hole_positions,
+                               hole_diameters, hole_lengths, closed_top,
+                               n_cp=6, outer_diameter=22.0):
+    """Build chain dict from optimizer parameters.
+
+    Used by the JAX optimizer to create a chain for bore-radii refinement.
+    The chain is constant during bore-radii optimization because pipe lengths
+    depend on bore_positions and hole_positions, not on bore_radii.
+
+    bore_radii is used as the template for diameter calculations (end flange
+    correction, hole area, junction area) but these values are captured as
+    constants in the chain — the differentiable bore_radii is passed separately
+    to resonance_phase().
+    """
+    bore_positions = jnp.linspace(0, bore_length, n_cp)
+    return build_action_chain_v2(
+        bore_positions, bore_radii, outer_diameter,
+        hole_positions, hole_diameters, hole_lengths, closed_top
+    )
+
+
 def build_action_chain_v2(bore_positions, bore_radii_template, outer_diameter,
                           hole_positions, hole_diameters, hole_lengths, closed_top) -> dict:
     n_bore = len(bore_positions)
@@ -219,14 +240,14 @@ def _find_resonance_bisect(resonance_phase, wl_near, bore_radii, fs_pad):
     return jnp.where(jnp.abs(result) < 1e-10, best_wl, result)
 
 
-def make_phase_cost(chain, target_freqs, fingering_sets, target_wavelengths):
+def make_phase_cost(chain, target_freqs, fingering_sets, target_wavelengths, n_register=1):
     """
     Build a JIT-compiled cost function using direct phase evaluation.
 
     Instead of finding resonances via root-finding (which creates gradient
     discontinuities), evaluates the phase at target wavelengths directly.
-    At resonance, phase(wl_target) = integer, so minimizing the phase
-    deviation from the nearest integer minimizes intonation error.
+    At resonance, phase(wl_target) = n_register, so minimizing the phase
+    deviation from n_register minimizes intonation error.
 
     This gives a smooth, differentiable cost function with accurate gradients.
     """
@@ -238,13 +259,14 @@ def make_phase_cost(chain, target_freqs, fingering_sets, target_wavelengths):
         fs_padded = fs_padded.at[i, :len(fs)].set(fs)
 
     tw = jnp.array(target_wavelengths)
+    reg = jnp.float64(n_register)
 
     @jax.jit
     def cost_fn(bore_radii):
         def _phase_err(args):
             wl, fs_p = args
             phase = resonance_phase(wl, bore_radii, fs_p)
-            return phase - jnp.round(phase)
+            return phase - reg
 
         phase_errs = jax.vmap(_phase_err)((tw, fs_padded))
         return jnp.sqrt(jnp.mean(phase_errs ** 2))

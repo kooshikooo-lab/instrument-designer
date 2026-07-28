@@ -3,27 +3,35 @@
 ## Core Objectives
 
 1. **Build a fast, accurate acoustic simulator** using TMM for woodwinds
-2. **Achieve <3 cents RMS** intonation accuracy through multi-stage optimization
-3. **Optimize for BOTH intonation AND timbre** — the two are inherently coupled
-4. **Support 91+ instruments** across 10 families
-5. **Democratize instrument design** via Tauri desktop app and web browser
-6. **Produce 3D-printable STL files** with SLA-compatible tolerances
+2. **Produce professional-quality instruments** with intonation, timbre, and playability optimized simultaneously
+3. **Support 91+ instruments** across 10 families
+4. **Democratize instrument design** via Tauri desktop app and web browser
+5. **Produce 3D-printable STL files** with SLA-compatible tolerances
 
-## The Timbre-Intonation Goal
+## The Quality-First Philosophy
 
-**Intonation and timbre are fundamentally at odds.** Ernoult et al. (2020) proved this: optimizing both impedance peak frequencies (intonation) and peak amplitude ratios (timbre proxy) produces a Pareto frontier — you cannot improve one without degrading the other.
+**Instrument quality is multi-dimensional.** Intonation (pitch accuracy) is one important sub-goal, but it cannot be optimized in isolation without degrading timbre (tone color) and playability (ease of blowing).
 
-### What This Means
+### Intonation as a Sub-Goal
 
-| Metric | What It Measures | Optimizer Behavior |
-|--------|-----------------|-------------------|
-| Absolute RMS | Pitch accuracy (vs A=440 ET) | Pushes toward exact frequencies |
-| Median-corrected RMS | Scale evenness (relative spacing) | Pushes toward harmonic alignment |
-| a₂/a₁ ratio | Register stability / brightness | Pushes toward consistent tone color |
+Professional instruments typically achieve 5–10 cents/note. Our <3c computational target exceeds most professional standards, but perfect intonation alone does not guarantee a good instrument.
 
-**Current state:** Optimizer uses absolute RMS (accuracy). Evenness reported separately. Timbre proxy not yet integrated.
+| Metric | What It Measures | Professional Target | Our Target |
+|--------|-----------------|-------------------|------------|
+| Absolute RMS | Pitch accuracy (vs A=440 ET) | 5–10 cents | <3 cents (computational) |
+| Median-corrected RMS | Scale evenness (relative spacing) | — | <2 cents |
+| a₂/a₁ ratio | Register stability / brightness | Varies by instrument | Uniform across range |
+| Max deviation | Worst note | <15 cents | <5 cents |
 
-**Target state:** Bi-objective optimization with Pareto front between intonation and timbre. User chooses position on the front.
+### The Pareto Front Concept
+
+Ernoult et al. (2020) proved that intonation and timbre are fundamentally at odds. Optimizing both impedance peak frequencies (intonation) and peak amplitude ratios (timbre proxy) produces a **Pareto frontier** — you cannot improve one without degrading the other.
+
+**What this means for our project:**
+- We optimize intonation first (it's measurable and verifiable)
+- We then build timbre proxy (a₂/a₁ ratios) into the optimizer
+- The Pareto front gives users a set of optimal trade-offs to choose from
+- Professional makers already make these trade-offs (e.g., Buffet R-13 vs RC clarinets)
 
 ### Key References
 
@@ -33,6 +41,7 @@
 | Noreland et al. (2013) | Intonation-only optimization is incomplete | https://arxiv.org/abs/1209.3637 |
 | Petiot et al. (2025) | Pareto front (intonation vs emission) | https://doi.org/10.1121/2.0002163 |
 | Tournemenne et al. (2019) | Players accept worse intonation for better timbre | https://hal.science/hal-01504179v1 |
+| Bastien et al. (2025) | Intonation profile concept, relative vs absolute | https://doi.org/10.1121/2.0002181 |
 
 ## Roadmap Phases
 
@@ -50,8 +59,9 @@ See `ROADMAP.md` for full details.
 
 | Metric | Target | Current Best |
 |--------|--------|-------------|
-| Computational accuracy | <3 cents RMS | 0.00-0.32 cents |
-| Optimization speed | <60 seconds | 5-180 seconds |
+| Computational accuracy | <3 cents RMS | 0.00–1.04 cents (all 12 instruments) |
+| Optimization speed | <60 seconds | 0.3–7.4 seconds |
 | Instrument library | 91+ instruments | 91 instruments |
 | 3D print accuracy | <10 cents | ~15 cents (unvalidated) |
 | Timbre consistency | a₂/a₁ ratio uniform across range | Not yet measured |
+| Pareto front | Trade-off curve available | Not yet built |
