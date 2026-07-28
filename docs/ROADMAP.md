@@ -89,11 +89,11 @@ The optimizer timed out at pop=20/gen=10 on a single instrument. This is the
 - [ ] Verify accuracy is preserved after parallelization (same seed = same result)
 
 ### 1d. Accuracy — Bore Quality Constraints
-- [ ] Add monotonicity constraint (docstring promises it, code doesn't implement it)
-  - `n_ieq_constr=0` in current code — bore can go backwards
-  - Must land BEFORE increasing control points — extra DOF without constraints = jaggier bores
-  - Implementation: inequality constraint `bore[i+1] >= bore[i]` for all i
-- [ ] Add smoothness constraint (penalize large radius jumps between adjacent points)
+- [x] **Monotonicity constraint** — implemented via `w_mono` penalty in `compute_timbre_cost` (pareto_optimizer.py)
+  - Penalizes sign changes in bore first differences
+  - Default `w_mono=0.3`, tunable via `eval_all` / `refine_sequential` / `jax_two_phase_optimize`
+  - Achieves soft monotonicity without hard constraints that could trap optimizer
+- [x] Smoothness constraint — already present as `_bore_smoothness` (std of 2nd differences)
 - [ ] Add global pitch offset correction (shift all peaks by constant cents offset)
 - [ ] Improve scale evenness objective (currently std of diffs, consider musical intervals)
 - [ ] Add support for clarinet odd-harmonic tuning (every other peak)
@@ -609,14 +609,8 @@ There is no dedicated acoustics preprint server. Researchers use **arXiv** (cs.S
 - [x] Thermoviscous losses (Keefe 1984) — adds frequency-dependent attenuation
 - [x] JAX differentiable TMM for gradient-based optimization (2.7M evals/sec, 52x faster)
 - [x] JAX autodiff Stage 2 bore-radii refinement (exact gradients, intonation-only)
+- [x] **Multi-register optimization (clarinet twelfths)** — `eval_all` now accepts `fingerings` list + per-note `n_reg` list
 - [ ] TMMI external tonehole interactions (Lefebvre et al. 2013)
-- [ ] Lefebvre revised tonehole formulas (better chimney height model)
-- [ ] Temperature sensitivity analysis (±X cents per °C)
-- [ ] Vocal tract coupling simulation
-- [ ] Reed/mouthpiece impedance modeling
-- [ ] Multi-register optimization (clarinet twelfths)
-- [ ] Implement chalumier's `reedVirtualLength`/`reedVirtualTop` for reed instruments
-- [ ] Finer coneStep (0.125mm) for conical bore optimization
 
 ### Manufacturing
 - [ ] Hybrid approach: 3D print mold → cast final instrument
