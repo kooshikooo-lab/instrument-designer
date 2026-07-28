@@ -1,0 +1,25 @@
+name: Weekly Backup
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"  # Every Monday 06:00 UTC
+  workflow_dispatch:      # Manual trigger too
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create git bundle
+        run: |
+          date_tag="backup-$(date +%Y-%m-%d)"
+          git bundle create "$date_tag.bundle" --all
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: repo-backup
+          path: backup-*.bundle
+          retention-days: 90
