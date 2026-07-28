@@ -260,11 +260,12 @@ pure intonation or lower values for stronger timbre influence.
   - Compare accuracy and speed
   - Reference: https://github.com/edwardkort/WWIDesigner
 
-- [ ] **Phase 1h-e: Test manufacturing tolerance sensitivity**
-  - Add ±0.1mm noise to optimal bore profiles
-  - Re-evaluate intonation
-  - Document which instruments are most sensitive
-  - Critical for Phase 2 (3D print accuracy)
+- [x] **Phase 1h-e: Test manufacturing tolerance sensitivity** — DONE
+  - Monte Carlo: ±0.05mm (SLA) → 2-6c mean, ±0.1mm (FDM) → 5-12c mean
+  - All instruments sensitive — manufacturing IS the bottleneck (not computation)
+  - Best SLA: alto_flute (2.33c), concert_flute (2.70c), alto_sax (2.98c)
+  - Worst SLA: diatonic_D (6.07c), recorder (6.12c), chalumeau (4.94c)
+  - Critical for Phase 2: even 0.0c computation degrades to 3-10c under SLA
 
 ### 1i. JAX Autodiff Stage 2 (2026-07-28)
 
@@ -302,6 +303,28 @@ differences.
 - Speed equivalent (1.00x ratio) — JAX compilation offset by fewer iterations
 - JAX phase cost only reliable for n_reg=1 (closed-open); n_reg=2 falls back to Python TMM
 - Phase cost landscape differs from peak-finding landscape — can trap on unverified instruments
+
+### 1j. Pareto Weight Integration & Validation (2026-07-28)
+
+Integrated Pareto weight (w_int) into production optimizer. All entry points
+(`eval_all`, `safe_eval`, `refine_sequential`, `jax_two_phase_optimize`) accept
+`w_int` parameter (1.0 = pure intonation, default).
+
+**Weight sweep results:** recorder_C goes from 1.04c (w=1.0) to 0.04c (w=0.9) —
+timbre proxy breaks the local minimum. chalumeau_C: 0.53c → 0.18c at w=0.8.
+
+**Full benchmark with w_int=0.9:** Mean 0.17c, Max 0.82c (diatonic_D). All 11 instruments <1c.
+
+### 1k. Robust Bore Optimization (2026-07-28)
+
+Manufacturing-aware optimization: minimizes expected cost under Gaussian bore-radius
+perturbation (simulating SLA/FDM print tolerance). Uses fixed noise bank for
+deterministic gradients with L-BFGS-B.
+
+**Results:** recorder_C at ±0.05mm: +24% improvement (6.34c → 4.80c).
+diatonic_D at ±0.1mm: +11% (12.47c → 11.08c). Helps most for most sensitive
+instruments. P95 still high — random noise can't be fully compensated.
+Manufacturing quality (Phase 2) remains the real bottleneck.
 
 ---
 
