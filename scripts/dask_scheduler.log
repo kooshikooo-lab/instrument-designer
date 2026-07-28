@@ -1,0 +1,232 @@
+2026-07-28 18:37:31,516 - distributed.scheduler - INFO - -----------------------------------------------
+2026-07-28 18:37:31,533 - distributed.http.proxy - INFO - To route to workers diagnostics web server please install jupyter-server-proxy: python -m pip install jupyter-server-proxy
+2026-07-28 18:37:31,539 - distributed.scheduler - INFO - State start
+2026-07-28 18:37:31,543 - distributed.diskutils - INFO - Found stale lock file and directory 'C:\\Users\\Admin\\AppData\\Local\\Temp\\dask-scratch-space\\scheduler-2kjxd3_h', purging
+2026-07-28 18:37:31,545 - distributed.diskutils - INFO - Found stale lock file and directory 'C:\\Users\\Admin\\AppData\\Local\\Temp\\dask-scratch-space\\worker-9i2301qe', purging
+2026-07-28 18:37:31,546 - distributed.diskutils - INFO - Found stale lock file and directory 'C:\\Users\\Admin\\AppData\\Local\\Temp\\dask-scratch-space\\worker-pkmpuh5q', purging
+2026-07-28 18:37:31,569 - distributed.scheduler - INFO - -----------------------------------------------
+2026-07-28 18:37:31,576 - distributed.scheduler - INFO -   Scheduler at:   tcp://81.229.24.45:9797
+2026-07-28 18:37:31,576 - distributed.scheduler - INFO -   dashboard at:  http://81.229.24.45:9798/status
+2026-07-28 18:37:31,576 - distributed.scheduler - INFO - Registering Worker plugin shuffle
+2026-07-28 18:37:38,883 - distributed.scheduler - INFO - Register worker addr: tcp://100.69.113.41:55199 name: tcp://100.69.113.41:55199
+2026-07-28 18:37:38,975 - distributed.scheduler - INFO - Starting worker compute stream, tcp://100.69.113.41:55199
+2026-07-28 18:37:38,975 - distributed.core - INFO - Starting established connection to tcp://100.69.113.41:55201
+2026-07-28 18:37:38,977 - distributed.scheduler - INFO - Register worker addr: tcp://100.69.113.41:55202 name: tcp://100.69.113.41:55202
+2026-07-28 18:37:38,977 - distributed.scheduler - INFO - Starting worker compute stream, tcp://100.69.113.41:55202
+2026-07-28 18:37:38,977 - distributed.core - INFO - Starting established connection to tcp://100.69.113.41:55204
+2026-07-28 18:38:03,709 - distributed.core - INFO - Connection to tcp://100.69.113.41:55201 has been closed.
+2026-07-28 18:38:03,709 - distributed.scheduler - INFO - Remove worker addr: tcp://100.69.113.41:55199 name: tcp://100.69.113.41:55199 (stimulus_id='handle-worker-cleanup-1785256683.709791')
+2026-07-28 18:38:03,710 - distributed.core - INFO - Connection to tcp://100.69.113.41:55204 has been closed.
+2026-07-28 18:38:03,710 - distributed.scheduler - INFO - Remove worker addr: tcp://100.69.113.41:55202 name: tcp://100.69.113.41:55202 (stimulus_id='handle-worker-cleanup-1785256683.7107694')
+2026-07-28 18:38:03,710 - distributed.scheduler - INFO - Lost all workers
+2026-07-28 18:40:33,158 - distributed.comm.tcp - INFO - Connection from tcp://100.69.113.41:55255 closed before handshake completed
+2026-07-28 18:57:02,448 - distributed.scheduler - INFO - Receive client connection: Client-5ade0141-8aa5-11f1-b9c8-6045cba0dd5c
+2026-07-28 18:57:02,448 - distributed.core - INFO - Starting established connection to tcp://100.69.113.41:55501
+2026-07-28 18:57:04,882 - distributed.scheduler - INFO - Receive client connection: Client-5c52c4c6-8aa5-11f1-99dc-6045cba0dd5c
+2026-07-28 18:57:04,883 - distributed.core - INFO - Starting established connection to tcp://100.69.113.41:55506
+2026-07-28 18:57:06,951 - distributed.scheduler - INFO - Receive client connection: Client-5d8e293d-8aa5-11f1-bc08-6045cba0dd5c
+2026-07-28 18:57:06,951 - distributed.core - INFO - Starting established connection to tcp://100.69.113.41:55510
+2026-07-28 18:58:53,248 - distributed.core - INFO - Connection to tcp://100.69.113.41:55506 has been closed.
+2026-07-28 18:58:53,248 - distributed.scheduler - INFO - Remove client Client-5c52c4c6-8aa5-11f1-99dc-6045cba0dd5c
+2026-07-28 18:58:53,249 - distributed.scheduler - INFO - Close client connection: Client-5c52c4c6-8aa5-11f1-99dc-6045cba0dd5c
+2026-07-28 18:59:08,176 - distributed.scheduler - INFO - Receive client connection: Client-a5d00d68-8aa5-11f1-921c-6045cba0dd5c
+2026-07-28 18:59:08,177 - distributed.core - INFO - Starting established connection to tcp://100.69.113.41:55547
+2026-07-28 19:01:50,214 - distributed.core - INFO - Connection to tcp://100.69.113.41:55501 has been closed.
+2026-07-28 19:01:50,214 - distributed.scheduler - INFO - Remove client Client-5ade0141-8aa5-11f1-b9c8-6045cba0dd5c
+2026-07-28 19:01:50,215 - distributed.scheduler - INFO - Close client connection: Client-5ade0141-8aa5-11f1-b9c8-6045cba0dd5c
+2026-07-28 19:01:55,254 - distributed.core - INFO - Connection to tcp://100.69.113.41:55510 has been closed.
+2026-07-28 19:01:55,254 - distributed.scheduler - INFO - Remove client Client-5d8e293d-8aa5-11f1-bc08-6045cba0dd5c
+2026-07-28 19:01:55,254 - distributed.scheduler - INFO - Close client connection: Client-5d8e293d-8aa5-11f1-bc08-6045cba0dd5c
+2026-07-28 19:02:14,556 - distributed.scheduler - INFO - Receive client connection: Client-14e6ff5a-8aa6-11f1-8930-6045cba0dd5c
+2026-07-28 19:02:14,557 - distributed.core - INFO - Starting established connection to tcp://100.69.113.41:55616
+2026-07-28 19:02:16,960 - distributed.scheduler - INFO - Receive client connection: Client-164da48c-8aa6-11f1-a3e8-6045cba0dd5c
+2026-07-28 19:02:16,961 - distributed.core - INFO - Starting established connection to tcp://100.69.113.41:55620
+2026-07-28 19:02:16,984 - distributed.scheduler - INFO - Remove client Client-164da48c-8aa6-11f1-a3e8-6045cba0dd5c
+2026-07-28 19:02:16,985 - distributed.core - INFO - Received 'close-stream' from tcp://100.69.113.41:55620; closing.
+2026-07-28 19:02:16,985 - distributed.scheduler - INFO - Remove client Client-164da48c-8aa6-11f1-a3e8-6045cba0dd5c
+2026-07-28 19:02:16,985 - distributed.scheduler - INFO - Close client connection: Client-164da48c-8aa6-11f1-a3e8-6045cba0dd5c
+2026-07-28 19:02:27,211 - distributed.scheduler - INFO - Receive client connection: Client-1c6a5a2f-8aa6-11f1-97ac-6045cba0dd5c
+2026-07-28 19:02:27,211 - distributed.core - INFO - Starting established connection to tcp://100.69.113.41:55625
+2026-07-28 19:02:27,234 - distributed.scheduler - INFO - Remove client Client-1c6a5a2f-8aa6-11f1-97ac-6045cba0dd5c
+2026-07-28 19:02:27,235 - distributed.core - INFO - Received 'close-stream' from tcp://100.69.113.41:55625; closing.
+2026-07-28 19:02:27,235 - distributed.scheduler - INFO - Remove client Client-1c6a5a2f-8aa6-11f1-97ac-6045cba0dd5c
+2026-07-28 19:02:27,235 - distributed.scheduler - INFO - Close client connection: Client-1c6a5a2f-8aa6-11f1-97ac-6045cba0dd5c
+2026-07-28 19:02:52,017 - distributed.scheduler - INFO - Receive client connection: Client-2b39a1d7-8aa6-11f1-94e4-6045cba0dd5c
+2026-07-28 19:02:52,017 - distributed.core - INFO - Starting established connection to tcp://100.69.113.41:55642
+2026-07-28 19:05:07,132 - distributed.scheduler - INFO - Remove client Client-2b39a1d7-8aa6-11f1-94e4-6045cba0dd5c
+2026-07-28 19:05:07,132 - distributed.core - INFO - Received 'close-stream' from tcp://100.69.113.41:55642; closing.
+2026-07-28 19:05:07,132 - distributed.scheduler - INFO - Remove client Client-2b39a1d7-8aa6-11f1-94e4-6045cba0dd5c
+2026-07-28 19:05:07,133 - distributed.scheduler - INFO - Close client connection: Client-2b39a1d7-8aa6-11f1-94e4-6045cba0dd5c
+2026-07-28 19:07:02,877 - distributed.core - INFO - Connection to tcp://100.69.113.41:55616 has been closed.
+2026-07-28 19:07:02,877 - distributed.scheduler - INFO - Remove client Client-14e6ff5a-8aa6-11f1-8930-6045cba0dd5c
+2026-07-28 19:07:02,878 - distributed.scheduler - INFO - Close client connection: Client-14e6ff5a-8aa6-11f1-8930-6045cba0dd5c
+2026-07-28 19:07:11,582 - distributed.scheduler - INFO - Receive client connection: Client-c5e74298-8aa6-11f1-9c3c-6045cba0dd5c
+2026-07-28 19:07:11,582 - distributed.core - INFO - Starting established connection to tcp://100.69.113.41:55713
+2026-07-28 19:07:11,603 - distributed.scheduler - INFO - Remove client Client-c5e74298-8aa6-11f1-9c3c-6045cba0dd5c
+2026-07-28 19:07:11,603 - distributed.core - INFO - Received 'close-stream' from tcp://100.69.113.41:55713; closing.
+2026-07-28 19:07:11,604 - distributed.scheduler - INFO - Remove client Client-c5e74298-8aa6-11f1-9c3c-6045cba0dd5c
+2026-07-28 19:07:11,604 - distributed.scheduler - INFO - Close client connection: Client-c5e74298-8aa6-11f1-9c3c-6045cba0dd5c
+2026-07-28 19:07:28,527 - distributed.scheduler - INFO - Receive client connection: Client-d009a490-8aa6-11f1-9d38-6045cba0dd5c
+2026-07-28 19:07:28,527 - distributed.core - INFO - Starting established connection to tcp://100.69.113.41:55724
+2026-07-28 19:07:28,546 - distributed.scheduler - INFO - Remove client Client-d009a490-8aa6-11f1-9d38-6045cba0dd5c
+2026-07-28 19:07:28,546 - distributed.core - INFO - Received 'close-stream' from tcp://100.69.113.41:55724; closing.
+2026-07-28 19:07:28,546 - distributed.scheduler - INFO - Remove client Client-d009a490-8aa6-11f1-9d38-6045cba0dd5c
+2026-07-28 19:07:28,547 - distributed.scheduler - INFO - Close client connection: Client-d009a490-8aa6-11f1-9d38-6045cba0dd5c
+2026-07-28 19:07:45,094 - distributed.scheduler - INFO - Receive client connection: Client-d9eb2777-8aa6-11f1-8518-6045cba0dd5c
+2026-07-28 19:07:45,094 - distributed.core - INFO - Starting established connection to tcp://100.69.113.41:55768
+2026-07-28 19:08:56,496 - distributed.core - INFO - Connection to tcp://100.69.113.41:55547 has been closed.
+2026-07-28 19:08:56,496 - distributed.scheduler - INFO - Remove client Client-a5d00d68-8aa5-11f1-921c-6045cba0dd5c
+2026-07-28 19:08:56,497 - distributed.scheduler - INFO - Close client connection: Client-a5d00d68-8aa5-11f1-921c-6045cba0dd5c
+2026-07-28 19:09:15,212 - distributed.scheduler - INFO - Receive client connection: Client-0fa22c60-8aa7-11f1-8618-6045cba0dd5c
+2026-07-28 19:09:15,212 - distributed.core - INFO - Starting established connection to tcp://100.69.113.41:55797
+2026-07-28 19:09:33,615 - distributed.scheduler - INFO - Remove client Client-0fa22c60-8aa7-11f1-8618-6045cba0dd5c
+2026-07-28 19:09:33,615 - distributed.core - INFO - Received 'close-stream' from tcp://100.69.113.41:55797; closing.
+2026-07-28 19:09:33,615 - distributed.scheduler - INFO - Remove client Client-0fa22c60-8aa7-11f1-8618-6045cba0dd5c
+2026-07-28 19:09:33,616 - distributed.scheduler - INFO - Close client connection: Client-0fa22c60-8aa7-11f1-8618-6045cba0dd5c
+2026-07-28 19:09:53,032 - distributed.scheduler - INFO - Receive client connection: Client-262d1cbc-8aa7-11f1-8e50-6045cba0dd5c
+2026-07-28 19:09:53,032 - distributed.core - INFO - Starting established connection to tcp://100.69.113.41:55811
+2026-07-28 19:10:10,901 - distributed.scheduler - INFO - Remove client Client-262d1cbc-8aa7-11f1-8e50-6045cba0dd5c
+2026-07-28 19:10:10,901 - distributed.core - INFO - Received 'close-stream' from tcp://100.69.113.41:55811; closing.
+2026-07-28 19:10:10,902 - distributed.scheduler - INFO - Remove client Client-262d1cbc-8aa7-11f1-8e50-6045cba0dd5c
+2026-07-28 19:10:10,902 - distributed.scheduler - INFO - Close client connection: Client-262d1cbc-8aa7-11f1-8e50-6045cba0dd5c
+2026-07-28 19:12:26,995 - distributed.scheduler - INFO - Remove client Client-d9eb2777-8aa6-11f1-8518-6045cba0dd5c
+2026-07-28 19:12:26,995 - distributed.core - INFO - Received 'close-stream' from tcp://100.69.113.41:55768; closing.
+2026-07-28 19:12:26,995 - distributed.scheduler - INFO - Remove client Client-d9eb2777-8aa6-11f1-8518-6045cba0dd5c
+2026-07-28 19:12:26,996 - distributed.scheduler - INFO - Close client connection: Client-d9eb2777-8aa6-11f1-8518-6045cba0dd5c
+2026-07-28 19:12:42,298 - distributed.scheduler - INFO - Receive client connection: Client-8b10f250-8aa7-11f1-8a70-6045cba0dd5c
+2026-07-28 19:12:42,298 - distributed.core - INFO - Starting established connection to tcp://100.69.113.41:55852
+2026-07-28 19:17:26,385 - distributed.scheduler - INFO - Remove client Client-8b10f250-8aa7-11f1-8a70-6045cba0dd5c
+2026-07-28 19:17:26,386 - distributed.core - INFO - Received 'close-stream' from tcp://100.69.113.41:55852; closing.
+2026-07-28 19:17:26,386 - distributed.scheduler - INFO - Remove client Client-8b10f250-8aa7-11f1-8a70-6045cba0dd5c
+2026-07-28 19:17:26,386 - distributed.scheduler - INFO - Close client connection: Client-8b10f250-8aa7-11f1-8a70-6045cba0dd5c
+2026-07-28 19:18:10,241 - distributed.scheduler - INFO - Receive client connection: Client-4e754ebf-8aa8-11f1-971c-6045cba0dd5c
+2026-07-28 19:18:10,241 - distributed.core - INFO - Starting established connection to tcp://100.69.113.41:55962
+2026-07-28 19:18:10,264 - distributed.scheduler - INFO - Remove client Client-4e754ebf-8aa8-11f1-971c-6045cba0dd5c
+2026-07-28 19:18:10,264 - distributed.core - INFO - Received 'close-stream' from tcp://100.69.113.41:55962; closing.
+2026-07-28 19:18:10,265 - distributed.scheduler - INFO - Remove client Client-4e754ebf-8aa8-11f1-971c-6045cba0dd5c
+2026-07-28 19:18:10,265 - distributed.scheduler - INFO - Close client connection: Client-4e754ebf-8aa8-11f1-971c-6045cba0dd5c
+2026-07-28 19:18:17,439 - distributed.scheduler - INFO - Register worker addr: tcp://100.69.113.41:55976 name: tcp://100.69.113.41:55976
+2026-07-28 19:18:17,439 - distributed.scheduler - INFO - Starting worker compute stream, tcp://100.69.113.41:55976
+2026-07-28 19:18:17,439 - distributed.core - INFO - Starting established connection to tcp://100.69.113.41:55978
+2026-07-28 19:18:17,487 - distributed.scheduler - INFO - Register worker addr: tcp://100.69.113.41:55979 name: tcp://100.69.113.41:55979
+2026-07-28 19:18:17,487 - distributed.scheduler - INFO - Starting worker compute stream, tcp://100.69.113.41:55979
+2026-07-28 19:18:17,487 - distributed.core - INFO - Starting established connection to tcp://100.69.113.41:55981
+2026-07-28 19:18:27,900 - distributed.scheduler - INFO - Register worker addr: tcp://100.69.113.41:55995 name: tcp://100.69.113.41:55995
+2026-07-28 19:18:27,901 - distributed.scheduler - INFO - Starting worker compute stream, tcp://100.69.113.41:55995
+2026-07-28 19:18:27,901 - distributed.core - INFO - Starting established connection to tcp://100.69.113.41:55997
+2026-07-28 19:18:27,952 - distributed.scheduler - INFO - Register worker addr: tcp://100.69.113.41:55998 name: tcp://100.69.113.41:55998
+2026-07-28 19:18:27,952 - distributed.scheduler - INFO - Starting worker compute stream, tcp://100.69.113.41:55998
+2026-07-28 19:18:27,953 - distributed.core - INFO - Starting established connection to tcp://100.69.113.41:56000
+2026-07-28 19:18:36,339 - distributed.scheduler - INFO - Receive client connection: Client-5e0ef378-8aa8-11f1-890c-6045cba0dd5c
+2026-07-28 19:18:36,340 - distributed.core - INFO - Starting established connection to tcp://100.69.113.41:56024
+2026-07-28 19:18:36,364 - distributed.scheduler - INFO - Remove client Client-5e0ef378-8aa8-11f1-890c-6045cba0dd5c
+2026-07-28 19:18:36,364 - distributed.core - INFO - Received 'close-stream' from tcp://100.69.113.41:56024; closing.
+2026-07-28 19:18:36,364 - distributed.scheduler - INFO - Remove client Client-5e0ef378-8aa8-11f1-890c-6045cba0dd5c
+2026-07-28 19:18:36,365 - distributed.scheduler - INFO - Close client connection: Client-5e0ef378-8aa8-11f1-890c-6045cba0dd5c
+2026-07-28 19:18:54,161 - distributed.scheduler - INFO - Receive client connection: Client-68b6a24f-8aa8-11f1-badc-6045cba0dd5c
+2026-07-28 19:18:54,161 - distributed.core - INFO - Starting established connection to tcp://100.69.113.41:56041
+2026-07-28 19:19:03,389 - distributed.scheduler - INFO - Remove client Client-68b6a24f-8aa8-11f1-badc-6045cba0dd5c
+2026-07-28 19:19:03,389 - distributed.core - INFO - Received 'close-stream' from tcp://100.69.113.41:56041; closing.
+2026-07-28 19:19:03,389 - distributed.scheduler - INFO - Remove client Client-68b6a24f-8aa8-11f1-badc-6045cba0dd5c
+2026-07-28 19:19:03,390 - distributed.scheduler - INFO - Close client connection: Client-68b6a24f-8aa8-11f1-badc-6045cba0dd5c
+2026-07-28 19:19:23,231 - distributed.scheduler - INFO - Receive client connection: Client-7a09f0d7-8aa8-11f1-94d0-6045cba0dd5c
+2026-07-28 19:19:23,232 - distributed.core - INFO - Starting established connection to tcp://100.69.113.41:56054
+2026-07-28 19:19:32,445 - distributed.scheduler - INFO - Remove client Client-7a09f0d7-8aa8-11f1-94d0-6045cba0dd5c
+2026-07-28 19:19:32,445 - distributed.core - INFO - Received 'close-stream' from tcp://100.69.113.41:56054; closing.
+2026-07-28 19:19:32,446 - distributed.scheduler - INFO - Remove client Client-7a09f0d7-8aa8-11f1-94d0-6045cba0dd5c
+2026-07-28 19:19:32,446 - distributed.scheduler - INFO - Close client connection: Client-7a09f0d7-8aa8-11f1-94d0-6045cba0dd5c
+2026-07-28 19:19:50,813 - distributed.scheduler - INFO - Receive client connection: Client-8a7ac9ee-8aa8-11f1-b77c-6045cba0dd5c
+2026-07-28 19:19:50,813 - distributed.core - INFO - Starting established connection to tcp://100.69.113.41:56078
+2026-07-28 19:24:39,186 - distributed.core - INFO - Connection to tcp://100.69.113.41:56078 has been closed.
+2026-07-28 19:24:39,187 - distributed.scheduler - INFO - Remove client Client-8a7ac9ee-8aa8-11f1-b77c-6045cba0dd5c
+2026-07-28 19:24:39,187 - distributed.scheduler - INFO - Close client connection: Client-8a7ac9ee-8aa8-11f1-b77c-6045cba0dd5c
+2026-07-28 19:24:45,635 - distributed.scheduler - INFO - Receive client connection: Client-3a2ab197-8aa9-11f1-9a68-6045cba0dd5c
+2026-07-28 19:24:45,635 - distributed.core - INFO - Starting established connection to tcp://100.69.113.41:56134
+2026-07-28 19:24:45,661 - distributed.scheduler - INFO - Remove client Client-3a2ab197-8aa9-11f1-9a68-6045cba0dd5c
+2026-07-28 19:24:45,662 - distributed.core - INFO - Received 'close-stream' from tcp://100.69.113.41:56134; closing.
+2026-07-28 19:24:45,662 - distributed.scheduler - INFO - Remove client Client-3a2ab197-8aa9-11f1-9a68-6045cba0dd5c
+2026-07-28 19:24:45,662 - distributed.scheduler - INFO - Close client connection: Client-3a2ab197-8aa9-11f1-9a68-6045cba0dd5c
+2026-07-28 19:34:52,008 - distributed.scheduler - INFO - Receive client connection: Client-a39db249-8aaa-11f1-9838-6045cba0dd5c
+2026-07-28 19:34:52,008 - distributed.core - INFO - Starting established connection to tcp://100.69.113.41:56273
+2026-07-28 19:35:12,604 - distributed.scheduler - INFO - Remove client Client-a39db249-8aaa-11f1-9838-6045cba0dd5c
+2026-07-28 19:35:12,604 - distributed.core - INFO - Received 'close-stream' from tcp://100.69.113.41:56273; closing.
+2026-07-28 19:35:12,604 - distributed.scheduler - INFO - Remove client Client-a39db249-8aaa-11f1-9838-6045cba0dd5c
+2026-07-28 19:35:12,605 - distributed.scheduler - INFO - Close client connection: Client-a39db249-8aaa-11f1-9838-6045cba0dd5c
+2026-07-28 19:38:19,639 - distributed.scheduler - INFO - Receive client connection: Client-1f63cfa1-8aab-11f1-99cc-6045cba0dd5c
+2026-07-28 19:38:19,639 - distributed.core - INFO - Starting established connection to tcp://100.69.113.41:56344
+2026-07-28 19:38:49,466 - distributed.scheduler - INFO - Remove client Client-1f63cfa1-8aab-11f1-99cc-6045cba0dd5c
+2026-07-28 19:38:49,466 - distributed.core - INFO - Received 'close-stream' from tcp://100.69.113.41:56344; closing.
+2026-07-28 19:38:49,478 - distributed.scheduler - INFO - Remove client Client-1f63cfa1-8aab-11f1-99cc-6045cba0dd5c
+2026-07-28 19:38:49,479 - distributed.scheduler - INFO - Close client connection: Client-1f63cfa1-8aab-11f1-99cc-6045cba0dd5c
+2026-07-28 19:39:27,817 - distributed.scheduler - INFO - Receive client connection: Client-48079ee8-8aab-11f1-bf50-6045cba0dd5c
+2026-07-28 19:39:27,818 - distributed.core - INFO - Starting established connection to tcp://100.69.113.41:56370
+2026-07-28 19:41:10,105 - distributed.scheduler - INFO - Remove client Client-48079ee8-8aab-11f1-bf50-6045cba0dd5c
+2026-07-28 19:41:10,106 - distributed.core - INFO - Received 'close-stream' from tcp://100.69.113.41:56370; closing.
+2026-07-28 19:41:10,106 - distributed.scheduler - INFO - Remove client Client-48079ee8-8aab-11f1-bf50-6045cba0dd5c
+2026-07-28 19:41:10,106 - distributed.scheduler - INFO - Close client connection: Client-48079ee8-8aab-11f1-bf50-6045cba0dd5c
+2026-07-28 19:45:28,055 - distributed.scheduler - INFO - Receive client connection: Client-1ebef040-8aac-11f1-b6f8-6045cba0dd5c
+2026-07-28 19:45:28,055 - distributed.core - INFO - Starting established connection to tcp://100.69.113.41:56454
+2026-07-28 19:45:41,164 - distributed.scheduler - INFO - Remove client Client-1ebef040-8aac-11f1-b6f8-6045cba0dd5c
+2026-07-28 19:45:41,164 - distributed.core - INFO - Received 'close-stream' from tcp://100.69.113.41:56454; closing.
+2026-07-28 19:45:41,164 - distributed.scheduler - INFO - Remove client Client-1ebef040-8aac-11f1-b6f8-6045cba0dd5c
+2026-07-28 19:45:41,164 - distributed.scheduler - INFO - Close client connection: Client-1ebef040-8aac-11f1-b6f8-6045cba0dd5c
+2026-07-28 19:46:14,633 - distributed.scheduler - INFO - Receive client connection: Client-3a82c636-8aac-11f1-9e5c-6045cba0dd5c
+2026-07-28 19:46:14,633 - distributed.core - INFO - Starting established connection to tcp://100.69.113.41:56473
+2026-07-28 19:46:38,320 - distributed.scheduler - INFO - Remove client Client-3a82c636-8aac-11f1-9e5c-6045cba0dd5c
+2026-07-28 19:46:38,320 - distributed.core - INFO - Received 'close-stream' from tcp://100.69.113.41:56473; closing.
+2026-07-28 19:46:38,321 - distributed.scheduler - INFO - Remove client Client-3a82c636-8aac-11f1-9e5c-6045cba0dd5c
+2026-07-28 19:46:38,321 - distributed.scheduler - INFO - Close client connection: Client-3a82c636-8aac-11f1-9e5c-6045cba0dd5c
+2026-07-28 19:47:02,857 - distributed.scheduler - INFO - Receive client connection: Client-57413296-8aac-11f1-bb84-6045cba0dd5c
+2026-07-28 19:47:02,858 - distributed.core - INFO - Starting established connection to tcp://100.69.113.41:56496
+2026-07-28 19:47:41,875 - distributed.scheduler - INFO - Remove client Client-57413296-8aac-11f1-bb84-6045cba0dd5c
+2026-07-28 19:47:41,875 - distributed.core - INFO - Received 'close-stream' from tcp://100.69.113.41:56496; closing.
+2026-07-28 19:47:41,875 - distributed.scheduler - INFO - Remove client Client-57413296-8aac-11f1-bb84-6045cba0dd5c
+2026-07-28 19:47:41,875 - distributed.scheduler - INFO - Close client connection: Client-57413296-8aac-11f1-bb84-6045cba0dd5c
+2026-07-28 19:53:14,821 - distributed.scheduler - INFO - Receive client connection: Client-34f46ffe-8aad-11f1-bdc8-6045cba0dd5c
+2026-07-28 19:53:14,822 - distributed.core - INFO - Starting established connection to tcp://100.69.113.41:56591
+2026-07-28 19:55:58,084 - distributed.core - INFO - Connection to tcp://100.69.113.41:56591 has been closed.
+2026-07-28 19:55:58,084 - distributed.scheduler - INFO - Remove client Client-34f46ffe-8aad-11f1-bdc8-6045cba0dd5c
+2026-07-28 19:55:58,084 - distributed.scheduler - INFO - Close client connection: Client-34f46ffe-8aad-11f1-bdc8-6045cba0dd5c
+2026-07-28 20:10:56,620 - distributed.scheduler - INFO - Receive client connection: Client-add56b46-8aaf-11f1-a2c4-6045cba0dd5c
+2026-07-28 20:10:56,621 - distributed.core - INFO - Starting established connection to tcp://100.69.113.41:56889
+2026-07-28 20:11:18,197 - distributed.scheduler - INFO - Remove client Client-add56b46-8aaf-11f1-a2c4-6045cba0dd5c
+2026-07-28 20:11:18,198 - distributed.core - INFO - Received 'close-stream' from tcp://100.69.113.41:56889; closing.
+2026-07-28 20:11:18,198 - distributed.scheduler - INFO - Remove client Client-add56b46-8aaf-11f1-a2c4-6045cba0dd5c
+2026-07-28 20:11:18,198 - distributed.scheduler - INFO - Close client connection: Client-add56b46-8aaf-11f1-a2c4-6045cba0dd5c
+2026-07-28 20:12:48,781 - distributed.scheduler - INFO - Receive client connection: Client-f0b2c8e1-8aaf-11f1-91ac-6045cba0dd5c
+2026-07-28 20:12:48,781 - distributed.core - INFO - Starting established connection to tcp://100.69.113.41:56927
+2026-07-28 20:13:10,383 - distributed.scheduler - INFO - Remove client Client-f0b2c8e1-8aaf-11f1-91ac-6045cba0dd5c
+2026-07-28 20:13:10,384 - distributed.core - INFO - Received 'close-stream' from tcp://100.69.113.41:56927; closing.
+2026-07-28 20:13:10,384 - distributed.scheduler - INFO - Remove client Client-f0b2c8e1-8aaf-11f1-91ac-6045cba0dd5c
+2026-07-28 20:13:10,384 - distributed.scheduler - INFO - Close client connection: Client-f0b2c8e1-8aaf-11f1-91ac-6045cba0dd5c
+2026-07-28 20:13:48,406 - distributed.scheduler - INFO - Receive client connection: Client-143cd0fe-8ab0-11f1-9ac8-6045cba0dd5c
+2026-07-28 20:13:48,406 - distributed.core - INFO - Starting established connection to tcp://100.69.113.41:56950
+2026-07-28 20:14:10,180 - distributed.scheduler - INFO - Remove client Client-143cd0fe-8ab0-11f1-9ac8-6045cba0dd5c
+2026-07-28 20:14:10,180 - distributed.core - INFO - Received 'close-stream' from tcp://100.69.113.41:56950; closing.
+2026-07-28 20:14:10,180 - distributed.scheduler - INFO - Remove client Client-143cd0fe-8ab0-11f1-9ac8-6045cba0dd5c
+2026-07-28 20:14:10,180 - distributed.scheduler - INFO - Close client connection: Client-143cd0fe-8ab0-11f1-9ac8-6045cba0dd5c
+2026-07-28 22:12:18,400 - distributed.comm.tcp - INFO - Connection from tcp://60.191.125.35:35682 closed before handshake completed
+2026-07-28 22:12:18,588 - tornado.application - ERROR - Exception in callback functools.partial(<function TCPServer._handle_connection.<locals>.<lambda> at 0x00000269F2FAFB60>, <Task finished name='Task-810104' coro=<BaseTCPListener._handle_stream() done, defined at C:\Users\Admin\AppData\Local\Programs\Python\Python314\Lib\site-packages\distributed\comm\tcp.py:655> exception=MemoryError((8391446493491447112,), dtype('uint8'))>)
+Traceback (most recent call last):
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python314\Lib\site-packages\tornado\ioloop.py", line 758, in _run_callback
+    ret = callback()
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python314\Lib\site-packages\tornado\tcpserver.py", line 387, in <lambda>
+    gen.convert_yielded(future), lambda f: f.result()
+                                           ~~~~~~~~^^
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python314\Lib\site-packages\distributed\comm\tcp.py", line 675, in _handle_stream
+    await self.on_connection(comm)
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python314\Lib\site-packages\distributed\comm\core.py", line 288, in on_connection
+    return await super().on_connection(comm, handshake_overrides)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python314\Lib\site-packages\distributed\comm\core.py", line 267, in on_connection
+    handshake = await comm.read()
+                ^^^^^^^^^^^^^^^^^
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python314\Lib\site-packages\distributed\comm\tcp.py", line 228, in read
+    frames_nosplit = await read_bytes_rw(stream, frames_nosplit_nbytes)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python314\Lib\site-packages\distributed\comm\tcp.py", line 360, in read_bytes_rw
+    buf = host_array(n)
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python314\Lib\site-packages\distributed\protocol\utils.py", line 29, in host_array
+    return numpy.empty((n,), dtype="u1").data
+           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+numpy._core._exceptions._ArrayMemoryError: Unable to allocate 7.28 EiB for an array with shape (8391446493491447112,) and data type uint8
