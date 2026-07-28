@@ -1,7 +1,7 @@
 """
 Dask-parallelized benchmark: optimize all instruments concurrently.
 
-Uses the Dask scheduler on desktop (tcp://100.69.113.41:8786) with
+Uses the Dask scheduler on desktop (tcp://100.69.113.41:9797) with
 laptop worker for distributed computation.
 
 Tests:
@@ -37,7 +37,6 @@ def optimize_one(name, cfg):
 
     try:
         # Inline the sequential_refined approach (no external dependency)
-        c = SPEED_OF_SOUND
         targets = sorted(cfg["targets"])
         fundamental = min(targets)
         closed_top = cfg["closed_top"]
@@ -45,13 +44,13 @@ def optimize_one(name, cfg):
 
         n_cp = 6
         bore_radii = np.full(n_cp, cfg["bore_radius"])
-        L_est = c / (4.0 * fundamental) if closed_top else c / (2.0 * fundamental)
+        L_est = SPEED_OF_SOUND / (4.0 * fundamental) if closed_top else SPEED_OF_SOUND / (2.0 * fundamental)
 
         def bore_obj(L):
             try:
                 inst = tmm_instrument_from_radii(bore_radii, L, [], [], [],
                     cfg["outer_diameter"], closed_top, 0.5)
-                wl = inst.find_resonance(c / fundamental, [], n_reg)
+                wl = inst.find_resonance(SPEED_OF_SOUND / fundamental, [], n_reg)
                 f = inst.frequency_from_wavelength(wl)
                 if f <= 0 or not math.isfinite(f): return 1e10
                 return abs(1200.0 * math.log2(f / fundamental))
@@ -90,7 +89,7 @@ def optimize_one(name, cfg):
                             [pos], [cfg["hole_diameter"]], [cfg["hole_length"]],
                             cfg["outer_diameter"], closed_top, 0.5)
                         fing = ["open"]
-                    wl = inst.find_resonance(c / target, fing, n_reg)
+                    wl = inst.find_resonance(SPEED_OF_SOUND / target, fing, n_reg)
                     f = inst.frequency_from_wavelength(wl)
                     err = abs(1200.0 * math.log2(f / target)) if f > 0 else 1e10
                     if err < best_err:
@@ -118,7 +117,7 @@ def optimize_one(name, cfg):
                 fngrs = [["open"]*(kk+1)+["closed"]*(n_hl-kk-1) for kk in range(n_hl)]
                 if closed_top:
                     fngrs.insert(0, ["closed"]*n_hl)
-                tw = [c / f for f in cfg["targets"]]
+                tw = [SPEED_OF_SOUND / f for f in cfg["targets"]]
                 freqs = inst.compute_fingered_frequencies(tw, fngrs, n_rg)
                 cents = [1200.0 * math.log2(a / t) if a > 0 and math.isfinite(a) else 1e10 for a, t in zip(freqs, cfg["targets"])]
                 ca = np.array(cents)
@@ -258,7 +257,7 @@ def main():
 
     # Connect to Dask
     print("\nConnecting to Dask scheduler...")
-    client = Client("tcp://100.69.113.41:8786", timeout=15)
+    client = Client("tcp://100.69.113.41:9797", timeout=15)
     time.sleep(1)
     info = client.scheduler_info()
     workers = info.get("workers", {})

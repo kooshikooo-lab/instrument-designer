@@ -279,8 +279,6 @@ INSTRUMENTS = {
     },
 }
 
-c = SPEED_OF_SOUND
-
 
 def eval_all(radii, bore_length, hp, hd, hl, cfg):
     """Evaluate and return RMS cents (absolute, not median-corrected).
@@ -327,7 +325,7 @@ def sequential(cfg):
     n_reg = 1 if closed_top else 2
 
     bore_radii = np.full(8, cfg["bore_radius"])
-    L_est = c / (4.0 * fundamental) if closed_top else c / (2.0 * fundamental)
+    L_est = SPEED_OF_SOUND / (4.0 * fundamental) if closed_top else SPEED_OF_SOUND / (2.0 * fundamental)
 
     # Phase 1: Optimize bore length
     def bore_obj(L):

@@ -9,7 +9,7 @@ Strategy (matching sequential_refined from benchmark_all.py):
 Uses Python TMM throughout (proven correct, sub-3c RMS).
 JAX is used only for fast batch evaluation in Phase 2.
 """
-import os, sys, time, math
+import os, time, math
 import numpy as np
 
 os.environ["JAX_ENABLE_X64"] = "1"
@@ -21,8 +21,6 @@ from scipy.optimize import minimize as sp_min
 from backend.tmm_acoustics import (
     tmm_instrument_from_radii, SPEED_OF_SOUND,
 )
-
-c = SPEED_OF_SOUND
 
 
 # ============================================================================
@@ -47,7 +45,7 @@ def eval_all(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg=None):
     if closed_top:
         fingerings.insert(0, ['closed'] * n_holes)
 
-    tw = [c / f for f in targets]
+    tw = [SPEED_OF_SOUND / f for f in targets]
     freqs = inst.compute_fingered_frequencies(tw, fingerings, n_reg)
 
     cents = []
@@ -79,13 +77,13 @@ def sequential_placement(cfg):
 
     n_cp = 6
     bore_radii = np.full(n_cp, cfg["bore_radius"])
-    L_est = c / (4.0 * fundamental) if closed_top else c / (2.0 * fundamental)
+    L_est = SPEED_OF_SOUND / (4.0 * fundamental) if closed_top else SPEED_OF_SOUND / (2.0 * fundamental)
 
     def bore_obj(L):
         try:
             inst = tmm_instrument_from_radii(bore_radii, L, [], [], [],
                 cfg["outer_diameter"], closed_top, 0.5)
-            wl = inst.find_resonance(c / fundamental, [], n_reg)
+            wl = inst.find_resonance(SPEED_OF_SOUND / fundamental, [], n_reg)
             f = inst.frequency_from_wavelength(wl)
             if f <= 0 or not math.isfinite(f): return 1e10
             return abs(1200.0 * math.log2(f / fundamental))
@@ -128,7 +126,7 @@ def sequential_placement(cfg):
                         cfg["outer_diameter"], closed_top, 0.5)
                     fing = ["open"]
 
-                wl = inst.find_resonance(c / target, fing, n_reg)
+                wl = inst.find_resonance(SPEED_OF_SOUND / target, fing, n_reg)
                 f = inst.frequency_from_wavelength(wl)
                 err = abs(1200.0 * math.log2(f / target)) if f > 0 else 1e10
                 if err < best_err:
@@ -322,7 +320,7 @@ def jax_stage2_refine(radii, L, hp, hd, hl, closed_top, targets,
 
     n_reg = 1 if closed_top else 2
     targets_sorted = sorted(targets)
-    wavelengths = [c / f for f in targets_sorted]
+    wavelengths = [SPEED_OF_SOUND / f for f in targets_sorted]
 
     n_holes = len(hp)
     fingering_sets = []

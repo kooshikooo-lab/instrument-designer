@@ -59,8 +59,6 @@ from backend.tmm_acoustics import (
     tmm_instrument_from_radii,
 )
 
-c = SPEED_OF_SOUND
-
 
 # ============================================================================
 # Bore-geometry timbre proxy
@@ -213,7 +211,7 @@ def compute_intonation_cost(
     float
         RMS cents error.  Returns 1e10 on failure.
     """
-    tw = [c / f for f in targets]
+    tw = [SPEED_OF_SOUND / f for f in targets]
     try:
         freqs = inst.compute_fingered_frequencies(tw, fingerings, n_register)
     except Exception:
@@ -493,7 +491,7 @@ def run_pareto(
     n_h = len(targets) - (1 if closed_top else 0)
     n_register = 1 if closed_top else 2
 
-    wl_min = c / max(targets)
+    wl_min = SPEED_OF_SOUND / max(targets)
     L_est = wl_min / 2.0 * 1.2
 
     hd_min = bore_r * 0.4
