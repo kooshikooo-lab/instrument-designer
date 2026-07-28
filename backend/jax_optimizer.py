@@ -151,10 +151,12 @@ def sequential_placement(cfg):
 # Phase 1: 4-stage L-BFGS-B refinement (from benchmark_all.py sequential_refined)
 # ============================================================================
 
-def refine_sequential(cfg, verbose=False):
+def refine_sequential(cfg, verbose=False, use_jax_bore=False):
     """Sequential + DE global re-optim + 4-stage L-BFGS-B refinement.
 
     Matches benchmark_all.py sequential_refined exactly.
+    When use_jax_bore=True, Stage 2 (bore-radii) uses JAX autodiff instead
+    of finite differences.
     """
     from scipy.optimize import differential_evolution
 
@@ -241,11 +243,20 @@ def refine_sequential(cfg, verbose=False):
 
     # Stage 2: Bore-radii only
     if n_cp > 0:
-        def obj_radii(x):
-            return safe_eval_local(np.maximum(x, rad_lo), L, hp, hd, hl)
-        r = sp_min(obj_radii, radii, method='L-BFGS-B',
-                    bounds=rad_bounds, options={"maxiter": 200, "ftol": 1e-8})
-        radii = np.maximum(r.x, rad_lo)
+        use_jax = use_jax_bore and closed_top  # JAX phase cost only reliable for n_reg=1
+        if use_jax:
+            radii, cost_jax, n_evals = jax_stage2_refine(
+                radii, L, hp, hd, hl, closed_top, targets,
+                rad_lo, rad_bounds, cfg["outer_diameter"], n_cp,
+            )
+            if verbose:
+                print(f"      JAX Stage 2: RMS={cost_jax:.4f}c ({n_evals} evals)")
+        else:
+            def obj_radii(x):
+                return safe_eval_local(np.maximum(x, rad_lo), L, hp, hd, hl)
+            r = sp_min(obj_radii, radii, method='L-BFGS-B',
+                        bounds=rad_bounds, options={"maxiter": 200, "ftol": 1e-8})
+            radii = np.maximum(r.x, rad_lo)
 
     # Stage 3: Hole positions + diameters
     if n_h > 0:
@@ -291,6 +302,80 @@ def refine_sequential(cfg, verbose=False):
 
 
 # ============================================================================
+# Stage 2: JAX autodiff bore-radii refinement
+# ============================================================================
+
+def jax_stage2_refine(radii, L, hp, hd, hl, closed_top, targets,
+                      rad_lo, rad_bounds, outer_diameter=22.0, n_cp=6):
+    """Stage 2: bore-radii refinement using JAX automatic differentiation.
+
+    Builds the JAX action chain once (constant during bore-radii optimization),
+    creates a JIT-compiled phase cost function, and runs L-BFGS-B with exact
+    gradients from jax.grad.
+
+    Returns (radii_optimized, cost, n_evals).
+    """
+    import jax.numpy as jnp
+    from backend.tmm_acoustics_jax import (
+        build_chain_for_optimizer, make_phase_cost,
+    )
+
+    n_reg = 1 if closed_top else 2
+    targets_sorted = sorted(targets)
+    wavelengths = [c / f for f in targets_sorted]
+
+    n_holes = len(hp)
+    fingering_sets = []
+    for k in range(n_holes):
+        f = ['open'] * (k + 1) + ['closed'] * (n_holes - k - 1)
+        fingering_sets.append(f)
+    if closed_top:
+        fingering_sets.insert(0, ['closed'] * n_holes)
+    else:
+        fingering_sets.insert(0, ['closed'] * n_holes)
+
+    n_targets = len(targets_sorted)
+    if len(fingering_sets) != n_targets:
+        fingering_sets = fingering_sets[:n_targets]
+
+    max_holes = max((len(fs) for fs in fingering_sets), default=0)
+    fs_jax = []
+    for fs in fingering_sets:
+        arr = jnp.zeros(max_holes + 1, dtype=jnp.float32)
+        for i, h in enumerate(fs):
+            arr = arr.at[i].set(1.0 if h == 'open' else 0.0)
+        fs_jax.append(arr)
+
+    chain = build_chain_for_optimizer(
+        L, jnp.array(radii), hp, hd, hl, closed_top, n_cp, outer_diameter,
+    )
+
+    cost_fn = make_phase_cost(chain, targets_sorted, fs_jax, wavelengths, n_register=n_reg)
+    grad_fn = jax.grad(cost_fn)
+
+    radii_jax = jnp.array(np.maximum(radii, rad_lo), dtype=jnp.float64)
+    n_evals = [0]
+    last_grad = [None]
+
+    def obj(x):
+        x_c = jnp.maximum(x, rad_lo)
+        val = float(cost_fn(x_c))
+        n_evals[0] += 1
+        return val
+
+    def jac(x):
+        x_c = jnp.maximum(x, rad_lo)
+        g = np.array(grad_fn(x_c), dtype=np.float64)
+        last_grad[0] = g
+        return g
+
+    r = sp_min(obj, radii_jax, jac=jac, method='L-BFGS-B',
+               bounds=rad_bounds, options={"maxiter": 200, "ftol": 1e-8})
+
+    return np.maximum(r.x, rad_lo), r.fun, n_evals[0]
+
+
+# ============================================================================
 # Main entry point
 # ============================================================================
 
@@ -313,6 +398,7 @@ def jax_two_phase_optimize(
     seed: int = 42,
     verbose: bool = True,
     loss_model=None,
+    use_jax_bore: bool = False,
 ) -> dict:
     """Optimize bore for intonation.
 
@@ -344,8 +430,12 @@ def jax_two_phase_optimize(
     t0 = time.time()
 
     if verbose:
-        print("  Phase 0+1: Sequential placement + DE re-optim + L-BFGS-B refinement")
-    rms, L, radii, hp, hd, hl, t_refine = refine_sequential(cfg, verbose=verbose)
+        mode = "JAX autodiff" if use_jax_bore else "Python TMM + finite diff"
+        print(f"  Phase 0+1: Sequential placement + DE re-optim + L-BFGS-B refinement")
+        print(f"  Stage 2 mode: {mode}")
+    rms, L, radii, hp, hd, hl, t_refine = refine_sequential(
+        cfg, verbose=verbose, use_jax_bore=use_jax_bore,
+    )
     t_total = time.time() - t0
 
     if verbose:
@@ -374,14 +464,36 @@ def jax_two_phase_optimize(
 
 
 if __name__ == "__main__":
-    result = jax_two_phase_optimize(
-        n_holes=6,
-        targets=[261.6, 293.7, 329.6, 349.2, 392.0, 440.0],
-        bore_radius=7.25,
-        outer_diameter=22.0,
-        hole_diameter=7.0,
-        hole_length=3.75,
-        closed_top=True,
-        verbose=True,
+    targets = [261.6, 293.7, 329.6, 349.2, 392.0, 440.0]
+
+    print("=" * 70)
+    print("  A/B TEST: Python TMM (finite diff) vs JAX autodiff")
+    print("=" * 70)
+
+    print("\n--- Mode A: Python TMM + finite differences ---")
+    t0 = time.time()
+    result_a = jax_two_phase_optimize(
+        n_holes=6, targets=targets, bore_radius=7.25,
+        outer_diameter=22.0, hole_diameter=7.0, hole_length=3.75,
+        closed_top=True, verbose=True, use_jax_bore=False,
     )
-    print(f"\nResult: RMS={result['final_cost']:.4f} cents")
+    t_a = time.time() - t0
+
+    print(f"\n--- Mode B: JAX autodiff ---")
+    t0 = time.time()
+    result_b = jax_two_phase_optimize(
+        n_holes=6, targets=targets, bore_radius=7.25,
+        outer_diameter=22.0, hole_diameter=7.0, hole_length=3.75,
+        closed_top=True, verbose=True, use_jax_bore=True,
+    )
+    t_b = time.time() - t0
+
+    print("\n" + "=" * 70)
+    print("  A/B COMPARISON")
+    print("=" * 70)
+    print(f"  Python TMM:  RMS={result_a['final_cost']:.4f}c  time={t_a:.1f}s")
+    print(f"  JAX autodiff: RMS={result_b['final_cost']:.4f}c  time={t_b:.1f}s")
+    rms_diff = abs(result_a['final_cost'] - result_b['final_cost'])
+    speedup = t_a / t_b if t_b > 0 else 0
+    print(f"  RMS diff: {rms_diff:.6f}c")
+    print(f"  Speedup: {speedup:.2f}x")

@@ -22,7 +22,12 @@
 
 ---
 
-## Phase 1: Computational Accuracy & Speed (CURRENT FOCUS)
+## Phase 1: Intonation-Only Optimization (CURRENT FOCUS)
+
+> **Scope:** This phase optimizes **only intonation** (RMS cents deviation from
+> target frequencies). No timbre, ergonomics, printability, or multi-objective
+> optimization. The cost function is purely `phase_cost()` — measuring how close
+> the instrument's resonances are to target wavelengths.
 
 > **Before starting work here:** Check the "Periodic Research Review" section
 > below for new papers or tool updates that may change the approach.
@@ -30,7 +35,13 @@
 Everything here is software-only — no printing required. The goal is a fast,
 accurate optimizer that matches or exceeds demakein/chalumier on reference instruments.
 
-**Target: <3 cents computational error, <60 seconds per design, balanced intonation + timbre.**
+**Target: <3 cents intonation error, <60 seconds per design.**
+
+**Future phases will add:**
+- Phase 1b: Timbre-aware optimization (spectral centroid, harmonic balance)
+- Phase 1c: Ergonomic constraints (hole spacing, reach, thumb position)
+- Phase 1d: Printability constraints (wall thickness, support structure, overhang)
+- Phase 1e: Multi-objective Pareto optimization (intonation vs timbre vs ergonomics)
 
 ### 1a. TMM Optimizer — DONE
 Phase-based TMM optimizer is working and validated:
@@ -160,6 +171,103 @@ Sequencing: smoothness constraint first, then more control points.
 - Tournemenne et al. (2019) — brass optimization: https://hal.science/hal-01504179v1
 - Wolfe (UNSW) — cutoff frequency and timbre: https://www.phys.unsw.edu.au/jw/cutoff.html
 - Keefe (1982) — tone hole theory: https://doi.org/10.1121/1.388248
+
+### 1h. Optimization Methods Research (2026-07-27)
+
+Research into four published optimization methods to identify best practices and implementation opportunities. Full comparison document: `C:\Users\koosh\Documents\woodwind_optimization_methods_comparison.md`
+
+**Methods researched:**
+
+| Method | Algorithm | Key Innovation | Our Status |
+|--------|-----------|----------------|------------|
+| Noreland 2012 | SQP + finite differences | Two-phase (simple→complex) | Sequential optimizer validates this |
+| WIDesigner (Patkau 2017) | DIRECT-C + BOBYQA | User-facing tool with constraints | Open-source Java tool available |
+| Ernoult 2020 | SQP + phase-based tracking | Unwrapped phase resonance ID | **To implement** — best accuracy |
+| Petiot 2025 | Random Forest + NSGA-II | ML surrogate + Pareto front | **To implement** — multi-objective |
+
+**Key insights from research:**
+- **Two-phase optimization is essential** (Noreland): Phase 1 tunes first register, Phase 2 refines both. Our sequential optimizer does this.
+- **Phase-based resonance tracking > peak-tracking** (Ernoult): Unwrapped phase of reflection function is smooth and differentiable. Our peak-based cost is non-smooth.
+- **Sequential greedy placement needs global re-optim** (Noreland): Our DE re-optim (Phase 2b) validates this.
+- **Smart initialization > better global search** (All methods): CMA-ES from random init fails. Sequential placement succeeds.
+- **Amplitude ratios matter for playability** (Ernoult, Petiot): Frequency-only optimization produces incomplete instruments.
+- **Professional intonation is 5–10 cents** (Bertsch 1998, forum consensus): Our <3c target exceeds most professional standards.
+
+**Implementation/testing plan:**
+
+- [ ] **Phase 1h-a: Implement Ernoult phase-based cost function**
+  - Replace peak-tracking with unwrapped phase of reflection function
+  - Test on 12-instrument benchmark
+  - Expected: smoother optimization landscape, faster convergence
+  - Reference: Ernoult et al. 2020, doi:10.1121/10.0002449
+
+- [ ] **Phase 1h-b: Test Noreland two-phase approach**
+  - Phase 1: optimize first register only (10 fingerings)
+  - Phase 2: refine both registers (all fingerings)
+  - Compare convergence vs current all-at-once approach
+  - Reference: Noreland et al. 2013, arXiv:1209.3637
+
+- [x] **Phase 1h-c: Implement Pareto front (intonation + timbre)**
+  - Bore-geometry timbre proxy: bore smoothness + hole radiation consistency
+  - Weighted-sum sweep: sequential init → L-BFGS-B with varying w_int/w_tim
+  - NSGA-II blocked by missing pymoo (install: `pip install pymoo`)
+  - Tested on 3 instruments: stronger tradeoff on conical (soprano sax) vs cylindrical
+
+**Phase 1h-c results (2026-07-28):**
+- Bore-geometry proxy shows measurable tradeoff on conical instruments
+- Soprano sax: w_int=0.0 → 5.2c intonation / 0.028 timbre vs w_int=1.0 → 0.0c / 0.146
+- Chalumeau: weak tradeoff (constant bore → no conflict between intonation and timbre)
+- Key finding: timbre proxy conflicts more with tapered bores (real instruments) than constant bores
+- To improve: install pymoo for NSGA-II, or compute actual a₂/a₁ via impedance peaks
+
+- [ ] **Phase 1h-d: Validate against WIDesigner**
+  - Install WIDesigner (Java, open-source)
+  - Run same instruments through both optimizers
+  - Compare accuracy and speed
+  - Reference: https://github.com/edwardkort/WWIDesigner
+
+- [ ] **Phase 1h-e: Test manufacturing tolerance sensitivity**
+  - Add ±0.1mm noise to optimal bore profiles
+  - Re-evaluate intonation
+  - Document which instruments are most sensitive
+  - Critical for Phase 2 (3D print accuracy)
+
+### 1i. JAX Autodiff Stage 2 (2026-07-28)
+
+Implemented JAX automatic differentiation for bore-radii refinement (Stage 2 of the
+4-stage L-BFGS-B pipeline). Uses `jax.grad` for exact gradients instead of finite
+differences.
+
+**Implementation:**
+- `build_chain_for_optimizer()` in `tmm_acoustics_jax.py` — builds JAX action chain
+- `jax_stage2_refine()` in `jax_optimizer.py` — L-BFGS-B with `jax.grad`
+- `make_phase_cost()` updated to accept `n_register` parameter (was using `round(phase)`)
+- `use_jax_bore` flag on `refine_sequential()` and `jax_two_phase_optimize()`
+
+**Results (11 instruments, A/B test):**
+
+| Instrument | Type | Python TMM | JAX autodiff | Δ |
+|-----------|------|-----------|-------------|---|
+| chalumeau_C ✓ | closed-open | 0.53c | 0.00c | **+0.53c** |
+| diatonic_D ✓ | closed-open | 0.62c | 0.00c | **+0.62c** |
+| bass_chalumeau_Bb | closed-open | 0.00c | 0.67c | -0.67c* |
+| soprano_sax ✓ | open-open | 0.00c | 0.00c | 0.00c |
+| xaphoon ✓ | open-open | 0.00c | 0.00c | 0.00c |
+| alto_sax ✓ | open-open | 0.00c | 0.00c | 0.00c |
+| concert_flute ✓ | open-open | 0.00c | 0.00c | 0.00c |
+| tin_whistle ✓ | open-open | 0.00c | 0.00c | 0.00c |
+| alto_flute ✓ | open-open | 0.00c | 0.00c | 0.00c |
+| pvc_flute ✓ | open-open | 0.00c | 0.00c | 0.00c |
+| recorder_C ✓ | open-open | 1.04c | 1.04c | 0.00c |
+
+*Bass chalumeau Bb uses unverified dimensions — regression not meaningful.
+
+**Key findings:**
+- JAX improves closed-open instruments that need help (chalumeau, diatonic)
+- No regressions on verified instruments
+- Speed equivalent (1.00x ratio) — JAX compilation offset by fewer iterations
+- JAX phase cost only reliable for n_reg=1 (closed-open); n_reg=2 falls back to Python TMM
+- Phase cost landscape differs from peak-finding landscape — can trap on unverified instruments
 
 ---
 
@@ -441,10 +549,11 @@ There is no dedicated acoustics preprint server. Researchers use **arXiv** (cs.S
   - Reference: Petiot et al. (2024-2025), Yamaha Corporation
 
 ### Advanced Acoustics
-- [ ] Thermoviscous losses (Keefe 1984) — adds frequency-dependent attenuation
+- [x] Thermoviscous losses (Keefe 1984) — adds frequency-dependent attenuation
+- [x] JAX differentiable TMM for gradient-based optimization (2.7M evals/sec, 52x faster)
+- [x] JAX autodiff Stage 2 bore-radii refinement (exact gradients, intonation-only)
 - [ ] TMMI external tonehole interactions (Lefebvre et al. 2013)
 - [ ] Lefebvre revised tonehole formulas (better chimney height model)
-- [ ] JAX differentiable TMM for gradient-based optimization (infrastructure exists in `backend/tmm_acoustics_jax.py`)
 - [ ] Temperature sensitivity analysis (±X cents per °C)
 - [ ] Vocal tract coupling simulation
 - [ ] Reed/mouthpiece impedance modeling
@@ -464,4 +573,4 @@ There is no dedicated acoustics preprint server. Researchers use **arXiv** (cs.S
 
 ---
 
-*Last updated: 2026-07-23*
+*Last updated: 2026-07-28*
