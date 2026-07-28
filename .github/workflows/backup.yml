@@ -15,10 +15,42 @@ jobs:
 
       - name: Create git bundle
         run: |
-          date_tag="backup-$(date +%Y-%m-%d)"
+          date_tag="backup-$(date +%Y-%m-%d)-$(date +%H:%M:%S)"
           git bundle create "$date_tag.bundle" --all
 
-      - uses: actions/upload-artifact@v4
+      - name: Verify bundle created
+        run: "ls -la backup-*.bundle"
+
+      - name: Create release in backup repo
+        run: |
+          # Create a release tag in backup repo
+          release_tag="backup-$(date +%Y-%m-%d)-$(date +%H:%M:%S)"
+          
+          # Create the release using GitHub CLI
+          gh release create \
+            "$release_tag" \
+            "backup-$release_tag.bundle" \
+            --repo="kooshikooo-lab/instrument-designer-backup" \
+            --title="Backup Bundle $release_tag" \
+            --notes="Weekly backup of instrument-designer repository. This release contains a git bundle with the full repository history.
+            
+            _Created by GitHub Actions_"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push bundle to backup repo
+        run: |
+          release_tag="backup-$(date +%Y-%m-%d)-$(date +%H:%M:%S)"
+          
+          # Upload bundle to backup repo as release asset
+          gh release upload "$release_tag" "backup-$release_tag.bundle" \
+            --repo="kooshikooo-lab/instrument-designer-backup" \
+            --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create local artifact backup
+        uses: actions/upload-artifact@v4
         with:
           name: repo-backup
           path: backup-*.bundle
