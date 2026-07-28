@@ -30,12 +30,13 @@ c = SPEED_OF_SOUND
 # ============================================================================
 
 def eval_all(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg=None,
-             w_int=1.0, bore_radius=None, w_mono=0.3):
+             w_int=1.0, bore_radius=None, w_mono=0.3, fingerings=None):
     """Blended intonation + timbre cost.
 
     w_int=1.0: pure intonation (default, backward compatible)
     w_int=0.0: pure timbre (bore smoothness + hole radiation consistency)
     w_mono: weight for bore monotonicity penalty (part of timbre cost)
+    fingerings: optional list of fingering patterns per target note
     """
     from backend.pareto_optimizer import compute_timbre_cost
     inst = tmm_instrument_from_radii(
@@ -45,14 +46,15 @@ def eval_all(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg=None,
     if n_reg is None:
         n_reg = 1 if closed_top else 2
 
-    # Build fingerings from cumulative open holes
+    # Build fingerings from cumulative open holes (default)
     n_holes = len(hp)
-    fingerings = []
-    for k in range(n_holes):
-        f = ['open'] * (k + 1) + ['closed'] * (n_holes - k - 1)
-        fingerings.append(f)
-    if closed_top:
-        fingerings.insert(0, ['closed'] * n_holes)
+    if fingerings is None:
+        fingerings = []
+        for k in range(n_holes):
+            f = ['open'] * (k + 1) + ['closed'] * (n_holes - k - 1)
+            fingerings.append(f)
+        if closed_top:
+            fingerings.insert(0, ['closed'] * n_holes)
 
     tw = [c / f for f in targets]
     freqs = inst.compute_fingered_frequencies(tw, fingerings, n_reg)
