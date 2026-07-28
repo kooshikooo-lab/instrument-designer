@@ -29,16 +29,26 @@ c = SPEED_OF_SOUND
 # Cost evaluation (matches benchmark_all.py eval_all exactly)
 # ============================================================================
 
-def eval_all(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg=None,
-             w_int=1.0, bore_radius=None, w_mono=0.3, fingerings=None):
+def eval_all(radii=None, bore_length=None, hp=None, hd=None, hl=None, closed_top=False, targets=None, n_reg=None,
+             w_int=1.0, bore_radius=None, w_mono=0.3, fingerings=None, bore_profile=None):
     """Blended intonation + timbre cost.
+
+    Either radii + bore_length (legacy flat array) or bore_profile (SplineBore)
+    can be provided for the bore geometry.
 
     w_int=1.0: pure intonation (default, backward compatible)
     w_int=0.0: pure timbre (bore smoothness + hole radiation consistency)
     w_mono: weight for bore monotonicity penalty (part of timbre cost)
     fingerings: optional list of fingering patterns per target note
+    bore_profile: optional SplineBore instance for variable-radius bore
     """
     from backend.pareto_optimizer import compute_timbre_cost
+
+    # Handle SplineBore: convert to radii array for TMM evaluation
+    if bore_profile is not None:
+        radii = bore_profile.to_radii_array()
+        bore_length = bore_profile.bore_length
+
     inst = tmm_instrument_from_radii(
         radii, bore_length, hp, hd, hl,
         outer_diameter_mm=22.0, closed_top=closed_top, cone_step=0.5,
@@ -76,11 +86,13 @@ def eval_all(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg=None,
     return w_int * intonation_cost + (1.0 - w_int) * timbre_cost
 
 
-def safe_eval(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg=None,
-              w_int=1.0, bore_radius=None, w_mono=0.3):
+def safe_eval(radii=None, bore_length=None, hp=None, hd=None, hl=None, closed_top=False, targets=None, n_reg=None,
+              w_int=1.0, bore_radius=None, w_mono=0.3, fingerings=None, bore_profile=None):
     try:
-        return eval_all(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg,
-                        w_int=w_int, bore_radius=bore_radius, w_mono=w_mono)
+        return eval_all(radii=radii, bore_length=bore_length, hp=hp, hd=hd, hl=hl,
+                        closed_top=closed_top, targets=targets, n_reg=n_reg,
+                        w_int=w_int, bore_radius=bore_radius, w_mono=w_mono,
+                        fingerings=fingerings, bore_profile=bore_profile)
     except Exception:
         return 1e10
 

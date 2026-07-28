@@ -444,16 +444,17 @@ def sequential(cfg, w_int=1.0):
     return rms, bore_length, hp, time.time() - t0
 
 
-def sequential_refined(cfg, w_int=1.0):
+def sequential_refined(cfg, w_int=1.0, w_mono=0.3):
     """Sequential + global DE + 4-stage L-BFGS-B refinement.
 
     Delegates to jax_optimizer.refine_sequential for consistent results
-    across all benchmark paths.
+    across all benchmark paths. Supports SplineBore variable-radius bores
+    via cfg["bore_profile"].
     """
     from backend.jax_optimizer import refine_sequential
     t0 = time.time()
     rms, L, radii, hp, hd, hl, t_refine = refine_sequential(
-        cfg, verbose=False, use_jax_bore=False, w_int=w_int,
+        cfg, verbose=False, use_jax_bore=False, w_int=w_int, w_mono=w_mono,
     )
     dt = time.time() - t0
     return rms, L, hp, hd, dt
