@@ -312,7 +312,7 @@ def eval_all(radii, bore_length, hp, hd, hl, cfg):
     return float(np.sqrt(np.mean(ca ** 2)))
 
 
-def sequential(cfg):
+def sequential(cfg, w_int=1.0):
     """Sequential hole placement.
 
     For closed-open (clarinet): combined fingering method (Bordeaux).
@@ -398,7 +398,7 @@ def sequential(cfg):
     return rms, bore_length, hp, time.time() - t0
 
 
-def sequential_refined(cfg):
+def sequential_refined(cfg, w_int=1.0):
     """Sequential + global DE + 4-stage L-BFGS-B refinement.
 
     Delegates to jax_optimizer.refine_sequential for consistent results
@@ -407,7 +407,7 @@ def sequential_refined(cfg):
     from backend.jax_optimizer import refine_sequential
     t0 = time.time()
     rms, L, radii, hp, hd, hl, t_refine = refine_sequential(
-        cfg, verbose=False, use_jax_bore=False,
+        cfg, verbose=False, use_jax_bore=False, w_int=w_int,
     )
     dt = time.time() - t0
     return rms, L, hp, hd, dt

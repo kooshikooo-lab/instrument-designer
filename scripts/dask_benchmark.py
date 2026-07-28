@@ -62,7 +62,7 @@ def get_optimizers():
 
 def _run_instrument_task(args):
     """Run a single instrument + optimizer combination. Designed for Dask scatter."""
-    instrument_name, instrument_cfg, optimizer_name, optimizer_fn, use_jax_bore = args
+    instrument_name, instrument_cfg, optimizer_name, optimizer_fn, use_jax_bore, w_int = args
 
     import time, math, numpy as np
 
@@ -76,7 +76,7 @@ def _run_instrument_task(args):
         t0 = time.time()
 
         if optimizer_name in ("sequential", "seq_refined"):
-            out = optimizer_fn(instrument_cfg)
+            out = optimizer_fn(instrument_cfg, w_int=w_int)
             if len(out) == 5:
                 rms, bore_length, hp, hd, dt = out
             else:
@@ -121,13 +121,14 @@ def _run_instrument_task(args):
 # Main benchmark runner
 # ============================================================================
 
-def run_benchmark(scheduler_address, instrument_filter=None, branch_name=None, optimizer_filter=None):
+def run_benchmark(scheduler_address, instrument_filter=None, branch_name=None, optimizer_filter=None, w_int=1.0):
     """Run full cross-branch benchmark via Dask."""
     print("=" * 70)
     print("  CROSS-BRANCH DASK BENCHMARK")
     print("=" * 70)
     print(f"  Scheduler: {scheduler_address}")
     print(f"  Branch: {branch_name or 'current'}")
+    print(f"  w_int: {w_int}")
     print(f"  Time: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}")
     print()
 
@@ -168,7 +169,7 @@ def run_benchmark(scheduler_address, instrument_filter=None, branch_name=None, o
         if inst_cfg.get("_chromatic", False):
             continue
         for opt_name, (opt_fn, needs_jax) in optimizers.items():
-            tasks.append((inst_name, inst_cfg, opt_name, opt_fn, needs_jax))
+            tasks.append((inst_name, inst_cfg, opt_name, opt_fn, needs_jax, w_int))
 
     print(f"  Total tasks: {len(tasks)}")
     print()
@@ -248,6 +249,8 @@ if __name__ == "__main__":
                         help="Comma-separated optimizers to run (sequential,seq_refined,jax_two_phase)")
     parser.add_argument("--branch", default=None,
                         help="Branch name label for results file")
+    parser.add_argument("--w-int", type=float, default=1.0,
+                        help="Pareto weight for intonation (1.0=pure intonation, 0.9=recommended)")
     args = parser.parse_args()
 
-    run_benchmark(args.scheduler, args.instruments, args.branch, args.optimizers)
+    run_benchmark(args.scheduler, args.instruments, args.branch, args.optimizers, w_int=args.w_int)
