@@ -573,4 +573,97 @@ There is no dedicated acoustics preprint server. Researchers use **arXiv** (cs.S
 
 ---
 
+---
+
+## Phase 6: Generative Agent & Inverse Design (2026-07-28)
+
+> **Scope:** LLM-guided instrument design, sound-to-instrument inverse design,
+> unified pipeline dispatcher with mode-switching. These systems build on the
+> Phase 1 TMM optimizer to add creative (AI) and copy-by-example (inverse)
+> design workflows.
+
+### 6a. Generative Agent — COMPLETE
+
+- [x] LLM integration (Ollama with llama3.1) for physics-grounded design suggestions
+- [x] Deterministic fallback engine (`_suggest_from_knowledge`) when LLM unavailable
+- [x] Family-aware design: `FAMILY_LOWEST_NOTE` maps 15 instrument families to (frequency, octaves)
+- [x] Hybrid instrument support (e.g., clarinet mouthpiece + saxophone body)
+- [x] 5 bore shape generators: cylindrical, conical, parabolic, Bessel, exponential
+- [x] Dask parallelization across candidate designs (4 workers, 32 threads)
+- [x] `DesignSpec` dataclass with 20+ fields capturing all design intent
+- [x] Pareto front output (intonation vs timbre for each candidate)
+- [x] Module-level convenience functions: `generate()`, `generate_from_sound()`, `random_design()`, `hybrid_design()`
+
+**Design quality:** Recorder: 29.5c RMS intonation. Target: <5c. Needs better initial specs and tighter optimizer bounds.
+
+### 6b. Inverse Design — COMPLETE
+
+- [x] Three-tier architecture: Sound Analysis → Scale Optimization → Timbre Matching
+- [x] Tier 1: `analyze_wav()` — Welch FFT, autocorrelation fundamental estimation (440Hz at 0.997 confidence), spectral envelope, harmonic peak extraction
+- [x] Tier 2: `design_scale()` — delegates to generative agent NSGA-II with scale-based targets
+- [x] Tier 3: `match_timbre()` — bore radii optimization (6 control points, pymoo NSGA-II) matching harmonic amplitude envelope from source sound
+- [x] Physical feasibility validation (`validate_physical_series`) — detects open-open vs closed-open patterns
+- [x] Sound synthesis helpers: `synthesize_harmonic()`, `save_synthetic_wav()`
+- [x] End-to-end pipeline: `design_from_sound()`
+- [x] FastAPI endpoints: `POST /inverse/analyze`, `POST /inverse/design`, `GET /inverse/health`
+
+**Key research insight (from literature survey):** Scale optimization and timbre matching are fundamentally different problems. Scale requires one target per fingering (successive notes). Timbre requires matching the full impedance curve or harmonic magnitude envelope. Three-tier architecture respects this separation.
+
+**References:**
+- Braden (2009): Impedance curve matching via Rosenbrock — works for brass, struggles with woodwind holes
+- Ernoult (2020): Phase-based resonance optimization — pentatonic clarinet demonstrated
+- Ernoult (2021): Full Waveform Inversion via adjoint method — requires differentiable solver (FEM)
+- Noreland (2013): Low-frequency approximation for initialization — analytical inertance before optimization
+
+### 6c. Unified DesignPipeline — COMPLETE
+
+- [x] `PipelineConfig` dataclass with goal/input_type/solver/cost selection
+- [x] `select_pipeline(goal, input_type)` — dispatches to correct config by design mode
+- [x] `DesignPipeline` class: `run()` orchestrates all tiers through a single entry point
+- [x] 4 modes: `copy_sound`, `new_instrument`, `explore`, `precision`
+- [x] `COST_REGISTRY` — 8 cost components with solver requirements
+- [x] Both cost paths verified: magnitude_error (NSGA-II) and geometric proxy (L-BFGS-B)
+- [x] Documentation: `docs/THEORETICAL_FRAMEWORK.md`
+
+**Mode switching logic:**
+| Goal | Active Components | Optimizer | Solver |
+|------|------------------|-----------|--------|
+| Copy a sound exactly | w₁ intonation + w₂ magnitude error | NSGA-II × 2 stages | TMM phase + loss model |
+| New instrument | w₁ intonation + w₃ smoothness + w₄ consistency | NSGA-II (scale) + L-BFGS-B (timbre) | TMM phase |
+| Scientific exploration | w₁ + w₃ (Pareto) | NSGA-II | TMM phase |
+| High precision | w₁ + w₅ evenness + w₆ projection | L-BFGS-B (OpenWInD) | OpenWInD |
+
+### 6d. Physics Bug Fix — KeefeLoss
+
+- [x] Fixed propagation constant in `KeefeLoss.bore_loss()` and `KeefeLoss.hole_loss()`:
+  - Old: `gamma = k * (1 + factor)` — missing `1j *`, giving 72× too-high attenuation
+  - New: `gamma = 1j * k * (1 + (1-1j)/√2 * C)` — correct magnitude < 1
+  - Verified: cumulative loss at 440Hz changed from 0.041 → 1.002 (correct — near-lossless at fundamental)
+
+### 6e. Communication & Infrastructure — COMPLETE
+
+- [x] HTTP messaging server (`scripts/lan_msg.py`) on port 9124
+- [x] GraphQL discussion comment poster (`scripts/gh_discuss.py`) — workaround for REST API 404
+- [x] Startup scripts: `start_desktop.ps1`, `start_all.py`, `startup_check.py`
+- [x] GitHub monitor (`scripts/github_monitor.py`) — polls Discussion #23, PRs, issues, commits every 60s
+
+### 6f. Theoretical Framework — COMPLETE
+
+- [x] `docs/THEORETICAL_FRAMEWORK.md` — unified theory comparing all 5 optimization methods
+- [x] Cost function unification: all methods are special cases of `J(x) = Σ w_k · C_k(f_k(x), target_k)`
+- [x] Variable decomposition by acoustic sensitivity: L/p_i (scale) → r_j (timbre) → d_i/h_i (texture)
+- [x] Algorithm selection by design phase: DE (global) → NSGA-II (Pareto) → L-BFGS-B (local)
+
+### 6g. Next Steps
+
+- [ ] **UI: Add inverse design dropdown/frontend** — WAV upload, spectrum preview, results display
+- [ ] **Tier 3 accuracy**: Replace pymoo NSGA-II with scipy.optimize.minimize (single-objective); add `compute_impedance` magnitude cascade to TMM solver
+- [ ] **Generative quality**: Improve <30c → <5c by tuning NSGA-II bounds, adding better initial specs
+- [ ] **Cross-validate after Tier 3**: Verify intonation hasn't degraded after bore radii optimization
+- [ ] **Cost registry expansion**: Implement evenness, projection, inharmonicity (need full impedance solver)
+- [ ] **Add to main branch**: Merge `experiment/unconventional-shapes` into `main` after Kalle's review
+- [ ] **Publish docs**: Write technical overview for contributors, research paper, and detailed framework doc
+
+---
+
 *Last updated: 2026-07-28*
