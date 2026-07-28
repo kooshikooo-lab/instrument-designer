@@ -12,7 +12,7 @@ This dramatically reduces total evaluations compared to full optimization from s
 Run: python -m backend.staged_optimizer
 """
 import numpy as np
-from backend.bore_optimizer import BoreOptimizer, _compute_impedance_from_bore, _match_peaks_to_targets
+from backend.archived_optimizers.bore_optimizer import BoreOptimizer, _compute_impedance_from_bore, _match_peaks_to_targets
 
 
 def staged_optimize(

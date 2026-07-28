@@ -20,10 +20,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import os
 import numpy as np
 from scipy.signal import find_peaks
-from backend.optimizer import _compute_impedance_from_bore, BoreOptimizer
+from backend.archived_optimizers.bore_optimizer import _compute_impedance_from_bore, BoreOptimizer
 
 
-REFERENCE_DIR = Path(__file__).parent / "reference_instruments"
+REFERENCE_DIR = Path(__file__).parent.parent / "reference_instruments"
 
 
 def load_bore_csv(filepath):

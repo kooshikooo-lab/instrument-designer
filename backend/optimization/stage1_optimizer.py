@@ -9,7 +9,7 @@ from scipy.optimize import differential_evolution
 from typing import List, Dict, Any, Optional, Tuple
 from dataclasses import dataclass
 
-from ..core.network import AcousticNetwork, Segment, Tonehole
+from ..core.network import AcousticNetwork, Segment, Port as Tonehole
 from ..solvers.tmm_solver import TMMSolver
 
 
@@ -164,7 +164,7 @@ def optimize_stage1(
 def _make_network(network: AcousticNetwork, bore_length: float, hole_positions: List[float]) -> AcousticNetwork:
     """Create temporary network with modified bore and holes."""
     import copy
-    from ..core.network import Tonehole
+    from ..core.network import Port as Tonehole
     
     net = copy.deepcopy(network)
     net.segments[0].length = bore_length

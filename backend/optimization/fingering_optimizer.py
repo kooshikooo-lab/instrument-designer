@@ -84,7 +84,7 @@ class FingeringOptimizer(Optimizer):
     def _make_network(self, positions, diameters=None, lengths=None) -> AcousticNetwork:
         """Create temporary network with modified holes."""
         import copy
-        from ..core.network import Tonehole, Port
+        from ..core.network import Port as Tonehole, Port
         net = copy.deepcopy(self.network)
 
         # Get only tonehole ports (exclude register vent) for default values
