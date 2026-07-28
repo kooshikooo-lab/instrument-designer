@@ -20,7 +20,7 @@ from scipy.optimize import minimize
 from typing import List, Optional, Dict
 
 try:
-    from .tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
+    from backend.tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
 except ImportError:
     import sys, os
     sys.path.insert(0, os.path.dirname(__file__))

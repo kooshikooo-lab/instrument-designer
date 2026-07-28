@@ -8,8 +8,9 @@ import { InstrumentDetail } from "./components/InstrumentDetail";
 import { DesignTab } from "./components/DesignTab";
 import { ResourcesTab } from "./components/ResourcesTab";
 import { WikiTab } from "./components/wiki/WikiTab";
+import GenerativeTab from "./components/GenerativeTab";
 
-export type Tab = "library" | "design" | "resources" | "wiki";
+export type Tab = "library" | "design" | "resources" | "wiki" | "generative";
 
 function mergeResources(instruments: Instrument[]): Instrument[] {
   return instruments.map((inst) => {
@@ -71,6 +72,7 @@ export default function App() {
           )}
           {tab === "resources" && <ResourcesTab />}
           {tab === "wiki" && <WikiTab />}
+          {tab === "generative" && <GenerativeTab />}
         </div>
       </main>
     </div>

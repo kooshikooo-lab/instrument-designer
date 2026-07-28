@@ -18,7 +18,7 @@ import numpy as np
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from backend.tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
-from backend.tmm_optimizer_sequential import SequentialBoreOptimizer, optimize_bore_length
+from backend.archived_optimizers.tmm_optimizer_sequential import SequentialBoreOptimizer, optimize_bore_length
 
 
 def verify_instrument(radii_mm, bore_length, positions, diameters, lengths,
@@ -208,68 +208,7 @@ def run_test(cfg, label, use_bell=False, n_bore_cp=0):
     return {"rms": rms, "peak": peak, "time": dt, "result": result}
 
 
-# ============================================================================
-# Direct comparison with bass chalumeau
-# ============================================================================
 
-def compare_bass_chalumeau():
-    """Run the same optimizer on bass chalumeau for fair comparison."""
-    print("\n\n" + "=" * 70)
-    print("= COMPARISON: Bass chalumeau (same optimizer)")
-    print("=" * 70)
-
-    cfg = {
-        "description": "Bass chalumeau in Bb — benchmark comparison",
-        "targets": [233.1, 246.9, 261.6, 277.2, 293.7, 311.1, 329.6, 349.2],
-        "names": ["Bb2", "B2", "C3", "C#3", "D3", "Eb3", "E3", "F3"],
-        "bore_length": 600.0,
-        "bore_radius": 9.5,
-        "outer_diameter": 28.0,
-        "n_holes": 8,
-        "hole_diameter": 8.0,
-        "hole_length": 4.0,
-        "initial_positions": [520, 420, 360, 300, 240, 180, 120, 60],
-        # Chalumier convention: index 0 = nearest bell, index N-1 = nearest reed
-        "fingering_sets": [
-            ["closed"] * 8,
-            ["open",   "closed", "closed", "closed", "closed", "closed", "closed", "closed"],
-            ["open",   "open",   "closed", "closed", "closed", "closed", "closed", "closed"],
-            ["open",   "open",   "open",   "closed", "closed", "closed", "closed", "closed"],
-            ["open",   "open",   "open",   "open",   "closed", "closed", "closed", "closed"],
-            ["open",   "open",   "open",   "open",   "open",   "closed", "closed", "closed"],
-            ["open",   "open",   "open",   "open",   "open",   "open",   "closed", "closed"],
-            ["open",   "open",   "open",   "open",   "open",   "open",   "open",   "closed"],
-            ["open"] * 8,
-        ],
-        "n_register": 1,
-    }
-
-    t0 = time.time()
-    opt = SequentialBoreOptimizer(
-        target_frequencies=cfg["targets"],
-        fingering_sets=cfg["fingering_sets"],
-        bore_radius=cfg["bore_radius"],
-        outer_diameter=cfg["outer_diameter"],
-        closed_top=True,
-        hole_diameter=cfg["hole_diameter"],
-        hole_length=cfg["hole_length"],
-        bore_length_bounds=(400, 800),
-        n_bore_cp=0,
-        n_register=cfg["n_register"],
-    )
-    result = opt.run(verbose=False)
-    dt = time.time() - t0
-
-    rms, peak = verify_instrument(
-        np.array(result["bore_radii"]), result["bore_length_mm"],
-        result["hole_positions"],
-        [cfg["hole_diameter"]] * cfg["n_holes"],
-        [cfg["hole_length"]] * cfg["n_holes"],
-        cfg["outer_diameter"], cfg["targets"], cfg["names"],
-        cfg["fingering_sets"], cfg["n_register"],
-        label="Bass chalumeau (same optimizer)",
-    )
-    return {"rms": rms, "peak": peak, "time": dt}
 
 
 # ============================================================================
@@ -291,8 +230,7 @@ if __name__ == "__main__":
     all_results["bass_clarinet_extended"] = run_test(
         BASS_CLARINET_EXTENDED, "Extended low-C", use_bell=False)
 
-    # Test 4: Bass chalumeau for comparison
-    all_results["bass_chalumeau_sequential"] = compare_bass_chalumeau()
+    # Test 4: (removed — bass chalumeau not a verified design)
 
     # Summary
     print("\n" + "#" * 70)

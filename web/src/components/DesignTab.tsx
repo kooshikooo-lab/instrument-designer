@@ -165,7 +165,9 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
         [boreLength, boreRadius],
       ];
       const blob = await exportStep({
-        bore_profile: boreProfile,
+        preset: preset || "custom",
+        length: boreLength,
+        bore_diameter: boreRadius * 2,
         wall_thickness: 3,
       });
       const url = URL.createObjectURL(blob);

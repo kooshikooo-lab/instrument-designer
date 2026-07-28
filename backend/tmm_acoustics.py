@@ -1,8 +1,8 @@
 """
-Transfer Matrix Method (TMM) acoustics â€” phase-based resonance model.
+Transfer Matrix Method (TMM) acoustics — phase-based resonance model.
 
 Faithfully ported from chalumier's ResonanceMath.kt and Instrument.kt
-(Mark C. Chu-Carroll, Paul Francis Harrison â€” Apache 2.0 license).
+(Mark C. Chu-Carroll, Paul Francis Harrison — Apache 2.0 license).
 
 This module computes resonant frequencies of wind instruments using the
 phase-based TMM approach from demakein. It supports:
@@ -30,7 +30,6 @@ Usage:
     )
     freq = inst.find_resonance(wavelength_near=800.0, fingerings=[...])
 """
-
 import math
 import numpy as np
 from typing import List, Tuple, Optional, Union, Callable
@@ -39,6 +38,17 @@ from typing import List, Tuple, Optional, Union, Callable
 SPEED_OF_SOUND = 346100.0
 
 FOUR_PI = 4.0 * math.pi
+
+
+def cubic_mean(arr: np.ndarray) -> float:
+    if len(arr) == 0:
+        return 1e10
+    return float(np.cbrt(np.mean(np.abs(arr) ** 3)))
+
+
+def cubic_mean_cost(errors: Union[List[float], np.ndarray]) -> float:
+    return cubic_mean(np.asarray(errors, dtype=float))
+
 
 # ============================================================================
 # Loss model integration
@@ -648,7 +658,7 @@ class TMMInstrument:
                 costs.append(math.sin(math.pi * deviation) ** 2)
             except Exception:
                 costs.append(1.0)
-        return float(np.mean(costs))
+        return float(cubic_mean(costs))
 
     def phase_cost_with_offset(
         self,
@@ -662,6 +672,9 @@ class TMMInstrument:
         Like phase_cost(), but first computes and removes the median phase
         error (global tuning offset). This isolates scale evenness from
         overall pitch.
+
+        Uses CUBIC MEAN (L3) for scoring — penalizes larger errors more heavily,
+        better matching perceptual severity of intonation errors.
 
         Args:
             target_frequencies: list of target frequencies in Hz
@@ -682,17 +695,12 @@ class TMMInstrument:
                 phase = self.resonance_phase(target_wl, fingerings)
                 deviations.append(phase - reg)
             except Exception:
-                deviations.append(0.0)
+                deviations.append(1e6)
 
         if not deviations:
             return 1.0
 
-        # Remove global offset (median)
-        median_dev = np.median(deviations)
-        corrected = [d - median_dev for d in deviations]
-
-        # Cost: mean squared deviation from integer
-        return float(np.mean([math.sin(math.pi * d) ** 2 for d in corrected]))
+        return cubic_mean(np.array(deviations))
 
 
 # ============================================================================

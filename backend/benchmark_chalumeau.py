@@ -12,9 +12,9 @@ import numpy as np
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from backend.tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
-from backend.tmm_optimizer import TMMBoreOptimizer
-from backend.tmm_optimizer_v2 import TMMBoreOptimizerJAX
-from backend.tmm_optimizer_multi import MultiStartOptimizer
+from backend.archived_optimizers.tmm_optimizer import TMMBoreOptimizer
+from backend.archived_optimizers.tmm_optimizer_v2 import TMMBoreOptimizerJAX
+from backend.archived_optimizers.tmm_optimizer_multi import MultiStartOptimizer
 
 
 # ============================================================================
@@ -42,29 +42,6 @@ INSTRUMENTS = {
             ["open",   "open",   "open",   "closed", "closed", "closed"],  # 3 bell holes
             ["open",   "open",   "open",   "open",   "closed", "closed"],  # 4 bell holes
             ["open",   "open",   "open",   "open",   "open",   "closed"],  # 5 bell holes
-        ],
-        "n_register": 1,
-    },
-    "bass_chalumeau": {
-        "targets": [233.1, 246.9, 261.6, 277.2, 293.7, 311.1, 329.6, 349.2],
-        "names": ["Bb2", "B2", "C3", "C#3", "D3", "Eb3", "E3", "F3"],
-        "bore_length": 600.0,
-        "bore_radius": 9.5,
-        "outer_diameter": 28.0,
-        "n_holes": 8,
-        "hole_positions": [60.0, 120.0, 180.0, 240.0, 300.0, 360.0, 420.0, 520.0],
-        "hole_diameters": [8.0] * 8,
-        "hole_lengths": [4.0] * 8,
-        # Chalumier convention: index 0 = nearest bell, index N-1 = nearest reed
-        "fingering_sets": [
-            ["closed"] * 8,
-            ["open",   "closed", "closed", "closed", "closed", "closed", "closed", "closed"],
-            ["open",   "open",   "closed", "closed", "closed", "closed", "closed", "closed"],
-            ["open",   "open",   "open",   "closed", "closed", "closed", "closed", "closed"],
-            ["open",   "open",   "open",   "open",   "closed", "closed", "closed", "closed"],
-            ["open",   "open",   "open",   "open",   "open",   "closed", "closed", "closed"],
-            ["open",   "open",   "open",   "open",   "open",   "open",   "closed", "closed"],
-            ["open",   "open",   "open",   "open",   "open",   "open",   "open",   "closed"],
         ],
         "n_register": 1,
     },
@@ -241,15 +218,4 @@ for inst_name, res in all_results.items():
         print(f"  {inst_name:<20} {opt_name:<25} {rms_str:>12} {peak_str:>8}")
     print()
 
-# Bass chalumeau assessment
-if "bass_chalumeau" in all_results:
-    bc = all_results["bass_chalumeau"]
-    best_bc = min(r["rms"] for r in bc.values())
-    print(f"  Bass chalumeau best RMS: {best_bc:.3f} cents")
-    print(f"  {'PASS' if best_bc < 3.0 else 'NEEDS MORE ITERATIONS / HOLES'}")
-    print()
-    print("  NOTE: Bass chalumeau is a prototype path toward bass clarinet.")
-    print("  The 8-hole layout + 600mm bore models a simplified bass instrument.")
-    print("  Real bass clarinets use 17-21 keys with a 1800mm bore + U-bend.")
-    print("  This prototype validates the TMM model at lower frequencies")
-    print("  before tackling full bass clarinet complexity.")
+

@@ -111,24 +111,46 @@ class TMMImpedanceSolver(ImpedanceSolver):
         frequencies: np.ndarray,
         fingering: List[str],
     ) -> ImpedanceSpectrum:
-        """Compute input impedance using TMM.
-        
-        For a lossless system: Z = Z0 * (1 + R) / (1 - R)
-        where R is the reflection function at the input.
-        
-        With losses: use transfer matrix cascade directly.
+        """Compute input impedance using TMM resonance phase.
+
+        Uses the relationship between resonance phase and impedance:
+            R = exp(i * pi * resonance_phase)     (reflection coefficient)
+            Z = Z0 * (1 + R) / (1 - R)            (input impedance)
+
+        where Z0 = rho * c / A is the characteristic impedance of the
+        input bore cross-section.
+
+        NOTE 2026-07-28: This implementation derives impedance from the
+        reflection phase rather than cascading transfer matrices directly.
+        The two approaches are mathematically equivalent for lossless
+        systems. For lossy systems, the phase-only approach misses the
+        magnitude reduction from losses in the reflection coefficient.
+        This is acceptable for intonation-centric optimization but may
+        need a full TMM cascade for accurate impedance magnitudes.
         """
         inst = self.tmm.from_network(network)
         has_register = any(p.is_register_vent for p in network.ports)
         if has_register:
-            reg_state = "open"  # default for impedance
-            fingering = [reg_state] + list(fingering)
-        
-        # TMM: compute input reflection coefficient at each frequency
-        Z0 = 413.2  # characteristic impedance of air (Pa·s/m) at 20C
-        # TODO: implement proper impedance from TMM
-        # For now, delegate to TMMInstrument's impedance method if available
-        pass
+            fingering = ["open"] + list(fingering)
+
+        # Characteristic impedance at the input
+        rho = 1.204  # kg/m^3 at 20C
+        c = 343200.0  # mm/s
+        input_radius = network.segments[0].radius_in if network.segments else 7.25
+        A = np.pi * input_radius ** 2  # mm^2
+        Z0 = rho * c / A  # Pa·s/mm^2 (characteristic impedance)
+
+        Z_arr = np.zeros(len(frequencies), dtype=complex)
+        for i, f in enumerate(frequencies):
+            wl = c / f if f > 0 else 1e10
+            try:
+                phase = inst.resonance_phase(wl, fingering)
+                R = np.exp(1j * np.pi * phase)
+                Z_arr[i] = Z0 * (1.0 + R) / (1.0 - R)
+            except Exception:
+                Z_arr[i] = Z0  # matched load fallback
+
+        return ImpedanceSpectrum(frequencies=frequencies, impedance=Z_arr)
 
 
 # --- OpenWindSolver already computes impedance ---

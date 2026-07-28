@@ -274,14 +274,16 @@ def make_phase_cost(chain, target_freqs, fingering_sets, target_wavelengths, n_r
     return cost_fn
 
 
-def make_rms_cost(chain, target_freqs, fingering_sets, target_wavelengths):
+def make_evenness_cost(chain, target_freqs, fingering_sets, target_wavelengths):
     """
-    Build a JIT-compiled RMS cost function using direct phase evaluation.
+    Build a JIT-compiled EVENNESS cost function using direct phase evaluation.
 
-    Evaluates phase at target wavelengths and minimizes deviation from integers.
-    This gives a smooth, differentiable cost function with good gradients
-    for local optimization. Use make_rms_cost_with_search() for accurate
-    forward evaluation with root-finding (for verification, not optimization).
+    Evaluates phase at target wavelengths and minimizes deviation from integers
+    AFTER removing the mean offset. This gives a smooth, differentiable cost
+    function that measures EVENNESS (relative intonation), NOT absolute accuracy.
+    A design with all notes uniformly sharp by 50 cents would score 0 here.
+
+    For absolute intonation accuracy, use make_phase_cost() instead.
     """
     n = len(fingering_sets)
     resonance_phase = _build_phase_function(chain)
@@ -359,22 +361,34 @@ def make_intonation_profile_cost(chain, target_freqs, fingering_sets, target_wav
     return cost_fn
 
 
-# Backward-compatible API
-def rms_cost_v2(bore_radii, chain, target_freqs, fingering_sets, target_wavelengths, n_register=1):
-    cost_fn = make_rms_cost(chain, target_freqs, fingering_sets, target_wavelengths)
+# Backward-compatible API (renamed for clarity)
+def evenness_cost_v2(bore_radii, chain, target_freqs, fingering_sets, target_wavelengths, n_register=1):
+    cost_fn = make_evenness_cost(chain, target_freqs, fingering_sets, target_wavelengths)
     return cost_fn(bore_radii)
+
 
 def intonation_profile_cost_v2(bore_radii, chain, target_freqs, fingering_sets, target_wavelengths, n_register=1):
     cost_fn = make_intonation_profile_cost(chain, target_freqs, fingering_sets, target_wavelengths)
     return cost_fn(bore_radii)
 
+
 def multi_objective_cost_v2(bore_radii, chain, target_freqs, fingering_sets, target_wavelengths,
                             n_register=1, intonation_weight=1.0, playability_weight=0.3):
-    intonation = rms_cost_v2(bore_radii, chain, target_freqs, fingering_sets, target_wavelengths)
+    # Use REAL accuracy (make_phase_cost), not evenness cost
+    intonation_fn = make_phase_cost(chain, target_freqs, fingering_sets, target_wavelengths)
+    intonation = intonation_fn(bore_radii)
     radii_diff = bore_radii[1:] - bore_radii[:-1]
-    return intonation_weight * intonation + playability_weight * (jnp.mean(radii_diff**2) + 0.1*jnp.mean((bore_radii-7.25)**2))
+    playability = jnp.mean((bore_radii[1:] - bore_radii[:-1]) ** 2) + 0.1 * jnp.mean((bore_radii - 7.25) ** 2)
+    return intonation_weight * intonation + playability_weight * playability
 
+
+# Backward-compatible aliases (deprecated - use explicit functions)
 build_action_chain = build_action_chain_v2
-rms_cost_jax = rms_cost_v2
+evenness_cost_jax = evenness_cost_v2
+intonation_profile_cost_jax = intonation_profile_cost_v2
+multi_objective_cost_jax = multi_objective_cost_v2
+
+# Deprecated aliases (kept for backward compatibility - will be removed)
+rms_cost_jax = evenness_cost_v2
 intonation_profile_cost_jax = intonation_profile_cost_v2
 multi_objective_cost_jax = multi_objective_cost_v2

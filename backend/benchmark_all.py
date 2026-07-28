@@ -105,26 +105,8 @@ INSTRUMENTS = {
             ["open", "open", "open", "open", "open", "closed"],
         ],
     },
-    "bass_chalumeau_Bb": {
-        "desc": "Bass chalumeau in Bb (closed-open)",
-        "closed_top": True,
-        "targets": [233.1, 261.6, 293.7, 311.1, 349.2, 392.0, 440.0, 466.2],
-        "names": ["Bb2", "C3", "D3", "Eb3", "F3", "G3", "A3", "Bb3"],
-        "bore_radius": 9.5, "outer_diameter": 28.0,
-        "hole_diameter": 8.0, "hole_length": 4.0,
-        "fingerings": [
-            ["closed"] * 8,
-            ["open", "closed", "closed", "closed", "closed", "closed", "closed", "closed"],
-            ["open", "open", "closed", "closed", "closed", "closed", "closed", "closed"],
-            ["open", "open", "open", "closed", "closed", "closed", "closed", "closed"],
-            ["open", "open", "open", "open", "closed", "closed", "closed", "closed"],
-            ["open", "open", "open", "open", "open", "closed", "closed", "closed"],
-            ["open", "open", "open", "open", "open", "open", "closed", "closed"],
-            ["open", "open", "open", "open", "open", "open", "open", "closed"],
-        ],
-    },
     "soprano_sax_Bb": {
-        "desc": "Soprano sax in Bb (open-open)",
+        "desc": "Soprano sax in Bb (conical bore, reed — TMM acts open-open)",
         "closed_top": False,
         "targets": [466.2, 523.3, 587.3, 622.3, 698.5, 784.0, 880.0],
         "names": ["Bb4", "C5", "D5", "Eb5", "F5", "G5", "A5"],
@@ -158,7 +140,7 @@ INSTRUMENTS = {
         ],
     },
     "alto_sax_Eb": {
-        "desc": "Alto sax in Eb (open-open)",
+        "desc": "Alto sax in Eb (conical bore, reed — TMM acts open-open)",
         "closed_top": False,
         "targets": [311.1, 349.2, 392.0, 415.3, 466.2, 523.3, 587.3],
         "names": ["Eb4", "F4", "G4", "Ab4", "Bb4", "C5", "D5"],
@@ -283,10 +265,11 @@ c = SPEED_OF_SOUND
 
 
 def eval_all(radii, bore_length, hp, hd, hl, cfg):
-    """Evaluate and return RMS cents (absolute, not median-corrected).
+    """Evaluate and return cubic mean (L3) cents (absolute, not median-corrected).
 
-    Uses absolute RMS to prevent the optimizer from achieving 0c by
+    Uses cubic mean (L3) to prevent the optimizer from achieving 0c by
     making all notes uniformly wrong (masked by median correction).
+    L3 penalizes large errors more heavily, better matching perceptual severity.
 
     n_register depends on closed_top:
     - closed-open (clarinet): n_register=1 (fundamental is 1st resonance)
@@ -309,7 +292,8 @@ def eval_all(radii, bore_length, hp, hd, hl, cfg):
     ca = np.array(cents)
     if np.any(np.abs(ca) > 1e5):
         return 1e10
-    return float(np.sqrt(np.mean(ca ** 2)))
+    # Cubic mean (L3) — penalizes large errors more heavily
+    return float(np.cbrt(np.mean(np.abs(ca) ** 3)))
 
 
 def sequential(cfg):

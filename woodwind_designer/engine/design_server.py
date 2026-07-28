@@ -16,6 +16,7 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
+from dataclasses import dataclass
 from pydantic import BaseModel
 
 from .demakein_wrapper import DemakeinDesigner
@@ -881,6 +882,110 @@ class SvgExportRequest(BaseModel):
     hole_diameters: Optional[list[float]] = None
     bore_length: Optional[float] = None
     view: str = "side"
+
+
+# ─── Generative AI Agent Endpoints ──────────────────────────────────────
+
+@dataclass
+class GenerativeSuggestRequest:
+    query: str
+    n_candidates: int = 3
+
+
+@dataclass
+class GenerativeHybridRequest:
+    mouthpiece_family: str
+    body_family: str
+
+
+@dataclass
+class GenerativeResultResponse:
+    query: str
+    total_time_s: float
+    n_candidates: int
+    llm_used: bool
+    llm_response: str
+    candidates: list[dict]
+    best: dict | None
+    errors: list[str]
+
+
+@app.post("/generative/suggest")
+def generative_suggest(req: GenerativeSuggestRequest):
+    """Generate and optimize instrument designs from a text prompt."""
+    import sys
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+    from backend.generative_agent import generate
+    try:
+        result = generate(req.query, req.n_candidates)
+        return result
+    except Exception as e:
+        raise HTTPException(500, f"Generative design failed: {e}")
+
+
+@app.post("/generative/random")
+def generative_random():
+    """Generate a completely random instrument design."""
+    import sys
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+    from backend.generative_agent import random_design
+    try:
+        return random_design()
+    except Exception as e:
+        raise HTTPException(500, f"Random design failed: {e}")
+
+
+@app.post("/generative/hybrid")
+def generative_hybrid(req: GenerativeHybridRequest):
+    """Design a hybrid instrument combining two families."""
+    import sys
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+    from backend.generative_agent import hybrid_design
+    try:
+        return hybrid_design(req.mouthpiece_family, req.body_family)
+    except Exception as e:
+        raise HTTPException(500, f"Hybrid design failed: {e}")
+
+
+@app.get("/generative/knowledge")
+def generative_knowledge():
+    """Return the full instrument knowledge base as JSON."""
+    import sys
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+    from backend.instrument_knowledge import (
+        INSTRUMENT_FAMILIES, HYBRID_INSTRUMENTS, SCALES, MATERIALS,
+    )
+    try:
+        return {
+            "families": {
+                k: {
+                    "family": v.family,
+                    "bore_type": v.bore_type.value,
+                    "excitation": v.excitation.value,
+                    "closed_top": v.closed_top,
+                    "typical_bore_radius_mm": list(v.typical_bore_radius_mm),
+                    "typical_length_mm": list(v.typical_length_mm),
+                    "typical_hole_count": list(v.typical_hole_count),
+                    "description": v.description,
+                }
+                for k, v in INSTRUMENT_FAMILIES.items()
+            },
+            "hybrids": [
+                {
+                    "name": h.name,
+                    "mouthpiece_family": h.mouthpiece_family,
+                    "body_family": h.body_family,
+                    "description": h.description,
+                    "feasibility": h.feasibility,
+                    "challenges": h.acoustic_challenges,
+                }
+                for h in HYBRID_INSTRUMENTS
+            ],
+            "scales": list(SCALES.keys()),
+            "materials": list(MATERIALS.keys()),
+        }
+    except Exception as e:
+        raise HTTPException(500, f"Knowledge base error: {e}")
 
 
 @app.get("/export/cadquery/instruments")

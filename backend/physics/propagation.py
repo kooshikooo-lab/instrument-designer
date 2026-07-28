@@ -64,15 +64,33 @@ class LosslessPropagation(PropagationModel):
 
 
 class ViscothermalPropagation(PropagationModel):
-    """Viscothermal propagation with losses (future)."""
+    """Viscothermal propagation with Keefe losses.
+
+    Uses KeefeLoss model for viscothermal attenuation magnitude,
+    combined with standard lossless propagation phase.
+
+    NOTE 2026-07-28: Uses magnitude-only from KeefeLoss (ignores the
+    small additional phase shift from viscothermal effects, typically
+    <0.1% of propagation phase). This may need refinement for very
+    narrow bores or high frequencies.
+    """
+
+    def __init__(self, temperature: float = 20.0):
+        from backend.physics.losses import KeefeLoss
+        self.loss = KeefeLoss(temperature=temperature)
 
     def propagate_cylindrical(
         self, length: float, radius: float, wavelength: float
     ) -> complex:
-        # TODO: implement Keefe/Nederveen losses
-        raise NotImplementedError
+        phase = 2.0 * np.pi * length / wavelength
+        loss_factor = self.loss.bore_loss(length, radius, wavelength)
+        return np.exp(1j * phase) * abs(loss_factor)
 
     def propagate_conical(
         self, length: float, radius_in: float, radius_out: float, wavelength: float
     ) -> complex:
-        raise NotImplementedError
+        # Use average radius for conical segment loss approximation
+        avg_radius = (radius_in + radius_out) / 2.0
+        phase = 2.0 * np.pi * length / wavelength
+        loss_factor = self.loss.bore_loss(length, avg_radius, wavelength)
+        return np.exp(1j * phase) * abs(loss_factor)

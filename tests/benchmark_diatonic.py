@@ -18,7 +18,7 @@ import numpy as np
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from backend.tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
-from backend.tmm_optimizer_v2 import TMMBoreOptimizerJAX
+from backend.archived_optimizers.tmm_optimizer_v2 import TMMBoreOptimizerJAX
 
 
 # ============================================================================
@@ -45,31 +45,6 @@ INSTRUMENTS = {
             ["open",   "open",   "open",   "closed", "closed", "closed"],  # F4
             ["open",   "open",   "open",   "open",   "closed", "closed"],  # G4
             ["open",   "open",   "open",   "open",   "open",   "closed"],  # A4
-        ],
-        "n_register": 1,
-    },
-
-    # --- BASS CHALUMEAU: diatonic Bb major, 8 holes ---
-    "bass_chalumeau_Bb": {
-        "description": "Bass chalumeau in Bb — diatonic major scale, 8 holes",
-        "pipe_type": "closed-open",
-        "targets": [233.1, 261.6, 293.7, 311.1, 349.2, 392.0, 440.0, 466.2],  # Bb2 C3 D3 Eb3 F3 G3 A3 Bb3
-        "names": ["Bb2", "C3", "D3", "Eb3", "F3", "G3", "A3", "Bb3"],
-        "bore_length": 600.0,
-        "bore_radius": 9.5,
-        "outer_diameter": 28.0,
-        "hole_positions": [60.0, 120.0, 180.0, 240.0, 300.0, 360.0, 420.0, 520.0],
-        "hole_diameters": [8.0] * 8,
-        "hole_lengths": [4.0] * 8,
-        "fingering_sets": [
-            ["closed"] * 8,                                                # Bb2
-            ["open",   "closed", "closed", "closed", "closed", "closed", "closed", "closed"],  # C3
-            ["open",   "open",   "closed", "closed", "closed", "closed", "closed", "closed"],  # D3
-            ["open",   "open",   "open",   "closed", "closed", "closed", "closed", "closed"],  # Eb3
-            ["open",   "open",   "open",   "open",   "closed", "closed", "closed", "closed"],  # F3
-            ["open",   "open",   "open",   "open",   "open",   "closed", "closed", "closed"],  # G3
-            ["open",   "open",   "open",   "open",   "open",   "open",   "closed", "closed"],  # A3
-            ["open",   "open",   "open",   "open",   "open",   "open",   "open",   "closed"],  # Bb3
         ],
         "n_register": 1,
     },

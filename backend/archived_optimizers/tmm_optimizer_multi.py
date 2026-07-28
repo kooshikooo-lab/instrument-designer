@@ -17,7 +17,7 @@ import numpy as np
 from typing import List, Optional, Dict
 
 try:
-    from .tmm_optimizer_v2 import TMMBoreOptimizerJAX, _pava_isotonic
+    from backend.archived_optimizers.tmm_optimizer_v2 import TMMBoreOptimizerJAX, _pava_isotonic
 except ImportError:
     import sys, os
     sys.path.insert(0, os.path.dirname(__file__))

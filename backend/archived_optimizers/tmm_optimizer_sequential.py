@@ -23,8 +23,8 @@ from scipy.optimize import minimize, differential_evolution
 from typing import List, Optional, Dict, Tuple
 
 try:
-    from .tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND, TMMInstrument
-    from .physics.losses import KeefeLoss
+    from backend.tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND, TMMInstrument
+    from backend.physics.losses import KeefeLoss
 except ImportError:
     import sys, os
     sys.path.insert(0, os.path.dirname(__file__))

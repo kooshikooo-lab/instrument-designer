@@ -501,6 +501,92 @@ export async function listCadqueryInstruments(): Promise<Record<string, {
   return res.json();
 }
 
+// ─── Generative AI Agent API ────────────────────────────────────────────
+
+export interface GenerativeCandidate {
+  name: string;
+  description: string;
+  family: string;
+  bore_type: string;
+  closed_top: boolean;
+  bore_radius_mm: number;
+  bore_length_mm: number;
+  material: string;
+  scale: string;
+  quarter_tone_strategy: string;
+  feasibility: string;
+  llm_reasoning: string;
+  intonation_rms_cents: number;
+  timbre_cost: number;
+  hole_positions_mm: number[];
+  hole_diameters_mm: number[];
+  bore_radii: number[];
+  success: boolean;
+  opt_time_s: number;
+  error: string;
+  pareto_front: Array<{ intonation: number; timbre: number }>;
+}
+
+export interface GenerativeResult {
+  query: string;
+  total_time_s: number;
+  n_candidates: number;
+  llm_used: boolean;
+  llm_response: string;
+  candidates: GenerativeCandidate[];
+  best: { name: string; description: string; intonation_rms_cents: number; timbre_cost: number } | null;
+  errors: string[];
+}
+
+export interface HybridSpec {
+  name: string;
+  mouthpiece_family: string;
+  body_family: string;
+  description: string;
+  feasibility: string;
+  challenges: string[];
+}
+
+export interface KnowledgeBase {
+  families: Record<string, {
+    family: string;
+    bore_type: string;
+    excitation: string;
+    closed_top: boolean;
+    typical_bore_radius_mm: number[];
+    typical_length_mm: number[];
+    typical_hole_count: number[];
+    description: string;
+  }>;
+  hybrids: HybridSpec[];
+  scales: string[];
+  materials: string[];
+}
+
+export async function generativeSuggest(query: string, nCandidates?: number): Promise<GenerativeResult> {
+  const res = await apiPost("/generative/suggest", { query, n_candidates: nCandidates ?? 3 });
+  if (!res.ok) throw new Error(`Generative suggest failed: ${res.statusText}`);
+  return res.json();
+}
+
+export async function generativeRandom(): Promise<GenerativeResult> {
+  const res = await apiPost("/generative/random", {});
+  if (!res.ok) throw new Error(`Generative random failed: ${res.statusText}`);
+  return res.json();
+}
+
+export async function generativeHybrid(mouthpieceFamily: string, bodyFamily: string): Promise<GenerativeResult> {
+  const res = await apiPost("/generative/hybrid", { mouthpiece_family: mouthpieceFamily, body_family: bodyFamily });
+  if (!res.ok) throw new Error(`Generative hybrid failed: ${res.statusText}`);
+  return res.json();
+}
+
+export async function getGenerativeKnowledge(): Promise<KnowledgeBase> {
+  const res = await apiGet("/generative/knowledge");
+  if (!res.ok) throw new Error("Failed to get generative knowledge");
+  return res.json();
+}
+
 export async function exportCadquery(params: {
   preset?: string;
   bore_length?: number;

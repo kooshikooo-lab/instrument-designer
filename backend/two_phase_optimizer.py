@@ -56,7 +56,7 @@ def cents_error(actual, target):
 def phase_cost_with_offset(inst, targets, fingerings, n_register=1):
     """
     Phase-based cost with offset correction. Fast but register-agnostic.
-    Returns mean absolute cents error after optimal constant offset removal.
+    Returns cubic mean (L3) cents error after optimal constant offset removal.
     """
     try:
         wl_guesses = [SPEED_OF_SOUND / f for f in targets]
@@ -68,13 +68,16 @@ def phase_cost_with_offset(inst, targets, fingerings, n_register=1):
         ca = np.array(cents_list)
         if len(ca) == 0 or np.any(np.abs(ca) > 1e5):
             return 1e10
-        return float(np.sqrt(np.mean(ca ** 2)))
+        # Cubic mean (L3) — removes global offset, penalizes large errors more
+        offset = float(np.median(ca))
+        corrected = np.abs(ca - offset)
+        return float(np.cbrt(np.mean(corrected ** 3)))
     except:
         return 1e10
 
 
 def peak_cost_nearest(inst, targets, fingerings, detected_regs):
-    """Peak-matching cost: find nearest resonance peak to each target, compute evenness."""
+    """Peak-matching cost: find nearest resonance peak to each target, compute cubic mean (L3)."""
     cents = []
     for tgt, fl, pr in zip(targets, fingerings, detected_regs):
         try:
@@ -86,7 +89,8 @@ def peak_cost_nearest(inst, targets, fingerings, detected_regs):
     ca = np.array(cents)
     if np.any(np.abs(ca) > 1e5):
         return 1e10
-    return float(np.sqrt(np.mean(ca ** 2)))
+    # Cubic mean (L3) — penalizes large errors more than RMS
+    return float(np.cbrt(np.mean(np.abs(ca) ** 3)))
 
 
 def detect_registers(inst, targets, fingerings, max_reg=5):

@@ -258,7 +258,7 @@ def main():
 
     # Connect to Dask
     print("\nConnecting to Dask scheduler...")
-    client = Client("tcp://100.69.113.41:8786", timeout=15)
+    client = Client("tcp://100.69.113.41:9797", timeout=15)
     time.sleep(1)
     info = client.scheduler_info()
     workers = info.get("workers", {})

@@ -4,29 +4,21 @@ Computational wind instrument design platform. Instrument-agnostic optimizer wit
 
 ## What It Does
 
-Given a fingering chart and target frequencies, the optimizer designs bore geometry and hole positions that minimize intonation error. Currently achieves **<3 cents RMS** on 12/12 instrument families after refinement.
+Given a fingering chart and target frequencies, the optimizer designs bore geometry and hole positions that minimize intonation error. Currently achieves **<1 cent RMS** on 11 instrument families after Pareto optimization (w_int=0.9).
 
 ### Supported Instruments
-- **Closed-open (chalumeau family):** Chalumeau C, Bass Chalumeau Bb, Diatonic D Chalumeau
+- **Closed-open (chalumeau family):** Chalumeau C, Diatonic D Chalumeau
 - **Open-open cylindrical:** Concert Flute, Alto Flute, PVC Flute, Tin Whistle, Xaphoon
 - **Open-open conical:** Soprano Sax, Alto Sax, Recorder
 - **Chromatic:** Chromatic Flute (25 notes, 17 holes)
 
 ## Benchmark Results
 
-| Instrument | Sequential | Seq+Refined |
-|---|---|---|
-| Chalumeau C | 18.73c | **0.53c** |
-| Bass Chalumeau Bb | 27.01c | **0.00c** |
-| Diatonic D Chalumeau | 26.38c | **0.62c** |
-| Soprano Sax Bb | 66.35c | **0.00c** |
-| Alto Sax Eb | 196.94c | **0.00c** |
-| Recorder C | 233.59c | **1.04c** |
-| Xaphoon C | 294.54c | **0.00c** |
-| Tin Whistle D | 170.74c | **0.00c** |
-| Concert Flute C | 182.92c | **0.00c** |
-| Alto Flute G | 187.41c | **0.00c** |
-| PVC Flute D | 381.19c | **0.00c** |
+All 11 instruments achieve <1c RMS with w_int=0.9 (mean 0.17c, max 0.82c). See `backend/benchmark_all.py` or run:
+
+```bash
+python backend/benchmark_all.py
+```
 
 ## Architecture
 
@@ -69,6 +61,9 @@ Bi-objective optimization: intonation (RMS cents) vs timbre (bore smoothness + h
 ### CadQuery Export (`backend/cadquery_export.py`)
 STL/STEP generation from bore profiles + tone holes. Handles cylindrical and conical bores, closed tops, 12+ instrument presets.
 
+### Generative Agent (`backend/generative_agent.py`)
+LLM-guided + physics-based novel instrument design. Generates design specs from text queries, then runs Pareto optimization. Supports hybrid instruments, random instruments, and quarter-tone variants. Parallel candidate optimization via Dask.
+
 ### Chalumier Integration (`chalumier/`)
 Kotlin-based instrument designer. Designs instruments and outputs JSON5 bore profiles. Wrapper in `woodwind_designer/engine/chalumier_wrapper.py`.
 
@@ -77,13 +72,18 @@ Kotlin-based instrument designer. Designs instruments and outputs JSON5 bore pro
 Dask cluster for parallel instrument optimization across machines:
 
 ```bash
-# Start workers (set PYTHONPATH first)
-set PYTHONPATH=/path/to/woodwind-designer
-dask worker tcp://SCHEDULER_IP:8786 --nworkers 2 --nthreads 4
+# Start scheduler on desktop (Twitchy)
+dask-scheduler --port 9797 --dashboard-address 9798
+
+# Start worker on laptop (Kalle)
+set PYTHONPATH=/path/to/instrument-designer
+dask worker tcp://100.69.113.41:9797 --nworkers 2 --nthreads 4
 
 # Run distributed benchmark
-python scripts/dask_benchmark.py --scheduler tcp://SCHEDULER_IP:8786
+python scripts/dask_benchmark.py --scheduler tcp://100.69.113.41:9797
 ```
+
+The generative agent automatically uses Dask when the scheduler is available, dispatching candidate optimizations in parallel.
 
 ## Getting Started
 
@@ -91,11 +91,14 @@ python scripts/dask_benchmark.py --scheduler tcp://SCHEDULER_IP:8786
 # Install dependencies
 pip install numpy scipy jax jaxlib pymoo cadquery dask distributed
 
-# Run 12-instrument benchmark
+# Run 11-instrument benchmark
 python backend/benchmark_all.py
 
 # Run Dask-parallelized benchmark
-python scripts/dask_benchmark.py --scheduler tcp://localhost:8786
+python scripts/dask_benchmark.py --scheduler tcp://localhost:9797
+
+# Generative agent (single-machine, no Dask)
+python -c "from backend.generative_agent import generate; print(generate('recorder', n_candidates=2))"
 ```
 
 ## Dependencies

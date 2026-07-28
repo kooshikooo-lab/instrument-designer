@@ -13,7 +13,7 @@ from scipy.optimize import differential_evolution, minimize
 from typing import List, Tuple
 
 try:
-    from .tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
+    from backend.tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
 except ImportError:
     import sys, os
     sys.path.insert(0, os.path.dirname(__file__))
