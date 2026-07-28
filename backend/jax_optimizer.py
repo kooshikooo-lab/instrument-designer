@@ -29,8 +29,14 @@ c = SPEED_OF_SOUND
 # Cost evaluation (matches benchmark_all.py eval_all exactly)
 # ============================================================================
 
-def eval_all(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg=None):
-    """RMS cents error — same logic as benchmark_all.py eval_all."""
+def eval_all(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg=None,
+             w_int=1.0, bore_radius=None):
+    """Blended intonation + timbre cost.
+
+    w_int=1.0: pure intonation (default, backward compatible)
+    w_int=0.0: pure timbre (bore smoothness + hole radiation consistency)
+    """
+    from backend.pareto_optimizer import compute_timbre_cost
     inst = tmm_instrument_from_radii(
         radii, bore_length, hp, hd, hl,
         outer_diameter_mm=22.0, closed_top=closed_top, cone_step=0.5,
@@ -56,12 +62,22 @@ def eval_all(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg=None):
     ca = np.array(cents)
     if np.any(np.abs(ca) > 1e5):
         return 1e10
-    return float(np.sqrt(np.mean(ca ** 2)))
+    intonation_cost = float(np.sqrt(np.mean(ca ** 2)))
+
+    if w_int >= 1.0:
+        return intonation_cost
+
+    timbre_cost = compute_timbre_cost(
+        radii, hd, bore_radius if bore_radius else 7.25,
+    )
+    return w_int * intonation_cost + (1.0 - w_int) * timbre_cost
 
 
-def safe_eval(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg=None):
+def safe_eval(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg=None,
+              w_int=1.0, bore_radius=None):
     try:
-        return eval_all(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg)
+        return eval_all(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg,
+                        w_int=w_int, bore_radius=bore_radius)
     except Exception:
         return 1e10
 
@@ -151,12 +167,14 @@ def sequential_placement(cfg):
 # Phase 1: 4-stage L-BFGS-B refinement (from benchmark_all.py sequential_refined)
 # ============================================================================
 
-def refine_sequential(cfg, verbose=False, use_jax_bore=False):
+def refine_sequential(cfg, verbose=False, use_jax_bore=False, w_int=1.0):
     """Sequential + DE global re-optim + 4-stage L-BFGS-B refinement.
 
     Matches benchmark_all.py sequential_refined exactly.
     When use_jax_bore=True, Stage 2 (bore-radii) uses JAX autodiff instead
     of finite differences.
+
+    w_int: weight for intonation (1.0=pure intonation, 0.0=pure timbre).
     """
     from scipy.optimize import differential_evolution
 
@@ -175,7 +193,8 @@ def refine_sequential(cfg, verbose=False, use_jax_bore=False):
     hd_max = bore_r * 0.9
 
     def safe_eval_local(radii, L, hp, hd, hl):
-        return safe_eval(radii, L, hp, hd, hl, closed_top, targets)
+        return safe_eval(radii, L, hp, hd, hl, closed_top, targets,
+                         w_int=w_int, bore_radius=bore_r)
 
     # DE global re-optimization for open-open instruments
     if not closed_top and n_h > 0:
@@ -399,11 +418,15 @@ def jax_two_phase_optimize(
     verbose: bool = True,
     loss_model=None,
     use_jax_bore: bool = False,
+    w_int: float = 1.0,
 ) -> dict:
-    """Optimize bore for intonation.
+    """Optimize bore for intonation (and optionally timbre).
 
     Uses the proven sequential_refined approach from benchmark_all.py.
     Auto-detects n_register from closed_top if not specified.
+
+    w_int: weight for intonation (1.0=pure intonation, 0.0=pure timbre).
+           Intermediate values (e.g. 0.9) blend both objectives.
     """
     if n_register is None:
         n_register = 1 if closed_top else 2
@@ -434,7 +457,7 @@ def jax_two_phase_optimize(
         print(f"  Phase 0+1: Sequential placement + DE re-optim + L-BFGS-B refinement")
         print(f"  Stage 2 mode: {mode}")
     rms, L, radii, hp, hd, hl, t_refine = refine_sequential(
-        cfg, verbose=verbose, use_jax_bore=use_jax_bore,
+        cfg, verbose=verbose, use_jax_bore=use_jax_bore, w_int=w_int,
     )
     t_total = time.time() - t0
 
