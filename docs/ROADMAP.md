@@ -220,6 +220,40 @@ Research into four published optimization methods to identify best practices and
 - Key finding: timbre proxy conflicts more with tapered bores (real instruments) than constant bores
 - To improve: install pymoo for NSGA-II, or compute actual a₂/a₁ via impedance peaks
 
+### 1j. Pareto Weight Integration & Validation (2026-07-28)
+
+Integrated Pareto weight (w_int) into production optimizer across all entry points:
+`eval_all`, `safe_eval`, `refine_sequential`, `jax_two_phase_optimize` all accept
+`w_int` parameter (1.0 = pure intonation, default).
+
+**Weight sweep results across all 11 instruments (w=1.0, 0.9, 0.8):**
+
+| Instrument | Type | w=1.0 | w=0.9 | w=0.8 | Best |
+|-----------|------|-------|-------|-------|------|
+| recorder_C | open | 1.04c | **0.04c** | 0.11c | w=0.9 |
+| chalumeau_C | closed | 0.53c | 0.68c | **0.18c** | w=0.8 |
+| bass_chalumeau_Bb | closed | **0.00c** | 0.31c | 0.65c | w=1.0 |
+| diatonic_D | closed | **0.62c** | 0.82c | 1.89c | w=1.0 |
+| soprano_sax_Bb | open | **0.00c** | 0.01c | 0.02c | w=1.0 |
+| xaphoon_C | open | **0.00c** | 0.01c | 0.01c | w=1.0 |
+| alto_sax_Eb | open | 0.00c | 0.00c | 0.00c | tie |
+| tin_whistle_D | open | **0.00c** | 0.02c | 0.04c | w=1.0 |
+| concert_flute_C | open | 0.00c | 0.00c | 0.01c | w=1.0 |
+| alto_flute_G | open | 0.00c | 0.00c | 0.01c | w=1.0 |
+| pvc_flute_D | open | 0.00c | 0.00c | 0.00c | tie |
+
+**Key finding:** recorder_C goes from 1.04c (w=1.0) to 0.04c (w=0.9) — timbre proxy
+breaks the local minimum that intonation-only optimization gets stuck in. The
+smoothness constraint guides the optimizer toward a physically better bore profile.
+
+**Full benchmark with w_int=0.9 (recommended default):**
+- Mean: 0.17c, Max: 0.82c (diatonic_D)
+- All 11 instruments <1c RMS
+- recorder_C: 0.04c (from 1.04c with pure intonation)
+
+**Recommendation:** w_int=0.9 as production default. Users can set w_int=1.0 for
+pure intonation or lower values for stronger timbre influence.
+
 - [ ] **Phase 1h-d: Validate against WIDesigner**
   - Install WIDesigner (Java, open-source)
   - Run same instruments through both optimizers

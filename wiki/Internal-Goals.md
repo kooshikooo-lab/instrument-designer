@@ -47,7 +47,7 @@ Ernoult et al. (2020) proved that intonation and timbre are fundamentally at odd
 
 | Phase | Focus | Status |
 |-------|-------|--------|
-| Phase 1 | Computational accuracy & speed | **Current** |
+| Phase 1 | Computational accuracy & speed | **DONE** (0.00-0.82c RMS, all 11 instruments <1c) |
 | Phase 2 | 3D print accuracy | After Phase 1 |
 | Phase 3 | Integration & polish | After Phase 2 |
 | Phase 4 | Linux deployment & server hosting | After Phase 3 |
@@ -59,9 +59,9 @@ See `ROADMAP.md` for full details.
 
 | Metric | Target | Current Best |
 |--------|--------|-------------|
-| Computational accuracy | <3 cents RMS | 0.00–1.04 cents (all 12 instruments) |
-| Optimization speed | <60 seconds | 0.3–7.4 seconds |
+| Computational accuracy | <3 cents RMS | **0.00–0.82 cents** (all 11 instruments, w_int=0.9) |
+| Optimization speed | <60 seconds | 2.5–30.5 seconds |
 | Instrument library | 91+ instruments | 91 instruments |
 | 3D print accuracy | <10 cents | ~15 cents (unvalidated) |
-| Timbre consistency | a₂/a₁ ratio uniform across range | Not yet measured |
-| Pareto front | Trade-off curve available | Not yet built |
+| Timbre consistency | a₂/a₁ ratio uniform across range | Bore-geometry proxy (smoothness + radiation) |
+| Pareto front | Trade-off curve available | Weighted-sum sweep + NSGA-II |
