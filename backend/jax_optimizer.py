@@ -30,11 +30,12 @@ c = SPEED_OF_SOUND
 # ============================================================================
 
 def eval_all(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg=None,
-             w_int=1.0, bore_radius=None):
+             w_int=1.0, bore_radius=None, w_mono=0.3):
     """Blended intonation + timbre cost.
 
     w_int=1.0: pure intonation (default, backward compatible)
     w_int=0.0: pure timbre (bore smoothness + hole radiation consistency)
+    w_mono: weight for bore monotonicity penalty (part of timbre cost)
     """
     from backend.pareto_optimizer import compute_timbre_cost
     inst = tmm_instrument_from_radii(
@@ -68,16 +69,16 @@ def eval_all(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg=None,
         return intonation_cost
 
     timbre_cost = compute_timbre_cost(
-        radii, hd, bore_radius if bore_radius else 7.25,
+        radii, hd, bore_radius if bore_radius else 7.25, w_mono=w_mono,
     )
     return w_int * intonation_cost + (1.0 - w_int) * timbre_cost
 
 
 def safe_eval(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg=None,
-              w_int=1.0, bore_radius=None):
+              w_int=1.0, bore_radius=None, w_mono=0.3):
     try:
         return eval_all(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg,
-                        w_int=w_int, bore_radius=bore_radius)
+                        w_int=w_int, bore_radius=bore_radius, w_mono=w_mono)
     except Exception:
         return 1e10
 
@@ -167,7 +168,7 @@ def sequential_placement(cfg):
 # Phase 1: 4-stage L-BFGS-B refinement (from benchmark_all.py sequential_refined)
 # ============================================================================
 
-def refine_sequential(cfg, verbose=False, use_jax_bore=False, w_int=1.0):
+def refine_sequential(cfg, verbose=False, use_jax_bore=False, w_int=1.0, w_mono=0.3):
     """Sequential + DE global re-optim + 4-stage L-BFGS-B refinement.
 
     Matches benchmark_all.py sequential_refined exactly.
@@ -175,6 +176,7 @@ def refine_sequential(cfg, verbose=False, use_jax_bore=False, w_int=1.0):
     of finite differences.
 
     w_int: weight for intonation (1.0=pure intonation, 0.0=pure timbre).
+    w_mono: weight for bore monotonicity penalty (part of timbre cost).
     """
     from scipy.optimize import differential_evolution
 
@@ -194,7 +196,7 @@ def refine_sequential(cfg, verbose=False, use_jax_bore=False, w_int=1.0):
 
     def safe_eval_local(radii, L, hp, hd, hl):
         return safe_eval(radii, L, hp, hd, hl, closed_top, targets,
-                         w_int=w_int, bore_radius=bore_r)
+                         w_int=w_int, bore_radius=bore_r, w_mono=w_mono)
 
     # DE global re-optimization for open-open instruments
     if not closed_top and n_h > 0:
@@ -399,7 +401,7 @@ def jax_stage2_refine(radii, L, hp, hd, hl, closed_top, targets,
 # ============================================================================
 
 def refine_robust(radii, L, hp, hd, hl, closed_top, targets, bore_r,
-                  noise_mm=0.05, n_samples=16, w_int=1.0, verbose=False):
+                  noise_mm=0.05, n_samples=16, w_int=1.0, w_mono=0.3, verbose=False):
     """Robust bore optimization: minimize expected cost under manufacturing noise.
 
     Instead of optimizing for a perfect bore, optimize for the best *expected*
@@ -417,6 +419,8 @@ def refine_robust(radii, L, hp, hd, hl, closed_top, targets, bore_r,
         Number of noise samples per evaluation.
     w_int : float
         Intonation weight (1.0 = pure intonation).
+    w_mono : float
+        Weight for bore monotonicity penalty (part of timbre cost).
 
     Returns
     -------
@@ -431,7 +435,7 @@ def refine_robust(radii, L, hp, hd, hl, closed_top, targets, bore_r,
 
     def safe_eval_local(r, L_i, hp_i, hd_i, hl_i):
         return safe_eval(r, L_i, hp_i, hd_i, hl_i, closed_top, targets,
-                         w_int=w_int, bore_radius=bore_r)
+                         w_int=w_int, bore_radius=bore_r, w_mono=w_mono)
 
     def robust_cost(radii_v):
         """Expected cost over fixed noise samples."""

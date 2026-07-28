@@ -117,6 +117,36 @@ def _bore_smoothness(radii: np.ndarray) -> float:
     return float(np.std(dd))
 
 
+def _bore_monotonicity_penalty(radii: np.ndarray) -> float:
+    """Penalty for non-monotonic bore profiles.
+
+    A physical woodwind bore should be monotonic (no unnecessary
+    oscillations): cylindrical, conical, or flared.  Sign changes in
+    the first differences indicate oscillations that make the bore
+    harder to print and can create acoustic artifacts.
+
+    Parameters
+    ----------
+    radii : ndarray of shape (n_cp,)
+        Bore radii at the control-point positions (mm).
+
+    Returns
+    -------
+    float
+        Non-negative penalty.  0 if monotonic.
+    """
+    if len(radii) < 3:
+        return 0.0
+    diffs = np.diff(radii)
+    signs = np.sign(diffs)
+    # Count sign changes: each change adds 2 to the diff of signs
+    n_sign_changes = int(np.sum(np.abs(np.diff(signs)))) // 2
+    if n_sign_changes == 0:
+        return 0.0
+    # Penalty = number of sign changes * mean absolute first difference
+    return float(n_sign_changes * np.mean(np.abs(diffs)))
+
+
 def _hole_radiation_consistency(
     hole_diameters: Sequence[float],
     bore_radius: float,
@@ -151,12 +181,13 @@ def compute_timbre_cost(
     bore_radius: float,
     w_smooth: float = 1.0,
     w_consist: float = 0.5,
+    w_mono: float = 0.3,
 ) -> float:
     """Bore-geometry timbre proxy (lower = better).
 
-    Combines bore smoothness and hole-radiation consistency into a single
-    scalar cost.  Both terms are non-negative; the weights control their
-    relative importance.
+    Combines bore smoothness, hole-radiation consistency, and bore
+    monotonicity into a single scalar cost.  All terms are non-negative;
+    the weights control their relative importance.
 
     Parameters
     ----------
@@ -170,6 +201,8 @@ def compute_timbre_cost(
         Weight for the bore-smoothness term.  Default 1.0.
     w_consist : float, optional
         Weight for the hole-radiation-consistency term.  Default 0.5.
+    w_mono : float, optional
+        Weight for the bore-monotonicity penalty.  Default 0.3.
 
     Returns
     -------
@@ -178,7 +211,8 @@ def compute_timbre_cost(
     """
     smooth = _bore_smoothness(radii)
     consist = _hole_radiation_consistency(hole_diameters, bore_radius)
-    return w_smooth * smooth + w_consist * consist
+    mono = _bore_monotonicity_penalty(radii)
+    return w_smooth * smooth + w_consist * consist + w_mono * mono
 
 
 # ============================================================================
