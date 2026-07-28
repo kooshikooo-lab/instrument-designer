@@ -609,7 +609,8 @@ There is no dedicated acoustics preprint server. Researchers use **arXiv** (cs.S
 - [x] Thermoviscous losses (Keefe 1984) — adds frequency-dependent attenuation
 - [x] JAX differentiable TMM for gradient-based optimization (2.7M evals/sec, 52x faster)
 - [x] JAX autodiff Stage 2 bore-radii refinement (exact gradients, intonation-only)
-- [x] **Multi-register optimization (clarinet twelfths)** — `eval_all` now accepts `fingerings` list + per-note `n_reg` list
+- [x] **SplineBore integration** (`backend/spline_bore.py` from PR #26) — variable-radius bore profiles via cubic spline; eval_all/safe_eval accept optional `bore_profile` for SplineBore evaluation
+- [x] **Multi-register optimization** — `eval_all` accepts `fingerings` list + per-note `n_reg` list; clarinet_Bb added to INSTRUMENTS
 - [ ] TMMI external tonehole interactions (Lefebvre et al. 2013)
 
 ### Manufacturing
