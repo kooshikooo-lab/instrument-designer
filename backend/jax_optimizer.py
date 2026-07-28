@@ -395,6 +395,86 @@ def jax_stage2_refine(radii, L, hp, hd, hl, closed_top, targets,
 
 
 # ============================================================================
+# Robust bore optimization (manufacturing-aware)
+# ============================================================================
+
+def refine_robust(radii, L, hp, hd, hl, closed_top, targets, bore_r,
+                  noise_mm=0.05, n_samples=16, w_int=1.0, verbose=False):
+    """Robust bore optimization: minimize expected cost under manufacturing noise.
+
+    Instead of optimizing for a perfect bore, optimize for the best *expected*
+    intonation given Gaussian bore-radius perturbations (simulating SLA/FDM
+    print tolerance).
+
+    Uses Monte Carlo sampling with FIXED noise directions (squared-gradient
+    estimator) so the objective is deterministic — L-BFGS-B converges properly.
+
+    Parameters
+    ----------
+    noise_mm : float
+        Std dev of Gaussian noise added to bore radii (mm).
+    n_samples : int
+        Number of noise samples per evaluation.
+    w_int : float
+        Intonation weight (1.0 = pure intonation).
+
+    Returns
+    -------
+    tuple : (radii_robust, mean_cost, std_cost, nominal_cost, time_s)
+    """
+    n_cp = len(radii)
+    t0 = time.time()
+
+    # Pre-generate fixed noise samples (same for every evaluation)
+    rng = np.random.RandomState(42)
+    noise_bank = rng.normal(0, noise_mm, size=(n_samples, n_cp))
+
+    def safe_eval_local(r, L_i, hp_i, hd_i, hl_i):
+        return safe_eval(r, L_i, hp_i, hd_i, hl_i, closed_top, targets,
+                         w_int=w_int, bore_radius=bore_r)
+
+    def robust_cost(radii_v):
+        """Expected cost over fixed noise samples."""
+        costs = np.zeros(n_samples)
+        for s in range(n_samples):
+            perturbed = np.maximum(radii_v + noise_bank[s], 0.5)
+            costs[s] = safe_eval_local(perturbed, L, hp, hd, hl)
+        return np.mean(costs)
+
+    # Baseline: nominal cost
+    nominal_cost = safe_eval_local(radii, L, hp, hd, hl)
+
+    # L-BFGS-B on the robust objective
+    rad_lo = max(3.0, bore_r * 0.5)
+    rad_hi = min(15.0, bore_r * 2.0)
+    rad_bounds = [(rad_lo, rad_hi)] * n_cp
+
+    r = sp_min(robust_cost, radii, method='L-BFGS-B',
+               bounds=rad_bounds, options={"maxiter": 100, "ftol": 1e-8})
+    radii_robust = np.maximum(r.x, rad_lo)
+
+    # Evaluate final robust cost with separate noise bank
+    rng_final = np.random.RandomState(99)
+    noise_bank_final = rng_final.normal(0, noise_mm, size=(50, n_cp))
+    costs_final = np.zeros(50)
+    for s in range(50):
+        perturbed = np.maximum(radii_robust + noise_bank_final[s], 0.5)
+        costs_final[s] = safe_eval_local(perturbed, L, hp, hd, hl)
+
+    mean_cost = float(np.mean(costs_final))
+    std_cost = float(np.std(costs_final))
+    nominal_robust = float(safe_eval_local(radii_robust, L, hp, hd, hl))
+    dt = time.time() - t0
+
+    if verbose:
+        print(f"      Robust refinement: nominal={nominal_robust:.4f}c "
+              f"mean={mean_cost:.4f}c (+/-{std_cost:.4f}c) "
+              f"vs baseline nominal={nominal_cost:.4f}c ({dt:.1f}s)")
+
+    return radii_robust, mean_cost, std_cost, nominal_robust, dt
+
+
+# ============================================================================
 # Main entry point
 # ============================================================================
 
@@ -479,6 +559,93 @@ def jax_two_phase_optimize(
         'total_time': t_total,
         'bore_length': L,
         'bore_radii': radii.tolist(),
+        'hole_positions': hp,
+        'hole_diameters': hd,
+        'hole_lengths': hl,
+        'best_instrument': inst,
+    }
+
+
+def robust_optimize(
+    targets: list,
+    bore_radius: float = 7.25,
+    outer_diameter: float = 22.0,
+    hole_diameter: float = 7.0,
+    hole_length: float = 3.75,
+    closed_top: bool = False,
+    noise_mm: float = 0.05,
+    n_samples: int = 16,
+    verbose: bool = True,
+    use_jax_bore: bool = False,
+    w_int: float = 1.0,
+) -> dict:
+    """Full optimization pipeline with robust refinement.
+
+    Runs standard sequential_refined, then adds robust refinement that
+    accounts for manufacturing noise (Gaussian bore-radius perturbation).
+
+    Parameters
+    ----------
+    noise_mm : float
+        Manufacturing tolerance std dev in mm.
+    n_samples : int
+        Monte Carlo samples for robust cost evaluation.
+    """
+    cfg = {
+        "closed_top": closed_top,
+        "targets": targets,
+        "bore_radius": bore_radius,
+        "outer_diameter": outer_diameter,
+        "hole_diameter": hole_diameter,
+        "hole_length": hole_length,
+    }
+
+    if verbose:
+        print("=" * 70)
+        print("  ROBUST BORE OPTIMIZER (manufacturing-aware)")
+        print("=" * 70)
+        print(f"  Noise tolerance: +/-{noise_mm}mm (std)")
+        print(f"  MC samples: {n_samples}")
+        print()
+
+    t0 = time.time()
+
+    # Standard optimization first
+    rms, L, radii, hp, hd, hl, t_refine = refine_sequential(
+        cfg, verbose=verbose, use_jax_bore=use_jax_bore, w_int=w_int,
+    )
+
+    if verbose:
+        print(f"  Standard result: RMS={rms:.4f}c")
+        print(f"  Now running robust refinement ({noise_mm}mm noise)...")
+
+    # Robust refinement
+    radii_robust, mean_cost, std_cost, nominal_robust, t_robust = refine_robust(
+        radii, L, hp, hd, hl, closed_top, targets, bore_radius,
+        noise_mm=noise_mm, n_samples=n_samples, w_int=w_int, verbose=verbose,
+    )
+
+    t_total = time.time() - t0
+
+    if verbose:
+        print(f"  ---")
+        print(f"  Standard:  nominal={rms:.4f}c")
+        print(f"  Robust:    nominal={nominal_robust:.4f}c, expected={mean_cost:.4f}c (+/-{std_cost:.4f}c)")
+        print(f"  Total time: {t_total:.1f}s")
+
+    inst = tmm_instrument_from_radii(
+        radii_robust, L, hp, hd, hl,
+        outer_diameter_mm=outer_diameter, closed_top=closed_top, cone_step=0.5,
+    )
+
+    return {
+        'final_cost': nominal_robust,
+        'expected_cost': mean_cost,
+        'expected_std': std_cost,
+        'standard_cost': rms,
+        'total_time': t_total,
+        'bore_length': L,
+        'bore_radii': radii_robust.tolist(),
         'hole_positions': hp,
         'hole_diameters': hd,
         'hole_lengths': hl,
