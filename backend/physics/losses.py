@@ -120,16 +120,23 @@ class KeefeLoss(LossModel):
         epsilon_v = delta_v / r
         epsilon_t = delta_t / r
 
-        # Complex propagation constant from Keefe 1984
-        # γ = (ω/c) * (1 + (1+i)/√2 * [(γ-1)δ_t/r + δ_v/r])
-        # For loss factor over length L: exp(-γ * L)
-        # ω/c = 2π/λ
-        omega_over_c = 2 * np.pi / wavelength
+        # Complex propagation constant (Keefe 1984 / Zwikker & Kosten 1949)
+        # For a wide tube (small boundary layers relative to radius):
+        #   γ = i*k * (1 + (1-i)/√2 * [ε_v + (γ-1)*ε_t])
+        # where ε = δ/R, δ_v = √(2η/ρω), δ_t = √(2κ/ρc_pω)
+        #
+        # Expanding: γ = i*k + k*(1+i)/√2 * C
+        #   Re(γ) = k*C/√2  (viscothermal attenuation per mm)
+        #   Im(γ) = k*(1 + C/√2)  (phase with small correction)
+        # ω/c = 2π/λ = k
+        k = 2 * np.pi / wavelength
 
-        factor = (1 + 1j) / np.sqrt(2) * ((self.gamma - 1) * epsilon_t + epsilon_v)
-        gamma = omega_over_c * (1 + factor)  # complex propagation constant
+        C = epsilon_v + (self.gamma - 1) * epsilon_t
+        # (1-i)/√2 factor gives the correct sign: Re(γ) positive → attenuation
+        factor = (1 - 1j) / np.sqrt(2) * C
+        gamma = 1j * k * (1 + factor)  # complex propagation constant
 
-        # Loss factor = exp(-γ * length)
+        # Loss factor = exp(-γ * length), magnitude < 1 for positive Re(γ)
         return np.exp(-gamma * length)
 
     def hole_loss(self, hole_radius: float, hole_length: float, wavelength: float) -> complex:
@@ -148,7 +155,9 @@ class KeefeLoss(LossModel):
         epsilon_t = delta_t / r
 
         omega_over_c = 2 * np.pi / wavelength
-        factor = (1 + 1j) / np.sqrt(2) * ((self.gamma - 1) * epsilon_t + epsilon_v)
-        gamma = omega_over_c * (1 + factor)
+        k = 2 * np.pi / wavelength
+        C = epsilon_v + (self.gamma - 1) * epsilon_t
+        factor = (1 - 1j) / np.sqrt(2) * C
+        gamma = 1j * k * (1 + factor)
 
         return np.exp(-gamma * hole_length)

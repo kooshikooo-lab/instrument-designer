@@ -21,9 +21,10 @@ POLL_INTERVAL = 60
 def gh(*args):
     result = subprocess.run(
         ["gh"] + list(args),
-        capture_output=True, text=True
+        capture_output=True, encoding="utf-8", errors="replace"
     )
-    return result.stdout.strip() if result.returncode == 0 else ""
+    stdout = result.stdout or ""
+    return stdout.strip() if result.returncode == 0 else ""
 
 
 def fetch_discussion_comments():

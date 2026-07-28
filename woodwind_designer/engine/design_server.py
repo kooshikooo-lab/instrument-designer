@@ -988,6 +988,72 @@ def generative_knowledge():
         raise HTTPException(500, f"Knowledge base error: {e}")
 
 
+# ─── Inverse Design Endpoints ────────────────────────────────────────────
+
+@dataclass
+class InverseAnalyzeRequest:
+    filepath: str
+
+
+@dataclass
+class InverseDesignRequest:
+    filepath: str
+    n_candidates: int = 2
+    hole_count: int = 6
+    run_tier3: bool = True
+    label: str = ""
+
+
+@app.post("/inverse/analyze")
+def inverse_analyze(req: InverseAnalyzeRequest):
+    """Tier 1: Analyze a WAV file — return spectral features."""
+    import sys
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+    from backend.inverse_design import analyze_wav
+    try:
+        result = analyze_wav(req.filepath)
+        return {"success": True, "analysis": result}
+    except Exception as e:
+        raise HTTPException(500, f"Inverse analyze failed: {e}")
+
+
+@app.post("/inverse/design")
+def inverse_design(req: InverseDesignRequest):
+    """Full three-tier inverse design from a WAV file.
+
+    Returns tier1 (analysis), tier2 (scale optimization), and tier3 (timbre).
+    """
+    import sys
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+    from backend.inverse_design import design_from_sound
+    try:
+        result = design_from_sound(
+            req.filepath,
+            n_candidates=req.n_candidates,
+            hole_count=req.hole_count,
+            run_tier3=req.run_tier3,
+            label=req.label,
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(500, f"Inverse design failed: {e}")
+
+
+@app.get("/inverse/health")
+def inverse_health():
+    """Check that the inverse design module loads correctly."""
+    import sys
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+    try:
+        from backend.inverse_design import analyze_wav, design_from_sound, match_timbre
+        return {
+            "status": "ok",
+            "tiers": ["analyze (Tier 1)", "scale (Tier 2)", "timbre (Tier 3)"],
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
 @app.get("/export/cadquery/instruments")
 def list_cadquery_instruments():
     """List available CadQuery preset instruments with metadata."""

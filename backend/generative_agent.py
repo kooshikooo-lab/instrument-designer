@@ -85,6 +85,9 @@ class DesignSpec:
     n_register: int = 2
     llm_reasoning: str = ""
     feasibility: str = "unknown"
+    lowest_note_hz: float = 261.63  # default C4
+    n_octaves: int = 2  # how many octaves of targets to generate
+    targets: list = field(default_factory=list)  # pre-computed target freqs (inverse design)
 
 
 @dataclass
@@ -309,6 +312,9 @@ def _spec_to_dict(spec: DesignSpec) -> dict:
         "n_register": spec.n_register,
         "llm_reasoning": spec.llm_reasoning,
         "feasibility": spec.feasibility,
+        "lowest_note_hz": spec.lowest_note_hz,
+        "n_octaves": spec.n_octaves,
+        "targets": spec.targets,
     }
 
 
@@ -338,8 +344,11 @@ def _suggest_from_knowledge(query: str) -> list[DesignSpec]:
     q = query.lower()
     suggestions = []
 
-    # Hybrid instrument?
+    # Hybrid instrument? (Check AFTER known families to avoid false matches)
+    found_known = bool([k for k in INSTRUMENT_FAMILIES if k in q])
     for hybrid in HYBRID_INSTRUMENTS:
+        if found_known:
+            break
         words_in_q = [w for w in hybrid.name.lower().split() if len(w) > 3]
         if any(w in q for w in words_in_q):
             mp = INSTRUMENT_FAMILIES.get(hybrid.mouthpiece_family)
@@ -348,6 +357,7 @@ def _suggest_from_knowledge(query: str) -> list[DesignSpec]:
                 bore_r = (mp.typical_bore_radius_mm[0] + body.typical_bore_radius_mm[0]) / 2
                 bore_l = (mp.typical_length_mm[1] + body.typical_length_mm[1]) / 2
                 n_holes = max(mp.typical_hole_count[0], body.typical_hole_count[0])
+                lowest, octaves = _family_lowest_note(hybrid.body_family)
                 suggestions.append(DesignSpec(
                     name=hybrid.name,
                     description=hybrid.description,
@@ -360,6 +370,8 @@ def _suggest_from_knowledge(query: str) -> list[DesignSpec]:
                     scale="12_tet",
                     feasibility=hybrid.feasibility,
                     llm_reasoning="; ".join(hybrid.acoustic_challenges[:3]),
+                    lowest_note_hz=lowest,
+                    n_octaves=octaves,
                 ))
 
     # Known instrument family?
@@ -385,6 +397,7 @@ def _suggest_from_knowledge(query: str) -> list[DesignSpec]:
             scale = "24_tet" if is_quarter_tone else "12_tet"
             use_closed_top = fam.closed_top and key not in ("clarinet", "oboe", "bassoon")
 
+            lowest, octaves = _family_lowest_note(key)
             suggestions.append(DesignSpec(
                 name=f"{'Quarter-Tone ' if is_quarter_tone else ''}{fam.family}",
                 description=f"{fam.description} {'with quarter-tone capability' if is_quarter_tone else ''}",
@@ -401,6 +414,8 @@ def _suggest_from_knowledge(query: str) -> list[DesignSpec]:
                 n_register=1 if fam.closed_top else 2,
                 feasibility="known",
                 llm_reasoning=challenges,
+                lowest_note_hz=lowest,
+                n_octaves=octaves,
             ))
 
     # "Random instrument" case
@@ -418,6 +433,7 @@ def _suggest_from_knowledge(query: str) -> list[DesignSpec]:
             bore_shapes = ["cylindrical", "conical", "parabolic", "exponential"]
             bore_type = random.choice(bore_shapes)
 
+            lowest, octaves = _family_lowest_note(key)
             suggestions.append(DesignSpec(
                 name=f"Random {fam.family} ({bore_type})",
                 description=f"Randomly generated {fam.family} with {bore_type} bore profile.",
@@ -431,6 +447,8 @@ def _suggest_from_knowledge(query: str) -> list[DesignSpec]:
                 scale=random.choice([s for s in SCALES.keys()]) if SCALES else "12_tet",
                 feasibility="experimental",
                 llm_reasoning=f"Random generation seeded from {fam.family} acoustic parameters.",
+                lowest_note_hz=lowest,
+                n_octaves=octaves,
             ))
 
     # Deduplicate by name
@@ -554,10 +572,12 @@ Output a JSON array of 1-3 instrument designs with full acoustic justification."
 
         specs = []
         for d in designs:
+            family_key = d.get("family", "")
+            lowest, octaves = _family_lowest_note(family_key)
             specs.append(DesignSpec(
                 name=d.get("name", "Unknown Design"),
                 description=d.get("description", ""),
-                family=d.get("family", ""),
+                family=family_key,
                 bore_type=d.get("bore_type", "cylindrical"),
                 closed_top=d.get("closed_top", False),
                 bore_radius_mm=d.get("bore_radius_mm", 7.25),
@@ -568,6 +588,8 @@ Output a JSON array of 1-3 instrument designs with full acoustic justification."
                 quarter_tone_strategy=d.get("quarter_tone_strategy", ""),
                 feasibility=d.get("feasibility", "unknown"),
                 llm_reasoning=d.get("reasoning", ""),
+                lowest_note_hz=lowest,
+                n_octaves=octaves,
             ))
         return specs
     except Exception:
@@ -575,39 +597,69 @@ Output a JSON array of 1-3 instrument designs with full acoustic justification."
 
 
 # ============================================================================
+# Per-family lowest note mapping (A4 = 440 Hz)
+# ============================================================================
+
+FAMILY_LOWEST_NOTE: dict[str, tuple[float, int]] = {
+    # family → (lowest_note_hz, n_octaves)
+    "clarinet":     (146.83, 3),   # D3
+    "saxophone":    (174.61, 3),   # F3 (alto sax low Bb)
+    "flute":        (261.63, 3),   # C4
+    "recorder":     (523.25, 2),   # C5 (soprano)
+    "folk_flute":   (392.00, 2),   # G4
+    "shakuhachi":   (293.66, 2),   # D4
+    "oboe":         (233.08, 3),   # Bb3
+    "bassoon":      (58.27, 3),    # Bb1
+    "trumpet":      (164.81, 3),   # E3
+    "trombone":     (77.78, 3),    # D2
+    "french_horn":  (87.31, 3),    # F2
+    "tuba":         (43.65, 3),    # F1
+    "didgeridoo":   (65.41, 1),    # C2
+    "ocarina":      (392.00, 2),   # G4
+    "kazoo":        (261.63, 1),   # C4 (voice driven)
+}
+
+
+def _family_lowest_note(family: str) -> tuple[float, int]:
+    """Get the lowest note frequency and octave range for an instrument family."""
+    if family in FAMILY_LOWEST_NOTE:
+        return FAMILY_LOWEST_NOTE[family]
+    fam = INSTRUMENT_FAMILIES.get(family)
+    if fam:
+        bore_len = sum(fam.typical_length_mm) / 2
+        closed = fam.closed_top
+        fundamental = c / (4.0 * bore_len) if closed else c / (2.0 * bore_len)
+        octaves = max(int(sum(fam.octave_range) / 2), 1)
+        return (fundamental, octaves)
+    return (261.63, 2)
+
+
+# ============================================================================
 # Target frequency generation
 # ============================================================================
 
 def _build_targets(spec: DesignSpec) -> list[float]:
-    """Build target frequencies from scale definition."""
+    """Build multi-octave target frequencies from scale definition.
+
+    Uses the instrument's lowest note (A4=440Hz reference) instead of
+    pipe-physics fundamental, and spans n_octaves for realistic range.
+    """
     scale = SCALES.get(spec.scale)
     if not scale:
         scale = SCALES.get("12_tet")
-
     if not scale:
-        # Fallback: generate from 12-TET
-        from backend.target_frequencies import _generate_targets
-        closed_top = spec.closed_top
-        n_reg = 1 if closed_top else 2
-        try:
-            return _generate_targets(spec.bore_length_mm / 1000, closed_top, n_reg, spec.hole_count + 1)
-        except Exception:
-            pass
+        return []
 
-    # Determine fundamental from bore length (c in mm/s)
-    L_mm = spec.bore_length_mm
-    if spec.closed_top:
-        fundamental = c / (4.0 * L_mm)
-    else:
-        fundamental = c / (2.0 * L_mm)
-
-    # Build frequencies from scale intervals
+    fundamental = spec.lowest_note_hz
     targets = []
-    for cents in scale.intervals_cents:
-        f = fundamental * (2.0 ** (cents / 1200.0))
-        targets.append(f)
-
-    return targets
+    interval_count = len(scale.intervals_cents)
+    for octave in range(max(spec.n_octaves, 1)):
+        for cents in scale.intervals_cents:
+            f = fundamental * (2.0 ** ((octave * 1200 + cents) / 1200.0))
+            targets.append(f)
+    # Trim to reasonable count — ~1 target per hole + 1 for open tube
+    max_targets = max(spec.hole_count + 3, 8)
+    return targets[:max_targets]
 
 
 # ============================================================================
@@ -644,7 +696,12 @@ class GenerativeAgent:
                 info = self.dask_client.scheduler_info()
                 n_w = len(info.get("workers", {}))
                 print(f"[GenerativeAgent] Dask connected to {addr} ({n_w} workers)")
+            if not info.get("workers"):
+                if self.verbose:
+                    print("[GenerativeAgent] No Dask workers — falling back to sequential")
+                self.dask_client = None
         except Exception as e:
+            self.dask_client = None
             if self.verbose:
                 print(f"[GenerativeAgent] Dask unavailable ({e}) — running sequentially")
 
@@ -727,13 +784,114 @@ class GenerativeAgent:
         query = f"{mouthpiece_family} mouthpiece on {body_family} body"
         return self.design(query, n_candidates=2)
 
+    def design_from_sound(self, filepath: str = "",
+                          fundamental_hz: float = 0.0,
+                          label: str = "",
+                          n_candidates: int = 2) -> GenerativeResult:
+        """Inverse design: design an instrument from a target sound spectrum.
+
+        Analyzes a WAV file (or uses an explicit fundamental frequency) to
+        determine the instrument's pitch, then optimizes a bore geometry that
+        plays a standard scale starting from that fundamental.
+
+        The optimizer uses scale-based targets (not raw harmonics), because
+        the optimizer expects one target frequency per fingering (successive
+        scale notes).  Raw harmonic series [f0, 2f0, 3f0, ...] would require
+        impossible 2× frequency jumps per fingering — not how wind instruments
+        work.
+
+        Parameters
+        ----------
+        filepath : str
+            Path to a WAV file.  If empty, use fundamental_hz directly.
+        fundamental_hz : float
+            Fundamental frequency in Hz (required if filepath is empty).
+        label : str
+            Optional design label.
+        n_candidates : int
+            Number of candidate designs.
+
+        Returns
+        -------
+        GenerativeResult
+            Candidates with optimized bore geometry.
+        """
+        from backend import inverse_design
+
+        # Analyze sound or use explicit fundamental
+        if filepath:
+            analysis = inverse_design.analyze_wav(filepath)
+            if analysis["confidence"] < 0.1:
+                result = GenerativeResult(query=label or filepath)
+                result.errors.append(
+                    f"Could not estimate fundamental "
+                    f"(confidence={analysis['confidence']:.3f})"
+                )
+                result.total_time_s = 0.0
+                return result
+            fundamental = analysis["fundamental_hz"]
+            label = label or f"Inverse: {filepath.split('/')[-1]}"
+        elif fundamental_hz > 0:
+            fundamental = fundamental_hz
+            label = label or f"Inverse: f0={fundamental_hz:.0f}Hz"
+        else:
+            result = GenerativeResult(query="design_from_sound")
+            result.errors.append("Provide filepath or fundamental_hz")
+            result.total_time_s = 0.0
+            return result
+
+        # Estimate bore parameters from fundamental
+        c_sped = SPEED_OF_SOUND  # mm/s
+        L_open = c_sped / (2.0 * fundamental)
+        L_closed = c_sped / (4.0 * fundamental)
+        odd_count = 0  # conservative: assume open pipe unless proven closed
+        is_closed = False
+        bore_length = L_open
+
+        # Create DesignSpec — targets are computed from scale by _build_targets
+        spec = DesignSpec(
+            name=label,
+            description=f"Inverse-designed from sound (f0={fundamental:.1f} Hz)",
+            bore_type="cylindrical",
+            closed_top=is_closed,
+            bore_radius_mm=7.25,
+            bore_length_mm=min(bore_length, 5000.0),
+            hole_count=6,
+            scale="12_tet",
+            lowest_note_hz=fundamental,
+            n_octaves=2,
+        )
+
+        # Optimize via standard pipeline (scale-based targets)
+        t0 = time.time()
+        result = GenerativeResult(query=label)
+
+        if self.dask_client is not None:
+            spec_dict = _spec_to_dict(spec)
+            future = self.dask_client.submit(_optimize_candidate_standalone,
+                                              spec_dict, self.verbose)
+            res_dict = future.result()
+            candidate = _dict_to_candidate(res_dict, spec)
+            result.candidates.append(candidate)
+        else:
+            candidate = self._optimize_candidate(spec)
+            result.candidates.append(candidate)
+
+        valid_c = [c for c in result.candidates if c.success]
+        if valid_c:
+            result.best = min(valid_c, key=lambda c: c.intonation_rms)
+
+        result.n_candidates = len(result.candidates)
+        result.total_time_s = time.time() - t0
+        return result
+
     def _optimize_candidate(self, spec: DesignSpec) -> CandidateResult:
         """Run Pareto optimization for a single design candidate."""
         import traceback as _tb
         t0 = time.time()
         candidate = CandidateResult(design=spec)
 
-        targets = _build_targets(spec)
+        targets = spec.targets if spec.targets else _build_targets(spec)
         if not targets or len(targets) < 2:
             candidate.error = "Insufficient target frequencies"
             return candidate
@@ -827,6 +985,41 @@ def generate(query: str, n_candidates: int = 3) -> dict:
     """
     agent = get_agent()
     result = agent.design(query, n_candidates)
+    return _result_to_dict(result)
+
+
+def generate_from_sound(filepath: str = "",
+                        fundamental_hz: float = 0.0,
+                        label: str = "",
+                        n_candidates: int = 2) -> dict:
+    """Convenience: inverse design from sound.
+
+    Uses the sound's fundamental frequency to set the instrument's pitch,
+    then optimizes a bore geometry for standard scale playability.
+
+    Parameters
+    ----------
+    filepath : str
+        WAV file path (analysed to extract fundamental).
+    fundamental_hz : float
+        Explicit fundamental frequency (alternative to filepath).
+    label : str
+        Design label.
+    n_candidates : int
+        Number of candidates.
+
+    Returns
+    -------
+    dict
+        JSON-serializable design result.
+    """
+    agent = get_agent()
+    result = agent.design_from_sound(
+        filepath=filepath,
+        fundamental_hz=fundamental_hz,
+        label=label,
+        n_candidates=n_candidates,
+    )
     return _result_to_dict(result)
 
 
