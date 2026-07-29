@@ -1,5 +1,7 @@
 # Architecture Guide
 
+> **⚠ AI Governance in effect.** Before coding, read `CONSTRAINTS_AND_PREFERENCES.md` (boot sequence) and `AI_CONSTITUTION.md` (10 laws). Compliance checks run on: 15min timer, before code, after tests, when stuck. See `COMPLIANCE_CHECK.md`.
+
 ## Directory Structure
 
 ```
