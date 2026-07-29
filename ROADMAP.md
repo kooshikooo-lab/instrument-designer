@@ -464,4 +464,17 @@ There is no dedicated acoustics preprint server. Researchers use **arXiv** (cs.S
 
 ---
 
-*Last updated: 2026-07-23*
+## AI Governance System — COMPLETE
+
+- [x] `docs/CONSTRAINTS_AND_PREFERENCES.md` — AI Boot Sequence (6-step init every session)
+- [x] `docs/AI_CONSTITUTION.md` — 10 non-negotiable project laws
+- [x] `docs/ARCHITECTURE_DECISIONS.md` — 6 seeded ADR records (geometry layer, thin orchestrators, etc.)
+- [x] `docs/ARCHITECTURE_CHECKLIST.md` — Pre-flight/pre-commit 20-item checklist
+- [x] `docs/COMPLIANCE_CHECK.md` — Trigger-based compliance script (15min, before code, after tests)
+- [x] `docs/AI_FAILURE_PATTERNS.md` — Failure pattern log (5 seeded patterns)
+- [x] Governance pages pushed to GitHub wiki
+- [x] Architecture redesign packaged for ChatGPT review (zip + prompt)
+
+---
+
+*Last updated: 2026-07-29*
