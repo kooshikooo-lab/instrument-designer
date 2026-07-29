@@ -3,10 +3,10 @@
 The solver receives an abstract graph of acoustic elements and solves it.
 It does NOT know whether it's solving a clarinet, trumpet, or flute.
 """
-from .network import AcousticNetwork, Segment, Port, Boundary, Fingering
+from .network import AcousticNetwork
 from .coordinates import CoordinateTransform
 
 __all__ = [
-    "AcousticNetwork", "Segment", "Port", "Boundary", "Fingering",
+    "AcousticNetwork",
     "CoordinateTransform",
 ]

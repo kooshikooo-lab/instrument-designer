@@ -124,3 +124,65 @@ TMM in `tmm_acoustics.py` is the default solver for optimization loops. OpenWind
 - Positive: Optimization completes in seconds, not hours.
 - Negative: TMM accuracy is limited below ~200 Hz and above ~5 kHz (plane-wave assumption breaks down).
 - Negative: Visothermal losses must be approximated (Keefe model) rather than computed from first principles.
+
+---
+
+## ADR-007: Split pareto_optimizer.py into Responsibility-Focused Modules
+
+**Status:** Accepted (2026-07-29)
+
+**Title:** Decompose `pareto_optimizer.py` into `timbre_proxy`, `objectives`, `nsga2`, `pareto`
+
+**Context:**
+`pareto_optimizer.py` had grown to 674 lines with four distinct responsibilities: (1) a pure-numpy timbre proxy, (2) TMM-dependent intonation objective functions, (3) pymoo-encapsulated NSGA-II wrappers, and (4) Pareto-front optimisation algorithms. The timbre proxy was imported by `design_pipeline.py` using private function names (`_bore_smoothness`, `_hole_radiation_consistency`), indicating the proxy should be its own public module.
+
+**Decision:**
+Split into four new modules and keep `pareto_optimizer.py` as a backward-compat re-export layer:
+
+- `backend/physics/timbre_proxy.py` — `bore_smoothness()`, `hole_radiation_consistency()`, `compute_timbre_cost()` (pure numpy, 90 lines)
+- `backend/optimization/objectives.py` — `compute_intonation_cost()`, `evaluate_bi_objective()` (TMM-aware, 110 lines)
+- `backend/optimization/nsga2.py` — `nsga2_minimize()` (generic single-objective NSGA-II, 64 lines)
+- `backend/optimization/pareto.py` — `pareto_sweep()`, `run_pareto()`, CLI (270 lines)
+- `backend/pareto_optimizer.py` — re-exports all public names + backward-compat aliases `_bore_smoothness`, `_hole_radiation_consistency`
+
+All callers (`design_from_wav.py`, `design_from_unconventional.py`, `design_pipeline.py`, `generative_agent.py`, `scripts/pareto_sweep_all.py`) updated to import from the new homes directly.
+
+**Consequences:**
+- Positive: Each file is < 300 lines (Law 8).
+- Positive: The timbre proxy is now a proper leaf module in `physics/` — it can be reused without optimizer or TMM dependencies.
+- Positive: Private-function imports (`_bore_smoothness`) replaced with public API (`bore_smoothness`).
+- Positive: Zero breaking changes — re-export layer preserves all existing imports.
+- Negative: One extra hop in the import graph for backward-compat callers (but still works).
+
+---
+
+## ADR-008: AcousticNetwork — Solver-Agnostic Instrument Representation
+
+**Status:** Accepted (2026-07-29)
+
+**Title:** Introduce `AcousticNetwork` as the formal boundary between geometry and solvers
+
+**Context:**
+`InstrumentGeometry.to_tmm()` returns raw arrays (radii, lengths, hole_specs). Adding OpenWind or FEM would require each caller to replicate the array unpacking and pass the right formats. There was no single place to add new solver converters.
+
+**Decision:**
+Create `backend/core/network.py` with an `AcousticNetwork` dataclass — a solver-agnostic discretised instrument model:
+
+```
+InstrumentGeometry → AcousticNetwork → TMMNetwork / OpenWindNetwork / FEMNetwork
+```
+
+Each solver provides its own `from_network()` converter function. For TMM: `tmm_instrument_from_network()` in `tmm_acoustics.py`. For future solvers: the same pattern.
+
+The network stores:
+- `bore_points`: `list[(z_mm, inner_radius_mm, outer_radius_mm)]`
+- `holes`: `list[(z_mm, radius_mm, chimney_height_mm)]`
+- `closed_top`: bool
+- `total_length`: float
+
+**Consequences:**
+- Positive: Adding a new solver means writing one converter function — no changes to geometry or orchestrator code.
+- Positive: `InstrumentGeometry` remains pure shape (Law 4). The outer diameter (needed for TMM but not for pure geometry) is supplied at conversion time via `to_network(outer_diameter_mm=...)`.
+- Positive: The network can be serialised, cached, and validated independently of any solver.
+- Negative: An extra abstraction layer adds ~120 lines of code. For projects that only use TMM, this is overhead.
+- Negative: `tmm_instrument_from_radii()` still exists for backward compatibility; two conversion paths now coexist.

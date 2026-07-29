@@ -159,10 +159,10 @@ def match_timbre(best_candidate: dict,
                  pop_size: int = 30) -> dict:
     """Tier 3: optimize bore radii to match the sound's harmonic envelope.
 
-    Calls ``pareto_optimizer.nsga2_minimize`` — never instantiates
+    Calls ``optimization.nsga2.nsga2_minimize`` — never instantiates
     pymoo directly.
     """
-    from backend.pareto_optimizer import nsga2_minimize
+    from backend.optimization.nsga2 import nsga2_minimize
 
     target_freqs, target_mags = build_target_envelope(analysis)
     n_harmonics = len(target_mags)

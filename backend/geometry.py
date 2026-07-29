@@ -5,6 +5,8 @@ from typing import Sequence
 
 import numpy as np
 
+from backend.core.network import AcousticNetwork
+
 
 @dataclasses.dataclass(frozen=True)
 class BoreProfile:
@@ -85,6 +87,39 @@ class InstrumentGeometry:
         if self.mouthpiece_diameter is None:
             r = self.bore.interpolate(self.total_length)
             object.__setattr__(self, "mouthpiece_diameter", 2.0 * r)
+
+    def to_network(
+        self,
+        outer_diameter_mm: float = 22.0,
+    ) -> AcousticNetwork:
+        """Convert geometry to a solver-agnostic AcousticNetwork.
+
+        Parameters
+        ----------
+        outer_diameter_mm : float, optional
+            Outer diameter of the instrument body (mm).  Default 22.0.
+
+        Returns
+        -------
+        AcousticNetwork
+            Solver-agnostic representation.
+        """
+        bore_points = [
+            (float(z), float(r), outer_diameter_mm / 2.0)
+            for z, r in zip(self.bore.positions, self.bore.radii)
+        ]
+        holes = [
+            (float(p), float(d) / 2.0, float(h))
+            for p, d, h in zip(self.holes.positions,
+                               self.holes.diameters,
+                               self.holes.chimney_heights)
+        ]
+        return AcousticNetwork(
+            bore_points=bore_points,
+            holes=holes,
+            closed_top=self.closed_top,
+            total_length=self.total_length,
+        )
 
     def to_tmm(self) -> tuple[np.ndarray, np.ndarray, list[dict]]:
         """Convert geometry to TMM arrays.

@@ -8,10 +8,10 @@ best_candidate (as Tier 2 would produce), and calls match_timbre.
 import sys, time, os, tempfile
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from backend.inverse_design import (
-    synthesize_harmonic, save_synthetic_wav,
-    analyze_wav, match_timbre,
+from backend.sound_analysis import (
+    synthesize_harmonic, save_synthetic_wav, analyze_wav,
 )
+from backend.design_from_wav import match_timbre
 
 t_start = time.time()
 

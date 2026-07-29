@@ -7,7 +7,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from distributed import Client
 from backend.benchmark_all import INSTRUMENTS
-from backend.pareto_optimizer import pareto_sweep
+from backend.optimization.pareto import pareto_sweep
 
 
 def _pareto_task(args):

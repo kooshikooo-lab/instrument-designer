@@ -2,7 +2,7 @@
 Design instruments from unconventional bore profiles.
 
 A thin orchestrator that converts SplineBore descriptions into
-optimizable parameters and delegates search to ``pareto_optimizer``.
+optimizable parameters and delegates search to ``nsga2_minimize``.
 
 Usage:
     from backend.design_from_unconventional import (
@@ -16,6 +16,7 @@ from __future__ import annotations
 import numpy as np
 
 from backend.geometry import BoreProfile, HoleLayout, InstrumentGeometry
+from backend.tmm_acoustics import SPEED_OF_SOUND
 
 
 def spline_bore_to_geometry(
@@ -49,14 +50,12 @@ def optimize_conical_bore(
 ) -> dict:
     """Optimize a conical bore profile for the given fundamental.
 
-    Calls ``pareto_optimizer.nsga2_minimize`` — never re-implements
+    Calls ``optimization.nsga2.nsga2_minimize`` — never re-implements
     pymoo setup.
     """
-    from backend.pareto_optimizer import nsga2_minimize
+    from backend.optimization.nsga2 import nsga2_minimize
 
-    _c = 346100.0  # mm/s
-
-    bore_length = _c / (2.0 * fundamental_hz)
+    bore_length = SPEED_OF_SOUND / (2.0 * fundamental_hz)
     cone_rad = np.radians(cone_angle_deg)
     tip_radius = 5.0
     bell_radius = tip_radius + bore_length * np.tan(cone_rad)
