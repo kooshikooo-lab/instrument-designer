@@ -1,0 +1,53 @@
+{
+  "Contra-alto clarinet": {
+    "desc": "Contra-alto clarinet in Eb (closed-open)",
+    "target_note": "",
+    "target_freq_hz": 116.54,
+    "pareto_sweep_points": 8,
+    "knee_w_int": 0.14285714285714285,
+    "knee_intonation_c": 6.643204535279253e-05,
+    "knee_timbre_cost": 0.03589132360004965,
+    "final_validation_rms_c": 72.16027499537056,
+    "bore_length_mm": 741.5895665572771,
+    "holes": 8,
+    "wall_thickness_mm": 2.5,
+    "pareto_time_s": 24.61129140853882,
+    "refine_time_s": 5.083810806274414,
+    "stl_file": "test_output/instruments/contra_alto_pareto.stl",
+    "stl_size_kb": 793.83203125
+  },
+  "Bass clarinet": {
+    "desc": "Bass clarinet in Bb (closed-open)",
+    "target_note": "",
+    "target_freq_hz": 58.27,
+    "pareto_sweep_points": 8,
+    "knee_w_int": 0.14285714285714285,
+    "knee_intonation_c": 6.939049909908688e-06,
+    "knee_timbre_cost": 0.021161262916770653,
+    "final_validation_rms_c": 100.07093127476061,
+    "bore_length_mm": 1483.4252534374746,
+    "holes": 8,
+    "wall_thickness_mm": 3.0,
+    "pareto_time_s": 23.4209725856781,
+    "refine_time_s": 3.942326307296753,
+    "stl_file": "test_output/instruments/bass_clarinet_pareto.stl",
+    "stl_size_kb": 793.83203125
+  },
+  "Concert F#2": {
+    "desc": "Concert Fs2 target (closed-open single note)",
+    "target_note": "",
+    "target_freq_hz": 87.31,
+    "pareto_sweep_points": 8,
+    "knee_w_int": 0.0,
+    "knee_intonation_c": 3.0233939342978797e-09,
+    "knee_timbre_cost": 0.0,
+    "final_validation_rms_c": 2.721054540868092e-09,
+    "bore_length_mm": 986.0327869233478,
+    "holes": 0,
+    "wall_thickness_mm": 2.5,
+    "pareto_time_s": 0.31880688667297363,
+    "refine_time_s": 0.0666358470916748,
+    "stl_file": "test_output/instruments/fsharp2_pareto.stl",
+    "stl_size_kb": 793.83203125
+  }
+}

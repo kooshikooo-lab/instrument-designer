@@ -1,5 +1,7 @@
 # Architecture Guide
 
+> **⚠ AI Governance in effect.** Before coding, read `CONSTRAINTS_AND_PREFERENCES.md` (boot sequence) and `AI_CONSTITUTION.md` (10 laws). Compliance checks run on: 15min timer, before code, after tests, when stuck. See `COMPLIANCE_CHECK.md`.
+
 ## Directory Structure
 
 ```
@@ -215,3 +217,21 @@ for hole in ow_holes[1:]:  # skip header
 # D4 (all closed): all holes should be 'x'
 assert all(fingerings[h][0] == 'x' for h in range(1, num_holes+1))
 ```
+
+
+## Optimization Method Constraint
+
+**Default rule: Always use pareto_sweep (weighted-sum) + refine_sequential for optimization.
+This is the most optimal method in the arsenal. Do not use NSGA-II (run_pareto) or basic sequential()
+unless told otherwise.**
+
+### Why pareto_sweep + refine_sequential:
+- refine_sequential internally runs: sequential placement -> DE global re-opt -> 4-stage L-BFGS-B refinement
+- pareto_sweep wraps this with weighted-sum sweep over w_int in [0, 1] to trace the Pareto front
+- Phase 1 baseline always validates (<1c RMS) because it uses the proven intonation-only path
+- Knee point selection gives best intonation/timbre tradeoff automatically
+- This was validated on 11 instruments at w_int=0.9 (all <1c RMS)
+
+### When to deviate:
+- Only when explicitly told to use a different method
+- For single-objective optimization: use refine_sequential directly with desired w_int

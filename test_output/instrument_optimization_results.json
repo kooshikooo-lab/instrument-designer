@@ -1,0 +1,32 @@
+{
+  "contra_alto": {
+    "desc": "Contra-alto clarinet in Eb (closed-open, 17-hole)",
+    "rms_c": 0.16848337497235766,
+    "rms_check_c": 10000000000.0,
+    "bore_length_mm": 741.5895606200553,
+    "holes": 8,
+    "wall_thickness_mm": 2.5,
+    "optimization_time_s": 5.368297576904297,
+    "stl_file": "test_output/instruments/contra_alto_optimize.stl"
+  },
+  "bass_clarinet": {
+    "desc": "Bass clarinet in Bb (closed-open, Boehm 17-hole)",
+    "rms_c": 0.01097907463982678,
+    "rms_check_c": 10000000000.0,
+    "bore_length_mm": 1483.4253139542245,
+    "holes": 8,
+    "wall_thickness_mm": 3.0,
+    "optimization_time_s": 4.1192543506622314,
+    "stl_file": "test_output/instruments/bass_clarinet_optimize.stl"
+  },
+  "concert_fs2": {
+    "desc": "Concert Fs2 target optimization (87.31 Hz)",
+    "rms_c": 7.719630002580079e-09,
+    "rms_check_c": 10000000000.0,
+    "bore_length_mm": 986.032786920169,
+    "holes": 0,
+    "wall_thickness_mm": 2.5,
+    "optimization_time_s": 0.08433222770690918,
+    "stl_file": "test_output/instruments/fsharp2_concert_optimize.stl"
+  }
+}

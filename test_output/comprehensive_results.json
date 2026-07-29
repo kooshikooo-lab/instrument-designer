@@ -1,0 +1,256 @@
+{
+  "diatonic_whistle_D": {
+    "name": "diatonic_whistle_D",
+    "desc": "Tin Whistle in D (open-open, cylindrical, diatonic)",
+    "closed_top": false,
+    "bore_radius": 5.0,
+    "n_targets": 8,
+    "f0": 587.33,
+    "library_ref": {
+      "lib_name": "tin_whistle_D",
+      "bore_length_mm": 300.0,
+      "bore_diameter_mm": [
+        11.0,
+        14.0
+      ],
+      "wall_thickness_mm": 1.0,
+      "closed_top": false,
+      "n_holes": 6
+    },
+    "library_matches": [
+      {
+        "lib_name": "tin_whistle_D",
+        "bore_length_mm": 300.0,
+        "bore_diameter_mm": [
+          11.0,
+          14.0
+        ],
+        "wall_thickness_mm": 1.0,
+        "closed_top": false,
+        "n_holes": 6
+      }
+    ],
+    "results": {
+      "refine_1_0": {
+        "rms_c": 4.4305655897443867e-07,
+        "L_mm": 295.39720955462894,
+        "n_holes": 2,
+        "hp": [
+          30.0,
+          53.0
+        ],
+        "hd": [
+          2.0,
+          3.8
+        ],
+        "time_s": 27.0
+      },
+      "refine_0_5": {
+        "rms_c": 0.2593279787223302,
+        "L_mm": 295.37781057866846,
+        "n_holes": 2,
+        "hp": [
+          30.0,
+          53.0
+        ],
+        "hd": [
+          2.0,
+          4.0
+        ],
+        "time_s": 30.0
+      }
+    }
+  },
+  "recorder_C": {
+    "name": "recorder_C",
+    "desc": "Soprano Recorder in C (open-open, cylindrical)",
+    "closed_top": false,
+    "bore_radius": 5.0,
+    "n_targets": 8,
+    "f0": 523.25,
+    "library_ref": {
+      "lib_name": "soprano_recorder_C",
+      "bore_length_mm": 332.0,
+      "bore_diameter_mm": 13.0,
+      "wall_thickness_mm": 2.5,
+      "closed_top": false,
+      "n_holes": 7
+    },
+    "library_matches": [
+      {
+        "lib_name": "soprano_recorder_C",
+        "bore_length_mm": 332.0,
+        "bore_diameter_mm": 13.0,
+        "wall_thickness_mm": 2.5,
+        "closed_top": false,
+        "n_holes": 7
+      },
+      {
+        "lib_name": "tenor_recorder_C",
+        "bore_length_mm": 466.0,
+        "bore_diameter_mm": 18.0,
+        "wall_thickness_mm": 3.0,
+        "closed_top": false,
+        "n_holes": 7
+      }
+    ],
+    "results": {
+      "refine_1_0": {
+        "rms_c": 5.593210640554935e-07,
+        "L_mm": 330.8502740302739,
+        "n_holes": 6,
+        "hp": [
+          30.0,
+          54.0,
+          85.5,
+          96.7,
+          126.6,
+          150.3
+        ],
+        "hd": [
+          2.0,
+          4.5,
+          4.3,
+          4.3,
+          4.4,
+          4.4
+        ],
+        "time_s": 105.3
+      },
+      "refine_0_5": {
+        "rms_c": 0.33669891206002855,
+        "L_mm": 330.83553616892885,
+        "n_holes": 6,
+        "hp": [
+          30.0,
+          53.8,
+          85.6,
+          96.7,
+          126.6,
+          150.3
+        ],
+        "hd": [
+          2.0,
+          4.5,
+          4.4,
+          4.3,
+          4.5,
+          4.5
+        ],
+        "time_s": 45.5
+      }
+    }
+  },
+  "clarinet_Bb": {
+    "name": "clarinet_Bb",
+    "desc": "Bb Clarinet (closed-open, cylindrical Boehm)",
+    "closed_top": true,
+    "bore_radius": 7.0,
+    "n_targets": 13,
+    "f0": 233.08,
+    "library_ref": {
+      "lib_name": "clarinet_Bb_modern",
+      "bore_length_mm": 660.0,
+      "bore_diameter_mm": 15.0,
+      "wall_thickness_mm": 3.0,
+      "closed_top": true,
+      "n_holes": 14
+    },
+    "library_matches": [
+      {
+        "lib_name": "clarinet_Bb_modern",
+        "bore_length_mm": 660.0,
+        "bore_diameter_mm": 15.0,
+        "wall_thickness_mm": 3.0,
+        "closed_top": true,
+        "n_holes": 14
+      },
+      {
+        "lib_name": "bass_clarinet_Bb_standard",
+        "bore_length_mm": 1200.0,
+        "bore_diameter_mm": 23.5,
+        "wall_thickness_mm": 5.0,
+        "closed_top": true,
+        "n_holes": 10
+      },
+      {
+        "lib_name": "contra_bass_clarinet_Bb",
+        "bore_length_mm": 1900.0,
+        "bore_diameter_mm": 38.0,
+        "wall_thickness_mm": 7.0,
+        "closed_top": true,
+        "n_holes": 10
+      }
+    ],
+    "results": {
+      "refine_1_0": {
+        "rms_c": 0.3863702889015225,
+        "L_mm": 377.21274295484676,
+        "n_holes": 12,
+        "hp": [
+          67.1,
+          119.5,
+          139.9,
+          144.7,
+          179.4,
+          205.0,
+          226.7,
+          231.5,
+          256.7,
+          271.7,
+          280.9,
+          301.8
+        ],
+        "hd": [
+          5.7,
+          4.2,
+          5.2,
+          4.7,
+          5.0,
+          4.9,
+          5.1,
+          4.2,
+          5.3,
+          5.7,
+          3.7,
+          4.3
+        ],
+        "time_s": 66.3
+      },
+      "refine_0_5": {
+        "rms_c": 1.1061856668949313,
+        "L_mm": 377.21274766538846,
+        "n_holes": 12,
+        "hp": [
+          65.6,
+          96.3,
+          126.8,
+          137.1,
+          170.2,
+          195.4,
+          217.5,
+          223.2,
+          245.6,
+          261.8,
+          266.7,
+          282.0
+        ],
+        "hd": [
+          4.7,
+          5.7,
+          6.3,
+          6.3,
+          6.3,
+          6.3,
+          6.3,
+          6.3,
+          6.3,
+          6.3,
+          5.5,
+          6.3
+        ],
+        "time_s": 23.0
+      }
+    }
+  }
+}

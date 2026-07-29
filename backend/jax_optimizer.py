@@ -14,8 +14,12 @@ import numpy as np
 
 os.environ["JAX_ENABLE_X64"] = "1"
 
-import jax
-jax.config.update("jax_enable_x64", True)
+try:
+    import jax
+    jax.config.update("jax_enable_x64", True)
+    _HAVE_JAX = True
+except Exception:
+    _HAVE_JAX = False
 
 from scipy.optimize import minimize as sp_min
 from backend.tmm_acoustics import (
@@ -182,7 +186,7 @@ def sequential_placement(cfg):
 # Phase 1: 4-stage L-BFGS-B refinement (from benchmark_all.py sequential_refined)
 # ============================================================================
 
-def refine_sequential(cfg, verbose=False, use_jax_bore=False, w_int=1.0, w_mono=0.3):
+def refine_sequential(cfg: dict, verbose: bool = False, use_jax_bore: bool = False, w_int: float = 1.0, w_mono: float = 0.3, n_cp: int = 6):
     """Sequential + DE global re-optim + 4-stage L-BFGS-B refinement.
 
     Matches benchmark_all.py sequential_refined exactly.
@@ -197,10 +201,15 @@ def refine_sequential(cfg, verbose=False, use_jax_bore=False, w_int=1.0, w_mono=
     rms_seq, L_seq, bore_radii, hp, hd, hl = sequential_placement(cfg)
     t0 = time.time()
 
-    n_cp = 6
     n_h = len(hp)
     L = L_seq
-    radii = bore_radii.copy()
+    if len(bore_radii) != n_cp:
+        if len(bore_radii) < n_cp:
+            radii = np.concatenate([bore_radii, np.full(n_cp - len(bore_radii), bore_r)])
+        else:
+            radii = bore_radii[:n_cp].copy()
+    else:
+        radii = bore_radii.copy()
     closed_top = cfg["closed_top"]
     targets = cfg["targets"]
     bore_r = cfg["bore_radius"]

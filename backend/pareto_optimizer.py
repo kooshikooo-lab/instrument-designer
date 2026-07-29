@@ -392,7 +392,7 @@ def pareto_sweep(
     if verbose:
         print("  Phase 1: Intonation-only optimisation (baseline)...")
     rms_init, L_init, radii_init, hp_init, hd_init, _hl_init, _ = refine_sequential(
-        cfg, verbose=False, use_jax_bore=False,
+        cfg, verbose=False, use_jax_bore=False, n_cp=n_cp,
     )
     if verbose:
         print(f"    Baseline: RMS={rms_init:.4f}c, L={L_init:.1f}mm, "

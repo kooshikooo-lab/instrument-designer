@@ -968,6 +968,59 @@ INSTRUMENTS = {
                   "verified": False, "source": "Printables / Custom design",
                   "description": "Playable contra-bass clarinet mouthpiece. Tip opening ~2.2-2.5mm. Uses bass sax reed or contra reed. Print on side. Large chamber."},
     },
+
+    # === TEST instruments (optimized via pareto_sweep + refine_sequential) ===
+    # These are NOT verified against physical measurements.
+
+    "contra_alto_clarinet_optimized_test": {
+        "bore_length": 741.6,
+        "bore_diameter": 17.1,
+        "wall_thickness": 2.5,
+        "closed_top": True,
+        "holes": [
+            (122.4, 3.74), (147.0, 3.77), (180.9, 3.83), (213.6, 3.82),
+            (243.9, 3.82), (274.1, 3.65), (299.3, 3.82), (324.9, 3.82),
+        ],
+        "_meta": {
+            "display_name": "Contra-Alto Clarinet in Eb (Pareto-Optimized Test)",
+            "family": "Clarinet", "subcategory": "Contra-Alto",
+            "verified": False,
+            "source": "pareto_sweep + refine_sequential, w_int=1.0 baseline",
+            "description": "TEST instrument - contra-alto clarinet optimized for concert Bb2 target. Not verified physically.",
+        },
+    },
+    "bass_clarinet_optimized_test": {
+        "bore_length": 1483.4,
+        "bore_diameter": 22.0,
+        "wall_thickness": 3.0,
+        "closed_top": True,
+        "holes": [
+            (224.8, 3.94), (368.0, 3.91), (499.7, 3.72), (553.9, 3.19),
+            (676.4, 3.25), (771.1, 3.24), (809.4, 2.69), (890.6, 3.38),
+        ],
+        "_meta": {
+            "display_name": "Bass Clarinet in Bb (Pareto-Optimized Test)",
+            "family": "Clarinet", "subcategory": "Bass",
+            "verified": False,
+            "source": "pareto_sweep + refine_sequential, w_int=1.0 baseline",
+            "description": "TEST instrument - bass clarinet optimized for concert Bb2 target. Not verified physically.",
+        },
+    },
+    "concert_fsharp2_closed_open_test": {
+        "bore_length": 986.0,
+        "bore_diameter": 14.5,
+        "wall_thickness": 2.5,
+        "closed_top": True,
+        "holes": [],
+        "_meta": {
+            "display_name": "Concert F#2 Closed-Open Test Pipe",
+            "family": "Test", "subcategory": "Benchmark",
+            "verified": False,
+            "source": "pareto_sweep + refine_sequential, single-note closed-open pipe",
+            "description": "TEST instrument - closed-open pipe optimized for F#2 (87.31 Hz). Bare bore, no tone holes. RMS 0.00c. Not verified physically.",
+        },
+    },
+
 }
 
 
