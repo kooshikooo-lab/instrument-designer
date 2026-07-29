@@ -5,49 +5,54 @@
 ## Directory Structure
 
 ```
-woodwind-designer/
-├── backend/                 # Core acoustic engine (27 files in root + subpackages)
-│   ├── core/                # AcousticNetwork, coordinate system definitions
-│   ├── physics/             # Loss models, excitation, radiation, junctions
-│   ├── solvers/             # TMM solver, OpenWind wrapper
-│   ├── optimization/        # Optimizer stages, base classes
-│   ├── instruments/         # Pre-defined instrument configs (clarinet, flute, etc.)
-│   ├── designs/             # Instrument design scripts
-│   ├── reference_instruments/  # CSV reference data
-│   ├── tmm_acoustics.py     # Core TMM engine
-│   ├── tmm_acoustics_jax.py # JAX differentiable TMM
-│   ├── two_phase_optimizer.py # DE + L-BFGS-B pipeline
-│   ├── benchmark_all.py     # Full benchmark suite
-│   ├── cadquery_export.py   # STL/STEP 3D model export
-│   ├── stl_export.py        # Legacy STL export
-│   ├── svg_export.py        # SVG bore visualization
-│   ├── target_frequencies.py # Note frequency tables
-│   └── ...                  # Other core modules
+instrument-designer/
+├── backend/                 # Core acoustic engine + pipeline modules
+│   │                         # (ADR-001: geometry separate from acoustics)
+│   │                         # (ADR-004: shared optimizer in pareto_optimizer)
+│   │                         # (ADR-005: three-tier pipeline)
+│   ├── sound_analysis.py        Tier 1: pure signal processing (leaf module)
+│   ├── pareto_optimizer.py      Shared optimizer: nsga2_minimize, run_pareto, pareto_sweep
+│   ├── design_from_wav.py       Thin orchestrator: WAV → optimizer (Tiers 1→2→3)
+│   ├── design_from_unconventional.py  Thin orchestrator: spline bores → optimizer
+│   ├── geometry.py              Explicit geometry layer (BoreProfile, InstrumentGeometry)
+│   ├── inverse_design.py        Backward-compat re-export layer only (ADR-003)
+│   ├── design_pipeline.py       Mode-switching dispatcher
+│   ├── generative_agent.py      LLM-guided instrument knowledge + design
+│   ├── tmm_acoustics.py         TMM solver (primary, ADR-006)
+│   ├── cadquery_export.py       STL/STEP 3D model export
+│   ├── jax_optimizer.py         JAX-accelerated gradient refinement
+│   ├── spline_bore.py           Cubic spline bore profiles
+│   ├── instrument_knowledge.py  Instrument family knowledge base
+│   ├── physics/                 Visothermal loss models
+│   ├── core/                    Core abstractions
+│   ├── optimization/            Optimization helpers
+│   ├── instruments/             Pre-defined instrument configs
+│   ├── reference_instruments/   CSV reference data
+│   └── ...                      Legacy/archived modules
 │
 ├── woodwind_designer/       # GUI application (Tauri backend)
-│   ├── engine/              # OpenWind, Demakein, Chalumier wrappers
-│   ├── design_server.py     # FastAPI server (imports from backend/)
-│   └── ...
+│   └── design_server.py     FastAPI server (imports from backend/)
 │
 ├── web/                     # Tauri/Vite frontend (TypeScript)
 ├── config/                  # Instrument configuration JSON files
-├── tests/                   # All test files (96 files)
-├── scripts/                 # Utilities, benchmarks, debug scripts (36 files)
-├── docs/                    # Architecture, status, prompts, session logs
-│   ├── ARCHITECTURE.md      # This file
-│   ├── CODING_STANDARDS.md  # Documentation requirements
-│   ├── prompts/             # AI prompt templates
-│   └── session-logs/        # Development session logs
+├── tests/                   # ALL test files
+├── scripts/                 # ALL utility/debug/benchmark scripts
+├── docs/                    # ALL documentation, governance, prompts
+│   ├── CONSTRAINTS_AND_PREFERENCES.md *Boot sequence for AI agents*
+│   ├── AI_CONSTITUTION.md           *Non-negotiable project laws*
+│   ├── ARCHITECTURE_DECISIONS.md    *Architecture Decision Records (ADRs)*
+│   ├── ARCHITECTURE_CHECKLIST.md    *Pre-flight and pre-commit checklist*
+│   ├── AI_FAILURE_PATTERNS.md       *Logged AI mistakes and prevention*
+│   ├── ARCHITECTURE.md              *This file — system map + conventions*
+│   ├── CODING_STANDARDS.md          *Documentation + design rules*
+│   ├── BEST_PRACTICES.md            *Debugging framework*
+│   ├── PHYSICS_PRINCIPLES.md        *Acoustic modeling assumptions*
+│   ├── ACOUSTIC_DESIGN_OPTIMIZATION.md  *Survey + priority recommendations*
+│   ├── prompts/                     *AI prompt templates*
+│   └── session-logs/                *Development session logs*
 ├── research/                # Research documents and references
 ├── designs/                 # Design output (JSON, SVG, STL)
-├── chat-logs/               # AI session logs
-├── wiki/                    # Project wiki
-├── chalumier/               # Third-party Kotlin instrument designer
-├── openwind/                # Third-party FEM acoustic solver
-├── pyproject.toml           # Project config, dependencies
-├── README.md                # Project overview
-├── run.py                   # PyInstaller entry point
-└── run.bat                  # Windows launch script
+└── README.md                # Project overview
 ```
 
 ### Key rules:
