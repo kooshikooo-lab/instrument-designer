@@ -4,9 +4,9 @@ Generative instrument design agent.
 LLM-guided Pareto optimization for novel wind instrument designs.
 
 Architecture:
-  LLM (Ollama, optional) → suggests novel design specs based on acoustic physics
-  → NSGA-II / JAX Pareto optimizer → refines for intonation vs timbre
-  → Returns Pareto front with physics explanations
+  LLM (Ollama, optional) suggests novel design specs based on acoustic physics
+  NSGA-II / JAX Pareto optimizer refines for intonation vs timbre
+  Returns Pareto front with physics explanations
 
 If LLM is unavailable, uses a deterministic physics-based suggestion engine
 (instrument_knowledge.py) to generate candidate designs.
@@ -22,458 +22,62 @@ Usage:
 from __future__ import annotations
 
 import json
-import math
-import random
+import os
 import time
-from dataclasses import dataclass, field
-from typing import Optional
 
-import numpy as np
-
+from backend.physics.pipeline_utils import (
+    BORE_SHAPE_GENERATORS,
+    CandidateResult,
+    DesignSpec,
+    GenerativeResult,
+    build_targets,
+    dict_to_candidate,
+    family_lowest_note,
+    generate_cylindrical_radii,
+    optimize_candidate_standalone,
+    spec_to_dict,
+    suggest_from_knowledge,
+)
 from backend.tmm_acoustics import SPEED_OF_SOUND
-from backend.pareto_optimizer import pareto_sweep, run_pareto, evaluate_bi_objective
 
-c = SPEED_OF_SOUND
+# Dask scheduler — override via DASK_SCHEDULER_URL env var
+DASK_SCHEDULER_URL = os.environ.get("DASK_SCHEDULER_URL", "tcp://localhost:9797")
 
-# Dask scheduler for parallel candidate optimization
-DASK_SCHEDULER_URL = "tcp://100.69.113.41:9797"
+# Ollama hosts — override via OLLAMA_HOSTS env var (comma-separated)
+OLLAMA_URLS = [h.strip() for h in os.environ.get("OLLAMA_HOSTS", "http://localhost:11434").split(",")]
 
-# Try loading instrument knowledge base
+INSTRUMENT_FAMILIES = {}
+HYBRID_INSTRUMENTS = []
+QUARTER_TONE_STRATEGIES = []
+SCALES = {}
+MATERIALS = {}
+MaterialType = None
+get_acoustic_challenges = None
+suggest_material = None
+KNOWLEDGE_AVAILABLE = False
+
 try:
     from backend.instrument_knowledge import (
-        INSTRUMENT_FAMILIES,
         HYBRID_INSTRUMENTS,
+        INSTRUMENT_FAMILIES,
+        MATERIALS,
         QUARTER_TONE_STRATEGIES,
         SCALES,
-        MATERIALS,
         MaterialType,
         get_acoustic_challenges,
         suggest_material,
     )
     KNOWLEDGE_AVAILABLE = True
 except ImportError:
-    KNOWLEDGE_AVAILABLE = False
-    INSTRUMENT_FAMILIES = {}
-    HYBRID_INSTRUMENTS = []
-    QUARTER_TONE_STRATEGIES = []
-    SCALES = {}
+    pass
 
-# Try importing from benchmark_all for the instrument configs
 try:
     from backend.benchmark_all import INSTRUMENTS as BENCHMARK_INSTRUMENTS
 except ImportError:
     BENCHMARK_INSTRUMENTS = {}
 
 
-@dataclass
-class DesignSpec:
-    """Specification for a candidate instrument design."""
-    name: str
-    description: str
-    family: str = ""
-    bore_type: str = "cylindrical"
-    closed_top: bool = False
-    bore_radius_mm: float = 7.25
-    bore_length_mm: float = 500.0
-    hole_count: int = 6
-    hole_diameter_mm: float = 7.0
-    hole_length_mm: float = 3.75
-    outer_diameter_mm: float = 22.0
-    material: str = "plastic"
-    scale: str = "12_tet"
-    quarter_tone_strategy: str = ""
-    n_register: int = 2
-    llm_reasoning: str = ""
-    feasibility: str = "unknown"
-    lowest_note_hz: float = 261.63  # default C4
-    n_octaves: int = 2  # how many octaves of targets to generate
-    targets: list = field(default_factory=list)  # pre-computed target freqs (inverse design)
-
-
-@dataclass
-class CandidateResult:
-    """Optimization result for a single design candidate."""
-    design: DesignSpec
-    intonation_rms: float = 1e10
-    timbre_cost: float = 1e10
-    bore_length_opt_mm: float = 0.0
-    hole_positions_mm: list[float] = field(default_factory=list)
-    hole_diameters_mm: list[float] = field(default_factory=list)
-    bore_radii: list[float] = field(default_factory=list)
-    pareto_front: list = field(default_factory=list)
-    success: bool = False
-    opt_time_s: float = 0.0
-    error: str = ""
-
-
-@dataclass
-class GenerativeResult:
-    """Full result from the generative agent."""
-    query: str
-    candidates: list[CandidateResult] = field(default_factory=list)
-    best: CandidateResult | None = None
-    total_time_s: float = 0.0
-    n_candidates: int = 0
-    llm_used: bool = False
-    llm_response: str = ""
-    errors: list[str] = field(default_factory=list)
-
-
-# ============================================================================
-# Bore shape generators
-# ============================================================================
-
-def _generate_cylindrical_radii(length_mm: float, radius_mm: float,
-                                 flare_radius_mm: float | None = None,
-                                 n_cp: int = 6) -> np.ndarray:
-    return np.full(n_cp, radius_mm)
-
-
-def _generate_conical_radii(length_mm: float, radius_start_mm: float,
-                             radius_end_mm: float, n_cp: int = 6) -> np.ndarray:
-    return np.linspace(radius_start_mm, radius_end_mm, n_cp)
-
-
-def _generate_parabolic_radii(length_mm: float, radius_min_mm: float,
-                               radius_max_mm: float, n_cp: int = 6) -> np.ndarray:
-    t = np.linspace(0, 1, n_cp)
-    r = radius_min_mm + (radius_max_mm - radius_min_mm) * t ** 2
-    return r
-
-
-def _generate_bessel_radii(length_mm: float, radius_start_mm: float,
-                            radius_end_mm: float, n_cp: int = 6) -> np.ndarray:
-    x = np.linspace(0.1, 1.0, n_cp)
-    r = radius_start_mm + (radius_end_mm - radius_start_mm) * (1.0 - 1.0 / x) / (1.0 - 1.0)
-    return np.clip(r, 1.0, 50.0)
-
-
-def _generate_exponential_radii(length_mm: float, radius_start_mm: float,
-                                 radius_end_mm: float, n_cp: int = 6) -> np.ndarray:
-    x = np.linspace(0, 1, n_cp)
-    growth = math.log(radius_end_mm / max(radius_start_mm, 0.1))
-    r = radius_start_mm * np.exp(growth * x)
-    return r
-
-
-BORE_SHAPE_GENERATORS = {
-    "cylindrical": _generate_cylindrical_radii,
-    "conical": _generate_conical_radii,
-    "parabolic": _generate_parabolic_radii,
-    "bessel": _generate_bessel_radii,
-    "exponential": _generate_exponential_radii,
-}
-
-
-# ============================================================================
-# Standalone candidate optimizer (Dask-serializable)
-# ============================================================================
-
-def _optimize_candidate_standalone(spec_dict: dict, verbose: bool = False) -> dict:
-    """Optimize a single design candidate. Module-level for Dask serialization.
-
-    Parameters
-    ----------
-    spec_dict : dict
-        DesignSpec fields serialized as a plain dict.
-    verbose : bool
-        If True, print progress messages.
-
-    Returns
-    -------
-    dict
-        CandidateResult fields serialized as a plain dict, plus a copy of
-        the input spec.
-    """
-    import os
-    import sys
-    import time
-    import traceback as _tb
-
-    # Ensure repo is on path (Dask workers may not have it)
-    _repo = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-    if _repo not in sys.path:
-        sys.path.insert(0, _repo)
-
-    import numpy as np
-
-    _c = SPEED_OF_SOUND
-    t0 = time.time()
-    result: dict = {"success": False, "error": "", "opt_time_s": 0.0}
-
-    targets = spec_dict.get("targets", [])
-    if not targets or len(targets) < 2:
-        try:
-            spec = DesignSpec(**{k: v for k, v in spec_dict.items()
-                                 if k in DesignSpec.__dataclass_fields__})
-            targets = _build_targets(spec)
-        except Exception:
-            pass
-        if not targets or len(targets) < 2:
-            result["error"] = "Insufficient target frequencies"
-            result["opt_time_s"] = time.time() - t0
-            return result
-
-    closed_top = spec_dict.get("closed_top", False)
-    bore_r = spec_dict.get("bore_radius_mm", 7.25)
-    outer_d = spec_dict.get("outer_diameter_mm", 22.0)
-    hole_d = spec_dict.get("hole_diameter_mm", 7.0)
-    hole_l = spec_dict.get("hole_length_mm", 3.75)
-    bore_len = spec_dict.get("bore_length_mm", 500.0)
-    hole_cnt = spec_dict.get("hole_count", 6)
-    bore_type = spec_dict.get("bore_type", "cylindrical")
-    name = spec_dict.get("name", "Unknown")
-
-    n_holes = int(min(hole_cnt, len(targets) - 1))
-
-    cfg = {
-        "desc": name,
-        "closed_top": closed_top,
-        "targets": targets,
-        "bore_radius": bore_r,
-        "outer_diameter": outer_d,
-        "hole_diameter": hole_d,
-        "hole_length": hole_l,
-    }
-
-    generator = BORE_SHAPE_GENERATORS.get(bore_type, _generate_cylindrical_radii)
-    bore_radii = generator(bore_len, bore_r, bore_r * 1.2)
-
-    pareto_front = []
-    try:
-        sweep = pareto_sweep(cfg, n_weights=5, maxiter=60, verbose=False)
-        pareto_front = [
-            {"w_int": w, "intonation": intl, "timbre": timb}
-            for w, intl, timb, L in sweep
-        ]
-    except Exception as e:
-        if verbose:
-            print(f"    Pareto sweep failed: {e}")
-
-    front, designs, elapsed = [], [], 0.0
-    try:
-        front, designs, elapsed = run_pareto(
-            cfg, pop_size=20, n_gen=25, verbose=False,
-        )
-    except Exception:
-        if verbose:
-            print("  NSGA-II failed:")
-            _tb.print_exc()
-        result["error"] = "NSGA-II optimization failed"
-        result["opt_time_s"] = time.time() - t0
-        return result
-
-    if front:
-        pareto_front = [
-            {"intonation": intl, "timbre": timb}
-            for intl, timb in front
-        ]
-        best_idx = min(range(len(front)), key=lambda i: front[i][0])
-        best_design = designs[best_idx]
-
-        n_cp = 6
-        result["bore_radii"] = best_design[:n_cp].tolist()
-        hp = sorted(best_design[n_cp:n_cp + n_holes].tolist())
-        result["hole_positions_mm"] = hp
-        result["hole_diameters_mm"] = best_design[n_cp + n_holes:].tolist()
-        result["intonation_rms"] = float(front[best_idx][0])
-        result["timbre_cost"] = float(front[best_idx][1])
-        result["bore_length_opt_mm"] = bore_len
-        result["success"] = True
-    else:
-        result["error"] = "NSGA-II returned empty front"
-
-    result["pareto_front"] = pareto_front
-    result["opt_time_s"] = time.time() - t0
-    return result
-
-
-# ============================================================================
-# Serialization helpers for Dask
-# ============================================================================
-
-def _spec_to_dict(spec: DesignSpec) -> dict:
-    """Serialize a DesignSpec to a plain dict for Dask transport."""
-    return {
-        "name": spec.name,
-        "description": spec.description,
-        "family": spec.family,
-        "bore_type": spec.bore_type,
-        "closed_top": spec.closed_top,
-        "bore_radius_mm": spec.bore_radius_mm,
-        "bore_length_mm": spec.bore_length_mm,
-        "hole_count": spec.hole_count,
-        "hole_diameter_mm": spec.hole_diameter_mm,
-        "hole_length_mm": spec.hole_length_mm,
-        "outer_diameter_mm": spec.outer_diameter_mm,
-        "material": spec.material,
-        "scale": spec.scale,
-        "quarter_tone_strategy": spec.quarter_tone_strategy,
-        "n_register": spec.n_register,
-        "llm_reasoning": spec.llm_reasoning,
-        "feasibility": spec.feasibility,
-        "lowest_note_hz": spec.lowest_note_hz,
-        "n_octaves": spec.n_octaves,
-        "targets": spec.targets,
-    }
-
-
-def _dict_to_candidate(res: dict, spec: DesignSpec) -> CandidateResult:
-    """Reconstruct a CandidateResult from a standalone optimizer dict."""
-    return CandidateResult(
-        design=spec,
-        intonation_rms=res.get("intonation_rms", 1e10),
-        timbre_cost=res.get("timbre_cost", 1e10),
-        bore_length_opt_mm=res.get("bore_length_opt_mm", 0.0),
-        hole_positions_mm=res.get("hole_positions_mm", []),
-        hole_diameters_mm=res.get("hole_diameters_mm", []),
-        bore_radii=res.get("bore_radii", []),
-        pareto_front=res.get("pareto_front", []),
-        success=res.get("success", False),
-        opt_time_s=res.get("opt_time_s", 0.0),
-        error=res.get("error", ""),
-    )
-
-
-# ============================================================================
-# Physics-based suggestion engine (LLM fallback)
-# ============================================================================
-
-def _suggest_from_knowledge(query: str) -> list[DesignSpec]:
-    """Generate design specs from instrument_knowledge.py when LLM unavailable."""
-    q = query.lower()
-    suggestions = []
-
-    # Hybrid instrument? (Check AFTER known families to avoid false matches)
-    found_known = bool([k for k in INSTRUMENT_FAMILIES if k in q])
-    for hybrid in HYBRID_INSTRUMENTS:
-        if found_known:
-            break
-        words_in_q = [w for w in hybrid.name.lower().split() if len(w) > 3]
-        if any(w in q for w in words_in_q):
-            mp = INSTRUMENT_FAMILIES.get(hybrid.mouthpiece_family)
-            body = INSTRUMENT_FAMILIES.get(hybrid.body_family)
-            if mp and body:
-                bore_r = (mp.typical_bore_radius_mm[0] + body.typical_bore_radius_mm[0]) / 2
-                bore_l = (mp.typical_length_mm[1] + body.typical_length_mm[1]) / 2
-                n_holes = max(mp.typical_hole_count[0], body.typical_hole_count[0])
-                lowest, octaves = _family_lowest_note(hybrid.body_family)
-                suggestions.append(DesignSpec(
-                    name=hybrid.name,
-                    description=hybrid.description,
-                    family=f"{hybrid.mouthpiece_family}_{hybrid.body_family}",
-                    bore_type=body.bore_type.value,
-                    closed_top=mp.closed_top,
-                    bore_radius_mm=bore_r,
-                    bore_length_mm=bore_l,
-                    hole_count=n_holes,
-                    scale="12_tet",
-                    feasibility=hybrid.feasibility,
-                    llm_reasoning="; ".join(hybrid.acoustic_challenges[:3]),
-                    lowest_note_hz=lowest,
-                    n_octaves=octaves,
-                ))
-
-    # Known instrument family?
-    for key, fam in INSTRUMENT_FAMILIES.items():
-        if key in q or fam.family.lower() in q:
-            bore_r = sum(fam.typical_bore_radius_mm) / 2
-            bore_l = sum(fam.typical_length_mm) / 2
-            n_holes = max(fam.typical_hole_count)
-            hole_d = sum(fam.typical_hole_diameter_mm) / 2 if fam.typical_hole_diameter_mm[1] > 0 else 7.0
-            mat = suggest_material(key, purpose="experimental").value
-
-            challenges = "; ".join(fam.key_acoustic_challenges[:2])
-
-            # Quarter-tone variant?
-            is_quarter_tone = "quarter" in q or "microtonal" in q or "24" in q
-            qt_strategy = ""
-            if is_quarter_tone and not fam.closed_top:
-                qt_strategy = "additional side holes"
-                n_holes = min(n_holes + 4, 14)
-            elif is_quarter_tone:
-                qt_strategy = "cross-fingering + half-holing"
-
-            scale = "24_tet" if is_quarter_tone else "12_tet"
-            use_closed_top = fam.closed_top and key not in ("clarinet", "oboe", "bassoon")
-
-            lowest, octaves = _family_lowest_note(key)
-            suggestions.append(DesignSpec(
-                name=f"{'Quarter-Tone ' if is_quarter_tone else ''}{fam.family}",
-                description=f"{fam.description} {'with quarter-tone capability' if is_quarter_tone else ''}",
-                family=key,
-                bore_type=fam.bore_type.value,
-                closed_top=fam.closed_top,
-                bore_radius_mm=bore_r,
-                bore_length_mm=bore_l,
-                hole_count=n_holes,
-                hole_diameter_mm=hole_d,
-                material=mat,
-                scale=scale,
-                quarter_tone_strategy=qt_strategy,
-                n_register=1 if fam.closed_top else 2,
-                feasibility="known",
-                llm_reasoning=challenges,
-                lowest_note_hz=lowest,
-                n_octaves=octaves,
-            ))
-
-    # "Random instrument" case
-    if "random" in q or not suggestions:
-        family_keys = list(INSTRUMENT_FAMILIES.keys())
-        for _ in range(3):
-            key = random.choice(family_keys)
-            fam = INSTRUMENT_FAMILIES[key]
-            bore_r = random.uniform(*fam.typical_bore_radius_mm)
-            bore_l = random.uniform(*fam.typical_length_mm)
-            n_holes = random.randint(*fam.typical_hole_count)
-            hole_d = random.uniform(*fam.typical_hole_diameter_mm) if fam.typical_hole_diameter_mm[1] > 0 else 7.0
-
-            # Random bore shape variation
-            bore_shapes = ["cylindrical", "conical", "parabolic", "exponential"]
-            bore_type = random.choice(bore_shapes)
-
-            lowest, octaves = _family_lowest_note(key)
-            suggestions.append(DesignSpec(
-                name=f"Random {fam.family} ({bore_type})",
-                description=f"Randomly generated {fam.family} with {bore_type} bore profile.",
-                family=key,
-                bore_type=bore_type,
-                closed_top=bool(random.choice([True, False])),
-                bore_radius_mm=bore_r,
-                bore_length_mm=bore_l,
-                hole_count=n_holes,
-                hole_diameter_mm=hole_d,
-                scale=random.choice([s for s in SCALES.keys()]) if SCALES else "12_tet",
-                feasibility="experimental",
-                llm_reasoning=f"Random generation seeded from {fam.family} acoustic parameters.",
-                lowest_note_hz=lowest,
-                n_octaves=octaves,
-            ))
-
-    # Deduplicate by name
-    seen = set()
-    unique = []
-    for s in suggestions:
-        if s.name not in seen:
-            seen.add(s.name)
-            unique.append(s)
-    return unique[:5]  # max 5 candidates
-
-
-# ============================================================================
-# LLM integration (Ollama)
-# ============================================================================
-
-OLLAMA_URLS = [
-    "http://localhost:11434",
-    "http://100.100.66.117:11434",
-    "http://100.100.69.113:11434",
-]
-
-
 def _check_ollama() -> str | None:
-    """Check if Ollama is available and return base URL."""
     import requests
     for url in OLLAMA_URLS:
         try:
@@ -486,10 +90,8 @@ def _check_ollama() -> str | None:
 
 
 def _llm_suggest(base_url: str, query: str) -> list[DesignSpec]:
-    """Use Ollama LLM to suggest instrument designs based on query."""
     import requests
 
-    # Prepare the physics context for the LLM
     family_descriptions = []
     for key, fam in list(INSTRUMENT_FAMILIES.items())[:8]:
         family_descriptions.append(
@@ -548,7 +150,6 @@ Output a JSON array of 1-3 instrument designs with full acoustic justification."
             return []
 
         text = r.json().get("response", "")
-        # Extract JSON array from response
         start = text.find("[")
         end = text.rfind("]") + 1
         if start >= 0 and end > start:
@@ -557,7 +158,6 @@ Output a JSON array of 1-3 instrument designs with full acoustic justification."
             except json.JSONDecodeError:
                 return []
         else:
-            # Try single object
             start = text.find("{")
             end = text.rfind("}") + 1
             if start >= 0 and end > start:
@@ -573,7 +173,7 @@ Output a JSON array of 1-3 instrument designs with full acoustic justification."
         specs = []
         for d in designs:
             family_key = d.get("family", "")
-            lowest, octaves = _family_lowest_note(family_key)
+            lowest, octaves = family_lowest_note(family_key)
             specs.append(DesignSpec(
                 name=d.get("name", "Unknown Design"),
                 description=d.get("description", ""),
@@ -596,76 +196,6 @@ Output a JSON array of 1-3 instrument designs with full acoustic justification."
         return []
 
 
-# ============================================================================
-# Per-family lowest note mapping (A4 = 440 Hz)
-# ============================================================================
-
-FAMILY_LOWEST_NOTE: dict[str, tuple[float, int]] = {
-    # family → (lowest_note_hz, n_octaves)
-    "clarinet":     (146.83, 3),   # D3
-    "saxophone":    (174.61, 3),   # F3 (alto sax low Bb)
-    "flute":        (261.63, 3),   # C4
-    "recorder":     (523.25, 2),   # C5 (soprano)
-    "folk_flute":   (392.00, 2),   # G4
-    "shakuhachi":   (293.66, 2),   # D4
-    "oboe":         (233.08, 3),   # Bb3
-    "bassoon":      (58.27, 3),    # Bb1
-    "trumpet":      (164.81, 3),   # E3
-    "trombone":     (77.78, 3),    # D2
-    "french_horn":  (87.31, 3),    # F2
-    "tuba":         (43.65, 3),    # F1
-    "didgeridoo":   (65.41, 1),    # C2
-    "ocarina":      (392.00, 2),   # G4
-    "kazoo":        (261.63, 1),   # C4 (voice driven)
-}
-
-
-def _family_lowest_note(family: str) -> tuple[float, int]:
-    """Get the lowest note frequency and octave range for an instrument family."""
-    if family in FAMILY_LOWEST_NOTE:
-        return FAMILY_LOWEST_NOTE[family]
-    fam = INSTRUMENT_FAMILIES.get(family)
-    if fam:
-        bore_len = sum(fam.typical_length_mm) / 2
-        closed = fam.closed_top
-        fundamental = c / (4.0 * bore_len) if closed else c / (2.0 * bore_len)
-        octaves = max(int(sum(fam.octave_range) / 2), 1)
-        return (fundamental, octaves)
-    return (261.63, 2)
-
-
-# ============================================================================
-# Target frequency generation
-# ============================================================================
-
-def _build_targets(spec: DesignSpec) -> list[float]:
-    """Build multi-octave target frequencies from scale definition.
-
-    Uses the instrument's lowest note (A4=440Hz reference) instead of
-    pipe-physics fundamental, and spans n_octaves for realistic range.
-    """
-    scale = SCALES.get(spec.scale)
-    if not scale:
-        scale = SCALES.get("12_tet")
-    if not scale:
-        return []
-
-    fundamental = spec.lowest_note_hz
-    targets = []
-    interval_count = len(scale.intervals_cents)
-    for octave in range(max(spec.n_octaves, 1)):
-        for cents in scale.intervals_cents:
-            f = fundamental * (2.0 ** ((octave * 1200 + cents) / 1200.0))
-            targets.append(f)
-    # Trim to reasonable count — ~1 target per hole + 1 for open tube
-    max_targets = max(spec.hole_count + 3, 8)
-    return targets[:max_targets]
-
-
-# ============================================================================
-# Main Generative Agent
-# ============================================================================
-
 class GenerativeAgent:
     """Generative instrument design agent.
 
@@ -687,7 +217,6 @@ class GenerativeAgent:
             else:
                 print("[GenerativeAgent] LLM unavailable — using physics engine")
 
-        # Dask connection for parallel candidate optimization
         addr = dask_address if dask_address else DASK_SCHEDULER_URL
         try:
             from distributed import Client
@@ -706,24 +235,9 @@ class GenerativeAgent:
                 print(f"[GenerativeAgent] Dask unavailable ({e}) — running sequentially")
 
     def design(self, query: str, n_candidates: int = 3) -> GenerativeResult:
-        """Generate and optimize instrument designs from a text query.
-
-        Parameters
-        ----------
-        query : str
-            Design description (e.g., "quarter-tone bass clarinet with conical bore").
-        n_candidates : int
-            Maximum number of candidates to optimize.
-
-        Returns
-        -------
-        GenerativeResult
-            All candidates with optimization results.
-        """
         t0 = time.time()
         result = GenerativeResult(query=query)
 
-        # Step 1: Generate design specs
         if self.ollama_url:
             specs = _llm_suggest(self.ollama_url, query)
             result.llm_used = bool(specs)
@@ -731,7 +245,7 @@ class GenerativeAgent:
                 result.llm_response = specs[0].llm_reasoning if specs else ""
 
         if not getattr(result, 'llm_used', False) or not specs:
-            specs = _suggest_from_knowledge(query)
+            specs = suggest_from_knowledge(query)
             if not specs:
                 result.errors.append("No designs could be generated for query.")
                 result.total_time_s = time.time() - t0
@@ -739,21 +253,19 @@ class GenerativeAgent:
 
         specs = specs[:n_candidates]
 
-        # Step 2: Optimize each candidate (parallel via Dask or sequential)
         if self.dask_client is not None:
-            spec_dicts = [_spec_to_dict(s) for s in specs]
-            futures = {self.dask_client.submit(_optimize_candidate_standalone, sd, self.verbose): s
+            spec_dicts = [spec_to_dict(s) for s in specs]
+            futures = {self.dask_client.submit(optimize_candidate_standalone, sd, self.verbose): s
                        for sd, s in zip(spec_dicts, specs)}
             for future, spec in futures.items():
                 res_dict = future.result()
-                candidate = _dict_to_candidate(res_dict, spec)
+                candidate = dict_to_candidate(res_dict, spec)
                 result.candidates.append(candidate)
         else:
             for spec in specs:
                 candidate = self._optimize_candidate(spec)
                 result.candidates.append(candidate)
 
-        # Step 3: Select best
         valid = [c for c in result.candidates if c.success]
         if valid:
             result.best = min(valid, key=lambda c: c.intonation_rms)
@@ -763,24 +275,9 @@ class GenerativeAgent:
         return result
 
     def random_instrument(self) -> GenerativeResult:
-        """Generate a completely novel random instrument design."""
         return self.design("random experimental instrument")
 
     def hybrid(self, mouthpiece_family: str, body_family: str) -> GenerativeResult:
-        """Design a hybrid instrument combining two families.
-
-        Parameters
-        ----------
-        mouthpiece_family : str
-            Instrument family for the mouthpiece (e.g., "clarinet").
-        body_family : str
-            Instrument family for the body (e.g., "saxophone").
-
-        Returns
-        -------
-        GenerativeResult
-            Optimized hybrid instrument designs.
-        """
         query = f"{mouthpiece_family} mouthpiece on {body_family} body"
         return self.design(query, n_candidates=2)
 
@@ -788,37 +285,8 @@ class GenerativeAgent:
                           fundamental_hz: float = 0.0,
                           label: str = "",
                           n_candidates: int = 2) -> GenerativeResult:
-        """Inverse design: design an instrument from a target sound spectrum.
-
-        Analyzes a WAV file (or uses an explicit fundamental frequency) to
-        determine the instrument's pitch, then optimizes a bore geometry that
-        plays a standard scale starting from that fundamental.
-
-        The optimizer uses scale-based targets (not raw harmonics), because
-        the optimizer expects one target frequency per fingering (successive
-        scale notes).  Raw harmonic series [f0, 2f0, 3f0, ...] would require
-        impossible 2× frequency jumps per fingering — not how wind instruments
-        work.
-
-        Parameters
-        ----------
-        filepath : str
-            Path to a WAV file.  If empty, use fundamental_hz directly.
-        fundamental_hz : float
-            Fundamental frequency in Hz (required if filepath is empty).
-        label : str
-            Optional design label.
-        n_candidates : int
-            Number of candidate designs.
-
-        Returns
-        -------
-        GenerativeResult
-            Candidates with optimized bore geometry.
-        """
         from backend import inverse_design
 
-        # Analyze sound or use explicit fundamental
         if filepath:
             analysis = inverse_design.analyze_wav(filepath)
             if analysis["confidence"] < 0.1:
@@ -840,15 +308,11 @@ class GenerativeAgent:
             result.total_time_s = 0.0
             return result
 
-        # Estimate bore parameters from fundamental
-        c_sped = SPEED_OF_SOUND  # mm/s
+        c_sped = SPEED_OF_SOUND
         L_open = c_sped / (2.0 * fundamental)
-        L_closed = c_sped / (4.0 * fundamental)
-        odd_count = 0  # conservative: assume open pipe unless proven closed
         is_closed = False
         bore_length = L_open
 
-        # Create DesignSpec — targets are computed from scale by _build_targets
         spec = DesignSpec(
             name=label,
             description=f"Inverse-designed from sound (f0={fundamental:.1f} Hz)",
@@ -862,16 +326,15 @@ class GenerativeAgent:
             n_octaves=2,
         )
 
-        # Optimize via standard pipeline (scale-based targets)
         t0 = time.time()
         result = GenerativeResult(query=label)
 
         if self.dask_client is not None:
-            spec_dict = _spec_to_dict(spec)
-            future = self.dask_client.submit(_optimize_candidate_standalone,
+            spec_dict = spec_to_dict(spec)
+            future = self.dask_client.submit(optimize_candidate_standalone,
                                               spec_dict, self.verbose)
             res_dict = future.result()
-            candidate = _dict_to_candidate(res_dict, spec)
+            candidate = dict_to_candidate(res_dict, spec)
             result.candidates.append(candidate)
         else:
             candidate = self._optimize_candidate(spec)
@@ -886,12 +349,11 @@ class GenerativeAgent:
         return result
 
     def _optimize_candidate(self, spec: DesignSpec) -> CandidateResult:
-        """Run Pareto optimization for a single design candidate."""
         import traceback as _tb
         t0 = time.time()
         candidate = CandidateResult(design=spec)
 
-        targets = spec.targets if spec.targets else _build_targets(spec)
+        targets = spec.targets if spec.targets else build_targets(spec)
         if not targets or len(targets) < 2:
             candidate.error = "Insufficient target frequencies"
             return candidate
@@ -908,13 +370,12 @@ class GenerativeAgent:
             "hole_length": spec.hole_length_mm,
         }
 
-        # Generate initial bore radii based on bore type
-        generator = BORE_SHAPE_GENERATORS.get(spec.bore_type, _generate_cylindrical_radii)
+        generator = BORE_SHAPE_GENERATORS.get(spec.bore_type, generate_cylindrical_radii)
         bore_radii = generator(spec.bore_length_mm, spec.bore_radius_mm,
                                 spec.bore_radius_mm * 1.2)
 
-        # Run Pareto sweep
         try:
+            from backend.pareto_optimizer import pareto_sweep
             sweep = pareto_sweep(cfg, n_weights=5, maxiter=60, verbose=False)
             candidate.pareto_front = [
                 {"w_int": w, "intonation": intl, "timbre": timb}
@@ -924,8 +385,8 @@ class GenerativeAgent:
             if self.verbose:
                 print(f"    Pareto sweep failed: {e}")
 
-        # Run NSGA-II
         try:
+            from backend.pareto_optimizer import run_pareto
             front, designs, elapsed = run_pareto(
                 cfg, pop_size=20, n_gen=25, verbose=False,
             )
@@ -943,7 +404,6 @@ class GenerativeAgent:
                 {"intonation": intl, "timbre": timb}
                 for intl, timb in front
             ]
-            # Extract best design
             best_idx = min(range(len(front)), key=lambda i: front[i][0])
             best_design = designs[best_idx]
 
@@ -967,22 +427,14 @@ class GenerativeAgent:
 # Module-level convenience functions
 # ============================================================================
 
-_agent: GenerativeAgent | None = None
-
 
 def get_agent() -> GenerativeAgent:
-    """Get or create the singleton generative agent."""
-    global _agent
-    if _agent is None:
-        _agent = GenerativeAgent(verbose=False)
-    return _agent
+    if not hasattr(get_agent, '_cache'):
+        get_agent._cache = GenerativeAgent(verbose=False)
+    return get_agent._cache
 
 
 def generate(query: str, n_candidates: int = 3) -> dict:
-    """Convenience: generate designs from query.
-
-    Returns a JSON-serializable dict.
-    """
     agent = get_agent()
     result = agent.design(query, n_candidates)
     return _result_to_dict(result)
@@ -992,27 +444,6 @@ def generate_from_sound(filepath: str = "",
                         fundamental_hz: float = 0.0,
                         label: str = "",
                         n_candidates: int = 2) -> dict:
-    """Convenience: inverse design from sound.
-
-    Uses the sound's fundamental frequency to set the instrument's pitch,
-    then optimizes a bore geometry for standard scale playability.
-
-    Parameters
-    ----------
-    filepath : str
-        WAV file path (analysed to extract fundamental).
-    fundamental_hz : float
-        Explicit fundamental frequency (alternative to filepath).
-    label : str
-        Design label.
-    n_candidates : int
-        Number of candidates.
-
-    Returns
-    -------
-    dict
-        JSON-serializable design result.
-    """
     agent = get_agent()
     result = agent.design_from_sound(
         filepath=filepath,
@@ -1024,21 +455,18 @@ def generate_from_sound(filepath: str = "",
 
 
 def random_design() -> dict:
-    """Convenience: generate a random instrument design."""
     agent = get_agent()
     result = agent.random_instrument()
     return _result_to_dict(result)
 
 
 def hybrid_design(mouthpiece: str, body: str) -> dict:
-    """Convenience: generate a hybrid instrument design."""
     agent = get_agent()
     result = agent.hybrid(mouthpiece, body)
     return _result_to_dict(result)
 
 
 def _result_to_dict(result: GenerativeResult) -> dict:
-    """Serialize GenerativeResult to a JSON-compatible dict."""
     return {
         "query": result.query,
         "total_time_s": result.total_time_s,
@@ -1082,30 +510,3 @@ def _result_to_dict(result: GenerativeResult) -> dict:
             if result.best else None
         ),
     }
-
-
-if __name__ == "__main__":
-    print("=" * 70)
-    print("  GENERATIVE AGENT TEST")
-    print("=" * 70)
-
-    agent = GenerativeAgent(verbose=True)
-
-    # Test 1: Known instrument
-    print("\n--- Test 1: Design request ---")
-    result = agent.design("quarter-tone recorder with parabolic bore", n_candidates=2)
-    print(f"  Candidates: {len(result.candidates)}")
-    for c in result.candidates:
-        print(f"  {c.design.name}: success={c.success}, intonation={c.intonation_rms:.4f}c")
-
-    # Test 2: Random instrument
-    print("\n--- Test 2: Random instrument ---")
-    result = agent.random_instrument()
-    print(f"  Candidates: {len(result.candidates)}")
-
-    # Test 3: Hybrid
-    print("\n--- Test 3: Hybrid design ---")
-    result = agent.hybrid("clarinet", "saxophone")
-    print(f"  Candidates: {len(result.candidates)}")
-    for c in result.candidates:
-        print(f"  {c.design.name}: success={c.success}")

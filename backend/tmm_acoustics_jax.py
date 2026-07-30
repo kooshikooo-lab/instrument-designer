@@ -12,7 +12,7 @@ import jax.numpy as jnp
 from jax import lax
 from typing import List
 
-SPEED_OF_SOUND = 346100.0
+from backend.tmm_acoustics import SPEED_OF_SOUND
 
 MAX_ACTIONS = 128
 MAX_HOLES = 24

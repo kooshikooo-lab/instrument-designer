@@ -42,7 +42,7 @@ from scipy.interpolate import CubicSpline
 from typing import List, Optional, Tuple
 
 from backend.tmm_acoustics import (
-    TMMInstrument, Profile, SPEED_OF_SOUND,
+    TMMInstrument, Profile,
 )
 
 
@@ -208,7 +208,7 @@ class SplineBore:
         L = self.bore_length
         r_ref = float(self.radii[0])
         x_ref, r_ref_arr = SplineBore([0, L], [r_ref, r_ref]).sample(64)
-        from backend.tmm_acoustics import tmm_instrument_from_radii
+        from backend.tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
         inst_ref = tmm_instrument_from_radii(
             r_ref_arr, L, [], [], [],
             closed_top=False,

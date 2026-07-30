@@ -322,7 +322,7 @@ def sequential(cfg):
             f = inst.frequency_from_wavelength(wl)
             if f <= 0 or not math.isfinite(f): return 1e10
             return abs(1200.0 * math.log2(f / fundamental))
-        except: return 1e10
+        except Exception: return 1e10
 
     r = sp_min(bore_obj, [L_est], method='L-BFGS-B',
                bounds=[(L_est * 0.7, L_est * 1.3)],
@@ -368,7 +368,7 @@ def sequential(cfg):
                 err = abs(1200.0 * math.log2(f / target)) if f > 0 else 1e10
                 if err < best_err:
                     best_err, best_pos = err, pos
-            except: pass
+            except Exception: pass
         hp.append(best_pos)
         hd.append(cfg["hole_diameter"])
         hl.append(cfg["hole_length"])

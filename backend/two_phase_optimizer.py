@@ -18,17 +18,13 @@ try:
     from backend.timbre_objectives import compute_timbre_objective
     _TIMBRE_AVAILABLE = True
 except ImportError:
-    _TIMBRE_AVAILABLE = False
-    def compute_timbre_objective(*args, **kwargs):
-        return 0.0
-
-try:
-    from .timbre_objectives import compute_timbre_objective
-    _TIMBRE_AVAILABLE = True
-except ImportError:
-    _TIMBRE_AVAILABLE = False
-    def compute_timbre_objective(*args, **kwargs):
-        return 0.0
+    try:
+        from .timbre_objectives import compute_timbre_objective
+        _TIMBRE_AVAILABLE = True
+    except ImportError:
+        _TIMBRE_AVAILABLE = False
+        def compute_timbre_objective(*args, **kwargs):
+            return 0.0
 
 c = SPEED_OF_SOUND
 SEMITONE_MAP = {'C': 0, 'D': 2, 'E': 4, 'F': 5, 'G': 7, 'A': 9, 'B': 11}
@@ -72,7 +68,7 @@ def phase_cost_with_offset(inst, targets, fingerings, n_register=1):
         offset = float(np.median(ca))
         corrected = np.abs(ca - offset)
         return float(np.cbrt(np.mean(corrected ** 3)))
-    except:
+    except Exception:
         return 1e10
 
 
@@ -84,7 +80,7 @@ def peak_cost_nearest(inst, targets, fingerings, detected_regs):
             wl = inst.find_resonance(SPEED_OF_SOUND / tgt, fl, n_register=pr)
             f = inst.frequency_from_wavelength(wl)
             cents.append(cents_error(f, targets[len(cents)]))
-        except:
+        except Exception:
             cents.append(1e10)
     ca = np.array(cents)
     if np.any(np.abs(ca) > 1e5):
@@ -108,7 +104,7 @@ def detect_registers(inst, targets, fingerings, max_reg=5):
                 if dist < best_dist:
                     best_dist = dist
                     best_pr = pr
-            except:
+            except Exception:
                 continue
         regs.append(best_pr)
     return regs
@@ -149,7 +145,7 @@ def phase1_de_search(bore_length, n_holes, hole_lens, targets, fingerings,
                 loss_model=loss_model,
             )
             return inst.phase_cost_with_offset(targets, fingerings, n_register=n_register)
-        except:
+        except Exception:
             return 1e6
 
     bounds = (
@@ -214,7 +210,7 @@ def phase2_lbfgsb_refine(x0, bore_length, n_holes, hole_lens, targets, fingering
                 return peak_cost + weight_timbre * timbre_cost
             
             return peak_cost
-        except:
+        except Exception:
             return 1e6
 
     bore_min, bore_max = bore_bounds_range
@@ -318,8 +314,6 @@ def two_phase_optimize(
             fl.append('open')
         fingerings_parsed.append(fl[:len(hole_lens)])
 
-    targets = np.array(hole_lens)  # WRONG - targets should be frequencies
-    # Actually targets is passed in correctly as frequencies
     targets = np.array(targets)
 
     # Phase 1: DE with phase cost (fast)
