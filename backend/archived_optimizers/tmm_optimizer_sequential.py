@@ -22,14 +22,8 @@ import numpy as np
 from scipy.optimize import minimize, differential_evolution
 from typing import List, Optional, Dict, Tuple
 
-try:
-    from .tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND, TMMInstrument
-    from .physics.losses import KeefeLoss
-except ImportError:
-    import sys, os
-    sys.path.insert(0, os.path.dirname(__file__))
-    from tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND, TMMInstrument
-    from physics.losses import KeefeLoss
+from backend.tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND, TMMInstrument
+from backend.physics.losses import KeefeLoss
 
 
 # ============================================================================
@@ -399,8 +393,9 @@ class SequentialBoreOptimizer:
                         else:
                             cents.append(1e10)
                     c = np.array(cents)
-                    offset = np.median(c)
-                    return float(np.sqrt(np.mean((c - offset) ** 2)))
+                    if np.any(c > 1e9):
+                        return 1e10
+                    return float(np.sqrt(np.mean(c ** 2)))
                 except Exception:
                     return 1e10
 
@@ -487,8 +482,9 @@ class SequentialBoreOptimizer:
                     else:
                         cents.append(1e10)
                 c = np.array(cents)
-                offset = np.median(c)
-                return float(np.sqrt(np.mean((c - offset) ** 2)))
+                if np.any(c > 1e9):
+                    return 1e10
+                return float(np.sqrt(np.mean(c ** 2)))
             except Exception:
                 return 1e10
 
@@ -583,6 +579,7 @@ class SequentialBoreOptimizer:
             bore_radii_list, bore_length,
             all_positions, all_diameters, all_lengths,
             self.outer_diameter, closed_top=self.closed_top, cone_step=0.5,
+            loss_model=KeefeLoss(),
         )
 
         target_wavelengths = [SPEED_OF_SOUND / f for f in self.target_freqs]
@@ -598,10 +595,9 @@ class SequentialBoreOptimizer:
                 cents_errors.append(1e10)
 
         cents_arr = np.array(cents_errors)
-        offset = np.median(cents_arr)
-        corrected = cents_arr - offset
-        rms = float(np.sqrt(np.mean(corrected ** 2)))
-        peak = float(np.max(np.abs(corrected)))
+        scale_rms = float(np.sqrt(np.mean((cents_arr - np.median(cents_arr)) ** 2)))
+        rms = float(np.sqrt(np.mean(cents_arr ** 2)))
+        peak = float(np.max(np.abs(cents_arr)))
 
         wall_time = time.time() - t_start
 
@@ -624,6 +620,8 @@ class SequentialBoreOptimizer:
             "hole_diameters": all_diameters,
             "hole_lengths": all_lengths,
             "final_rms_cents": rms,
+            "scale_rms_cents": scale_rms,
+            "median_offset_cents": float(np.median(cents_arr)),
             "peak_error_cents": peak,
             "wall_time": wall_time,
             "matched_frequencies": [
@@ -720,9 +718,7 @@ class CorrectedPowellOptimizer:
         errors = np.array(errors)
         if np.any(np.abs(errors) > 1e5):
             return 1e10
-        offset = np.median(errors)
-        corrected = errors - offset
-        return float(np.sqrt(np.mean(corrected ** 2)))
+        return float(np.sqrt(np.mean(errors ** 2)))
 
     def run(self, verbose: bool = True, maxiter: int = 600) -> Dict:
         """Run Powell + L-BFGS-B with bore length as free variable."""
@@ -795,10 +791,9 @@ class CorrectedPowellOptimizer:
                 cents_errors.append(1e10)
 
         cents_arr = np.array(cents_errors)
-        offset = np.median(cents_arr)
-        corrected = cents_arr - offset
-        rms = float(np.sqrt(np.mean(corrected ** 2)))
-        peak = float(np.max(np.abs(corrected)))
+        scale_rms = float(np.sqrt(np.mean((cents_arr - np.median(cents_arr)) ** 2)))
+        rms = float(np.sqrt(np.mean(cents_arr ** 2)))
+        peak = float(np.max(np.abs(cents_arr)))
         wall_time = time.time() - t0
 
         if verbose:
@@ -815,6 +810,8 @@ class CorrectedPowellOptimizer:
             "hole_diameters": self.hole_diameters,
             "hole_lengths": self.hole_lengths,
             "final_rms_cents": rms,
+            "scale_rms_cents": scale_rms,
+            "median_offset_cents": float(np.median(cents_arr)),
             "peak_error_cents": peak,
             "wall_time": wall_time,
             "matched_frequencies": [

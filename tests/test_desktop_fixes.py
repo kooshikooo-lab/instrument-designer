@@ -2,7 +2,7 @@
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
-from backend.tmm_optimizer_sequential import SequentialBoreOptimizer
+from backend.archived_optimizers.tmm_optimizer_sequential import SequentialBoreOptimizer
 from backend.tmm_acoustics import SPEED_OF_SOUND
 import numpy as np
 

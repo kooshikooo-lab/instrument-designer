@@ -275,6 +275,7 @@ def _run_optimization(job_id: str, req: OptimizeRequest):
                     "designs": slim_designs,
                     "best_candidates": slim_best,
                     "n_evaluations": result.get("n_evaluations", 0),
+                    "n_unique_designs": result.get("n_unique_designs", 0),
                     "n_generations": result.get("n_generations", 0),
                     "bore_length": result.get("bore_length", 0),
                     "freq_range": result.get("freq_range", []),
@@ -316,6 +317,12 @@ def get_optimization_status(job_id: str):
         "result": job.get("result"),
         "error": job.get("error"),
     }
+
+
+@app.get("/optimize/start/{job_id}/status")
+def get_optimization_status_alias(job_id: str):
+    """Alias for /optimize/{job_id}/status, matching /optimize/tmm and /optimize/sequential naming."""
+    return get_optimization_status(job_id)
 
 
 @app.post("/optimize/evaluate")
@@ -374,7 +381,7 @@ def get_optimization_presets():
 def _run_tmm_optimization(job_id: str, req: TMMOptimizeRequest):
     """Run TMM-based optimization in a background thread."""
     try:
-        from backend.tmm_optimizer_v2 import TMMBoreOptimizerJAX
+        from backend.archived_optimizers.tmm_optimizer_v2 import TMMBoreOptimizerJAX
 
         with _lock:
             _jobs[job_id]["progress"] = ["Starting TMM optimization..."]
@@ -412,6 +419,7 @@ def _run_tmm_optimization(job_id: str, req: TMMOptimizeRequest):
                     "success": result.get("success", True),
                     "best_radii": result.get("best_radii", []),
                     "final_rms_cents": result.get("final_rms_cents", 0),
+                    "scale_rms_cents": result.get("scale_rms_cents", 0),
                     "global_offset_cents": result.get("global_offset_cents", 0),
                     "matched_frequencies": [
                         {"target": m["target"], "actual": m["actual"], "error_cents": m["error_cents"]}
@@ -479,7 +487,7 @@ class SequentialOptimizeRequest(BaseModel):
 def _run_sequential_optimization(job_id: str, req: SequentialOptimizeRequest):
     """Run sequential bore optimization in a background thread."""
     try:
-        from backend.tmm_optimizer_sequential import SequentialBoreOptimizer
+        from backend.archived_optimizers.tmm_optimizer_sequential import SequentialBoreOptimizer
 
         with _lock:
             _jobs[job_id]["progress"] = ["Starting sequential optimization..."]
@@ -519,6 +527,8 @@ def _run_sequential_optimization(job_id: str, req: SequentialOptimizeRequest):
                     "hole_diameters": result.get("hole_diameters", []),
                     "hole_lengths": result.get("hole_lengths", []),
                     "final_rms_cents": result.get("final_rms_cents", 0),
+                    "scale_rms_cents": result.get("scale_rms_cents", 0),
+                    "median_offset_cents": result.get("median_offset_cents", 0),
                     "peak_error_cents": result.get("peak_error_cents", 0),
                     "wall_time": result.get("wall_time", 0),
                     "matched_frequencies": [

@@ -19,12 +19,7 @@ import numpy as np
 from scipy.optimize import minimize
 from typing import List, Optional, Dict
 
-try:
-    from .tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
-except ImportError:
-    import sys, os
-    sys.path.insert(0, os.path.dirname(__file__))
-    from tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
+from backend.tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
 
 
 def _pava_isotonic(x: np.ndarray) -> np.ndarray:
@@ -87,7 +82,7 @@ class TMMBoreOptimizerJAX:
         self.speed_of_sound = 331300.0 + 606.0 * temperature
 
         if bore_length is None:
-            fundamental = min(target_freqs)
+            fundamental = min(self.target_freqs)
             if closed_top:
                 self.bore_length = self.speed_of_sound / (4.0 * fundamental)
             else:
@@ -104,7 +99,7 @@ class TMMBoreOptimizerJAX:
         ])
 
     def _objective(self, x: np.ndarray) -> float:
-        """Root-finding based objective: RMS cents error after median offset correction."""
+        """Root-finding based objective: RMS cents error (absolute, incl. global offset)."""
         radii = _pava_isotonic(x)
         radii = np.maximum(radii, self.min_radius)
         try:
@@ -133,9 +128,7 @@ class TMMBoreOptimizerJAX:
         errors = np.array(errors)
         if np.any(np.abs(errors) > 1e5):
             return 1e10
-        global_offset = np.median(errors)
-        corrected = errors - global_offset
-        return float(np.sqrt(np.mean(corrected ** 2)))
+        return float(np.sqrt(np.mean(errors ** 2)))
 
     def _make_initial_guess(self, method="cylindrical"):
         if method == "cylindrical":
@@ -236,14 +229,13 @@ class TMMBoreOptimizerJAX:
                 all_errors.append(1e10)
 
         all_errors = np.array(all_errors)
+        final_rms = float(np.sqrt(np.mean(all_errors ** 2)))
         global_offset = float(np.median(all_errors))
-        corrected_errors = np.abs(all_errors - global_offset)
-        final_rms = float(np.sqrt(np.mean(corrected_errors ** 2)))
 
         if verbose:
             print(f"\n  Optimization complete:")
             print(f"    RMS cents error: {final_rms:.4f}")
-            print(f"    Global offset: {global_offset:.2f} cents")
+            print(f"    Median offset: {global_offset:.2f} cents")
             print(f"    Wall time: {wall_time:.1f}s")
             print(f"\n  Per-note errors (cents):")
             for m in matched:
@@ -254,6 +246,7 @@ class TMMBoreOptimizerJAX:
             "best_radii": final_radii.tolist(),
             "best_objective": best_obj,
             "final_rms_cents": final_rms,
+            "scale_rms_cents": float(np.sqrt(np.mean((all_errors - global_offset) ** 2))),
             "global_offset_cents": global_offset,
             "matched_frequencies": matched,
             "wall_time": wall_time,

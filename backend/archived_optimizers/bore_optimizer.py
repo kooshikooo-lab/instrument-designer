@@ -106,7 +106,7 @@ def _compute_impedance_from_bore(bore_points, freq_range=(100, 3000), n_freqs=50
     cache_key = (tuple(round(x, 12) for pt in bore_points for x in pt), freq_range, n_freqs, temperature)
     cache_hash = hashlib.md5(repr(cache_key).encode()).hexdigest()
 
-    from .mp_cache import cache_get, cache_set
+    from backend.mp_cache import cache_get, cache_set
 
     cached = cache_get(cache_hash)
     if cached is not None:
@@ -540,7 +540,10 @@ class BoreOptimizer:
         self.n_generations = n_generations
         self.temperature = temperature
         self.seed = seed or np.random.randint(0, 10000)
-        self.max_radius_jump = max_radius_jump
+        if max_radius_jump is None:
+            self.max_radius_jump = (max_radius - min_radius) * 0.3
+        else:
+            self.max_radius_jump = max_radius_jump
         self.parallel_mode = parallel_mode
         
         # Auto-calculate bore length from fundamental
@@ -646,6 +649,12 @@ class BoreOptimizer:
         wall_time = time.time() - t0
         if verbose:
             print(f"  Wall time: {wall_time:.1f}s")
+
+        # True evaluation count (population x generations), not unique survivors
+        try:
+            n_evaluations = int(self._result.algorithm.evaluator.n_eval)
+        except Exception:
+            n_evaluations = 0
         
         X = self._result.X
         F = self._result.F
@@ -691,7 +700,8 @@ class BoreOptimizer:
             "pareto_front": F.tolist(),
             "designs": designs,
             "best_candidates": best_designs,
-            "n_evaluations": len(X),
+            "n_evaluations": n_evaluations,
+            "n_unique_designs": len(X),
             "n_generations": self.n_generations,
             "bore_length": self.bore_length,
             "freq_range": list(self.freq_range),

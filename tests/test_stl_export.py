@@ -2,7 +2,7 @@
 import sys, os, time
 import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
-from backend.tmm_optimizer_sequential import SequentialBoreOptimizer
+from backend.archived_optimizers.tmm_optimizer_sequential import SequentialBoreOptimizer
 from backend.stl_export import export_optimizer_result, export_bore_only, export_bore_profile_json
 
 target_freqs = [466.2, 523.3, 587.3, 622.3, 698.5, 784.0, 880.0]
