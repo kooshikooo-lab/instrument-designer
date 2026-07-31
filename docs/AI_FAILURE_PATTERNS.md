@@ -172,3 +172,53 @@ Prevention:
 - Before ANY claim that a file "does not exist": run `git branch --show-current`, `git rev-parse origin/main`, `git ls-tree -r origin/main -- <path>`, and `git log --all -- <path>`.
 - Every audit finding must state the branch and commit SHA it was produced against.
 - Never claim the user "corrected me" about a fact unless that correction is present in the visible conversation.
+
+---
+
+## Failure #8 — "Verified" an optimizer restore without ever importing it (UTF-16 + shadow package)
+
+Date: 2026-07-31
+Session: Clean-architecture cleanup (backend/optimizer restore)
+
+Problem:
+I committed a "restore" of `backend/optimizer.py` from `eedd9aa^` claiming construct+import were verified, but the restore did not work at all: (a) the file had been written as UTF-16-LE by a prior PowerShell `Set-Content` (the git blob is UTF-8 — `git cat-file` + `Get-Content` string comparison appeared "IDENTICAL" only because both sides were mangled the same way), and (b) the file was shadowed by the `backend/optimizer/` package that `eedd9aa` created, so `import backend.optimizer` never loaded the file anyway. The actual import hung for minutes and then raised: `archived_optimizers/__init__.py` eagerly imports `benchmark_optimizers` (runs a benchmark at import time) and `tmm_optimizer_sequential` (broken import). My route-guard test caught this only because it imported `backend.optimizer`.
+
+Root cause:
+- "Verified" meant a byte-for-byte git comparison and py_compile, never `import backend.optimizer` in a fresh interpreter.
+- Did not check whether the import target was a file or a package (`backend/optimizer/__init__.py` wins over `backend/optimizer.py`).
+- Trusted a prior session's summary instead of re-running the verification in this session.
+
+Solution:
+- Re-encoded the restored file as UTF-8 from the raw git blob bytes (no BOM, 18459 bytes).
+- Deleted the shadowing `backend/optimizer/` package (its redirect target, `archived_optimizers/bore_optimizer.py`, is broken: `from .mp_cache import` cannot resolve from `archived_optimizers/`).
+- Made `archived_optimizers/__init__.py` lazy (module-level `__getattr__`) so importing the package no longer runs benchmarks or fails on broken siblings.
+- Confirmed: `import backend.optimizer` in 1.7s; `BoreOptimizer` constructs; `run()` returns the full contract dict; `POST /optimize/evaluate` returns 200 via TestClient.
+
+Prevention:
+- "Importable" must mean: `python -c "import <module>"` in a fresh interpreter, with a timeout.
+- Before restoring a module, check for a same-named package dir: `git ls-files <name>.py <name>/`.
+- Never write tracked source through PowerShell `Set-Content`/`Out-File` (defaults to UTF-16); write bytes via `git show <sha>:<path>`.
+- Package `__init__.py` files must not eagerly import modules with import-time side effects or broken dependencies.
+
+---
+
+## Failure #9 — TMM and OpenWind solvers disagree on a simple cylinder (sign/convention bug class)
+
+Date: 2026-07-31
+Session: Kimi K3 claim validation (cross-solver cross-validation)
+
+Problem:
+Cross-checking the TMM solver against the OpenWind wrapper on a 300mm/9mm-radius open cylinder produced wildly different resonances: TMM gave 12.4 / 560.8 / 1123.5 Hz (register 1 spurious, registers 2-3 ≈ analytical open-open tube with end corrections), while `OpenWindSolver.compute_frequencies` gave 846.1 / 1412.4 / 2546.8 Hz — consistent with the ODD harmonics of a closed-open pipe (283 x 3, x 5, x 9) with the fundamental skipped. Disagreement is +1417 to +7312 cents. This is exactly the sign/convention mismatch Kimi K3 predicted a cross-check would catch.
+
+Root cause:
+- The two solvers are never compared in the test suite, so a register/boundary-convention mismatch (open vs closed at x=0, register indexing into `openwind` resonance mode order) went undetected.
+- TMM (`tmm_acoustics.py`) uses mm + `SPEED_OF_SOUND` (~346100 mm/s ≈ 24.4C); OpenWind uses meters — any caller mixing them silently gets wrong physics.
+
+Solution:
+- Reported the discrepancy; the `OpenWindSolver.compute_frequencies` register/mode selection and boundary convention need a dedicated investigation before OpenWind can be trusted as a validation reference. TMM register 1 (`find_resonance`) also returns a spurious near-zero mode on open geometry.
+- Related confirmed risk: `tmm_acoustics_jax.py` produces `nan` for a zero-radius bore segment (division by zero); add `jax.config.update("jax_debug_nans", True)` guard.
+
+Prevention:
+- Any solver that is used as a cross-validation reference must have at least one analytical-pipe regression test (open-open and closed-open modes).
+- Never cite a cents/RMS figure from one solver without stating which solver and its units.
+- JAX cost/gradient chains should run with `jax_debug_nans` in tests over degenerate inputs.
