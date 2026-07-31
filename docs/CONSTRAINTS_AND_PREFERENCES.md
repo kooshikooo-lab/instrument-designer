@@ -79,22 +79,22 @@ Write code. Follow `docs/CODING_STANDARDS.md`. Run `docs/ARCHITECTURE_CHECKLIST.
 
 ## GOVERNANCE DOCUMENTS
 
-All governance documents are in `docs/`. Read them in the order listed here.
+All governance documents exist in **two places** — `docs/` in the repository (authoritative source) and the GitHub wiki (https://github.com/kooshikooo-lab/instrument-designer/wiki). Keep both in sync. Read them in the order listed here.
 
-| # | File | Purpose |
-|---|------|---------|
-| 1 | `AI_CONSTITUTION.md` | The 10 non-negotiable laws all AI work must obey |
-| 2 | `CONSTRAINTS_AND_PREFERENCES.md` | This file — the boot sequence (Section 1) |
-| 3 | `AI_FAILURE_PATTERNS.md` | Known failure modes of AI work on this repo — read before every session; log new failures here |
-| 4 | `COMPLIANCE_CHECK.md` | Compliance triggers and checklist (15-min timer, before code, after tests, when stuck) |
-| 5 | `CODING_STANDARDS.md` | Implementation practices |
-| 6 | `ARCHITECTURE_CHECKLIST.md` | Run at the end of every implementation |
-| 7 | `ARCHITECTURE.md` | System organization, coordinate systems, fingering conventions |
-| 8 | `ARCHITECTURE_DECISIONS.md` | ADRs — why the architecture looks the way it does |
-| 9 | `PHYSICS_PRINCIPLES.md` | Acoustic modeling assumptions and units |
-| 10 | `WIKI.md` / `WIKI-INDEX.md` | Project wiki — deep reference for research and conventions |
-| 11 | `PROJECT.md` / `STATUS.md` / `ROADMAP.md` | Project state, status, and roadmap |
-| 12 | `ai_project_summary.md` | High-level project summary for context |
+| # | File (`docs/`) | Wiki page | Purpose |
+|---|----------------|-----------|---------|
+| 1 | `AI_CONSTITUTION.md` | [Governance-Constitution](https://github.com/kooshikooo-lab/instrument-designer/wiki/Governance-Constitution) | The 10 non-negotiable laws all AI work must obey |
+| 2 | `CONSTRAINTS_AND_PREFERENCES.md` | [Governance-Boot-Sequence](https://github.com/kooshikooo-lab/instrument-designer/wiki/Governance-Boot-Sequence) | This file — the boot sequence (Section 1) |
+| 3 | `AI_FAILURE_PATTERNS.md` | [Governance-Failure-Patterns](https://github.com/kooshikooo-lab/instrument-designer/wiki/Governance-Failure-Patterns) | Known failure modes of AI work on this repo — read before every session; log new failures here |
+| 4 | `COMPLIANCE_CHECK.md` | [Governance-Compliance](https://github.com/kooshikooo-lab/instrument-designer/wiki/Governance-Compliance) | Compliance triggers and checklist (15-min timer, before code, after tests, when stuck) |
+| 5 | `CODING_STANDARDS.md` | — | Implementation practices |
+| 6 | `ARCHITECTURE_CHECKLIST.md` | [Governance-Checklist](https://github.com/kooshikooo-lab/instrument-designer/wiki/Governance-Checklist) | Run at the end of every implementation |
+| 7 | `ARCHITECTURE.md` | [Internal-Architecture](https://github.com/kooshikooo-lab/instrument-designer/wiki/Internal-Architecture) | System organization, coordinate systems, fingering conventions |
+| 8 | `ARCHITECTURE_DECISIONS.md` | [Governance-ADRs](https://github.com/kooshikooo-lab/instrument-designer/wiki/Governance-ADRs) | ADRs — why the architecture looks the way it does |
+| 9 | `PHYSICS_PRINCIPLES.md` | — | Acoustic modeling assumptions and units |
+| 10 | `WIKI.md` / `WIKI-INDEX.md` | [Home](https://github.com/kooshikooo-lab/instrument-designer/wiki) | Project wiki — deep reference for research and conventions |
+| 11 | `PROJECT.md` / `STATUS.md` / `ROADMAP.md` | — | Project state, status, and roadmap |
+| 12 | `ai_project_summary.md` | — | High-level project summary for context |
 
 ---
 
