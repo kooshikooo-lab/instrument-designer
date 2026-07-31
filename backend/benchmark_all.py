@@ -414,9 +414,31 @@ def sequential_refined(cfg):
 
 
 if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description="Run the TMM bore benchmark suite.")
+    parser.add_argument(
+        "--instruments", "-i", default=None,
+        help="Comma-separated instrument keys to run (default: all). "
+             "Keys: " + ", ".join(INSTRUMENTS.keys()),
+    )
+    parser.add_argument(
+        "--no-dask", action="store_true",
+        help="Accepted for compatibility; this benchmark runs in-process.",
+    )
+    parser.add_argument("--dask", action="store_true", help="Ignored (see --no-dask).")
+    args = parser.parse_args()
+
+    selected = [s.strip() for s in args.instruments.split(",")] if args.instruments else None
+    if selected:
+        unknown = [k for k in selected if k not in INSTRUMENTS]
+        if unknown:
+            parser.error(f"unknown instrument key(s): {', '.join(unknown)}")
+
     # Run
     all_results = {}
     for name, cfg in INSTRUMENTS.items():
+        if selected and name not in selected:
+            continue
         print(f"\n{'#'*60}")
         print(f"# {cfg['desc']}")
         print(f"{'#'*60}")
