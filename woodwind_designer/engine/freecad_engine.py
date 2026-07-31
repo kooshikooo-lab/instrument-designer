@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import shutil
 import subprocess
 import tempfile
 from pathlib import Path
@@ -31,6 +32,12 @@ class FreeCADResult:
 
 
 def find_freecad() -> str:
+    env_path = os.environ.get("FREECADCMD")
+    if env_path and os.path.exists(env_path):
+        return env_path
+    which = shutil.which("freecadcmd")
+    if which:
+        return which
     for p in _COMMON_FREECAD_PATHS:
         if os.path.exists(p):
             return p

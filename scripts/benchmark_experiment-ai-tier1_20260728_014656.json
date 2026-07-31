@@ -1,0 +1,83 @@
+{
+  "chalumeau_C_sequential": {
+    "instrument": "chalumeau_C",
+    "optimizer": "sequential",
+    "rms": 18.728732900811572,
+    "time": 0.566460132598877,
+    "n_holes": 5,
+    "bore_length": 330.7530581039755,
+    "desc": "Chalumeau in C (closed-open)"
+  },
+  "chalumeau_C_seq_refined": {
+    "instrument": "chalumeau_C",
+    "optimizer": "seq_refined",
+    "rms": 10000000000.0,
+    "time": 0,
+    "n_holes": 0,
+    "bore_length": 0,
+    "desc": "Chalumeau in C (closed-open)"
+  },
+  "chalumeau_C_jax_two_phase": {
+    "instrument": "chalumeau_C",
+    "optimizer": "jax_two_phase",
+    "rms": 10000000000.0,
+    "time": 85.53519129753113,
+    "n_holes": 0,
+    "bore_length": 330.65672204203963,
+    "desc": "Chalumeau in C (closed-open)"
+  },
+  "soprano_sax_Bb_sequential": {
+    "instrument": "soprano_sax_Bb",
+    "optimizer": "sequential",
+    "rms": 66.3488652523711,
+    "time": 0.11578559875488281,
+    "n_holes": 6,
+    "bore_length": 371.1926211926212,
+    "desc": "Soprano sax in Bb (open-open)"
+  },
+  "soprano_sax_Bb_seq_refined": {
+    "instrument": "soprano_sax_Bb",
+    "optimizer": "seq_refined",
+    "rms": 10000000000.0,
+    "time": 0,
+    "n_holes": 0,
+    "bore_length": 0,
+    "desc": "Soprano sax in Bb (open-open)"
+  },
+  "soprano_sax_Bb_jax_two_phase": {
+    "instrument": "soprano_sax_Bb",
+    "optimizer": "jax_two_phase",
+    "rms": 10000000000.0,
+    "time": 79.63184070587158,
+    "n_holes": 0,
+    "bore_length": 371.20348784708443,
+    "desc": "Soprano sax in Bb (open-open)"
+  },
+  "xaphoon_C_sequential": {
+    "instrument": "xaphoon_C",
+    "optimizer": "sequential",
+    "rms": 294.5435864269734,
+    "time": 0.21593689918518066,
+    "n_holes": 6,
+    "bore_length": 661.506116207951,
+    "desc": "Xaphoon in C (open-open, cylindrical)"
+  },
+  "xaphoon_C_seq_refined": {
+    "instrument": "xaphoon_C",
+    "optimizer": "seq_refined",
+    "rms": 10000000000.0,
+    "time": 0,
+    "n_holes": 0,
+    "bore_length": 0,
+    "desc": "Xaphoon in C (open-open, cylindrical)"
+  },
+  "xaphoon_C_jax_two_phase": {
+    "instrument": "xaphoon_C",
+    "optimizer": "jax_two_phase",
+    "rms": 10000000000.0,
+    "time": 74.08436346054077,
+    "n_holes": 0,
+    "bore_length": 661.5790165726203,
+    "desc": "Xaphoon in C (open-open, cylindrical)"
+  }
+}

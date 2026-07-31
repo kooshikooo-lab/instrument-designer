@@ -1,0 +1,101 @@
+{
+  "alto_flute_G_seq_refined": {
+    "instrument": "alto_flute_G",
+    "optimizer": "seq_refined",
+    "rms": 10000000000.0,
+    "time": 0,
+    "n_holes": 0,
+    "bore_length": 0,
+    "desc": "Alto flute in G (open-open, cylindrical)"
+  },
+  "alto_sax_Eb_seq_refined": {
+    "instrument": "alto_sax_Eb",
+    "optimizer": "seq_refined",
+    "rms": 10000000000.0,
+    "time": 0,
+    "n_holes": 0,
+    "bore_length": 0,
+    "desc": "Alto sax in Eb (open-open)"
+  },
+  "bass_chalumeau_Bb_seq_refined": {
+    "instrument": "bass_chalumeau_Bb",
+    "optimizer": "seq_refined",
+    "rms": 0.3133364317917286,
+    "time": 41.991907835006714,
+    "n_holes": 7,
+    "bore_length": 372.63734030074755,
+    "desc": "Bass chalumeau in Bb (closed-open)"
+  },
+  "chalumeau_C_seq_refined": {
+    "instrument": "chalumeau_C",
+    "optimizer": "seq_refined",
+    "rms": 0.6794261628863036,
+    "time": 6.57920503616333,
+    "n_holes": 5,
+    "bore_length": 330.84824223208994,
+    "desc": "Chalumeau in C (closed-open)"
+  },
+  "concert_flute_C_seq_refined": {
+    "instrument": "concert_flute_C",
+    "optimizer": "seq_refined",
+    "rms": 10000000000.0,
+    "time": 0,
+    "n_holes": 0,
+    "bore_length": 0,
+    "desc": "Concert flute in C (open-open, cylindrical)"
+  },
+  "diatonic_D_chalumeau_seq_refined": {
+    "instrument": "diatonic_D_chalumeau",
+    "optimizer": "seq_refined",
+    "rms": 0.8185638261623637,
+    "time": 15.92667841911316,
+    "n_holes": 6,
+    "bore_length": 312.7853717120384,
+    "desc": "Diatonic D chalumeau (baroque, closed-open, La Belle Note style)"
+  },
+  "pvc_flute_D_seq_refined": {
+    "instrument": "pvc_flute_D",
+    "optimizer": "seq_refined",
+    "rms": 10000000000.0,
+    "time": 0,
+    "n_holes": 0,
+    "bore_length": 0,
+    "desc": "PVC flute in D (3/4\" schedule 40, open-open)"
+  },
+  "recorder_C_seq_refined": {
+    "instrument": "recorder_C",
+    "optimizer": "seq_refined",
+    "rms": 0.03606273254475243,
+    "time": 62.38209295272827,
+    "n_holes": 6,
+    "bore_length": 330.7204423675155,
+    "desc": "Soprano recorder in C (open-open, conical)"
+  },
+  "soprano_sax_Bb_seq_refined": {
+    "instrument": "soprano_sax_Bb",
+    "optimizer": "seq_refined",
+    "rms": 0.01391248988595524,
+    "time": 52.59530234336853,
+    "n_holes": 6,
+    "bore_length": 371.2026528530899,
+    "desc": "Soprano sax in Bb (open-open)"
+  },
+  "tin_whistle_D_seq_refined": {
+    "instrument": "tin_whistle_D",
+    "optimizer": "seq_refined",
+    "rms": 10000000000.0,
+    "time": 0,
+    "n_holes": 0,
+    "bore_length": 0,
+    "desc": "Tin whistle in D (open-open, cylindrical)"
+  },
+  "xaphoon_C_seq_refined": {
+    "instrument": "xaphoon_C",
+    "optimizer": "seq_refined",
+    "rms": 10000000000.0,
+    "time": 0,
+    "n_holes": 0,
+    "bore_length": 0,
+    "desc": "Xaphoon in C (open-open, cylindrical)"
+  }
+}

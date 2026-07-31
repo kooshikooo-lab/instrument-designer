@@ -24,9 +24,9 @@ async function apiPost(path: string, body: unknown): Promise<Response> {
   });
 }
 
-export function apiDownloadUrl(path: string): string {
-  return `${API_BASE}${path}`;
-}
+// @dead: export function apiDownloadUrl(path: string): string {
+//   return `${API_BASE}${path}`;
+// }
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -86,25 +86,25 @@ export async function exportStep(params: StepExportParams): Promise<Blob> {
 
 // ── Impedance ────────────────────────────────────────────────────────
 
-export async function computeImpedance(preset: string): Promise<{
-  frequencies: number[];
-  impedanceMagnitude: number[];
-  impedanceReal: number[];
-  impedanceImag: number[];
-}> {
-  const res = await apiPost("/impedance/compute", { preset });
-  if (!res.ok) throw new Error(`Impedance computation failed: ${res.statusText}`);
-  return res.json();
-}
+// @dead: export async function computeImpedance(preset: string): Promise<{
+//   frequencies: number[];
+//   impedanceMagnitude: number[];
+//   impedanceReal: number[];
+//   impedanceImag: number[];
+// }> {
+//   const res = await apiPost("/impedance/compute", { preset });
+//   if (!res.ok) throw new Error(`Impedance computation failed: ${res.statusText}`);
+//   return res.json();
+// }
 
-export async function getPrecomputedImpedance(preset: string): Promise<{
-  frequencies: number[];
-  impedance_magnitude: number[];
-}> {
-  const res = await apiGet(`/impedance/precomputed/${preset}`);
-  if (!res.ok) throw new Error(`Precomputed impedance not found: ${preset}`);
-  return res.json();
-}
+// @dead: export async function getPrecomputedImpedance(preset: string): Promise<{
+//   frequencies: number[];
+//   impedance_magnitude: number[];
+// }> {
+//   const res = await apiGet(`/impedance/precomputed/${preset}`);
+//   if (!res.ok) throw new Error(`Precomputed impedance not found: ${preset}`);
+//   return res.json();
+// }
 
 // ── Sound Simulation ─────────────────────────────────────────────────
 
@@ -115,11 +115,11 @@ export interface SimulateSoundParams {
   temperature?: number;
 }
 
-export async function simulateSound(params: SimulateSoundParams): Promise<Blob> {
-  const res = await apiPost("/simulate/sound", params);
-  if (!res.ok) throw new Error(`Sound simulation failed: ${res.statusText}`);
-  return res.blob();
-}
+// @dead: export async function simulateSound(params: SimulateSoundParams): Promise<Blob> {
+//   const res = await apiPost("/simulate/sound", params);
+//   if (!res.ok) throw new Error(`Sound simulation failed: ${res.statusText}`);
+//   return res.blob();
+// }
 
 // ── Audio Analysis ───────────────────────────────────────────────────
 
@@ -138,11 +138,11 @@ export interface AnalyzeAudioResult {
   impedance_magnitude: number[];
 }
 
-export async function analyzeAudio(preset: string, topPeaks?: number): Promise<AnalyzeAudioResult> {
-  const res = await apiPost("/analyze/audio", { preset, top_peaks: topPeaks ?? 10 });
-  if (!res.ok) throw new Error(`Audio analysis failed: ${res.statusText}`);
-  return res.json();
-}
+// @dead: export async function analyzeAudio(preset: string, topPeaks?: number): Promise<AnalyzeAudioResult> {
+//   const res = await apiPost("/analyze/audio", { preset, top_peaks: topPeaks ?? 10 });
+//   if (!res.ok) throw new Error(`Audio analysis failed: ${res.statusText}`);
+//   return res.json();
+// }
 
 // ─── Optimization API ─────────────────────────────────────────────────────
 
@@ -218,18 +218,18 @@ export async function getOptimizationStatus(jobId: string): Promise<Optimization
   return res.json();
 }
 
-export async function evaluateBoreDesign(variables: number[], boreLength: number, targetFrequencies: number[], temperature?: number): Promise<{
-  bore_profile: BoreProfilePoint[];
-  matched_frequencies: MatchedFrequency[];
-  all_peak_frequencies: number[];
-  all_peak_magnitudes: number[];
-  frequencies: number[];
-  impedance_magnitude: number[];
-}> {
-  const res = await apiPost("/optimize/evaluate", { variables, bore_length: boreLength, target_frequencies: targetFrequencies, temperature });
-  if (!res.ok) throw new Error(`Bore evaluation failed: ${res.statusText}`);
-  return res.json();
-}
+// @dead: export async function evaluateBoreDesign(variables: number[], boreLength: number, targetFrequencies: number[], temperature?: number): Promise<{
+//   bore_profile: BoreProfilePoint[];
+//   matched_frequencies: MatchedFrequency[];
+//   all_peak_frequencies: number[];
+//   all_peak_magnitudes: number[];
+//   frequencies: number[];
+//   impedance_magnitude: number[];
+// }> {
+//   const res = await apiPost("/optimize/evaluate", { variables, bore_length: boreLength, target_frequencies: targetFrequencies, temperature });
+//   if (!res.ok) throw new Error(`Bore evaluation failed: ${res.statusText}`);
+//   return res.json();
+// }
 
 export async function getOptimizationPresets(): Promise<Record<string, OptimizationPreset>> {
   const res = await apiGet("/optimize/presets");
@@ -276,29 +276,29 @@ export interface SequentialOptimizationJob {
   error?: string;
 }
 
-export async function startSequentialOptimization(req: SequentialOptimizeRequest): Promise<{ job_id: string }> {
-  const res = await apiPost("/optimize/sequential", req);
-  if (!res.ok) throw new Error(`Sequential optimization start failed: ${res.statusText}`);
-  return res.json();
-}
+// @dead: export async function startSequentialOptimization(req: SequentialOptimizeRequest): Promise<{ job_id: string }> {
+//   const res = await apiPost("/optimize/sequential", req);
+//   if (!res.ok) throw new Error(`Sequential optimization start failed: ${res.statusText}`);
+//   return res.json();
+// }
 
-export async function getSequentialOptimizationStatus(jobId: string): Promise<SequentialOptimizationJob> {
-  const res = await apiGet(`/optimize/sequential/${jobId}/status`);
-  if (!res.ok) throw new Error(`Sequential optimization status failed: ${res.statusText}`);
-  return res.json();
-}
+// @dead: export async function getSequentialOptimizationStatus(jobId: string): Promise<SequentialOptimizationJob> {
+//   const res = await apiGet(`/optimize/sequential/${jobId}/status`);
+//   if (!res.ok) throw new Error(`Sequential optimization status failed: ${res.statusText}`);
+//   return res.json();
+// }
 
-export async function downloadSequentialSTL(jobId: string): Promise<Blob> {
-  const res = await apiGet(`/optimize/sequential/${jobId}/stl`);
-  if (!res.ok) throw new Error(`STL download failed: ${res.statusText}`);
-  return res.blob();
-}
+// @dead: export async function downloadSequentialSTL(jobId: string): Promise<Blob> {
+//   const res = await apiGet(`/optimize/sequential/${jobId}/stl`);
+//   if (!res.ok) throw new Error(`STL download failed: ${res.statusText}`);
+//   return res.blob();
+// }
 
-export async function downloadSequentialProfile(jobId: string): Promise<unknown> {
-  const res = await apiGet(`/optimize/sequential/${jobId}/profile`);
-  if (!res.ok) throw new Error(`Profile download failed: ${res.statusText}`);
-  return res.json();
-}
+// @dead: export async function downloadSequentialProfile(jobId: string): Promise<unknown> {
+//   const res = await apiGet(`/optimize/sequential/${jobId}/profile`);
+//   if (!res.ok) throw new Error(`Profile download failed: ${res.statusText}`);
+//   return res.json();
+// }
 
 // ── Cache Stats ────────────────────────────────────────────────────
 
@@ -342,52 +342,52 @@ export interface AdvisorStatus {
   memory_designs: number;
 }
 
-export async function getAdvisorStatus(): Promise<AdvisorStatus> {
-  const res = await apiGet("/advisor/status");
-  if (!res.ok) throw new Error("Failed to get advisor status");
-  return res.json();
-}
+// @dead: export async function getAdvisorStatus(): Promise<AdvisorStatus> {
+//   const res = await apiGet("/advisor/status");
+//   if (!res.ok) throw new Error("Failed to get advisor status");
+//   return res.json();
+// }
 
-export async function analyzeDesign(
-  optimizationResult: Record<string, unknown>,
-  targetFrequencies: number[],
-  useLlm?: boolean,
-  llmModel?: string,
-): Promise<AdvisorResult> {
-  const res = await apiPost("/advisor/analyze", {
-    optimization_result: optimizationResult,
-    target_frequencies: targetFrequencies,
-    use_llm: useLlm ?? false,
-    llm_model: llmModel ?? "llama3.2",
-  });
-  if (!res.ok) throw new Error("Advisor analysis failed");
-  return res.json();
-}
+// @dead: export async function analyzeDesign(
+//   optimizationResult: Record<string, unknown>,
+//   targetFrequencies: number[],
+//   useLlm?: boolean,
+//   llmModel?: string,
+// ): Promise<AdvisorResult> {
+//   const res = await apiPost("/advisor/analyze", {
+//     optimization_result: optimizationResult,
+//     target_frequencies: targetFrequencies,
+//     use_llm: useLlm ?? false,
+//     llm_model: llmModel ?? "llama3.2",
+//   });
+//   if (!res.ok) throw new Error("Advisor analysis failed");
+//   return res.json();
+// }
 
-export async function storeDesignInMemory(params: {
-  instrument_type?: string;
-  target_frequencies?: number[];
-  bore_profile?: unknown[];
-  n_control_points?: number;
-  pop_size?: number;
-  n_generations?: number;
-  frequency_accuracy?: number;
-  scale_evenness?: number;
-  projection?: number;
-  n_evaluations?: number;
-  bore_length?: number;
-  notes?: string;
-}): Promise<{ status: string }> {
-  const res = await apiPost("/advisor/store", params);
-  if (!res.ok) throw new Error("Failed to store design");
-  return res.json();
-}
+// @dead: export async function storeDesignInMemory(params: {
+//   instrument_type?: string;
+//   target_frequencies?: number[];
+//   bore_profile?: unknown[];
+//   n_control_points?: number;
+//   pop_size?: number;
+//   n_generations?: number;
+//   frequency_accuracy?: number;
+//   scale_evenness?: number;
+//   projection?: number;
+//   n_evaluations?: number;
+//   bore_length?: number;
+//   notes?: string;
+// }): Promise<{ status: string }> {
+//   const res = await apiPost("/advisor/store", params);
+//   if (!res.ok) throw new Error("Failed to store design");
+//   return res.json();
+// }
 
-export async function getDesignHistory(limit?: number): Promise<{ designs: Record<string, unknown>[] }> {
-  const res = await apiGet(`/advisor/history${limit ? `?limit=${limit}` : ""}`);
-  if (!res.ok) throw new Error("Failed to get design history");
-  return res.json();
-}
+// @dead: export async function getDesignHistory(limit?: number): Promise<{ designs: Record<string, unknown>[] }> {
+//   const res = await apiGet(`/advisor/history${limit ? `?limit=${limit}` : ""}`);
+//   if (!res.ok) throw new Error("Failed to get design history");
+//   return res.json();
+// }
 
 // ─── Automated Design Agent (Design Desk) ───────────────────────────────
 
@@ -422,34 +422,32 @@ export interface AutoDesignJob {
   error?: string;
 }
 
-export async function startAutoDesign(
-  instrumentType: string,
-  maxIterations?: number,
-  targetAccuracy?: number,
-): Promise<{ job_id: string }> {
-  const res = await apiPost("/design-desk/auto", {
-    instrument_type: instrumentType,
-    max_iterations: maxIterations ?? 3,
-    target_accuracy: targetAccuracy ?? 3.0,
-  });
-  if (!res.ok) throw new Error(`Auto design start failed: ${res.statusText}`);
+// @dead: export async function startAutoDesign(
+//   instrumentType: string,
+//   maxIterations?: number,
+//   targetAccuracy?: number,
+// ): Promise<{ job_id: string }> {
+//   const res = await apiPost("/design-desk/auto", {
+//     instrument_type: instrumentType,
+//     max_iterations: maxIterations ?? 3,
+//     target_accuracy: targetAccuracy ?? 3.0,
+//   });
+//   if (!res.ok) throw new Error(`Auto design start failed: ${res.statusText}`);
+//   return res.json();
+// }
+
+export async function getAutoDesignStatus(jobId: string): Promise<AutoDesignJob> {
+  const res = await apiGet(`/design-desk/auto/${jobId}/status`);
+  if (!res.ok) throw new Error("Auto design status failed");
   return res.json();
 }
 
-export async function getAutoDesignStatus(jobId: string): Promise<AutoDesignJob> {
-  const res = await apiGet(`/design-desk/instruments`);
-  if (!res.ok) throw new Error("Auto design status check failed");
-  const statusRes = await apiGet(`/optimize/${jobId}/status`);
-  if (!statusRes.ok) throw new Error("Auto design status failed");
-  return statusRes.json();
-}
-
-export async function getDesignDeskInstruments(): Promise<Record<string, string>> {
-  const res = await apiGet("/design-desk/instruments");
-  if (!res.ok) throw new Error("Failed to get design desk instruments");
-  const data = await res.json();
-  return data.instruments;
-}
+// @dead: export async function getDesignDeskInstruments(): Promise<Record<string, string>> {
+//   const res = await apiGet("/design-desk/instruments");
+//   if (!res.ok) throw new Error("Failed to get design desk instruments");
+//   const data = await res.json();
+//   return data.instruments;
+// }
 
 // ─── SVG Export ─────────────────────────────────────────────────────────
 

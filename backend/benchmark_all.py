@@ -1,5 +1,6 @@
 """Full benchmark: Sequential + refinement on all instruments."""
 import sys, os, time, math
+from typing import Any
 import numpy as np
 from scipy.optimize import minimize as sp_min, differential_evolution
 
@@ -282,7 +283,7 @@ INSTRUMENTS = {
 c = SPEED_OF_SOUND
 
 
-def eval_all(radii, bore_length, hp, hd, hl, cfg):
+def eval_all(radii: np.ndarray, bore_length: float, hp: list[float], hd: list[float], hl: list[float], cfg: dict) -> float:
     """Evaluate and return RMS cents (absolute, not median-corrected).
 
     Uses absolute RMS to prevent the optimizer from achieving 0c by
@@ -302,7 +303,12 @@ def eval_all(radii, bore_length, hp, hd, hl, cfg):
         n_reg = cfg["_n_registers"]
     else:
         n_reg = 1 if cfg["closed_top"] else 2
-    freqs = inst.compute_fingered_frequencies(tw, cfg["fingerings"], n_reg)
+    fingerings = cfg["fingerings"]
+    n_holes = len(hp)
+    if any(len(f) != n_holes for f in fingerings):
+        from backend.pareto_optimizer import build_fingerings
+        fingerings = build_fingerings(n_holes, cfg["closed_top"])
+    freqs = inst.compute_fingered_frequencies(tw, fingerings, n_reg)
     cents = []
     for a, t in zip(freqs, cfg["targets"]):
         cents.append(1200.0 * math.log2(a / t) if a > 0 and math.isfinite(a) else 1e10)
@@ -312,7 +318,60 @@ def eval_all(radii, bore_length, hp, hd, hl, cfg):
     return float(np.sqrt(np.mean(ca ** 2)))
 
 
-def sequential(cfg):
+def eval_multi(radii: np.ndarray, bore_length: float, hp: list[float], hd: list[float], hl: list[float], cfg: dict) -> dict[str, Any]:
+    """Evaluate instrument with multi-objective metrics beyond RMS.
+
+    Returns a dict with:
+      - rms: overall tuning RMS (cents)
+      - timbre_consistency: std of per-note absolute error (lower = more consistent)
+      - playability: mean absolute adjacent-note error difference (lower = smoother)
+      - register_break: max adjacent-note error jump (lower = less abrupt)
+      - max_error: worst single-note error (cents)
+      - per_note_errors: raw list of per-note cents errors
+    """
+    inst = tmm_instrument_from_radii(
+        radii, bore_length, hp, hd, hl,
+        cfg["outer_diameter"], cfg["closed_top"], 0.5,
+    )
+    tw = [c / f for f in cfg["targets"]]
+    if cfg.get("_chromatic", False) and "_n_registers" in cfg:
+        n_reg = cfg["_n_registers"]
+    else:
+        n_reg = 1 if cfg["closed_top"] else 2
+    fingerings = cfg["fingerings"]
+    n_holes = len(hp)
+    if any(len(f) != n_holes for f in fingerings):
+        from backend.pareto_optimizer import build_fingerings
+        fingerings = build_fingerings(n_holes, cfg["closed_top"])
+    freqs = inst.compute_fingered_frequencies(tw, fingerings, n_reg)
+    cents = np.array([
+        1200.0 * math.log2(a / t) if a > 0 and math.isfinite(a) else 1e10
+        for a, t in zip(freqs, cfg["targets"])
+    ])
+    abs_err = np.abs(cents)
+    valid = abs_err < 1e5
+    if not np.any(valid):
+        return {"rms": 1e10, "timbre_consistency": 1e10, "playability": 1e10,
+                "register_break": 1e10, "max_error": 1e10, "per_note_errors": []}
+
+    rms = float(np.sqrt(np.mean(abs_err[valid] ** 2)))
+    max_err = float(np.max(abs_err[valid]))
+    timbre_cons = float(np.std(abs_err[valid]))
+    diffs = np.abs(np.diff(abs_err[valid]))
+    playability = float(np.mean(diffs)) if len(diffs) > 0 else 0.0
+    register_break = float(np.max(diffs)) if len(diffs) > 0 else 0.0
+
+    return {
+        "rms": rms,
+        "timbre_consistency": timbre_cons,
+        "playability": playability,
+        "register_break": register_break,
+        "max_error": max_err,
+        "per_note_errors": cents.tolist(),
+    }
+
+
+def sequential(cfg: dict) -> tuple[float, float, list[float], float]:
     """Sequential hole placement.
 
     For closed-open (clarinet): combined fingering method (Bordeaux).
@@ -338,7 +397,7 @@ def sequential(cfg):
             f = inst.frequency_from_wavelength(wl)
             if f <= 0 or not math.isfinite(f): return 1e10
             return abs(1200.0 * math.log2(f / fundamental))
-        except: return 1e10
+        except Exception: return 1e10
 
     r = sp_min(bore_obj, [L_est], method='L-BFGS-B',
                bounds=[(L_est * 0.7, L_est * 1.3)],
@@ -384,7 +443,7 @@ def sequential(cfg):
                 err = abs(1200.0 * math.log2(f / target)) if f > 0 else 1e10
                 if err < best_err:
                     best_err, best_pos = err, pos
-            except: pass
+            except Exception: pass
         hp.append(best_pos)
         hd.append(cfg["hole_diameter"])
         hl.append(cfg["hole_length"])
@@ -398,11 +457,19 @@ def sequential(cfg):
     return rms, bore_length, hp, time.time() - t0
 
 
-def sequential_refined(cfg):
+def sequential_refined(cfg: dict, initial_radii: np.ndarray | None = None) -> tuple[float, float, list[float], list[float], np.ndarray, float]:
     """Sequential + global DE + 3-stage L-BFGS-B refinement with non-crossing bounds.
 
     Includes hole diameter optimization: diameters are design variables
     co-optimized with positions in DE and refined in L-BFGS-B.
+
+    Parameters
+    ----------
+    cfg : dict
+        Instrument configuration.
+    initial_radii : np.ndarray or None
+        Optional initial bore radii (n_cp values). If None, uses uniform
+        cfg["bore_radius"].
     """
     rms_seq, L_seq, hp_seq, t_seq = sequential(cfg)
     t0 = time.time()
@@ -410,7 +477,7 @@ def sequential_refined(cfg):
     n_cp = 6
     n_h = len(hp_seq)
     L = L_seq
-    radii = np.full(n_cp, cfg["bore_radius"])
+    radii = np.asarray(initial_radii) if initial_radii is not None else np.full(n_cp, cfg["bore_radius"])
     hp = list(hp_seq)
     hd = [cfg["hole_diameter"]] * n_h
     hl = [cfg["hole_length"]] * n_h
@@ -541,7 +608,7 @@ def sequential_refined(cfg):
     hd = r.x[1+n_cp+n_h:1+n_cp+2*n_h].tolist()
 
     rms = safe_eval_all(radii, L, hp, hd, hl, cfg)
-    return rms, L, hp, hd, time.time() - t0 + t_seq
+    return rms, L, hp, hd, radii, time.time() - t0 + t_seq
 
 
 if __name__ == "__main__":

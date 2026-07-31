@@ -34,7 +34,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # Dask configuration
-DASK_SCHEDULER = "tcp://100.69.113.41:8786"
+DASK_SCHEDULER = "tcp://127.0.0.1:8786"
 
 
 # =============================================================================
@@ -186,8 +186,9 @@ def run_single_benchmark(
     """
     import sys
     # Ensure project root is in path BEFORE any backend imports
-    if r"C:\instrument-designer" not in sys.path:
-        sys.path.insert(0, r"C:\instrument-designer")
+    project_root = os.path.join(os.path.dirname(__file__), "..")
+    if project_root not in sys.path:
+        sys.path.insert(0, project_root)
     
     start_time = time.time()
     

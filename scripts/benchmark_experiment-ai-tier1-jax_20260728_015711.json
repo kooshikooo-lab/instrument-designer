@@ -1,0 +1,29 @@
+{
+  "bass_chalumeau_Bb_jax_two_phase": {
+    "instrument": "bass_chalumeau_Bb",
+    "optimizer": "jax_two_phase",
+    "rms": 0.6696672413634955,
+    "time": 15.26754093170166,
+    "n_holes": 7,
+    "bore_length": 371.88162832156365,
+    "desc": "Bass chalumeau in Bb (closed-open)"
+  },
+  "chalumeau_C_jax_two_phase": {
+    "instrument": "chalumeau_C",
+    "optimizer": "jax_two_phase",
+    "rms": 1.3607949345742149e-06,
+    "time": 7.139830112457275,
+    "n_holes": 5,
+    "bore_length": 330.65672204203963,
+    "desc": "Chalumeau in C (closed-open)"
+  },
+  "diatonic_D_chalumeau_jax_two_phase": {
+    "instrument": "diatonic_D_chalumeau",
+    "optimizer": "jax_two_phase",
+    "rms": 9.430142847239674e-07,
+    "time": 7.607802152633667,
+    "n_holes": 6,
+    "bore_length": 312.610852392657,
+    "desc": "Diatonic D chalumeau (baroque, closed-open, La Belle Note style)"
+  }
+}

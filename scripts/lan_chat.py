@@ -14,6 +14,7 @@ import sys, socket, threading, json, time, os
 DEFAULT_PORT = 9123
 MY_NAME = "desktop" if "desktop" in os.environ.get("COMPUTERNAME", "").lower() else "laptop"
 LOG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "chat.log")
+DEFAULT_PEER = os.environ.get("LAN_CHAT_PEER", "100.69.113.41")
 
 
 def _log(text):
@@ -204,12 +205,12 @@ if __name__ == "__main__":
         port = int(sys.argv[2]) if len(sys.argv) > 2 else DEFAULT_PORT
         server(port)
     elif cmd == "client":
-        host = sys.argv[2] if len(sys.argv) > 2 else "100.69.113.41"
+        host = sys.argv[2] if len(sys.argv) > 2 else DEFAULT_PEER
         port = int(sys.argv[3]) if len(sys.argv) > 3 else DEFAULT_PORT
         client(host, port)
     elif cmd == "send":
         text = sys.argv[2] if len(sys.argv) > 2 else ""
-        host = sys.argv[3] if len(sys.argv) > 3 else "100.69.113.41"
+        host = sys.argv[3] if len(sys.argv) > 3 else DEFAULT_PEER
         port = int(sys.argv[4]) if len(sys.argv) > 4 else DEFAULT_PORT
         replies = send(text, host, port)
         if not replies:

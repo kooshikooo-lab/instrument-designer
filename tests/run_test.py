@@ -1,5 +1,13 @@
 import sys
-sys.path.insert(0, r'C:\Users\Admin\Desktop\Woodwind design automation\woodwind-designer\backend')
+import os
 
-# Run the test script
-exec(open(r'C:\Users\Admin\Desktop\Woodwind design automation\woodwind-designer\backend\test_full_2reg.py').read())
+# Run the test script from the current repo (path-portable, unlike the old
+# hardcoded desktop path that this file previously referenced).
+BACKEND_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "backend")
+sys.path.insert(0, BACKEND_DIR)
+
+script = os.path.join(BACKEND_DIR, "test_full_2reg.py")
+if not os.path.exists(script):
+    raise SystemExit(f"run_test.py: {script} not found (historical script removed)")
+
+exec(open(script).read())

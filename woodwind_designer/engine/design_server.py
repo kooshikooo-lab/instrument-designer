@@ -5,6 +5,7 @@ Run: uvicorn woodwind_designer.engine.design_server:app --host 0.0.0.0 --port 80
 Dependencies: pip install fastapi uvicorn pymoo openwind
 """
 import os
+import sys
 import io
 import uuid
 import json
@@ -13,7 +14,7 @@ import tempfile
 import zipfile
 from pathlib import Path
 from typing import Optional
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -23,7 +24,13 @@ from .demakein_wrapper import DemakeinDesigner
 app = FastAPI(title="Instrument Designer Server", version="1.1.0")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "tauri://localhost",
+        "https://tauri.localhost",
+        "*",
+    ],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -173,6 +180,27 @@ def download_stls(job_id: str):
     )
 
 
+@app.post("/design/copy-sound")
+async def copy_sound_design(file: UploadFile = File(...)):
+    """Run inverse design pipeline from uploaded WAV file."""
+    import tempfile
+    from backend.design_pipeline import DesignPipeline
+
+    contents = await file.read()
+    suffix = ".wav" if file.filename.endswith(".wav") else ".wav"
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
+    tmp.write(contents)
+    tmp.close()
+
+    try:
+        result = DesignPipeline.copy_sound(tmp.name)
+        return {"success": True, "result": result}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+    finally:
+        os.unlink(tmp.name)
+
+
 @app.get("/health", response_model=HealthResponse)
 def health():
     return HealthResponse(status="ok", version="1.0.0")
@@ -194,8 +222,6 @@ def list_presets():
 def _run_optimization(job_id: str, req: OptimizeRequest):
     """Run optimization in a background thread."""
     try:
-        import sys
-        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
         from backend.optimizer import BoreOptimizer
 
         with _lock:
@@ -296,8 +322,6 @@ def get_optimization_status(job_id: str):
 def evaluate_single(req: EvaluateRequest):
     """Evaluate a single bore design (for interactive tweaking)."""
     try:
-        import sys
-        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
         from backend.optimizer import BoreOptimizer
 
         optimizer = BoreOptimizer(
@@ -315,8 +339,6 @@ def evaluate_single(req: EvaluateRequest):
 def get_optimization_presets():
     """Return optimization presets with correct target frequencies per instrument type."""
     try:
-        import sys
-        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
         from backend.target_frequencies import get_preset_info
 
         presets = {}
@@ -352,8 +374,6 @@ def get_optimization_presets():
 def _run_tmm_optimization(job_id: str, req: TMMOptimizeRequest):
     """Run TMM-based optimization in a background thread."""
     try:
-        import sys
-        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
         from backend.tmm_optimizer_v2 import TMMBoreOptimizerJAX
 
         with _lock:
@@ -459,8 +479,6 @@ class SequentialOptimizeRequest(BaseModel):
 def _run_sequential_optimization(job_id: str, req: SequentialOptimizeRequest):
     """Run sequential bore optimization in a background thread."""
     try:
-        import sys
-        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
         from backend.tmm_optimizer_sequential import SequentialBoreOptimizer
 
         with _lock:
@@ -642,8 +660,6 @@ class AdvisorStoreRequest(BaseModel):
 @app.get("/advisor/status")
 def advisor_status():
     """Check AI advisor capabilities."""
-    import sys
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
     from backend.ai_advisor import get_advisor_status
     return get_advisor_status()
 
@@ -651,8 +667,6 @@ def advisor_status():
 @app.post("/advisor/analyze")
 def advisor_analyze(req: AdvisorAnalyzeRequest):
     """Analyze an optimization result and return suggestions."""
-    import sys
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
     from backend.ai_advisor import analyze_optimization_result, get_llm_suggestion
 
     result = analyze_optimization_result(req.optimization_result, req.target_frequencies)
@@ -678,8 +692,6 @@ def advisor_analyze(req: AdvisorAnalyzeRequest):
 @app.post("/advisor/analyze-sequential")
 def advisor_analyze_sequential(req: AdvisorAnalyzeRequest):
     """Analyze a SequentialBoreOptimizer result."""
-    import sys
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
     from backend.ai_advisor import analyze_sequential_result, sequential_result_for_llm, get_llm_suggestion
 
     result = analyze_sequential_result(req.optimization_result, req.target_frequencies)
@@ -706,8 +718,6 @@ def advisor_analyze_sequential(req: AdvisorAnalyzeRequest):
 @app.post("/advisor/store")
 def advisor_store(req: AdvisorStoreRequest):
     """Store a design in the advisor's memory for future reference."""
-    import sys
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
     from backend.ai_advisor import store_design
 
     store_design({
@@ -730,8 +740,6 @@ def advisor_store(req: AdvisorStoreRequest):
 @app.get("/advisor/history")
 def advisor_history(limit: int = 20):
     """Get design history from advisor memory."""
-    import sys
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
     from backend.ai_advisor import get_design_history
     return {"designs": get_design_history(limit)}
 
@@ -754,8 +762,6 @@ def _run_auto_design(job_id: str, req: AutoDesignRequest):
             _jobs[job_id]["progress"] = list(progress_log)
 
     try:
-        import sys
-        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
         from backend.design_desk import run_auto_design
 
         result = run_auto_design(
@@ -819,46 +825,29 @@ def get_auto_design_status(job_id: str):
 # ─── STEP Export (build123d) ──────────────────────────────────────────────
 
 class StepExportRequest(BaseModel):
-    bore_profile: list[list[float]]  # [[position_mm, radius_mm], ...]
+    preset: str
+    length: float
+    bore_diameter: float
     wall_thickness: float = 3.0
-    tone_holes: Optional[list[dict]] = None  # [{position, diameter, chimney_height}, ...]
+    segments: int = 1
 
 
 @app.post("/export/step")
 def export_step(req: StepExportRequest):
     """Generate STEP file from bore profile using build123d CSG."""
-    import io
     try:
         from build123d import Cylinder, export_step, Align, Location, Axis
     except ImportError:
         raise HTTPException(500, "build123d not installed. Run: pip install build123d")
 
-    bore = req.bore_profile
-    if not bore or len(bore) < 2:
-        raise HTTPException(400, "Bore profile must have at least 2 points")
+    inner_r = req.bore_diameter / 2
+    outer_r = inner_r + req.wall_thickness
 
-    total_length = bore[-1][0] - bore[0][0]
-    mean_inner_r = sum(p[1] for p in bore) / len(bore)
-    mean_outer_r = mean_inner_r + req.wall_thickness
-
-    outer = Cylinder(radius=mean_outer_r, height=total_length,
+    outer = Cylinder(radius=outer_r, height=req.length,
                      align=(Align.CENTER, Align.CENTER, Align.MIN))
-    inner = Cylinder(radius=mean_inner_r, height=total_length + 1,
+    inner = Cylinder(radius=inner_r, height=req.length + 1,
                      align=(Align.CENTER, Align.CENTER, Align.MIN))
     result = outer - inner
-
-    if req.tone_holes:
-        for h in req.tone_holes:
-            z_pos = h["position"]
-            hole_r = h["diameter"] / 2
-            chimney = h.get("chimney_height", req.wall_thickness + 2.0)
-            hole_cyl = Cylinder(
-                radius=hole_r, height=chimney,
-                align=(Align.CENTER, Align.CENTER, Align.CENTER),
-            )
-            hole_cyl = hole_cyl.moved(Location((0, 0, z_pos - total_length / 2)))
-            hole_cyl = hole_cyl.rotate(Axis.Y, 90)
-            result = result - hole_cyl
 
     buf = io.BytesIO()
     export_step(result, buf)
@@ -886,8 +875,6 @@ class SvgExportRequest(BaseModel):
 @app.get("/export/cadquery/instruments")
 def list_cadquery_instruments():
     """List available CadQuery preset instruments with metadata."""
-    import sys
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
     from backend.cadquery_export import INSTRUMENTS
     result = {}
     for name, spec in INSTRUMENTS.items():
@@ -918,8 +905,7 @@ class CadQueryExportRequest(BaseModel):
 @app.post("/export/cadquery")
 def export_cadquery(req: CadQueryExportRequest):
     """Generate STL via CadQuery from preset or custom parameters."""
-    import sys, io, time
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+    import time
     from backend.cadquery_export import generate_instrument, INSTRUMENTS
 
     if req.preset:
@@ -970,8 +956,6 @@ def export_cadquery(req: CadQueryExportRequest):
 @app.post("/export/svg")
 def export_svg(req: SvgExportRequest):
     """Generate SVG from bore profile data."""
-    import sys
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
     from backend.svg_export import bore_to_svg, bore_to_cross_section_svg
 
     if req.view == "cross":

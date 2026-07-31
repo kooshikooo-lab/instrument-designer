@@ -12,7 +12,6 @@ export function getApiBase(): string {
 // In Tauri mode, start the sidecar backend server and return the base URL
 export async function ensureBackendRunning(): Promise<string> {
   if (isTauri()) {
-    const { tauriStartServer } = await import("./tauri");
     await tauriStartServer(8000);
   }
   return getApiBase();

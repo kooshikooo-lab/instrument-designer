@@ -2,6 +2,7 @@
 import sys
 sys.path.insert(0, '.')
 import time
+import pytest
 import numpy as np
 from backend.bore_optimizer_lbfgs import LBFGSBoreOptimizer, _pava_isotonic, _compute_impedance, _match_peaks
 
@@ -36,6 +37,7 @@ def make_evaluator(bore_len=None, n_cp=N_CP):
     return objective
 
 
+@pytest.mark.slow
 def test_cma_es():
     import cma
 
@@ -69,6 +71,7 @@ def test_cma_es():
     return f_best, elapsed, radii
 
 
+@pytest.mark.slow
 def test_de():
     from scipy.optimize import differential_evolution
 
@@ -96,6 +99,7 @@ def test_de():
     return result.fun, elapsed, radii
 
 
+@pytest.mark.slow
 def test_lbfgs_with_known_init():
     """L-BFGS-B starting from known clarinet dimensions."""
     obj = make_evaluator()
@@ -119,6 +123,7 @@ def test_lbfgs_with_known_init():
     return result.fun, elapsed, radii
 
 
+@pytest.mark.slow
 def test_de_then_lbfgs():
     """DE for global search, then L-BFGS-B to polish the best."""
     obj = make_evaluator()
@@ -186,3 +191,16 @@ if __name__ == "__main__":
             print(f"  {name:<30} {rms:>12.4f} {t:>10.1f}")
         else:
             print(f"  {name:<30} {'FAILED':>12}")
+
+    # At least one optimizer must produce a reasonable result
+    valid_rms = [r for r, _ in results.values() if r is not None]
+    assert len(valid_rms) > 0, "All optimizers failed"
+    assert min(valid_rms) < 100.0, f"Best RMS {min(valid_rms):.4f}c is too high (expected < 100)"
+
+    # DE -> L-BFGS-B should be at least as good as DE alone (if both succeeded)
+    if results.get("DE+polish", (None,))[0] is not None and results.get("DE->L-BFGS-B", (None,))[0] is not None:
+        de_rms = results["DE+polish"][0]
+        de_lb_rms = results["DE->L-BFGS-B"][0]
+        assert de_lb_rms <= de_rms * 1.1 + 1.0, (
+            f"DE->L-BFGS-B ({de_lb_rms:.4f}c) should not be much worse than DE+polish ({de_rms:.4f}c)"
+        )

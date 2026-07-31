@@ -1,4 +1,5 @@
 import subprocess
+import os
 
 body = """## Task Division Proposal — Laptop vs Desktop
 
@@ -34,5 +35,5 @@ Reply here or via LAN chat to confirm task split.
 
 subprocess.run(
     ["gh", "issue", "comment", "1", "--repo", "kooshikooo-lab/instrument-designer", "--body", body],
-    cwd=r"C:\instrument-designer"
+    cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 )

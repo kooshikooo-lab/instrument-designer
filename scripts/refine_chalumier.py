@@ -112,7 +112,7 @@ def evaluate_inst(inst, fingerings, transpose=0, label=""):
                     best_dist = dist
                     best_freq = f
                     best_pr = pr
-            except:
+            except Exception:
                 continue
         err = cents_error(best_freq, target_freq) if best_freq > 0 else 1e10
         results.append({'note': note_name, 'target': target_freq, 'actual': best_freq,
@@ -155,7 +155,7 @@ def refine_with_lbfgsb(inst, inner_pos, inner_diams, outer_at, hole_pos, hole_di
                 hole_lengths=hole_lens,
                 closed_top=False, cone_step=0.125,
             )
-        except:
+        except Exception:
             return 1e10
         cents = []
         for tgt, fl, pr in zip(targets, fingerings, detected_regs):
@@ -163,7 +163,7 @@ def refine_with_lbfgsb(inst, inner_pos, inner_diams, outer_at, hole_pos, hole_di
                 wl = inst2.find_resonance(c / tgt, fl, n_register=pr)
                 f = inst2.frequency_from_wavelength(wl)
                 cents.append(cents_error(f, tgt))
-            except:
+            except Exception:
                 cents.append(1e10)
         ca = np.array(cents)
         if np.any(np.abs(ca) > 1e5): return 1e10
@@ -295,7 +295,7 @@ def main():
                     if dist < best_dist:
                         best_dist = dist
                         best_pr = pr
-                except:
+                except Exception:
                     continue
             detected_regs.append(best_pr)
         print(f"  Detected registers: {detected_regs}")
@@ -330,7 +330,7 @@ def main():
                     hole_lengths=hole_lens,
                     closed_top=False, cone_step=cone_step,
                 )
-            except:
+            except Exception:
                 return 1e10
             cents = []
             for tgt, fl, pr in zip(targets, fing_lists, detected_regs):
@@ -338,7 +338,7 @@ def main():
                     wl = inst2.find_resonance(c / tgt, fl, n_register=pr)
                     f = inst2.frequency_from_wavelength(wl)
                     cents.append(cents_error(f, tgt))
-                except:
+                except Exception:
                     cents.append(1e10)
             ca = np.array(cents)
             if np.any(np.abs(ca) > 1e5): return 1e10

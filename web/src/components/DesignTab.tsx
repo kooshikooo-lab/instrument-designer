@@ -126,17 +126,25 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
       const { job_id } = await startDesign(preset, transpose);
       setJobId(job_id);
       setStatus(`Job ${job_id} started`);
+    } catch (e) {
+      setStatus(`Error: ${e}`);
+      setRunning(false);
+    }
+  };
 
-      const poll = setInterval(async () => {
-        const result = await getDesignStatus(job_id);
+  useEffect(() => {
+    if (!running || !jobId) return;
+    const id = setInterval(async () => {
+      try {
+        const result = await getDesignStatus(jobId);
         setProgress(result.progress);
         setStatus(result.status);
         if (result.status === "completed" || result.status === "failed") {
-          clearInterval(poll);
+          clearInterval(id);
           setRunning(false);
           if (result.status === "completed") {
             try {
-              const url = await getDesignDownloadUrl(job_id);
+              const url = await getDesignDownloadUrl(jobId);
               setDownloadUrl(url);
               const res = await fetch(url);
               const blob = await res.blob();
@@ -147,12 +155,12 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
             }
           }
         }
-      }, 1000);
-    } catch (e) {
-      setStatus(`Error: ${e}`);
-      setRunning(false);
-    }
-  };
+      } catch {
+        // ignore polling errors
+      }
+    }, 2000);
+    return () => clearInterval(id);
+  }, [running, jobId, preset]);
 
   const handleStepExport = async () => {
     setStepExporting(true);
@@ -231,24 +239,33 @@ export function DesignTab({ initialPreset, onPresetUsed }: DesignTabProps) {
       });
       setOptJobId(job_id);
       setOptStatus(`Job ${job_id} started`);
-      const poll = setInterval(async () => {
-        const result = await getOptimizationStatus(job_id);
+    } catch (e) {
+      setOptStatus(`Error: ${e}`);
+      setOptRunning(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!optRunning || !_optJobId) return;
+    const id = setInterval(async () => {
+      try {
+        const result = await getOptimizationStatus(_optJobId!);
         setOptProgress(result.progress);
         setOptStatus(result.status);
         if (result.status === "completed" || result.status === "failed") {
-          clearInterval(poll);
+          clearInterval(id);
           setOptRunning(false);
           if (result.status === "completed" && result.result) {
             setOptResult(result.result);
             getCacheStats().then((s) => setCacheSize(s.cache_size)).catch(() => {});
           }
         }
-      }, 1000);
-    } catch (e) {
-      setOptStatus(`Error: ${e}`);
-      setOptRunning(false);
-    }
-  };
+      } catch {
+        // ignore polling errors
+      }
+    }, 2000);
+    return () => clearInterval(id);
+  }, [optRunning, _optJobId]);
 
   return (
     <div className="p-6 max-w-6xl space-y-6">

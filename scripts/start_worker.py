@@ -4,9 +4,10 @@ Dask worker startup script with project path configured.
 """
 import sys
 import os
+from pathlib import Path
 
 # Add project root to path BEFORE any other imports
-PROJECT_ROOT = r"C:\instrument-designer"
+PROJECT_ROOT = str(Path(__file__).resolve().parent.parent)
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 

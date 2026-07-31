@@ -1,6 +1,6 @@
 """Test single-hole evaluation with correct n_register."""
-import sys, math
-sys.path.insert(0, "C:\\instrument-designer")
+import sys, os, math
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 from backend.tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
 import numpy as np
 

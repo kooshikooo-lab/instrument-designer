@@ -40,7 +40,7 @@ import numpy as np
 from scipy.optimize import minimize
 from typing import List, Tuple, Dict, Optional
 
-from .tmm_acoustics import (
+from backend.tmm_acoustics import (
     TMMInstrument, tmm_instrument_from_radii, SPEED_OF_SOUND, Hole,
 )
 

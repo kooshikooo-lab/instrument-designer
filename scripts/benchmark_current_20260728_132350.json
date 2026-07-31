@@ -1,0 +1,20 @@
+{
+  "recorder_C_seq_refined": {
+    "instrument": "recorder_C",
+    "optimizer": "seq_refined",
+    "rms": 1.0441360307851129,
+    "time": 32.076767444610596,
+    "n_holes": 6,
+    "bore_length": 330.68993390453994,
+    "desc": "Soprano recorder in C (open-open, conical)"
+  },
+  "tin_whistle_D_seq_refined": {
+    "instrument": "tin_whistle_D",
+    "optimizer": "seq_refined",
+    "rms": 7.230543072342178e-07,
+    "time": 44.751622438430786,
+    "n_holes": 6,
+    "bore_length": 294.1647051228729,
+    "desc": "Tin whistle in D (open-open, cylindrical)"
+  }
+}

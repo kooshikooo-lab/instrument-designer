@@ -50,24 +50,15 @@ def test_basic_functionality():
 
 
 def test_optimizers_use_correct_speed():
-    """Verify optimizers use 346100, not 343100."""
-    print("\n=== Testing Speed of Sound in Optimizers ===")
-    
-    from backend.physical_system import PhysicalSystem
+    from backend.tmm_acoustics import SPEED_OF_SOUND
+    from backend.benchmark_all import sequential_refined
+    # Verify SPEED_OF_SOUND is correct
+    assert SPEED_OF_SOUND == 346100.0, f"Wrong speed: {SPEED_OF_SOUND}"
+    # Verify sequential_refined uses the same constant
     import inspect
-    
-    # Check physical_system.py
-    source = inspect.getsource(PhysicalSystem)
-    if 'SPEED_OF_SOUND' in source or 'speed_of_sound' in source:
-        print("✓ PhysicalSystem uses speed_of_sound parameter")
-        # Verify it's the right constant
-        import numpy as np
-        if '343' in source and '346' not in source:
-            print("⚠ WARNING: PhysicalSystem references 343 value")
-        else:
-            print("✓ PhysicalSystem uses correct speed of sound")
-    
-    print("\n✅ Speed of sound test completed")
+    source = inspect.getsource(sequential_refined)
+    # Assert the optimizer doesn't hardcode a different speed
+    assert '343' not in source or '346' in source, "sequential_refined may use wrong speed"
 
 
 def test_median_correction_removal():

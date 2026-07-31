@@ -1,6 +1,7 @@
 """Best achievable with physical constraints: 8-16mm holes, proper graduation."""
 import sys, time
 import numpy as np
+import pytest
 from scipy.optimize import differential_evolution, minimize
 sys.path.insert(0, '.')
 from tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
@@ -66,46 +67,43 @@ initial = [208, 255, 312, 364, 412, 459, 493, 541, 581, 618, 654, 1005,
 
 bounds = [(100, 1180)] * 12 + [(8.0, 16.0)] + [(10.0, 20.0)] + [(1100, 1300)]
 
-print("=== Physical constraints: 8-16mm holes, bore length optimized ===")
-print("Initial freq: %.1fc" % eval_freq(initial)[0])
+def test_physical_constraints():
+    t0 = time.time()
+    de = differential_evolution(eval_obj, bounds, seed=42,
+                                 maxiter=60, popsize=15, tol=1e-6)
+    r = minimize(eval_obj, de.x, method='L-BFGS-B', bounds=bounds,
+                 options={'maxiter': 200, 'ftol': 1e-10})
+    freq_result, errs = eval_freq(r.x)
+    assert r.fun < 1.0, f"Final phase cost too high: {r.fun}"
+    assert freq_result < 100.0, f"Final frequency RMS too high: {freq_result:.1f}c"
 
-t0 = time.time()
-de = differential_evolution(eval_obj, bounds, seed=42,
-                             maxiter=60, popsize=15, tol=1e-6)
-dt = time.time() - t0
-print("DE: phase=%.6f freq=%.1fc (%.0fs)" % (de.fun, eval_freq(de.x)[0], dt))
+    free_pos = sorted(r.x[:12])
+    d_min, d_max, bore_len = r.x[12], r.x[13], r.x[14]
+    assert bore_len > 0, f"Bore length must be positive: {bore_len}"
+    assert d_min >= 8.0, f"d_min below lower bound: {d_min}"
+    assert d_max <= 20.0, f"d_max above upper bound: {d_max}"
+    assert len(free_pos) == 12
 
-r = minimize(eval_obj, de.x, method='L-BFGS-B', bounds=bounds,
-             options={'maxiter': 200, 'ftol': 1e-10})
-dt2 = time.time() - t0
-freq, errs = eval_freq(r.x)
-print("Final: phase=%.6f freq=%.1fc (%.0fs)" % (r.fun, freq, dt2))
+    all_pos = sorted(free_pos + [REG_POS])
+    grad_d = [d_min + (d_max - d_min) * i / 11 for i in range(12)]
+    all_dias = grad_d + [2.5/2]
+    inst = tmm_instrument_from_radii(
+        np.full(10, BORE_R), bore_len, all_pos,
+        all_dias, [5.0]*12 + [3.0], 37.0, closed_top=True, cone_step=0.5
+    )
+    wl = [SPEED_OF_SOUND/t for t in targets]
+    freqs = inst.compute_fingered_frequencies(wl, chart_str, n_register=1)
+    assert len(freqs) == len(targets), f"Expected {len(targets)} frequencies, got {len(freqs)}"
 
-free_pos = sorted(r.x[:12])
-d_min, d_max, bore_len = r.x[12], r.x[13], r.x[14]
-grad_d = [d_min + (d_max - d_min) * i / 11 for i in range(12)]
-print("Holes: %s" % [round(p) for p in free_pos])
-print("Diameters: d_min=%.1f d_max=%.1f" % (d_min, d_max))
-print("Bore length: %.1fmm" % bore_len)
+    errs2 = []
+    for t, f in zip(targets, freqs):
+        c = 1200*np.log2(f/t) if f > 0 else 0
+        errs2.append(c)
+    e = np.array(errs2)
+    off = np.median(e)
+    rms_val = np.sqrt(np.mean((e - off)**2))
+    assert rms_val < 50.0, f"RMS error too high: {rms_val:.2f}c"
 
-all_pos = sorted(free_pos + [REG_POS])
-all_dias = grad_d + [2.5/2]
-inst = tmm_instrument_from_radii(
-    np.full(10, BORE_R), bore_len, all_pos,
-    all_dias, [5.0]*12 + [3.0], 37.0, closed_top=True, cone_step=0.5
-)
-wl = [SPEED_OF_SOUND/t for t in targets]
-freqs = inst.compute_fingered_frequencies(wl, chart_str, n_register=1)
 
-print("\n%-4s %9s %9s %9s" % ("Note", "Target", "Actual", "Err(c)"))
-print("-" * 40)
-errs2 = []
-for i, (n, t, f) in enumerate(zip(names, targets, freqs)):
-    c = 1200*np.log2(f/t) if f>0 else 0
-    errs2.append(c)
-    print("  %-4s %8.1f %8.1f %+8.1f" % (n, t, f, c))
-e = np.array(errs2)
-off = np.median(e)
-rms = np.sqrt(np.mean((e - off)**2))
-print("\nRMS=%.2fc offset=%+.1fc" % (rms, off))
-print("Max err (excl D2): %.1fc" % max(abs(e[1:] - off)))
+if __name__ == "__main__":
+    test_physical_constraints()

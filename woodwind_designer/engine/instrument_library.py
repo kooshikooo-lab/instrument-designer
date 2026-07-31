@@ -21,7 +21,8 @@ class InstrumentEntry:
     difficulty: str = "Beginner"
 
 
-LIBRARY: list[InstrumentEntry] = [
+LIBRARY: list
+LIBRARY = [
     # ##############################################################
     # WIND > FLUTE
     # ##############################################################

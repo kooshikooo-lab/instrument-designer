@@ -1,9 +1,9 @@
 param([int]$Interval = 0)
 
-$repo = "C:\instrument-designer"
+$repo = if ($env:INSTRUMENT_DESIGNER_DIR) { $env:INSTRUMENT_DESIGNER_DIR } else { "C:\instrument-designer" }
 $chatPort = 9999
-$desktopIP = "100.69.113.41"
-$laptopIP = "100.100.66.117"
+$desktopIP = if ($env:DESKTOP_IP) { $env:DESKTOP_IP } else { "100.69.113.41" }
+$laptopIP = if ($env:LAPTOP_IP) { $env:LAPTOP_IP } else { "100.100.66.117" }
 Set-Location $repo
 
 $lastGitHub = [datetime]::MinValue
