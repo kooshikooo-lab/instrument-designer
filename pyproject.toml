@@ -37,6 +37,19 @@ woodwind-designer = "woodwind_designer.main:main"
 [tool.setuptools.packages.find]
 include = ["woodwind_designer*"]
 
+[tool.pytest.ini_options]
+# tests/ contains many ad-hoc scripts (module-level execution) that are not
+# pytest tests. Collect only the genuine pytest files to avoid import hangs.
+python_files = [
+    "test_architecture.py",
+    "test_cadquery_instrument.py",
+    "test_openwind_solver.py",
+    "test_phase2_objective.py",
+    "test_properties.py",
+    "test_server_routes.py",
+    "test_tmm.py",
+]
+
 [tool.ruff]
 line-length = 100
 target-version = "py310"

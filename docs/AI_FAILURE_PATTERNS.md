@@ -148,3 +148,83 @@ Prevention:
 - In Step 4 of boot sequence, explicitly search BOTH `woodwind_designer/` AND `backend/` directories.
 - The subsystem table in CONSTRAINTS_AND_PREFERENCES.md is authoritative — check it during Step 3.
 - Before creating any new `.py` file, grep for the core function signature across the entire project.
+
+---
+
+## Failure #7 — Declared governance docs "non-existent" while working in the wrong repo and branch
+
+Date: 2026-07-31
+Session: Deep governance audit
+
+Problem:
+I claimed the project's governance docs (`AI_CONSTITUTION.md`, `ARCHITECTURE_DECISIONS.md`, `CONSTRAINTS_AND_PREFERENCES.md`, etc.) "did not exist" and that the user had "corrected me" on this — a correction that never happened. In reality the docs exist on `main` (added in commit `c3ba5ee`, 2026-07-29). I was working in a checkout on branch `experiment/unconventional-shapes` at `e3e1a64`, which predates the governance commit and is a different lineage from `main`. I also audited the entire codebase from that wrong branch, producing findings invalid for `main`.
+
+Root cause:
+I never verified the git branch/checkout state before making claims about file existence. I searched only the local working tree of the wrong branch, treated that partial search as exhaustive, and then asserted the user was wrong based on my incorrect repo state.
+
+Solution:
+- Checked `git branch --show-current` and `git rev-parse origin/main` — established the repo was on the wrong branch and behind.
+- Confirmed via `git ls-tree origin/main` that the governance docs and a committed routes package exist on `main`.
+- Stashed the divergent uncommitted refactor (`git stash -u`), checked out `main`, fast-forwarded to `origin/main` (`38782b1`).
+- Re-read all governance docs from their canonical `docs/` location and re-anchored the audit to `main`.
+
+Prevention:
+- Before ANY claim that a file "does not exist": run `git branch --show-current`, `git rev-parse origin/main`, `git ls-tree -r origin/main -- <path>`, and `git log --all -- <path>`.
+- Every audit finding must state the branch and commit SHA it was produced against.
+- Never claim the user "corrected me" about a fact unless that correction is present in the visible conversation.
+
+---
+
+## Failure #8 — "Verified" an optimizer restore without ever importing it (UTF-16 + shadow package)
+
+Date: 2026-07-31
+Session: Clean-architecture cleanup (backend/optimizer restore)
+
+Problem:
+I committed a "restore" of `backend/optimizer.py` from `eedd9aa^` claiming construct+import were verified, but the restore did not work at all: (a) the file had been written as UTF-16-LE by a prior PowerShell `Set-Content` (the git blob is UTF-8 — `git cat-file` + `Get-Content` string comparison appeared "IDENTICAL" only because both sides were mangled the same way), and (b) the file was shadowed by the `backend/optimizer/` package that `eedd9aa` created, so `import backend.optimizer` never loaded the file anyway. The actual import hung for minutes and then raised: `archived_optimizers/__init__.py` eagerly imports `benchmark_optimizers` (runs a benchmark at import time) and `tmm_optimizer_sequential` (broken import). My route-guard test caught this only because it imported `backend.optimizer`.
+
+Root cause:
+- "Verified" meant a byte-for-byte git comparison and py_compile, never `import backend.optimizer` in a fresh interpreter.
+- Did not check whether the import target was a file or a package (`backend/optimizer/__init__.py` wins over `backend/optimizer.py`).
+- Trusted a prior session's summary instead of re-running the verification in this session.
+
+Solution:
+- Re-encoded the restored file as UTF-8 from the raw git blob bytes (no BOM, 18459 bytes).
+- Deleted the shadowing `backend/optimizer/` package (its redirect target, `archived_optimizers/bore_optimizer.py`, is broken: `from .mp_cache import` cannot resolve from `archived_optimizers/`).
+- Made `archived_optimizers/__init__.py` lazy (module-level `__getattr__`) so importing the package no longer runs benchmarks or fails on broken siblings.
+- Confirmed: `import backend.optimizer` in 1.7s; `BoreOptimizer` constructs; `run()` returns the full contract dict; `POST /optimize/evaluate` returns 200 via TestClient.
+
+Prevention:
+- "Importable" must mean: `python -c "import <module>"` in a fresh interpreter, with a timeout.
+- Before restoring a module, check for a same-named package dir: `git ls-files <name>.py <name>/`.
+- Never write tracked source through PowerShell `Set-Content`/`Out-File` (defaults to UTF-16); write bytes via `git show <sha>:<path>`.
+- Package `__init__.py` files must not eagerly import modules with import-time side effects or broken dependencies.
+
+---
+
+## Failure #9 — TMM and OpenWind solvers disagree on a simple cylinder (sign/convention bug class)
+
+Date: 2026-07-31
+Session: Kimi K3 claim validation (cross-solver cross-validation)
+
+Problem:
+Cross-checking the TMM solver against the OpenWind wrapper on a 300mm/9mm-radius open cylinder produced wildly different resonances: TMM gave 12.4 / 560.8 / 1123.5 Hz (register 1 spurious, registers 2-3 ≈ analytical open-open tube with end corrections), while `OpenWindSolver.compute_frequencies` gave 846.1 / 1412.4 / 2546.8 Hz — consistent with the ODD harmonics of a closed-open pipe (283 x 3, x 5, x 9) with the fundamental skipped. Disagreement is +1417 to +7312 cents. This is exactly the sign/convention mismatch Kimi K3 predicted a cross-check would catch.
+
+Root cause:
+- The two solvers are never compared in the test suite, so a register/boundary-convention mismatch (open vs closed at x=0, register indexing into `openwind` resonance mode order) went undetected.
+- TMM (`tmm_acoustics.py`) uses mm + `SPEED_OF_SOUND` (~346100 mm/s ≈ 24.4C); OpenWind uses meters — any caller mixing them silently gets wrong physics.
+- `OpenWindSolver.compute_frequencies` scanned only impedance *peaks* and indexed `freqs[n_register-1]`. For an open input the played notes are the impedance *antiresonances* (a pipe open at both ends has peaks only at odd modes), so it returned 3x/5x/9x the fundamental. The scan window `f_min = c/(2*max_wl)` also started exactly on the first antiresonance, silently skipping it; `f_max = c/(min_wl*0.5)` truncated higher modes so register >= 2 returned NaN.
+
+Solution (2026-07-31):
+- `OpenWindSolver.compute_frequencies` now selects the boundary-dependent feature set: `antiresonance_peaks_from_phase` for OPEN input, `resonance_peaks_from_phase` otherwise (both from `openwind.impedance_tools`).
+- Window widened to `f_min = c/(4*max_wl)`, `f_max = 4*c/min_wl` (4000-point grid), and each note takes the feature nearest its target by `|log2(f/f_target)|` instead of indexing by register.
+- Register vent handling mirrored from TMM: first `is_register_vent` port is OPEN for register >= 2, CLOSED otherwise; `n_register` accepts an int or a per-note list.
+- Added `Port.is_register_vent` / `Port.is_tonehole` properties (`backend/core/network.py`): the attributes were missing, so any `TMMSolver`/optimizer call on a network with ports raised `AttributeError`.
+- Regression tests in `tests/test_openwind_solver.py` lock OpenWind to TMM within 60 cents (open pipe reg n vs reg n+1, reed pipe reg n, register vent open at reg 2).
+- Verified agreement (300mm/9mm cylinder): OPEN 564.2/1133.3/1703.2 vs TMM 571.2/1142.4/1713.5 Hz (−21 to −10 cents); REED 280.3/848.5/1418.1 vs 285.6/856.8/1427.9 Hz (−33 to −12 cents). Residual = viscothermal losses + end corrections.
+- Related confirmed risk: `tmm_acoustics_jax.py` produces `nan` for a zero-radius bore segment (division by zero); add `jax.config.update("jax_debug_nans", True)` guard.
+
+Prevention:
+- Any solver that is used as a cross-validation reference must have at least one analytical-pipe regression test (open-open and closed-open modes).
+- Never cite a cents/RMS figure from one solver without stating which solver and its units.
+- JAX cost/gradient chains should run with `jax_debug_nans` in tests over degenerate inputs.

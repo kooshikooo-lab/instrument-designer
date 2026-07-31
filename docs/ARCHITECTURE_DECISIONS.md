@@ -8,6 +8,8 @@ All significant architectural decisions are recorded here as ADRs. Each ADR has 
 
 **Status:** Accepted (2026-07-29)
 
+**Implementation Status:** PLANNED — `backend/geometry.py` (`BoreProfile`, `HoleLayout`, `InstrumentGeometry`) does not exist on `main` (`38782b1`). Geometry remains embedded in `TMMInstrument.__init__()`, `cadquery_export.py`, and `pareto_optimizer.py`. No `InstrumentGeometry.to_tmm()` exists. Annotated 2026-07-31 per governance gap audit.
+
 **Title:** Separate `InstrumentGeometry` from the TMM solver
 
 **Context:**
@@ -28,6 +30,8 @@ Create `backend/geometry.py` with `BoreProfile`, `HoleLayout`, and `InstrumentGe
 
 **Status:** Accepted (2026-07-29)
 
+**Implementation Status:** PLANNED — `design_from_wav.py`, `design_from_unconventional.py`, and the general-purpose `nsga2_minimize()` wrapper in `pareto_optimizer.py` do not exist on `main` (`38782b1`). Annotated 2026-07-31 per governance gap audit.
+
 **Title:** Pipeline modules never re-implement optimization
 
 **Context:**
@@ -47,6 +51,8 @@ Pipeline modules (`design_from_wav.py`, `design_from_unconventional.py`) call sh
 
 **Status:** Accepted (2026-07-29)
 
+**Implementation Status:** PLANNED — `inverse_design.py`, `sound_analysis.py`, and `design_from_wav.py` do not exist on `main` (`38782b1`). Annotated 2026-07-31 per governance gap audit.
+
 **Title:** `inverse_design.py` becomes a pure re-export module
 
 **Context:**
@@ -65,6 +71,8 @@ After extracting sound analysis ÔåÆ `sound_analysis.py` and WAV pipeline Ôå
 ## ADR-004: Shared Optimizer
 
 **Status:** Accepted (2026-07-29)
+
+**Implementation Status:** PARTIAL — `pareto_optimizer.py` exists on `main` (`38782b1`) with `run_pareto()` and `pareto_sweep()`, but the ADR-mandated single-objective entry point `nsga2_minimize()` is missing. Annotated 2026-07-31 per governance gap audit.
 
 **Title:** `pareto_optimizer.py` as the single pymoo wrapper
 
@@ -89,6 +97,8 @@ No other module instantiates pymoo classes.
 ## ADR-005: Three-Tier Inverse Design Pipeline
 
 **Status:** Accepted (2026-07-28)
+
+**Implementation Status:** PLANNED — `sound_analysis.py`, `design_from_wav.py`, `generative_agent.py`, and `scale_definitions.py` referenced by Tiers 1–2 do not exist on `main` (`38782b1`). Annotated 2026-07-31 per governance gap audit.
 
 **Title:** Inverse design decomposes into Tier 1 (analysis), Tier 2 (scale), Tier 3 (timbre)
 
@@ -124,6 +134,9 @@ TMM in `tmm_acoustics.py` is the default solver for optimization loops. OpenWind
 - Positive: Optimization completes in seconds, not hours.
 - Negative: TMM accuracy is limited below ~200 Hz and above ~5 kHz (plane-wave assumption breaks down).
 - Negative: Visothermal losses must be approximated (Keefe model) rather than computed from first principles.
+
+**Revisions:**
+- **2026-07-31 (Revision 1):** Defined the sounding-note convention that makes OpenWind usable as the validation reference. `OpenWindSolver.compute_frequencies` now selects the boundary-dependent feature set from the input impedance: OPEN input (flute-like) plays the **antiresonances**, REED/CLOSED input plays the **resonances**. Register correspondence is locked to TMM: OpenWind register *n* == TMM register *n* for closed inputs, and == TMM register *n+1* for open inputs (TMM register 1 on open geometry is a spurious near-zero mode). The register vent is OPEN for register >= 2. Wrapper details in `backend/solvers/openwind_solver.py`; regression lock in `tests/test_openwind_solver.py`.
 
 ---
 

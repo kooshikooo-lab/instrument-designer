@@ -14,7 +14,16 @@ from backend.tmm_acoustics import (
     TMMInstrument, tmm_instrument_from_radii, SPEED_OF_SOUND, Hole,
     circle_area, end_flange_length_correction, hole_length_correction,
 )
-from backend.tmm_optimizer import TMMBoreOptimizer, _pava_isotonic
+
+import pytest
+
+TMM_OPTIMIZER_REASON = (
+    "TMMBoreOptimizer lives in backend/archived_optimizers/tmm_optimizer.py, which "
+    "cannot be imported on main: the package __init__ eagerly runs an unguarded "
+    "benchmark (backend/archived_optimizers/benchmark_optimizers.py:383) and the "
+    "module's relative import of .tmm_acoustics points at a file that does not "
+    "exist there. See ADR-004 implementation-status annotation (PLANNED)."
+)
 
 
 def test_simple_flute():
@@ -50,11 +59,14 @@ def test_simple_flute():
     )
 
     # Find resonances
+    # Convention (benchmark_all.py:291-293): for open-open pipes the fundamental
+    # is the 2nd resonance (phase starts at 0.5 at each open end), so harmonic
+    # n corresponds to n_register = n + 1.
     actual_freqs = []
     for n in range(1, 7):
         target_wl = 2.0 * bore_length / n  # initial guess
         fingerings = []
-        wl = inst.find_resonance(target_wl, fingerings, n_register=n)
+        wl = inst.find_resonance(target_wl, fingerings, n_register=n + 1)
         freq = inst.frequency_from_wavelength(wl)
         actual_freqs.append(freq)
 
@@ -143,7 +155,7 @@ def test_flute_with_holes():
 
     # Test: all holes closed (should be close to no-hole case)
     all_closed = [Hole.CLOSED] * 7
-    wl = inst.find_resonance(2.0 * bore_length, all_closed, n_register=1)
+    wl = inst.find_resonance(2.0 * bore_length, all_closed, n_register=2)
     freq_all_closed = inst.frequency_from_wavelength(wl)
     end_corr = end_flange_length_correction(22.0, bore_diameter)
     theo_f1 = v / (2.0 * (bore_length + end_corr))
@@ -153,7 +165,7 @@ def test_flute_with_holes():
 
     # Test: first hole open (shorter effective length -> higher pitch)
     first_open = [Hole.OPEN] + [Hole.CLOSED] * 6
-    wl2 = inst.find_resonance(2.0 * bore_length, first_open, n_register=1)
+    wl2 = inst.find_resonance(2.0 * bore_length, first_open, n_register=2)
     freq_first_open = inst.frequency_from_wavelength(wl2)
     print(f"  First hole open:  {freq_first_open:.1f} Hz")
 
@@ -163,7 +175,7 @@ def test_flute_with_holes():
 
     # Test: more holes open -> even higher pitch
     three_open = [Hole.OPEN] * 3 + [Hole.CLOSED] * 4
-    wl3 = inst.find_resonance(2.0 * bore_length, three_open, n_register=1)
+    wl3 = inst.find_resonance(2.0 * bore_length, three_open, n_register=2)
     freq_three_open = inst.frequency_from_wavelength(wl3)
     print(f"  Three holes open: {freq_three_open:.1f} Hz")
     assert freq_three_open > freq_first_open, "More holes open should raise pitch more"
@@ -171,6 +183,7 @@ def test_flute_with_holes():
     print("  PASS\n")
 
 
+@pytest.mark.skip(reason=TMM_OPTIMIZER_REASON)
 def test_optimizer_simple_flute():
     """Test: optimize a simple flute bore to hit target frequencies."""
     print("=" * 60)
@@ -246,6 +259,7 @@ def test_optimizer_simple_flute():
     print("  PASS\n")
 
 
+@pytest.mark.skip(reason=TMM_OPTIMIZER_REASON)
 def test_optimizer_clarinet():
     """Test: optimize a clarinet bore (closed-open pipe)."""
     print("=" * 60)

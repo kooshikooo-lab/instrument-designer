@@ -2,7 +2,7 @@ import subprocess
 import sys
 import os
 
-os.chdir(r"C:\Users\Admin\Desktop\instrument-designer")
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 print("=" * 80)
 print("1. Running pytest on tests/ directory")
@@ -27,7 +27,7 @@ print(f"Return code: {result.returncode}")
 print("\n" + "=" * 80)
 print("3. Running dask_benchmark.py --help")
 print("=" * 80)
-result = subprocess.run([sys.executable, "backend/dask_benchmark.py", "--help"], 
+result = subprocess.run([sys.executable, "scripts/dask_benchmark.py", "--help"], 
                        capture_output=True, text=True, timeout=30)
 print(result.stdout)
 if result.stderr:

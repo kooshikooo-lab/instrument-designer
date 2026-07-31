@@ -13,7 +13,7 @@ Key differences from TMM:
 from typing import List, Optional
 import numpy as np
 
-from ..core.network import AcousticNetwork, Fingering, Segment, Port, NodeType
+from ..core.network import AcousticNetwork, Fingering, Segment, Port, NodeType, BoundaryType
 
 try:
     from openwind import ImpedanceComputation
@@ -131,24 +131,64 @@ class OpenWindSolver:
         fingering_sets: List[List[str]],
         n_register: int = 1,
     ) -> np.ndarray:
-        """Compute resonant frequencies for a set of fingerings.
+        """Compute sounding frequencies for a set of fingerings.
+
+        Mirrors ``TMMSolver.compute_frequencies``: each (target_wavelength,
+        fingering) pair returns the register feature nearest the target. The
+        feature type depends on the input boundary, which is the physically
+        decisive difference between woodwind families:
+
+        - REED/CLOSED input (clarinet-like): the sounding notes are the input
+          impedance *resonances* (phase zero, decreasing).
+        - OPEN input (flute-like): the sounding notes are the input impedance
+          *antiresonances* (phase zero, increasing). A pipe open at both ends
+          has impedance peaks only at its odd modes, so scanning peaks alone
+          returns 3x/5x/9x... the fundamental and never the played notes.
+
+        The register vent (first port, closest to the input) is OPEN for
+        ``n_register >= 2``, matching ``TMMSolver.compute_frequencies``.
 
         Args:
             network: acoustic network definition
-            target_wavelengths: target wavelengths in mm
-            fingering_sets: list of fingering states
-            n_register: register number (1=fundamental)
+            target_wavelengths: target wavelengths (mm) near the register-n note
+            fingering_sets: list of fingering states (toneholes only)
+            n_register: register number, or a list with one value per note
 
         Returns:
-            Array of resonant frequencies in Hz
+            Array of sounding frequencies in Hz
         """
+        from openwind.impedance_tools import (
+            antiresonance_peaks_from_phase,
+            resonance_peaks_from_phase,
+        )
+
         c = network.speed_of_sound  # mm/s
-        f_min = max(10, c / (max(target_wavelengths) * 2))
-        f_max = c / (min(target_wavelengths) * 0.5)
-        frequencies = np.linspace(f_min, f_max, 5000)
+        input_open = network.boundary_reed.type == BoundaryType.OPEN
+        peaks_fn = antiresonance_peaks_from_phase if input_open else resonance_peaks_from_phase
+
+        # Grid wide enough to bracket the lowest fundamental AND the highest
+        # overblown register. The previous bounds broke both cases: f_min =
+        # c/(2*max_wl) starts exactly on an open pipe's first antiresonance
+        # (so the fundamental was silently skipped) and f_max = c/(min_wl*0.5)
+        # truncates above the second peak, so register >= 2 returned NaN.
+        f_min = max(10, c / (4.0 * max(target_wavelengths)))
+        f_max = c / min(target_wavelengths) * 4.0
+        frequencies = np.linspace(f_min, f_max, 4000)
+
+        has_register = any(
+            getattr(p, "is_register_vent", False) for p in network.ports
+        )
+        is_list = isinstance(n_register, list)
+        registers = n_register if is_list else [n_register] * len(fingering_sets)
 
         results = []
-        for fingering in fingering_sets:
+        for target_wl, fingering, reg in zip(
+            target_wavelengths, fingering_sets, registers
+        ):
+            if has_register:
+                reg_state = "open" if reg >= 2 else "closed"
+                fingering = [reg_state] + list(fingering)
+
             bore_list, hole_list = self._network_to_openwind(network)
             fingering_chart = self._build_fingering_chart(network, fingering)
 
@@ -165,11 +205,23 @@ class OpenWindSolver:
                 unit='m',
             )
 
-            freqs = result.resonance_frequencies(k=n_register + 2)
-            if len(freqs) >= n_register:
-                results.append(freqs[n_register - 1])
-            else:
-                results.append(np.nan)
+            features = peaks_fn(
+                np.asarray(result.frequencies),
+                np.asarray(result.impedance),
+                k=100,
+                display_warning=False,
+            )[0]
+
+            if len(features) == 0:
+                # Degenerate case: no phase crossing inside the window. Use the
+                # magnitude extremum (minimum for open pipes, maximum otherwise).
+                mag = np.abs(result.impedance)
+                idx = int(np.argmin(mag)) if input_open else int(np.argmax(mag))
+                features = [float(result.frequencies[idx])]
+
+            f_target = c / target_wl
+            best = min(features, key=lambda f: abs(np.log2(f / f_target)))
+            results.append(float(best))
 
         return np.array(results)
 

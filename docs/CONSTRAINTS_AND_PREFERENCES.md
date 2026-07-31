@@ -1,16 +1,16 @@
-﻿# Instrument Designer ÔÇö AI Boot Sequence
+# Instrument Designer — AI Boot Sequence & Governance Index
 
 **Read this file first.** It is the initialization procedure every AI agent must follow before writing code.
 
 **Never begin coding until every step below is complete.**
 
-**IMPORTANT ÔÇö The confirmation requirement:** You must begin your next response with: *"I have read the AI Constitution and will follow it."* followed by a summary of which laws apply to your current task. This is not optional. If you do not include this statement, you have skipped Step 1.
+**IMPORTANT — The confirmation requirement:** You must begin your next response with: *"I have read the AI Constitution and will follow it."* followed by a summary of which laws apply to your current task. This is not optional. If you do not include this statement, you have skipped Step 1.
 
 ---
 
 ## BOOT SEQUENCE
 
-### Ôûí Step 1 ÔÇö Read the AI Constitution
+### ☐ Step 1 — Read the AI Constitution
 
 Read `docs/AI_CONSTITUTION.md` completely.
 
@@ -20,16 +20,16 @@ Also list which laws apply to your current task and how you will follow them. Th
 
 Do not skip this confirmation. If you do not state it, you have not completed Step 1.
 
-### Ôûí Step 2 ÔÇö Read architecture documentation
+### ☐ Step 2 — Read architecture documentation
 
 Read the following files in order:
 
-1. `docs/ARCHITECTURE.md` ÔÇö system organization, coordinate systems, fingering conventions
-2. `docs/ARCHITECTURE_DECISIONS.md` ÔÇö why the architecture looks the way it does
-3. `docs/CODING_STANDARDS.md` ÔÇö implementation practices
-4. `docs/PHYSICS_PRINCIPLES.md` ÔÇö acoustic modeling assumptions
+1. `docs/ARCHITECTURE.md` — system organization, coordinate systems, fingering conventions
+2. `docs/ARCHITECTURE_DECISIONS.md` — why the architecture looks the way it does
+3. `docs/CODING_STANDARDS.md` — implementation practices
+4. `docs/PHYSICS_PRINCIPLES.md` — acoustic modeling assumptions
 
-### Ôûí Step 3 ÔÇö Identify your subsystem
+### ☐ Step 3 — Identify your subsystem
 
 Determine which subsystem you are modifying:
 
@@ -47,7 +47,7 @@ Determine which subsystem you are modifying:
 
 Never modify an unrelated subsystem.
 
-### Ôûí Step 4 ÔÇö Search before building
+### ☐ Step 4 — Search before building
 
 Search the codebase for:
 - Existing function that does what you need
@@ -56,7 +56,7 @@ Search the codebase for:
 
 Never create duplicate functionality.
 
-### Ôûí Step 5 ÔÇö Produce an implementation plan
+### ☐ Step 5 — Produce an implementation plan
 
 Before writing code, write a short plan identifying:
 - Files to modify
@@ -65,7 +65,7 @@ Before writing code, write a short plan identifying:
 - Documentation to update
 - Any ADRs that apply
 
-### Ôûí Step 6 ÔÇö Implement
+### ☐ Step 6 — Implement
 
 Write code. Follow `docs/CODING_STANDARDS.md`. Run `docs/ARCHITECTURE_CHECKLIST.md` when done.
 
@@ -74,6 +74,27 @@ Write code. Follow `docs/CODING_STANDARDS.md`. Run `docs/ARCHITECTURE_CHECKLIST.
 - Before every file modification or creation
 - After every test run
 - Whenever you feel stuck or uncertain
+
+---
+
+## GOVERNANCE DOCUMENTS
+
+All governance documents exist in **two places** — `docs/` in the repository (authoritative source) and the GitHub wiki (https://github.com/kooshikooo-lab/instrument-designer/wiki). Keep both in sync. Read them in the order listed here.
+
+| # | File (`docs/`) | Wiki page | Purpose |
+|---|----------------|-----------|---------|
+| 1 | `AI_CONSTITUTION.md` | [Governance-Constitution](https://github.com/kooshikooo-lab/instrument-designer/wiki/Governance-Constitution) | The 10 non-negotiable laws all AI work must obey |
+| 2 | `CONSTRAINTS_AND_PREFERENCES.md` | [Governance-Boot-Sequence](https://github.com/kooshikooo-lab/instrument-designer/wiki/Governance-Boot-Sequence) | This file — the boot sequence (Section 1) |
+| 3 | `AI_FAILURE_PATTERNS.md` | [Governance-Failure-Patterns](https://github.com/kooshikooo-lab/instrument-designer/wiki/Governance-Failure-Patterns) | Known failure modes of AI work on this repo — read before every session; log new failures here |
+| 4 | `COMPLIANCE_CHECK.md` | [Governance-Compliance](https://github.com/kooshikooo-lab/instrument-designer/wiki/Governance-Compliance) | Compliance triggers and checklist (15-min timer, before code, after tests, when stuck) |
+| 5 | `CODING_STANDARDS.md` | — | Implementation practices |
+| 6 | `ARCHITECTURE_CHECKLIST.md` | [Governance-Checklist](https://github.com/kooshikooo-lab/instrument-designer/wiki/Governance-Checklist) | Run at the end of every implementation |
+| 7 | `ARCHITECTURE.md` | [Internal-Architecture](https://github.com/kooshikooo-lab/instrument-designer/wiki/Internal-Architecture) | System organization, coordinate systems, fingering conventions |
+| 8 | `ARCHITECTURE_DECISIONS.md` | [Governance-ADRs](https://github.com/kooshikooo-lab/instrument-designer/wiki/Governance-ADRs) | ADRs — why the architecture looks the way it does |
+| 9 | `PHYSICS_PRINCIPLES.md` | — | Acoustic modeling assumptions and units |
+| 10 | `WIKI.md` / `WIKI-INDEX.md` | [Home](https://github.com/kooshikooo-lab/instrument-designer/wiki) | Project wiki — deep reference for research and conventions |
+| 11 | `PROJECT.md` / `STATUS.md` / `ROADMAP.md` | — | Project state, status, and roadmap |
+| 12 | `ai_project_summary.md` | — | High-level project summary for context |
 
 ---
 
@@ -88,4 +109,3 @@ Before finishing:
 - [ ] `ARCHITECTURE_CHECKLIST.md` completed
 - [ ] `COMPLIANCE_CHECK.md` run at least once in this session
 - [ ] If you made a mistake, log it in `AI_FAILURE_PATTERNS.md`
-
