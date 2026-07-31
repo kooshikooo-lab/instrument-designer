@@ -93,23 +93,90 @@ def generate_instrument(
             cap = cap.translate((0, 0, bore_length))
             solid = solid.union(cap)
 
+    if isinstance(bore_diameter, (list, tuple)):
+        max_outer_r = max(d + 2 * wall_thickness for d in bore_diameter) / 2
+    else:
+        max_outer_r = (bore_diameter + 2 * wall_thickness) / 2
     for pos, diam in holes:
-        hole = (
-            cq.Workplane("XZ")
-            .workplane(offset=pos)
+        cyl = (
+            cq.Workplane("XY")
             .circle(diam / 2)
-            .extrude(hole_depth)
+            .extrude(2 * (max_outer_r + hole_depth))
+            .rotate((0, 0, 0), (0, 1, 0), 90)
+            .translate((0, 0, pos))
         )
-        solid = solid.cut(hole)
+        solid = solid.cut(cyl)
 
     return solid
 
 
-def export_stl(solid, path: str) -> float:
-    from cadquery import exporters
+def generate_variable_bore_instrument(
+    bore_profile: list[tuple[float, float]],
+    wall_thickness: float,
+    bore_length: float = None,
+    holes: list[tuple[float, float]] = None,
+    closed_top: bool = False,
+    hole_depth: float = None,
+):
+    import cadquery as cq
+
+    if holes is None:
+        holes = []
+    if hole_depth is None:
+        hole_depth = wall_thickness + 2
+
+    profile = sorted(bore_profile, key=lambda x: x[0])
+    if not profile:
+        raise ValueError("bore_profile must not be empty")
+    if bore_length is None:
+        bore_length = profile[-1][0]
+
+    inner_diams = [d for _, d in profile]
+    outer_diams = [d + 2 * wall_thickness for d in inner_diams]
+    positions = [p for p, _ in profile]
+
+    offsets = [positions[i] - positions[i-1] if i > 0 else 0 for i in range(len(positions))]
+    outer = cq.Workplane("XY").circle(outer_diams[0] / 2)
+    inner = cq.Workplane("XY").circle(inner_diams[0] / 2)
+    for i in range(1, len(positions)):
+        outer = outer.workplane(offset=offsets[i]).circle(outer_diams[i] / 2)
+        inner = inner.workplane(offset=offsets[i]).circle(inner_diams[i] / 2)
+    outer_solid = outer.loft()
+    inner_solid = inner.loft()
+    solid = outer_solid.cut(inner_solid)
+
+    if closed_top:
+        last_outer_r = outer_diams[-1] / 2
+        cap = (
+            cq.Workplane("XY")
+            .workplane(offset=positions[-1])
+            .circle(last_outer_r)
+            .extrude(wall_thickness)
+        )
+        solid = solid.union(cap)
+
+    max_outer_r = max(outer_diams) / 2
+    for pos, diam in holes:
+        cyl = (
+            cq.Workplane("XY")
+            .circle(diam / 2)
+            .extrude(2 * (max_outer_r + hole_depth))
+            .rotate((0, 0, 0), (0, 1, 0), 90)
+            .translate((0, 0, pos))
+        )
+        solid = solid.cut(cyl)
+
+    return solid
+
+
+def export_stl(
+    solid, path: str, tolerance: float = 0.01, angular_tolerance: float = 0.1
+) -> float:
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
     t0 = time.time()
-    exporters.export(solid, path)
+    solid.val().exportStl(
+        path, tolerance=tolerance, angularTolerance=angular_tolerance
+    )
     return time.time() - t0
 
 

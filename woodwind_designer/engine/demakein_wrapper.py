@@ -301,11 +301,11 @@ class DemakeinDesigner:
                     closed = bool(getattr(inst, 'closed_top', False))
 
                     solid = generate_variable_bore_instrument(
-                        bore_length=inst.length,
                         bore_profile=bore_profile,
                         wall_thickness=wall_thickness,
+                        bore_length=inst.length,
                         holes=holes,
-                        closed_top=closed,
+                        closed_top=closed_top,
                     )
 
                     stl_path = os.path.join(design_dir, f"{preset}.stl")
