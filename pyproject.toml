@@ -44,6 +44,7 @@ python_files = [
     "test_architecture.py",
     "test_cadquery_instrument.py",
     "test_openwind_solver.py",
+    "test_phase2_objective.py",
     "test_properties.py",
     "test_server_routes.py",
     "test_tmm.py",

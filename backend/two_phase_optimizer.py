@@ -1,8 +1,18 @@
 """
-Two-phase optimizer (Noreland approach): Phase cost (fast) → Peak cost (correct).
+Two-phase optimizer (Noreland approach): DE global search → L-BFGS-B refinement.
 
-Phase 1: DE + phase_cost_with_offset — fast (1.4ms/call), explores global space
-Phase 2: L-BFGS-B + peak_cost_nearest — correct (140ms/call), refines to optimum
+Phase 1: DE + phase_cost_with_offset — fast global search
+Phase 2: L-BFGS-B + peak_cost_nearest (fixed detected registers) — smooth
+         local refinement. peak_cost_nearest is already phase-based: it locates
+         each register-n resonance via resonance_phase (find_resonance) and
+         returns the absolute RMS cents error (Noreland's squared relative
+         frequency errors).
+
+The sin^2 phase costs (phase_cost / phase_cost_with_offset) are deliberately NOT
+used as the Phase 2 objective: their minima repeat at every integer phase
+deviation, so a local optimizer can drift every note to the next register and
+report ~0 cost while the instrument is hundreds of cents off. They remain
+useful in Phase 1 (global DE search) where register-agnostic evenness is wanted.
 
 Based on desktop's two_phase_optimizer.py with KeefeLoss integration.
 """
@@ -13,22 +23,6 @@ from scipy.optimize import differential_evolution, minimize as sp_min
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 from backend.tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
 from backend.physics.losses import KeefeLoss
-
-try:
-    from backend.timbre_objectives import compute_timbre_objective
-    _TIMBRE_AVAILABLE = True
-except ImportError:
-    _TIMBRE_AVAILABLE = False
-    def compute_timbre_objective(*args, **kwargs):
-        return 0.0
-
-try:
-    from .timbre_objectives import compute_timbre_objective
-    _TIMBRE_AVAILABLE = True
-except ImportError:
-    _TIMBRE_AVAILABLE = False
-    def compute_timbre_objective(*args, **kwargs):
-        return 0.0
 
 c = SPEED_OF_SOUND
 SEMITONE_MAP = {'C': 0, 'D': 2, 'E': 4, 'F': 5, 'G': 7, 'A': 9, 'B': 11}
@@ -53,28 +47,15 @@ def cents_error(actual, target):
     return 1200.0 * math.log2(actual / target)
 
 
-def phase_cost_with_offset(inst, targets, fingerings, n_register=1):
-    """
-    Phase-based cost with offset correction. Fast but register-agnostic.
-    Returns mean absolute cents error after optimal constant offset removal.
-    """
-    try:
-        wl_guesses = [SPEED_OF_SOUND / f for f in targets]
-        cents_list = []
-        for wl_guess, fl in zip(wl_guesses, fingerings):
-            wl = inst.find_resonance(wl_guess, fl, n_register=n_register)
-            f = inst.frequency_from_wavelength(wl)
-            cents_list.append(cents_error(f, targets[len(cents_list)]))
-        ca = np.array(cents_list)
-        if len(ca) == 0 or np.any(np.abs(ca) > 1e5):
-            return 1e10
-        return float(np.sqrt(np.mean(ca ** 2)))
-    except:
-        return 1e10
-
-
 def peak_cost_nearest(inst, targets, fingerings, detected_regs):
-    """Peak-matching cost: find nearest resonance peak to each target, compute evenness."""
+    """Phase-based absolute-pitch cost: RMS cents vs targets.
+
+    For each note, finds the detected-register resonance via resonance_phase
+    (find_resonance, i.e. where phase crosses the register integer) and measures
+    the absolute cents error. Smooth under geometry perturbation because phase is
+    continuous; register-safe because the absolute error is used, not a periodic
+    wrapper of the phase deviation.
+    """
     cents = []
     for tgt, fl, pr in zip(targets, fingerings, detected_regs):
         try:
@@ -165,22 +146,24 @@ def phase1_de_search(bore_length, n_holes, hole_lens, targets, fingerings,
 
 
 # ============================================================================
-# Phase 2: L-BFGS-B + peak cost (correct local refinement)
+# Phase 2: L-BFGS-B + phase-based absolute cost (smooth local refinement)
 # ============================================================================
 
 def phase2_lbfgsb_refine(x0, bore_length, n_holes, hole_lens, targets, fingerings,
                          detected_regs, bore_bounds_range, hole_pos_bounds_range,
                          n_iters=500, verbose=True,
                          n_bore_ctrl=6, hd_min=3.0, hd_max=15.0,
-                         loss_model=None, weight_timbre=0.0):
+                         loss_model=None):
     """
-    Phase 2: L-BFGS-B with peak cost (correct).
+    Phase 2: L-BFGS-B with phase-based absolute cost.
 
-    Uses peak_cost_nearest which correctly identifies register.
+    Objective is peak_cost_nearest: each register-n resonance is located from
+    resonance_phase (find_resonance) and the absolute RMS cents error is
+    minimized. Smooth under geometry perturbation and register-safe (the sin^2
+    phase costs are NOT used here — their periodic minima allow register drift).
     """
     targets = np.array(targets)
     n_holes = len(hole_lens)
-    fundamental = targets[0]
 
     n_bore_ctrl = 6
     bore_min, bore_max = bore_bounds_range
@@ -200,16 +183,9 @@ def phase2_lbfgsb_refine(x0, bore_length, n_holes, hole_lens, targets, fingering
                 outer_diameter_mm=22.0, closed_top=False, cone_step=0.5,
                 loss_model=loss_model,
             )
-            peak_cost = peak_cost_nearest(inst, targets, fingerings, detected_regs)
-            
-            # Add timbre objective if enabled
-            if weight_timbre > 0 and _TIMBRE_AVAILABLE:
-                timbre_cost = compute_timbre_objective(
-                    np.array([]), np.array([]), fundamental
-                )
-                return peak_cost + weight_timbre * timbre_cost
-            
-            return peak_cost
+            return peak_cost_nearest(
+                inst, targets, fingerings, detected_regs
+            )
         except:
             return 1e6
 
@@ -249,7 +225,6 @@ def two_phase_optimize(
     seed: int = 42,
     verbose: bool = True,
     loss_model=None,
-    weight_timbre: float = 0.0,
 ) -> dict:
     """
     Complete two-phase optimization pipeline (Noreland approach).
@@ -274,7 +249,6 @@ def two_phase_optimize(
     Returns:
         dict with optimization results and best instrument
     """
-    targets = np.array(targets)
     n_holes = len(hole_lens)
 
     if hole_pos_bounds_range[1] is None:
@@ -282,7 +256,7 @@ def two_phase_optimize(
 
     if verbose:
         print("=" * 70)
-        print("  TWO-PHASE OPTIMIZER (Noreland): Phase cost -> Peak cost")
+        print("  TWO-PHASE OPTIMIZER (Noreland): DE global -> L-BFGS-B local")
         print("=" * 70)
         print(f"  Bore length: {bore_length:.1f}mm, {n_holes} holes")
         print(f"  Targets: {[f'{f:.1f}' for f in targets]} Hz")
@@ -314,10 +288,6 @@ def two_phase_optimize(
             fl.append('open')
         fingerings_parsed.append(fl[:len(hole_lens)])
 
-    targets = np.array(hole_lens)  # WRONG - targets should be frequencies
-    # Actually targets is passed in correctly as frequencies
-    targets = np.array(targets)
-
     # Phase 1: DE with phase cost (fast)
     print("\n  --- Phase 1: DE + phase cost (fast global search) ---")
     x1, cost1, t1 = phase1_de_search(
@@ -325,7 +295,7 @@ def two_phase_optimize(
         n_register=n_register,
         bore_bounds_range=(bore_min, bore_max),
         hole_pos_bounds_range=(hp_min, hp_max),
-        popsize=15, maxiter=30, seed=42,
+        popsize=popsize, maxiter=maxiter, seed=seed,
         loss_model=loss_model,
     )
 
@@ -346,16 +316,15 @@ def two_phase_optimize(
     regs = detect_registers(inst1, targets, fingerings)
     print(f"  Detected registers: {regs}")
 
-    # Phase 2: L-BFGS-B with peak cost (correct refinement)
-    print(f"\n  --- Phase 2: L-BFGS-B + peak cost (correct refinement) ---")
+    # Phase 2: L-BFGS-B with phase-based absolute cost (smooth local refinement)
+    print(f"\n  --- Phase 2: L-BFGS-B + phase-based cost (RMS cents) ---")
     x2, cost2, t2 = phase2_lbfgsb_refine(
         x1, bore_length, len(hole_lens), hole_lens, targets, fingerings,
         regs,
         bore_bounds_range=(bore_min, bore_max),
         hole_pos_bounds_range=(hp_min, hp_max),
-        n_iters=500,
+        n_iters=n_iters,
         loss_model=loss_model,
-        weight_timbre=weight_timbre,
     )
 
     # Build final instrument
