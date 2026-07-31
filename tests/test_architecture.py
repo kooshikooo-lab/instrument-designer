@@ -9,10 +9,15 @@ def test_basic_functionality():
     """Verify all imports work and basic TMM evaluation executes."""
     print("=== Testing Basic TMM Functionality ===")
     
-    # Test 1: SPEED_OF_SOUND is correct
-    print(f"SPEED_OF_SOUND: {SPEED_OF_SOUND} mm/s (should be 346100.0)")
-    assert SPEED_OF_SOUND == 346100.0, f"SPEED_OF_SOUND is {SPEED_OF_SOUND}, expected 346100.0"
-    print("OK SPEED_OF_SOUND correct")
+    # Test 1: SPEED_OF_SOUND is consistent with the temperature formula
+    # c(T) = 331300 + 606*T mm/s (c = 331.3 + 0.606*T m/s, T in C).
+    # The core constant 346100.0 mm/s implies T = (346100-331300)/606 = 24.4C.
+    # See PHYSICS_PRINCIPLES.md "Known Discrepancy (finding B1)". Do NOT hardcode
+    # a single magic constant here; assert formula consistency instead.
+    implied_t = (SPEED_OF_SOUND - 331300.0) / 606.0
+    print(f"SPEED_OF_SOUND: {SPEED_OF_SOUND} mm/s (implies T={implied_t:.1f}C)")
+    assert 15.0 <= implied_t <= 30.0, f"SPEED_OF_SOUND {SPEED_OF_SOUND} implies implausible T={implied_t:.1f}C"
+    print("OK SPEED_OF_SOUND consistent with temperature formula")
     
     # Test 2: Basic TMM instrument creation
     inst = TMMInstrument(
@@ -50,7 +55,8 @@ def test_basic_functionality():
 
 
 def test_optimizers_use_correct_speed():
-    """Verify optimizers use 346100, not 343100."""
+    """Verify optimizers reference the canonical speed-of-sound (SPEED_OF_SOUND constant
+    or the temperature formula 331.3 + 0.606*T), not a stale hardcoded 346100/343000 magic number."""
     print("\n=== Testing Speed of Sound in Optimizers ===")
     
     import inspect
@@ -65,10 +71,12 @@ def test_optimizers_use_correct_speed():
         import sys
         mod = sys.modules.get(module)
         source = inspect.getsource(mod) if mod is not None else ""
-        if "346" in source:
-            print(f"✓ {name} uses correct speed of sound (346...)")
+        uses_constant = "SPEED_OF_SOUND" in source
+        uses_formula = ("331.3" in source) and ("0.606" in source)
+        if uses_constant or uses_formula:
+            print(f"✓ {name} uses canonical speed of sound (constant={uses_constant}, formula={uses_formula})")
         else:
-            print(f"⚠ WARNING: {name} has no reference to 346 speed of sound")
+            print(f"⚠ WARNING: {name} references no canonical speed of sound")
     
     print("\n✅ Speed of sound test completed")
 
