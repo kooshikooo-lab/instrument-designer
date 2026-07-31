@@ -124,3 +124,33 @@ TMM in `tmm_acoustics.py` is the default solver for optimization loops. OpenWind
 - Positive: Optimization completes in seconds, not hours.
 - Negative: TMM accuracy is limited below ~200 Hz and above ~5 kHz (plane-wave assumption breaks down).
 - Negative: Visothermal losses must be approximated (Keefe model) rather than computed from first principles.
+
+---
+
+## ADR-007: CadQuery-Based STL Generation (Replace Demakein Maker Pipeline)
+
+**Status:** Accepted (2026-07-31)
+
+**Title:** Replace demakein Maker-based STL pipeline with `backend/cadquery_export`
+
+**Context:**
+The demakein library provides `Make_flute` and `Make_reed_instrument` Maker classes for generating STL from optimization results. These classes had several issues:
+1. `_before_run()` crash in frozen/PyInstaller builds (Bug A)
+2. `process_make()` re-ran optimization then crashed on shutdown (Bug B)
+3. Monkey-patches were required in `demakein_wrapper.py` for basic functionality
+4. YAML generation read pickles as JSON — silent failure (Bug C)
+5. No STEP file export capability
+
+CadQuery 2.8 was already installed and maintained in `backend/cadquery_export.py` with a 1089-line instrument library and proven `generate_variable_bore_instrument()` function.
+
+**Decision:**
+Remove `Make_flute`/`Make_reed_instrument` imports and the `_DESIGN_TO_MAKER` dispatch dict from `demakein_wrapper.py`. Instead, sample the demakein `Instrument` bore profile at 64 points and pass it to `backend.cadquery_export.generate_variable_bore_instrument()`. Wall thickness auto-computed from inner/outer profiles. Both STL and STEP files are exported.
+
+**Consequences:**
+- Positive: Eliminates 5 known demakein Maker bugs
+- Positive: STEP file export now available alongside STL
+- Positive: No monkey-patches or frozen-build workarounds needed
+- Positive: Uses well-maintained CadQuery library already in the project
+- Positive: Bore profile reuse ensures consistency with YAML config export
+- Negative: CadQuery STL files (~24MB for folk flute) are larger than demakein Makers produced
+- Negative: Shell thickness auto-computed from mid-point; may need tuning for instruments with non-uniform wall profiles

@@ -18,18 +18,8 @@ demakein (https://github.com/keenanweaver/demakein) provides:
 This module wraps demakein with:
   - A clean async-friendly API (DemakeinDesigner.design())
   - stdout/stderr interception for progress reporting in the GUI
-  - YAML config export for FreeCAD-based 3D model generation
-  - Monkey-patches for PyInstaller/frozen-build compatibility
-
-Key fixes applied (see git history):
-  - Bug A: Worker crashes from sys.stdout=None in frozen builds
-  - Bug B: process_make() re-ran optimization + crashed on shutdown
-  - Bug C: YAML generation read pickle as JSON (silent failure)
-  - Bug D: stderr not intercepted for progress callbacks
-  - Bug E: ANSI escape codes in progress messages
-
-For an experimental scipy-based alternative (no multiprocessing),
-see scipy_optimizer.py in this same directory.
+  - YAML config export for manufacturing
+  - CadQuery-based STL/STEP generation (replaces broken Maker pipeline)
 
 Usage
 -----
@@ -62,8 +52,6 @@ except ImportError:
 
 if HAVE_DEMAKEIN:
     import demakein.config as _demakein_config
-    from demakein.make_flute import Make_flute
-    from demakein.make_shawm import Make_reed_instrument
     _ORIG_WRITE_COLORED = _demakein_config.write_colored_text
     def _SAFE_WRITE_COLORED(*args, **kwargs):
         import sys, io
@@ -73,19 +61,6 @@ if HAVE_DEMAKEIN:
             sys.stderr = io.StringIO()
         return _ORIG_WRITE_COLORED(*args, **kwargs)
     _demakein_config.write_colored_text = _SAFE_WRITE_COLORED
-
-    _DESIGN_TO_MAKER = {
-        "folk_flute": Make_flute,
-        "folk_whistle": Make_flute,
-        "recorder": Make_flute,
-        "dorian_whistle": Make_flute,
-        "pflute": Make_flute,
-        "three_hole_whistle": Make_flute,
-        "reedpipe": Make_reed_instrument,
-        "folk_shawm": Make_reed_instrument,
-        "shawm": Make_reed_instrument,
-        "reed_drone": Make_reed_instrument,
-    }
 
 
 @dataclass
@@ -300,36 +275,57 @@ class DemakeinDesigner:
             if on_progress:
                 on_progress("Generating 3D model (STL)...")
 
-            maker_cls = _DESIGN_TO_MAKER.get(preset)
-            if maker_cls:
-                try:
-                    maker = maker_cls(design_dir)
-                    maker.run()
-                except Exception as make_err:
-                    if on_progress:
-                        on_progress(f"Warning: STL generation failed: {make_err}")
-
-            stl_files = sorted(Path(design_dir).rglob("*.stl"))
-
+            stl_files = []
             config_yaml = ""
             try:
                 sv = getattr(designer, 'state_vec', None)
                 if sv is not None:
                     inst = designer.unpack(sv)
+
+                    from backend.cadquery_export import (
+                        generate_variable_bore_instrument, export_stl, export_step,
+                    )
+
+                    n_samples = 64
+                    positions = [inst.length * i / (n_samples - 1) for i in range(n_samples)]
+                    bore_profile = [(float(p), float(inst.inner(p))) for p in positions]
+
+                    outer = getattr(inst, 'outer', None)
+                    if outer is not None:
+                        mid = inst.length / 2
+                        wall_thickness = (outer(mid) - inst.inner(mid)) / 2
+                    else:
+                        wall_thickness = 3.0
+
+                    holes = list(zip(inst.hole_positions, inst.hole_diameters))
+                    closed = bool(getattr(inst, 'closed_top', False))
+
+                    solid = generate_variable_bore_instrument(
+                        bore_length=inst.length,
+                        bore_profile=bore_profile,
+                        wall_thickness=wall_thickness,
+                        holes=holes,
+                        closed_top=closed,
+                    )
+
+                    stl_path = os.path.join(design_dir, f"{preset}.stl")
+                    export_stl(solid, stl_path)
+                    stl_files = [stl_path]
+
+                    step_path = os.path.join(design_dir, f"{preset}.step")
+                    export_step(solid, step_path)
+
                     import yaml as _yaml
-                    _n = 60
-                    _positions = [inst.length * i / (_n - 1) for i in range(_n)]
-                    bore_profile = [[round(p, 4), round(inst.inner(p) / 2.0, 4)] for p in _positions]
+                    bore_profile_yaml = [[round(p, 4), round(inst.inner(p) / 2.0, 4)] for p in positions]
                     tone_holes = [
                         {"position": round(p, 4), "radius": round(d / 2.0, 4),
                          "chimney_height": round(h, 4)}
                         for p, d, h in zip(inst.hole_positions, inst.hole_diameters, inst.hole_lengths)
                     ]
-                    bore_length_mm = round(inst.length, 4)
                     yaml_cfg = {
-                        "bore_length": bore_length_mm,
+                        "bore_length": round(inst.length, 4),
                         "bore_length_unit": "mm",
-                        "bore_profile": bore_profile,
+                        "bore_profile": bore_profile_yaml,
                         "tone_holes": tone_holes,
                     }
                     yaml_path = os.path.join(design_dir, f"{preset}_config.yaml")
