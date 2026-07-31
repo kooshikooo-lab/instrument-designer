@@ -126,28 +126,27 @@ Sequencing: smoothness constraint first, then more control points.
 - [ ] Test with more control points (12 → 20-30 for complex profiles)
   - Only after monotonicity constraint is in place
 
-### 1g. Metric Standardization & Timbre Optimization
+### 1g. Metric Standardization & Timbre Optimization — **COMPLETED 2026-07-31**
 
 **Critical finding (2026-07-25):** Median correction in cost functions measures **scale evenness**, not **pitch accuracy**. These are fundamentally different things with different timbre implications. Ernoult et al. (2020) proved intonation and timbre are inherently at odds — optimizing both requires a Pareto front approach.
 
-**The problem:**
-- Desktop's `optimizer_global.py` and `phase_cost_with_offset` use median-corrected RMS → measures evenness
-- Laptop's `benchmark_all.py` uses absolute RMS → measures accuracy
-- These numbers are NOT comparable (0.01c evenness ≠ 0.01c accuracy)
-- Median correction hides systematic errors that affect ensemble playing
+**Changes Made (2026-07-31):**
+- [x] Removed median correction from ALL optimizers:
+  - `tmm_acoustics.py:phase_cost_with_offset()` — deprecated, now returns absolute RMS via `phase_cost()`
+  - `two_phase_optimizer.py:phase_cost_with_offset()` — deprecated, now returns absolute RMS
+  - `benchmark_all.py:eval_all()` — already used absolute RMS (primary metric)
 
-**The physics:** Impedance peak positions (intonation) and peak heights (timbre) are determined by the same physical parameters. You cannot independently optimize one without affecting the other.
+- [x] Absolute RMS is now the **primary metric** everywhere:
+  - Formula: `sqrt(mean(cent_deviations²))` — measures pitch accuracy
+  - No median offset subtraction
 
-- [ ] Remove median correction from ALL optimizers
-  - `optimizer_global.py:_evaluate()` — remove `np.median(c1)` offset
-  - `tmm_acoustics.py:phase_cost_with_offset()` — remove median subtraction
-  - `two_phase_optimizer.py` — remove median correction at line 62
-- [ ] Report both metrics separately in benchmark:
+- [ ] Report full metric suite in benchmark output (future):
   - **Absolute RMS (c):** `sqrt(mean(cent_deviations²))` — accuracy
   - **MAD (c):** `mean(|cent_deviations|)` — robust accuracy
   - **SD (c):** `std(cent_deviations)` — evenness
   - **Max deviation (c):** worst note
   - **Per-note table:** full profile for debugging
+
 - [ ] Add timbre proxy to optimizer: impedance peak amplitude ratios (a₂/a₁)
   - a₂/a₁ determines register stability and brightness
   - Target: varies linearly from ~2 (low register) to ~1 (high register)
@@ -530,6 +529,132 @@ There is no dedicated acoustics preprint server. Researchers use **arXiv** (cs.S
 
 ---
 
+## Computational Modeling & Benchmarking Research (2026-07-31)
+
+> Full report (sources, links, tiered benchmark strategy) in the wiki:
+> **Internal-Computational-Benchmark-Research** (mirror: `wiki/Internal-Computational-Benchmark-Research.md`).
+> Best overall interest: **benchmarking methods**; research was broader, kept all of it.
+
+### V&V benchmark — the key find
+
+**Ernoult et al. 2026, *Acta Acustica* 10:51** — "Benchmark study of pipe input
+impedance simulations and measurements for verification and validation":
+multi-lab round-robin on 180 mm pipes (cylinders 14 mm ID with 4 end conditions;
+cones 10→22.6 mm with 3 end conditions; brass/boxwood/**3D-printed ABS**; 5 pipes,
+9 impedance measurements per config). DOI 10.1051/aacus/2026048. **Data downloadable:**
+Zenodo https://zenodo.org/records/20024938 (v2; measured scaled by ρc/S, simulated not).
+Processing scripts: GitLab Inria `aernoult/acoustic-impedance-benchmark`.
+This is the canonical V&V suite for our TMM/FEM solvers.
+
+### Benchmark targets by tier
+
+| Tier | Target | Purpose | Acceptance |
+|------|--------|---------|------------|
+| V1 Verification | Inria 2026 pipe benchmark (Zenodo 20024938) | Solver-vs-solver + vs-measurement | Match simulated ref; report vs-measured per end condition |
+| V2 Cross-software | chalumier/demakein examples, WIDesigner XML | Same design, different implementation | <1c on reference bore profiles |
+| V3 Measured instrument | UNSW flute Z(f) (Boehm/classical); Bowen bass clarinet | Real instrument, real measurements | Peak agreement at Bowen-level accuracy (cents-scale) |
+| V4 Printed replica | Fagottino (open measurement datasets + CT prints) / Hotteterre traverso / RCM prints | Full physical validation | Perceptually indistinguishable replicas; <5c print-induced shift (P3) |
+
+### New checklist items
+
+- [ ] **V1**: Run `backend/tmm_acoustics.py` + OpenWInD on the 2026 benchmark cylinders/cones; save comparison notebook + figures under `research/`
+- [ ] **Fixtures**: import chalumier `examples/` (upstream GitHub, local dir empty), demakein `examples/`, and a parsed WIDesigner instrument XML as regression fixtures
+- [ ] **UNSW Z(f)**: download the Boehm/classical flute Excel files, extract resonance peaks per fingering, compare to our model of same fingering
+- [ ] **Metric discipline**: absolute RMS + MAD + SD + max deviation in `benchmark_all.py` (see §1g)
+- [ ] **Physical loop**: use OpenWInD adjoint bore reconstruction (https://team.inria.fr/makutu/bore-reconstruction-of-woodwind-like-instruments/) to close measure→optimize→print→measure
+- [ ] **Track**: RCM 3D-Printed Musical Instruments, Fagottino (historical-bassoon.ch), Hotteterre traverso study (hal-05393759v1) for future open CT data
+
+### 3D model / dataset sources verified (2026-07-31)
+
+- **RCM "3D Printed Musical Instruments"** — micro-CT of 7 museum instruments (5 ivory: Denner + Villars alto recorders, Scherer early clarinet, Scherer flute, renaissance cornett; 2 boxwood: Grundman oboe, Oberlender recorder); digital restoration + prints + acoustic comparison; not openly downloadable. DCMS/Wolfson-funded. https://www.rcm.ac.uk/research/projects/3dprintedmusicalinstruments
+- **Hotteterre traverso** (Musée de la Musique) — X-ray tomography → 3D print; 69 listeners + 9 players, discrimination near chance. https://hal.sorbonne-universite.fr/IJLRDA-LAM/hal-05393759v1
+- **Digital Revival** (Arbel & Weissman, arXiv:2606.24216v1) — Haka (c.1680) + Warder (1540s) flute case studies, ISMA 2026/POMA; also cites Eveno & Le Conte (45 serpents, doi:10.1016/j.culher.2016.02.005) and Bowen et al. (doi:10.1016/j.apacoust.2018.08.028).
+- **Fagottino (SCB/FHNW)** — most open museum-grade data: 130+ small bassoons documented, measurement datasets on Zenodo, CT-based prints (3DFagottini). https://historical-bassoon.ch ; https://www.fhnw.ch/plattformen/3dfagottino/ ; https://meta.dasch.swiss/projects/0845/
+- **UNSW flute acoustics** — downloadable Z(f) Excel files (Boehm B/C foot, classical flute; baroque in comparisons). https://www.phys.unsw.edu.au/music/flute/
+- **Warder flute** (1540s shipwreck traverso) — CT → physical modeling; oldest Dutch flute; dataset incl. 3D models + IMA scans (Digital Revival).
+- **Visual mesh marketplaces (Sketchfab/MakerWorld/Thingiverse)** — NOT usable for acoustic V&V (no bore/impedance data).
+
+### Key methodology lessons
+
+- Measured impedance files usually scaled by ρc/S; simulations not — check scaling before comparing.
+- Bowen et al.: bore geometry alone may suffice for impedance prediction of playable instruments (validates geometry-only benchmarking).
+- Szwarcberg et al. 2025: 0.1 mm radius → 3.4c; chimney +1 mm → 4c — sets fabrication tolerance bar.
+- Metric discipline (§1g): median-corrected metrics measure evenness, not accuracy.
+
+---
+
+## Benchmarking Standards (2026-07-31) — **MANDATORY FOR ALL BENCHMARKS**
+
+These standards are derived from the research in `wiki/Internal-Computational-Benchmark-Research.md` and `wiki/Internal-Research.md`. All benchmark runs must comply.
+
+### Primary Metric: Absolute RMS (Pitch Accuracy)
+```python
+cents = [1200 * log2(actual / target) for each note]
+absolute_rms = sqrt(mean(cents²))
+```
+- **This is the ONLY primary metric.** No median correction.
+- Measures how far notes are from equal temperament targets at A=440 Hz.
+- Median correction (evenness) is a SEPARATE metric, never the primary.
+
+### Required Metric Suite (Report ALL)
+| Metric | Formula | Measures |
+|--------|---------|----------|
+| **Absolute RMS** | `sqrt(mean(cent_dev²))` | **Accuracy (PRIMARY)** |
+| **MAD** | `mean(|cent_dev|)` | Robust accuracy |
+| **SD** | `std(cent_dev)` | Evenness |
+| **Max Deviation** | `max(|cent_dev|)` | Worst note |
+
+### Forbidden Practices
+- ❌ Median correction as primary metric (hides systematic tuning errors)
+- ❌ Reporting "0.01c" without specifying absolute vs median-corrected
+- ❌ Using Printables/Cults3D/Thingiverse STLs as validation targets (no acoustic data)
+- ❌ Comparing absolute RMS from one pipeline to median-corrected from another
+
+### Required Documentation Per Benchmark Run
+1. **Solver configuration**: TMM parameters, loss model, speed of sound value
+2. **Geometry source**: Peer-reviewed paper, museum CT data, or validated reference
+3. **Measurement scaling**: Confirm ρc/S scaling for measured impedance files
+4. **Per-note table**: Full cent deviation profile for debugging
+5. **Environment**: Temperature, humidity if physical measurement
+
+### Tiered Benchmark Strategy (from Internal-Computational-Benchmark-Research.md)
+
+| Tier | Target | Purpose | Acceptance |
+|------|--------|---------|------------|
+| **V1 Verification** | Inria 2026 pipe benchmark (Zenodo 20024938) | Solver-vs-solver + solver-vs-measurement on simple geometry | Match simulated ref; report discrepancy vs measured per end condition |
+| **V2 Cross-software** | chalumier/demakein examples, WIDesigner XML | Same design, different implementation | <1c on reference bore profiles |
+| **V3 Measured instrument** | UNSW flute Z(f) (Boehm/classical); Bowen bass clarinet | Real instrument, real measurements | Peak agreement at Bowen-level accuracy (cents-scale) |
+| **V4 Printed replica** | Fagottino (open datasets + CT prints) / Hotteterre traverso / RCM | Full physical validation | Perceptually indistinguishable replicas; <5c print-induced shift (P3) |
+
+### Approved Benchmark Sources (Research-Grade Only)
+| Category | Source | Access |
+|----------|--------|--------|
+| **V1** | Inria 2026 Pipe Benchmark (Ernoult et al. 2026) | Zenodo 20024938 + GitLab Inria |
+| **V2** | chalumier `examples/`, demakein `examples/`, WIDesigner XML | GitHub (upstream) |
+| **V3** | UNSW Flute Z(f) (Boehm B/C, Classical) | phys.unsw.edu.au/music/flute/ |
+| **V3** | Bowen 1910 Heckel Bass Clarinet in A | oro.open.ac.uk/58268 (open access) |
+| **V4** | Fagottino (SCB/FHNW) — 130+ small bassoons | historical-bassoon.ch, Zenodo, DaSCH |
+| **V4** | Hotteterre Traverso (Fritz et al.) | HAL: hal-05393759v1 |
+| **V4** | Digital Revival (Haka 1680, Warder 1540s) | arXiv:2606.24216 |
+| **V4** | RCM 3D Printed Instruments (7 instruments) | Collaboration required (not open) |
+
+### Explicitly Forbidden Sources
+- Printables / Cults3D / Thingiverse / MakerWorld / GrabCAD / Sketchfab — hobbyist STLs, no acoustic validation, no impedance data
+- Any source without published impedance measurements or CT-derived bore profiles
+
+### Implementation Checklist
+- [x] Median correction removed from all cost functions (tmm_acoustics.py, two_phase_optimizer.py)
+- [x] Absolute RMS is primary metric in benchmark_all.py (eval_all)
+- [ ] Update benchmark_all.py to output full metric suite (MAD, SD, Max)
+- [ ] Add per-note table to benchmark output
+- [ ] Document solver config (loss model, speed of sound) in benchmark logs
+- [ ] Run V1 Inria 2026 benchmark with corrected TMM
+- [ ] Import chalumier/demakein/WIDesigner as regression fixtures (V2)
+- [ ] Download UNSW flute Z(f) and Bowen bass clarinet data (V3)
+- [ ] Download Fagottino Zenodo dataset and select first print target (V4)
+
+---
+
 ## Low Priority — Future
 
 ### Trumpet Design (Branches Available)
@@ -588,4 +713,4 @@ There is no dedicated acoustics preprint server. Researchers use **arXiv** (cs.S
 
 ---
 
-*Last updated: 2026-07-29*
+*Last updated: 2026-07-31*

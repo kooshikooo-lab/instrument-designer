@@ -1,10 +1,13 @@
 """
 Two-phase optimizer (Noreland approach): Phase cost (fast) → Peak cost (correct).
 
-Phase 1: DE + phase_cost_with_offset — fast (1.4ms/call), explores global space
-Phase 2: L-BFGS-B + peak_cost_nearest — correct (140ms/call), refines to optimum
+Phase 1: DE + absolute RMS — fast, explores global space
+Phase 2: L-BFGS-B + peak_cost_nearest — correct, refines to optimum
 
 Based on desktop's two_phase_optimizer.py with KeefeLoss integration.
+
+NOTE: Median correction removed from all cost functions per benchmarking standards.
+Absolute RMS is the primary metric (ROADMAP §1g, Internal-Optimization.md).
 """
 import sys, os, time, math, re, json
 import numpy as np
@@ -55,9 +58,16 @@ def cents_error(actual, target):
 
 def phase_cost_with_offset(inst, targets, fingerings, n_register=1):
     """
-    Phase-based cost with offset correction. Fast but register-agnostic.
-    Returns mean absolute cents error after optimal constant offset removal.
+    Phase-based cost with offset correction — DEPRECATED.
+
+    This function used median correction which measures scale evenness,
+    NOT pitch accuracy. It masks systematic tuning errors.
+    Use absolute RMS (eval_all in benchmark_all.py) for accuracy benchmarks.
+
+    Kept for backward compatibility only. DO NOT USE for new benchmarks.
     """
+    # DEPRECATED: median correction hides accuracy errors
+    # Return absolute RMS instead
     try:
         wl_guesses = [SPEED_OF_SOUND / f for f in targets]
         cents_list = []
@@ -68,6 +78,7 @@ def phase_cost_with_offset(inst, targets, fingerings, n_register=1):
         ca = np.array(cents_list)
         if len(ca) == 0 or np.any(np.abs(ca) > 1e5):
             return 1e10
+        # Return absolute RMS, not median-corrected
         return float(np.sqrt(np.mean(ca ** 2)))
     except:
         return 1e10
