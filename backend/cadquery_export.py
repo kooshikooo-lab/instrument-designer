@@ -28,6 +28,22 @@ import time
 import os
 
 
+def _cut_holes(solid, holes, wall_thickness, hole_depth, inner_radius_at):
+    import cadquery as cq
+    for i, (pos, diam) in enumerate(holes):
+        inner_r = inner_radius_at(pos)
+        side = 1 if i % 2 == 0 else -1
+        cyl = (
+            cq.Workplane("XY")
+            .circle(diam / 2)
+            .extrude(wall_thickness + hole_depth)
+            .rotate((0, 0, 0), (0, 1, 0), 90)
+            .translate((inner_r * side, 0, pos))
+        )
+        solid = solid.cut(cyl)
+    return solid
+
+
 def generate_instrument(
     bore_length: float,
     bore_diameter: float | tuple[float, float],
@@ -93,21 +109,28 @@ def generate_instrument(
             cap = cap.translate((0, 0, bore_length))
             solid = solid.union(cap)
 
-    if isinstance(bore_diameter, (list, tuple)):
-        max_outer_r = max(d + 2 * wall_thickness for d in bore_diameter) / 2
-    else:
-        max_outer_r = (bore_diameter + 2 * wall_thickness) / 2
-    for pos, diam in holes:
-        cyl = (
-            cq.Workplane("XY")
-            .circle(diam / 2)
-            .extrude(2 * (max_outer_r + hole_depth))
-            .rotate((0, 0, 0), (0, 1, 0), 90)
-            .translate((0, 0, pos))
-        )
-        solid = solid.cut(cyl)
-
+    solid = _cut_holes(solid, holes, wall_thickness, hole_depth, lambda pos: (
+        bore_diameter / 2 if not isinstance(bore_diameter, (list, tuple))
+        else (small_d + pos / bore_length * (large_d - small_d)) / 2
+    ))
     return solid
+
+
+def _interpolate_inner_radius(
+    profile: list[tuple[float, float]], pos: float
+) -> float:
+    """Interpolate bore inner radius at position from sorted (pos, diam) profile."""
+    if pos <= profile[0][0]:
+        return profile[0][1] / 2
+    if pos >= profile[-1][0]:
+        return profile[-1][1] / 2
+    for i in range(len(profile) - 1):
+        p1, d1 = profile[i]
+        p2, d2 = profile[i + 1]
+        if p1 <= pos <= p2:
+            t = (pos - p1) / (p2 - p1) if p2 != p1 else 0
+            return (d1 + t * (d2 - d1)) / 2
+    return profile[-1][1] / 2
 
 
 def generate_variable_bore_instrument(
@@ -130,6 +153,15 @@ def generate_variable_bore_instrument(
         raise ValueError("bore_profile must not be empty")
     if bore_length is None:
         bore_length = profile[-1][0]
+    if profile[0][0] > 1.0:
+        raise ValueError(
+            f"bore_profile must start near 0, got first position {profile[0][0]}"
+        )
+    if profile[-1][0] < bore_length - 1.0:
+        raise ValueError(
+            "bore_profile does not extend to bore_length; "
+            f"last position {profile[-1][0]} < {bore_length}"
+        )
 
     inner_diams = [d for _, d in profile]
     outer_diams = [d + 2 * wall_thickness for d in inner_diams]
@@ -155,16 +187,7 @@ def generate_variable_bore_instrument(
         )
         solid = solid.union(cap)
 
-    max_outer_r = max(outer_diams) / 2
-    for pos, diam in holes:
-        cyl = (
-            cq.Workplane("XY")
-            .circle(diam / 2)
-            .extrude(2 * (max_outer_r + hole_depth))
-            .rotate((0, 0, 0), (0, 1, 0), 90)
-            .translate((0, 0, pos))
-        )
-        solid = solid.cut(cyl)
+    solid = _cut_holes(solid, holes, wall_thickness, hole_depth, lambda pos: _interpolate_inner_radius(profile, pos))
 
     return solid
 
@@ -172,6 +195,8 @@ def generate_variable_bore_instrument(
 def export_stl(
     solid, path: str, tolerance: float = 0.01, angular_tolerance: float = 0.1
 ) -> float:
+    """Export as STL. tolerance=0.01 (~2-7MB) suits FDM printing (0.1-0.2mm layer height).
+    tolerance=0.001 (~20MB+) for SLA or close-up renders. CadQuery default is 0.001."""
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
     t0 = time.time()
     solid.val().exportStl(

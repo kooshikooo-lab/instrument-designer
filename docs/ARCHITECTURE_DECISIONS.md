@@ -154,3 +154,6 @@ Remove `Make_flute`/`Make_reed_instrument` imports and the `_DESIGN_TO_MAKER` di
 - Positive: Bore profile reuse ensures consistency with YAML config export
 - Negative: CadQuery STL files (~24MB for folk flute) are larger than demakein Makers produced
 - Negative: Shell thickness auto-computed from mid-point; may need tuning for instruments with non-uniform wall profiles
+
+**Revisions:**
+- **2026-07-31 (Revision 1):** Fixed hole positioning — holes now start at the inner bore surface (not bore centerline, which cut through empty cavity) and alternate around the circumference (even index +X, odd index −X) for more realistic tone hole placement. Added `hole_depth` as chimney height past outer wall. Extracted shared `_cut_holes()` helper to eliminate duplicate loop logic between `generate_instrument` and `generate_variable_bore_instrument`. Added `_interpolate_inner_radius()` helper for variable-bore radius lookup. STL `tolerance` default set to 0.01 (vs CadQuery default 0.001) for balance between file size (~2-7MB) and FDM print fidelity.

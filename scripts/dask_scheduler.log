@@ -1,0 +1,76 @@
+2026-07-30 16:26:23,513 - distributed.scheduler - INFO - -----------------------------------------------
+2026-07-30 16:26:23,529 - distributed.http.proxy - INFO - To route to workers diagnostics web server please install jupyter-server-proxy: python -m pip install jupyter-server-proxy
+C:\Users\Admin\AppData\Local\Programs\Python\Python314\Lib\site-packages\distributed\node.py:188: UserWarning: Port 8787 is already in use.
+Perhaps you already have a cluster running?
+Hosting the HTTP server on port 63841 instead
+  warnings.warn(
+2026-07-30 16:26:23,535 - distributed.scheduler - INFO - State start
+2026-07-30 16:26:23,559 - distributed.scheduler - INFO - -----------------------------------------------
+2026-07-30 16:26:23,561 - distributed.scheduler - INFO - Closing scheduler. Reason: failure-to-start-<class 'OSError'>
+2026-07-30 16:26:23,562 - distributed.scheduler - INFO - Scheduler closing all comms
+2026-07-30 16:26:23,563 - distributed.scheduler - INFO - End scheduler
+Traceback (most recent call last):
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python314\Lib\site-packages\distributed\core.py", line 509, in start
+    await wait_for(self.start_unsafe(), timeout=timeout)
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python314\Lib\site-packages\distributed\utils.py", line 1848, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python314\Lib\site-packages\distributed\scheduler.py", line 4414, in start_unsafe
+    await self.listen(
+    ...<4 lines>...
+    )
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python314\Lib\site-packages\distributed\core.py", line 689, in listen
+    listener = await listen(
+               ^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python314\Lib\site-packages\distributed\comm\core.py", line 256, in _
+    await self.start()
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python314\Lib\site-packages\distributed\comm\tcp.py", line 630, in start
+    sockets = netutil.bind_sockets(
+        self.port, address=self.ip, backlog=backlog
+    )
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python314\Lib\site-packages\tornado\netutil.py", line 162, in bind_sockets
+    sock.bind(sockaddr)
+    ~~~~~~~~~^^^^^^^^^^
+OSError: [WinError 10048] Only one usage of each socket address (protocol/network address/port) is normally permitted
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "<frozen runpy>", line 203, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python314\Lib\site-packages\distributed\cli\dask_scheduler.py", line 251, in <module>
+    main()  # pragma: no cover
+    ~~~~^^
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python314\Lib\site-packages\click\core.py", line 1569, in __call__
+    return self.main(*args, **kwargs)
+           ~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python314\Lib\site-packages\click\core.py", line 1490, in main
+    rv = self.invoke(ctx)
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python314\Lib\site-packages\click\core.py", line 1353, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+           ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python314\Lib\site-packages\click\core.py", line 907, in invoke
+    return callback(*args, **kwargs)
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python314\Lib\site-packages\distributed\cli\dask_scheduler.py", line 245, in main
+    asyncio_run(run(), loop_factory=get_loop_factory())
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python314\Lib\asyncio\runners.py", line 205, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python314\Lib\asyncio\runners.py", line 128, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python314\Lib\asyncio\base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python314\Lib\site-packages\distributed\cli\dask_scheduler.py", line 241, in run
+    [task.result() for task in done]
+     ~~~~~~~~~~~^^
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python314\Lib\site-packages\distributed\cli\dask_scheduler.py", line 221, in wait_for_scheduler_to_finish
+    await scheduler
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python314\Lib\site-packages\distributed\core.py", line 517, in start
+    raise RuntimeError(f"{type(self).__name__} failed to start.") from exc
+RuntimeError: Scheduler failed to start.
