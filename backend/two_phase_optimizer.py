@@ -349,7 +349,8 @@ def two_phase_optimize(
         'best_instrument': inst2,
         'best_variables': x2,
         'detected_registers': regs,
-        'bore_radii': radii2,
-        'hole_diameters': hd2,
-        'hole_positions': hp2,
+        'bore_length_mm': float(bore_length),
+        'bore_radii': [float(r) for r in radii2],
+        'hole_diameters': [float(d) for d in hd2],
+        'hole_positions': [float(p) for p in hp2],
     }

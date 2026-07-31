@@ -2,7 +2,7 @@
 import sys
 sys.path.insert(0, "C:\\instrument-designer")
 
-from backend.tmm_optimizer_sequential import SequentialBoreOptimizer
+from backend.archived_optimizers.tmm_optimizer_sequential import SequentialBoreOptimizer
 from backend.tmm_acoustics import SPEED_OF_SOUND
 import numpy as np
 

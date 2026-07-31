@@ -14,7 +14,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from backend.tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
-from backend.tmm_optimizer_sequential import SequentialBoreOptimizer
+from backend.archived_optimizers.tmm_optimizer_sequential import SequentialBoreOptimizer
 
 c = SPEED_OF_SOUND
 
