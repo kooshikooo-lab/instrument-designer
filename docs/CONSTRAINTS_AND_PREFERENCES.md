@@ -2,7 +2,9 @@
 
 **Read this file first.** It is the initialization procedure every AI agent must follow before writing code.
 
-Never begin coding until every step below is complete.
+**Never begin coding until every step below is complete.**
+
+**IMPORTANT ÔÇö The confirmation requirement:** You must begin your next response with: *"I have read the AI Constitution and will follow it."* followed by a summary of which laws apply to your current task. This is not optional. If you do not include this statement, you have skipped Step 1.
 
 ---
 
@@ -10,9 +12,13 @@ Never begin coding until every step below is complete.
 
 ### Ôûí Step 1 ÔÇö Read the AI Constitution
 
-Write down in your notes the **10 laws** from the AI Constitution, deleting those that are irrelevant to your current task. Refer back to these throughout the session.
+Read `docs/AI_CONSTITUTION.md` completely.
 
-Read `docs/AI_CONSTITUTION.md` completely. After reading, state aloud which laws apply to your current task and how you will follow them. Do not skip this.
+**Then explicitly state in your response:** *"I have read the AI Constitution and will follow it."*
+
+Also list which laws apply to your current task and how you will follow them. This forces you to refresh the architectural constraints in your working context before touching any code.
+
+Do not skip this confirmation. If you do not state it, you have not completed Step 1.
 
 ### Ôûí Step 2 ÔÇö Read architecture documentation
 
@@ -82,3 +88,4 @@ Before finishing:
 - [ ] `ARCHITECTURE_CHECKLIST.md` completed
 - [ ] `COMPLIANCE_CHECK.md` run at least once in this session
 - [ ] If you made a mistake, log it in `AI_FAILURE_PATTERNS.md`
+

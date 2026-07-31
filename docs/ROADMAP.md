@@ -12,7 +12,7 @@
 - [x] SimulationWorker: renamed finished signal, added exception handling
 - [x] ProjectWidget: public methods, cross-platform folder open
 - [x] Cloned chalumier (Kotlin demakein rewrite) for evaluation
-- [x] STL generation: added Make_flute/Make_reed_instrument step after optimization
+- [x] STL generation: CadQuery-based pipeline (replaced broken demakein Maker classes)
 - [x] Quick mode support for demakein designs (faster draft iterations)
 - [x] chalumier wrapper module (ready when JDK is available)
 - [x] Error handling: _run_design try/except, unified job status responses

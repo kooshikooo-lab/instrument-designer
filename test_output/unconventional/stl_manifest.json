@@ -1,0 +1,121 @@
+[
+  {
+    "bore_type": "cylindrical",
+    "stl_path": "C:\\Users\\Admin\\Desktop\\instrument-designer\\backend\\..\\test_output\\unconventional\\optimized_cylindrical.stl",
+    "size_kb": 81.5,
+    "time_s": 2.993,
+    "n_holes": 7,
+    "n_radii": 6,
+    "hole_positions_mm": [
+      108.5,
+      220.1,
+      334.8,
+      452.6,
+      573.6,
+      697.7,
+      824.9
+    ]
+  },
+  {
+    "bore_type": "parabolic",
+    "stl_path": "C:\\Users\\Admin\\Desktop\\instrument-designer\\backend\\..\\test_output\\unconventional\\optimized_parabolic.stl",
+    "size_kb": 752.0,
+    "time_s": 0.663,
+    "n_holes": 7,
+    "n_radii": 6,
+    "hole_positions_mm": [
+      151.7,
+      303.5,
+      455.6,
+      607.8,
+      760.3,
+      912.9,
+      1065.7
+    ]
+  },
+  {
+    "bore_type": "exponential",
+    "stl_path": "C:\\Users\\Admin\\Desktop\\instrument-designer\\backend\\..\\test_output\\unconventional\\optimized_exponential.stl",
+    "size_kb": 79.4,
+    "time_s": 0.398,
+    "n_holes": 7,
+    "n_radii": 6,
+    "hole_positions_mm": [
+      139.0,
+      279.1,
+      420.2,
+      562.6,
+      706.0,
+      850.5,
+      996.1
+    ]
+  },
+  {
+    "bore_type": "bessel",
+    "stl_path": "C:\\Users\\Admin\\Desktop\\instrument-designer\\backend\\..\\test_output\\unconventional\\optimized_bessel.stl",
+    "size_kb": 141.4,
+    "time_s": 0.519,
+    "n_holes": 7,
+    "n_radii": 6,
+    "hole_positions_mm": [
+      107.6,
+      213.6,
+      318.0,
+      420.9,
+      522.3,
+      622.1,
+      720.3
+    ]
+  },
+  {
+    "bore_type": "spiral",
+    "stl_path": "C:\\Users\\Admin\\Desktop\\instrument-designer\\backend\\..\\test_output\\unconventional\\optimized_spiral.stl",
+    "size_kb": 7056.4,
+    "time_s": 5.5,
+    "n_holes": 7,
+    "n_radii": 50,
+    "hole_positions_mm": [
+      90.8,
+      179.7,
+      266.6,
+      351.5,
+      434.5,
+      515.5,
+      594.5
+    ]
+  },
+  {
+    "bore_type": "ridged",
+    "stl_path": "C:\\Users\\Admin\\Desktop\\instrument-designer\\backend\\..\\test_output\\unconventional\\optimized_ridged.stl",
+    "size_kb": 2085.7,
+    "time_s": 2.515,
+    "n_holes": 7,
+    "n_radii": 50,
+    "hole_positions_mm": [
+      111.8,
+      226.7,
+      344.8,
+      465.9,
+      590.1,
+      717.5,
+      847.9
+    ]
+  },
+  {
+    "bore_type": "stepped",
+    "stl_path": "C:\\Users\\Admin\\Desktop\\instrument-designer\\backend\\..\\test_output\\unconventional\\optimized_stepped.stl",
+    "size_kb": 219.9,
+    "time_s": 0.519,
+    "n_holes": 7,
+    "n_radii": 6,
+    "hole_positions_mm": [
+      147.5,
+      295.6,
+      444.2,
+      593.4,
+      743.2,
+      893.6,
+      1044.6
+    ]
+  }
+]

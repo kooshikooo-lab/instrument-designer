@@ -127,3 +127,24 @@ Prevention:
 - Architecture diagrams in docs/ must clearly annotate what is implemented vs planned.
 - Mark planned modules with `(PLANNED)` in architecture docs.
 - When reading architecture docs, cross-reference against actual file listing.
+
+---
+
+## Failure #6 — Created new module that duplicated existing backend code
+
+Date: 2026-07-31
+Session: CadQuery STL pipeline replacement for demakein Makers
+
+Problem:
+Created `woodwind_designer/engine/stl_generator.py` with CadQuery-based STL generation that duplicated logic already present in `backend/cadquery_export.py::generate_variable_bore_instrument`. Wrote ~100 lines of new code instead of importing the existing function.
+
+Root cause:
+The AI searched for "CadQuery" in the engine directory only and didn't find it. It failed to search the `backend/` directory where CAD utilities live. The subsystem table in CONSTRAINTS_AND_PREFERENCES.md lists CAD/Manufacturing → `cadquery_export.py` but the AI didn't cross-reference this during Step 4.
+
+Solution:
+Deleted `stl_generator.py`. Modified `demakein_wrapper.py` to import from `backend.cadquery_export` instead. Sampled the demakein Instrument profile into the `[(pos, diam)]` format that `generate_variable_bore_instrument` expects.
+
+Prevention:
+- In Step 4 of boot sequence, explicitly search BOTH `woodwind_designer/` AND `backend/` directories.
+- The subsystem table in CONSTRAINTS_AND_PREFERENCES.md is authoritative — check it during Step 3.
+- Before creating any new `.py` file, grep for the core function signature across the entire project.
