@@ -415,6 +415,8 @@ LIBRARY: list[InstrumentEntry] = [
                     "Fixes intonation issues of the original design. Barrel fits standard "
                     "Eb mouthpiece. Raised key blocks away from body.",
     ),
+    InstrumentEntry(
+        name="Curvy Clarinet",
         family="Wind", subcategory="Woodwind", type_label="Single Reed",
         range="Soprano", key="C",
         source="Printables – Nkosi Smith",
@@ -1271,6 +1273,7 @@ LIBRARY: list[InstrumentEntry] = [
                     "Uses contra clarinet reed. Larger tip opening ~2.5mm. "
                     "Print in TPU or rigid with sanded lay. Experimental.",
     ),
+]
 
 
 def get_families() -> list[str]:

@@ -122,7 +122,7 @@ class DemakeinDesigner:
     def __init__(self, output_base: str = "designs"):
         self.output_base = Path(output_base)
         self.output_base.mkdir(parents=True, exist_ok=True)
-        self._current_designer: Optional[Instrument_designer] = None
+        self._current_designer: Optional["Instrument_designer"] = None
 
     def list_families(self) -> list[str]:
         return list(self.CATEGORIES.keys())
@@ -305,7 +305,7 @@ class DemakeinDesigner:
                         wall_thickness=wall_thickness,
                         bore_length=inst.length,
                         holes=holes,
-                        closed_top=closed_top,
+                        closed_top=closed,
                     )
 
                     stl_path = os.path.join(design_dir, f"{preset}.stl")
@@ -332,8 +332,11 @@ class DemakeinDesigner:
                     with open(yaml_path, "w") as _yh:
                         _yaml.dump(yaml_cfg, _yh, default_flow_style=None)
                     config_yaml = yaml_path
-            except Exception:
-                pass
+            except Exception as e:
+                if on_progress:
+                    on_progress(f"Export warning: {e}")
+                import traceback
+                traceback.print_exc()
 
             return DesignResult(
                 output_dir=design_dir,
