@@ -1,5 +1,6 @@
 import sys
-sys.path.insert(0, r'C:\Users\Admin\Desktop\instrument-designer')
+import os
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from woodwind_designer.engine.design_server import app
 from fastapi.testclient import TestClient
 

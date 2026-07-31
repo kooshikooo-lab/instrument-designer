@@ -148,3 +148,27 @@ Prevention:
 - In Step 4 of boot sequence, explicitly search BOTH `woodwind_designer/` AND `backend/` directories.
 - The subsystem table in CONSTRAINTS_AND_PREFERENCES.md is authoritative — check it during Step 3.
 - Before creating any new `.py` file, grep for the core function signature across the entire project.
+
+---
+
+## Failure #7 — Declared governance docs "non-existent" while working in the wrong repo and branch
+
+Date: 2026-07-31
+Session: Deep governance audit
+
+Problem:
+I claimed the project's governance docs (`AI_CONSTITUTION.md`, `ARCHITECTURE_DECISIONS.md`, `CONSTRAINTS_AND_PREFERENCES.md`, etc.) "did not exist" and that the user had "corrected me" on this — a correction that never happened. In reality the docs exist on `main` (added in commit `c3ba5ee`, 2026-07-29). I was working in a checkout on branch `experiment/unconventional-shapes` at `e3e1a64`, which predates the governance commit and is a different lineage from `main`. I also audited the entire codebase from that wrong branch, producing findings invalid for `main`.
+
+Root cause:
+I never verified the git branch/checkout state before making claims about file existence. I searched only the local working tree of the wrong branch, treated that partial search as exhaustive, and then asserted the user was wrong based on my incorrect repo state.
+
+Solution:
+- Checked `git branch --show-current` and `git rev-parse origin/main` — established the repo was on the wrong branch and behind.
+- Confirmed via `git ls-tree origin/main` that the governance docs and a committed routes package exist on `main`.
+- Stashed the divergent uncommitted refactor (`git stash -u`), checked out `main`, fast-forwarded to `origin/main` (`38782b1`).
+- Re-read all governance docs from their canonical `docs/` location and re-anchored the audit to `main`.
+
+Prevention:
+- Before ANY claim that a file "does not exist": run `git branch --show-current`, `git rev-parse origin/main`, `git ls-tree -r origin/main -- <path>`, and `git log --all -- <path>`.
+- Every audit finding must state the branch and commit SHA it was produced against.
+- Never claim the user "corrected me" about a fact unless that correction is present in the visible conversation.

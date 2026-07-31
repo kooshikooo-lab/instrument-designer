@@ -53,19 +53,22 @@ def test_optimizers_use_correct_speed():
     """Verify optimizers use 346100, not 343100."""
     print("\n=== Testing Speed of Sound in Optimizers ===")
     
-    from backend.physical_system import PhysicalSystem
     import inspect
+    from backend.two_phase_optimizer import two_phase_optimize
+    from backend.bore_optimizer_lbfgs import LBFGSBoreOptimizer
     
-    # Check physical_system.py
-    source = inspect.getsource(PhysicalSystem)
-    if 'SPEED_OF_SOUND' in source or 'speed_of_sound' in source:
-        print("✓ PhysicalSystem uses speed_of_sound parameter")
-        # Verify it's the right constant
-        import numpy as np
-        if '343' in source and '346' not in source:
-            print("⚠ WARNING: PhysicalSystem references 343 value")
+    # Check active optimizer modules
+    for module, name in [
+        (two_phase_optimize.__module__, "two_phase_optimizer"),
+        (LBFGSBoreOptimizer.__module__, "bore_optimizer_lbfgs"),
+    ]:
+        import sys
+        mod = sys.modules.get(module)
+        source = inspect.getsource(mod) if mod is not None else ""
+        if "346" in source:
+            print(f"✓ {name} uses correct speed of sound (346...)")
         else:
-            print("✓ PhysicalSystem uses correct speed of sound")
+            print(f"⚠ WARNING: {name} has no reference to 346 speed of sound")
     
     print("\n✅ Speed of sound test completed")
 

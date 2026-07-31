@@ -1,5 +1,11 @@
 import sys
-sys.path.insert(0, r'C:\Users\Admin\Desktop\Woodwind design automation\woodwind-designer\backend')
+import os
 
-# Run the test script
-exec(open(r'C:\Users\Admin\Desktop\Woodwind design automation\woodwind-designer\backend\test_full_2reg.py').read())
+BACKEND_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "backend"))
+sys.path.insert(0, BACKEND_DIR)
+
+TARGET = os.path.join(BACKEND_DIR, "test_full_2reg.py")
+if not os.path.exists(TARGET):
+    raise FileNotFoundError(f"{TARGET} does not exist on this branch")
+
+exec(open(TARGET).read())
