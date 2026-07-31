@@ -213,9 +213,15 @@ Cross-checking the TMM solver against the OpenWind wrapper on a 300mm/9mm-radius
 Root cause:
 - The two solvers are never compared in the test suite, so a register/boundary-convention mismatch (open vs closed at x=0, register indexing into `openwind` resonance mode order) went undetected.
 - TMM (`tmm_acoustics.py`) uses mm + `SPEED_OF_SOUND` (~346100 mm/s ≈ 24.4C); OpenWind uses meters — any caller mixing them silently gets wrong physics.
+- `OpenWindSolver.compute_frequencies` scanned only impedance *peaks* and indexed `freqs[n_register-1]`. For an open input the played notes are the impedance *antiresonances* (a pipe open at both ends has peaks only at odd modes), so it returned 3x/5x/9x the fundamental. The scan window `f_min = c/(2*max_wl)` also started exactly on the first antiresonance, silently skipping it; `f_max = c/(min_wl*0.5)` truncated higher modes so register >= 2 returned NaN.
 
-Solution:
-- Reported the discrepancy; the `OpenWindSolver.compute_frequencies` register/mode selection and boundary convention need a dedicated investigation before OpenWind can be trusted as a validation reference. TMM register 1 (`find_resonance`) also returns a spurious near-zero mode on open geometry.
+Solution (2026-07-31):
+- `OpenWindSolver.compute_frequencies` now selects the boundary-dependent feature set: `antiresonance_peaks_from_phase` for OPEN input, `resonance_peaks_from_phase` otherwise (both from `openwind.impedance_tools`).
+- Window widened to `f_min = c/(4*max_wl)`, `f_max = 4*c/min_wl` (4000-point grid), and each note takes the feature nearest its target by `|log2(f/f_target)|` instead of indexing by register.
+- Register vent handling mirrored from TMM: first `is_register_vent` port is OPEN for register >= 2, CLOSED otherwise; `n_register` accepts an int or a per-note list.
+- Added `Port.is_register_vent` / `Port.is_tonehole` properties (`backend/core/network.py`): the attributes were missing, so any `TMMSolver`/optimizer call on a network with ports raised `AttributeError`.
+- Regression tests in `tests/test_openwind_solver.py` lock OpenWind to TMM within 60 cents (open pipe reg n vs reg n+1, reed pipe reg n, register vent open at reg 2).
+- Verified agreement (300mm/9mm cylinder): OPEN 564.2/1133.3/1703.2 vs TMM 571.2/1142.4/1713.5 Hz (−21 to −10 cents); REED 280.3/848.5/1418.1 vs 285.6/856.8/1427.9 Hz (−33 to −12 cents). Residual = viscothermal losses + end corrections.
 - Related confirmed risk: `tmm_acoustics_jax.py` produces `nan` for a zero-radius bore segment (division by zero); add `jax.config.update("jax_debug_nans", True)` guard.
 
 Prevention:

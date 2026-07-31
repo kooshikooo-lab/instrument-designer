@@ -135,6 +135,9 @@ TMM in `tmm_acoustics.py` is the default solver for optimization loops. OpenWind
 - Negative: TMM accuracy is limited below ~200 Hz and above ~5 kHz (plane-wave assumption breaks down).
 - Negative: Visothermal losses must be approximated (Keefe model) rather than computed from first principles.
 
+**Revisions:**
+- **2026-07-31 (Revision 1):** Defined the sounding-note convention that makes OpenWind usable as the validation reference. `OpenWindSolver.compute_frequencies` now selects the boundary-dependent feature set from the input impedance: OPEN input (flute-like) plays the **antiresonances**, REED/CLOSED input plays the **resonances**. Register correspondence is locked to TMM: OpenWind register *n* == TMM register *n* for closed inputs, and == TMM register *n+1* for open inputs (TMM register 1 on open geometry is a spurious near-zero mode). The register vent is OPEN for register >= 2. Wrapper details in `backend/solvers/openwind_solver.py`; regression lock in `tests/test_openwind_solver.py`.
+
 ---
 
 ## ADR-007: CadQuery-Based STL Generation (Replace Demakein Maker Pipeline)

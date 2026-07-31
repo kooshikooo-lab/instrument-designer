@@ -158,7 +158,7 @@ def download_stls(job_id: str):
 
 @app.get("/health", response_model=HealthResponse)
 def health():
-    return HealthResponse(status="ok", version="1.0.0")
+    return HealthResponse(status="ok", version=app.version)
 
 
 @app.get("/presets")
