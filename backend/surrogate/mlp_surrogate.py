@@ -303,7 +303,8 @@ def generate_training_data(n_samples: int,
 def build_surrogate_pipeline(n_samples: int = 10000,
                             epochs: int = 100,
                             batch_size: int = 64,
-                            config: Optional[SurrogateConfig] = None) -> SurrogateTrainer:
+                            config: Optional[SurrogateConfig] = None,
+                            bore_param_ranges: Optional[dict] = None) -> SurrogateTrainer:
     """Full surrogate training pipeline.
     
     Args:
@@ -311,6 +312,7 @@ def build_surrogate_pipeline(n_samples: int = 10000,
         epochs: Training epochs
         batch_size: Batch size
         config: Surrogate configuration
+        bore_param_ranges: Ranges for bore parameter sampling
         
     Returns:
         Trained SurrogateTrainer
@@ -318,9 +320,20 @@ def build_surrogate_pipeline(n_samples: int = 10000,
     if config is None:
         config = SurrogateConfig()
     
+    if bore_param_ranges is None:
+        bore_param_ranges = {
+            "bore_radius": (4.0, 15.0),
+            "bore_length": (300.0, 400.0),
+            "hole_position": (30.0, 350.0),
+            "hole_diameter": (5.0, 10.0),
+            "hole_length": (2.0, 5.0),
+            "outer_diameter": (20.0, 25.0),
+            "closed_top": True,
+        }
+    
     print(f"Generating {n_samples} training samples...")
-    train_data = generate_training_data(n_samples)
-    val_data = generate_training_data(n_samples // 10)
+    train_data = generate_training_data(n_samples, bore_param_ranges=bore_param_ranges)
+    val_data = generate_training_data(n_samples // 10, bore_param_ranges=bore_param_ranges)
     
     print(f"Training surrogate for {epochs} epochs...")
     trainer = SurrogateTrainer(SurrogateConfig() if config is None else config)
