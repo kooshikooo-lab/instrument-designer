@@ -27,6 +27,60 @@ from backend.physics.losses import KeefeLoss
 
 
 # ============================================================================
+# Register estimation utility
+# ============================================================================
+
+def estimate_registers(target_freqs: List[float], bore_length: float, closed_top: bool,
+                       max_reg: int = 5) -> List[int]:
+    """
+    Estimate the best register for each target frequency based on bore length.
+    
+    For closed-top (closed-open pipe): resonances at f_k = (2k-1) * c / (4L)
+    For open-top (open-open pipe): resonances at f_k = k * c / (2L)
+    
+    Returns list of register indices (1-based) for each target frequency.
+    """
+    c = SPEED_OF_SOUND
+    regs = []
+    for f in target_freqs:
+        if closed_top:
+            # Closed-open: f_k = (2k-1) * c / (4L) => k = (4L*f/c + 1) / 2
+            k_est = (4.0 * bore_length * f / c + 1.0) / 2.0
+        else:
+            # Open-open: f_k = k * c / (2L) => k = 2L*f/c
+            k_est = 2.0 * bore_length * f / c
+        
+        k_est = int(round(k_est))
+        regs.append(max(1, min(k_est, max_reg)))
+    return regs
+
+
+# ============================================================================
+# Register detection utility (using actual instrument)
+# ============================================================================
+
+def detect_registers(inst, targets, fingerings, max_reg=5):
+    """Detect the best register for each fingering using peak search."""
+    regs = []
+    for tgt, fl in zip(targets, fingerings):
+        wl_guess = SPEED_OF_SOUND / tgt
+        best_pr = 1
+        best_dist = 1e10
+        for pr in range(1, max_reg + 1):
+            try:
+                wl = inst.find_resonance(SPEED_OF_SOUND / tgt, fl, n_register=pr)
+                f = inst.frequency_from_wavelength(wl)
+                dist = abs(1200.0 * math.log2(f / tgt)) if f > 0 else 1e10
+                if dist < best_dist:
+                    best_dist = dist
+                    best_pr = pr
+            except Exception:
+                continue
+        regs.append(best_pr)
+    return regs
+
+
+# ============================================================================
 # Phase 1: Bore length optimization (all holes closed)
 # ============================================================================
 
@@ -70,9 +124,10 @@ def optimize_bore_length(
     closed_top: bool = True,
     n_register: int = 1,
     verbose: bool = True,
+    bore_length_bounds: Tuple[float, float] = None,
 ) -> float:
     """Find optimal bore length for a given fundamental frequency."""
-    # Initial estimate
+    # Initial estimate from simple cylinder formula
     c = SPEED_OF_SOUND
     if closed_top:
         L_init = c / (4.0 * target_freq)
@@ -83,8 +138,20 @@ def optimize_bore_length(
         print(f"  Phase 1: Bore length from fundamental {target_freq:.1f} Hz")
         print(f"    Initial estimate: {L_init:.1f} mm")
 
-    # Search around initial estimate
-    bounds = [(L_init * 0.7, L_init * 1.3)]
+    # Use user-provided bounds if available, otherwise 0.7-1.3x initial estimate
+    if bore_length_bounds is not None:
+        bounds = [bore_length_bounds]
+        # For long instruments, cylinder formula severely underestimates length.
+        # Use midpoint of user bounds as initial guess when formula underestimates.
+        if L_init < bore_length_bounds[0] * 0.8:
+            L_init = (bore_length_bounds[0] + bore_length_bounds[1]) / 2.0
+            if verbose:
+                print(f"    Cylinder formula underestimates; using bounds midpoint: {L_init:.1f} mm")
+        else:
+            # Clamp initial guess to bounds
+            L_init = max(bore_length_bounds[0], min(bore_length_bounds[1], L_init))
+    else:
+        bounds = [(L_init * 0.7, L_init * 1.3)]
     result = minimize(
         _bore_objective_all_closed,
         x0=[L_init],
@@ -269,6 +336,7 @@ class SequentialBoreOptimizer:
         closed_top: bool = True,
         hole_diameter: float = 7.0,
         hole_length: float = 3.75,
+        bore_length: Optional[float] = None,
         bore_length_bounds: Tuple[float, float] = (100.0, 2000.0),
         n_bore_cp: int = 0,
         bore_radius_bounds: Tuple[float, float] = (2.0, 20.0),
@@ -288,6 +356,7 @@ class SequentialBoreOptimizer:
             self.n_register = n_register
         self.hole_diameter = hole_diameter
         self.hole_length = hole_length
+        self.bore_length = bore_length
         self.bore_length_bounds = bore_length_bounds
         self.n_bore_cp = n_bore_cp
         self.bore_radius_bounds = bore_radius_bounds
@@ -304,14 +373,28 @@ class SequentialBoreOptimizer:
             print()
 
         # Phase 1: Bore length from fundamental (lowest note)
-        fundamental = min(self.target_freqs)
-        bore_length = optimize_bore_length(
-            fundamental, self.bore_radius, self.outer_diameter,
-            self.closed_top, self.n_register, verbose,
-        )
+        # Use user-provided bore_length if given, otherwise optimize
+        if self.bore_length is not None:
+            bore_length = float(self.bore_length)
+            if verbose:
+                print(f"  Phase 1: Using user-provided bore length: {bore_length:.1f} mm")
+        else:
+            fundamental = min(self.target_freqs)
+            bore_length = optimize_bore_length(
+                fundamental, self.bore_radius, self.outer_diameter,
+                self.closed_top, self.n_register, verbose,
+                bore_length_bounds=self.bore_length_bounds,
+            )
 
         # Create uniform bore profile
         bore_radii = np.full(10, self.bore_radius)
+
+        # Estimate registers for each target frequency based on bore length
+        target_registers = estimate_registers(
+            self.target_freqs, bore_length, self.closed_top
+        )
+        if verbose:
+            print(f"  Estimated registers: {list(zip(self.target_freqs, target_registers))}")
 
         # Phase 2: Add holes one at a time, bottom-to-top
         if verbose:
@@ -335,12 +418,16 @@ class SequentialBoreOptimizer:
                 print(f"\n    Adding hole for {target_freq:.1f} Hz "
                       f"(note {i+1}/{len(notes_needing_holes)})")
 
+            # Use estimated register for this specific target frequency
+            target_idx = self.target_freqs.index(target_freq)
+            target_register = target_registers[target_idx]
+
             hole = optimize_hole_position(
                 bore_radii, bore_length,
                 self.hole_diameter, self.hole_length,
                 self.outer_diameter, self.closed_top,
                 target_freq, existing_holes,
-                self.n_register, verbose, i,
+                target_register, verbose, i,
             )
             existing_holes.append(hole)
         
@@ -441,10 +528,89 @@ class SequentialBoreOptimizer:
                 gaps = [all_positions[i+1] - all_positions[i] for i in range(len(all_positions)-1)]
                 print(f"      Gaps: {[f'{g:.0f}' for g in gaps]}")
 
-        # Phase 3: Multi-stage refinement with L-BFGS-B
+        if not self.closed_top or (self.closed_top and bore_length > 500.0):
+            if verbose:
+                print(f"\n  Phase 2b: Global hole re-optimization (differential evolution)")
+
+            n_h = len(all_positions)
+            bore_length_for_de = bore_length
+
+            # Hole diameter bounds
+            hd_min = self.bore_radius * 0.4
+            hd_max = self.bore_radius * 0.9
+
+            def _de_hole_objective(x):
+                hp = sorted(x[:n_h].tolist())
+                hd = [x[n_h + j] for j in np.argsort(x[:n_h].tolist()).tolist()]
+                try:
+                    inst = tmm_instrument_from_radii(
+                        bore_radii, bore_length_for_de,
+                        hp, hd, all_lengths,
+                        self.outer_diameter, closed_top=self.closed_top, cone_step=0.5,
+                    )
+                    # DE uses phase cost (register-agnostic) for global search
+                    tw = [SPEED_OF_SOUND / f for f in self.target_freqs]
+                    return float(inst.phase_cost_with_offset(tw, self.fingering_sets, n_register=self.n_register))
+                except Exception:
+                    return 1e10
+
+            # Bounds: positions + diameters
+            de_bounds = []
+            for i in range(n_h):
+                lo = int(i * bore_length_for_de / (n_h * 1.5 + 1))
+                hi = int((i + 2) * bore_length_for_de / (n_h * 1.5 + 1))
+                lo = max(lo, 20)
+                hi = min(hi, int(bore_length_for_de - 20))
+                if hi <= lo:
+                    hi = lo + 10
+                de_bounds.append((lo, hi))
+            for i in range(n_h):
+                de_bounds.append((hd_min, hd_max))
+
+            t_de = time.time()
+
+            # Initial guess: positions + diameters
+            x0_de = np.array(all_positions + all_diameters)
+            for i in range(n_h):
+                x0_de[i] = np.clip(x0_de[i], de_bounds[i][0], de_bounds[i][1])
+                x0_de[n_h + i] = np.clip(x0_de[n_h + i], hd_min, hd_max)
+
+            popsize = max(10, n_h * 2)
+            result_de = differential_evolution(
+                _de_hole_objective, de_bounds,
+                x0=x0_de,
+                seed=42,
+                maxiter=100, popsize=popsize,
+                tol=1e-6, mutation=(0.5, 1.0), recombination=0.7,
+                polish=True,
+            )
+            dt_de = time.time() - t_de
+
+            # Extract optimized positions and diameters
+            de_idx = np.argsort(result_de.x[:n_h].tolist())
+            all_positions = [result_de.x[j] for j in de_idx]
+            all_diameters = [result_de.x[n_h + j] for j in de_idx]
+            if verbose:
+                print(f"      RMS={result_de.fun:.2f}c  {dt_de:.0f}s")
+                print(f"      Holes: {[f'{p:.0f}mm d={d:.1f}mm' for p, d in zip(all_positions, all_diameters)]}")
+                gaps = [all_positions[i+1] - all_positions[i] for i in range(len(all_positions)-1)]
+                print(f"      Gaps: {[f'{g:.0f}' for g in gaps]}")
+
+        # Detect registers using instrument with provisional holes (always, regardless of DE)
         if verbose:
-            bore_desc = f"{self.n_bore_cp} segments" if self.n_bore_cp > 0 else "uniform"
-            print(f"\n  Phase 3: L-BFGS-B refinement (bore: {bore_desc})")
+            print(f"\n  Detecting registers for all fingerings...")
+        provisional_inst = tmm_instrument_from_radii(
+            bore_radii, bore_length,
+            all_positions, all_diameters, all_lengths,
+            self.outer_diameter, closed_top=self.closed_top, cone_step=0.5,
+        )
+        self._detected_registers = detect_registers(
+            provisional_inst, self.target_freqs, self.fingering_sets
+        )
+        if verbose:
+            print(f"  Detected registers: {self._detected_registers}")
+
+        # Phase 3: Multi-stage refinement with L-BFGS-B
 
         n_cp = self.n_bore_cp
         if n_cp > 0:
@@ -472,8 +638,10 @@ class SequentialBoreOptimizer:
                     self.outer_diameter, closed_top=self.closed_top, cone_step=0.5,
                 )
                 target_wavelengths = [SPEED_OF_SOUND / f for f in self.target_freqs]
+                # Use per-fingering registers from detection
+                registers = self._detected_registers if self._detected_registers else [self.n_register] * len(self.fingering_sets)
                 freqs = inst.compute_fingered_frequencies(
-                    target_wavelengths, self.fingering_sets, self.n_register,
+                    target_wavelengths, self.fingering_sets, registers,
                 )
                 cents = []
                 for a, t in zip(freqs, self.target_freqs):
@@ -583,8 +751,10 @@ class SequentialBoreOptimizer:
         )
 
         target_wavelengths = [SPEED_OF_SOUND / f for f in self.target_freqs]
+        # Use per-fingering registers for final evaluation
+        registers = self._detected_registers if self._detected_registers else [self.n_register] * len(self.fingering_sets)
         freqs = inst.compute_fingered_frequencies(
-            target_wavelengths, self.fingering_sets, self.n_register,
+            target_wavelengths, self.fingering_sets, registers,
         )
 
         cents_errors = []
