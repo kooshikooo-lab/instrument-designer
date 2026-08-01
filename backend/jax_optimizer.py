@@ -151,12 +151,14 @@ def sequential_placement(cfg):
 # Phase 1: 4-stage L-BFGS-B refinement (from benchmark_all.py sequential_refined)
 # ============================================================================
 
-def refine_sequential(cfg, verbose=False, use_jax_bore=False):
+def refine_sequential(cfg, verbose=False, use_jax_bore=False, use_phase_cost=True):
     """Sequential + DE global re-optim + 4-stage L-BFGS-B refinement.
 
     Matches benchmark_all.py sequential_refined exactly.
     When use_jax_bore=True, Stage 2 (bore-radii) uses JAX autodiff instead
     of finite differences.
+    When use_phase_cost=True, JAX Stage 2 uses phase-based cost (Ernoult 2020).
+    When use_phase_cost=False, uses RMS cost (direct phase deviation from integer).
     """
     from scipy.optimize import differential_evolution
 
@@ -248,9 +250,11 @@ def refine_sequential(cfg, verbose=False, use_jax_bore=False):
             radii, cost_jax, n_evals = jax_stage2_refine(
                 radii, L, hp, hd, hl, closed_top, targets,
                 rad_lo, rad_bounds, cfg["outer_diameter"], n_cp,
+                use_phase_cost,
             )
             if verbose:
-                print(f"      JAX Stage 2: RMS={cost_jax:.4f}c ({n_evals} evals)")
+                cost_type = "phase-based" if use_phase_cost else "RMS"
+                print(f"      JAX Stage 2 ({cost_type}): RMS={cost_jax:.4f}c ({n_evals} evals)")
         else:
             def obj_radii(x):
                 return safe_eval_local(np.maximum(x, rad_lo), L, hp, hd, hl)
@@ -306,18 +310,22 @@ def refine_sequential(cfg, verbose=False, use_jax_bore=False):
 # ============================================================================
 
 def jax_stage2_refine(radii, L, hp, hd, hl, closed_top, targets,
-                      rad_lo, rad_bounds, outer_diameter=22.0, n_cp=6):
+                      rad_lo, rad_bounds, outer_diameter=22.0, n_cp=6, use_phase_cost=True):
     """Stage 2: bore-radii refinement using JAX automatic differentiation.
 
     Builds the JAX action chain once (constant during bore-radii optimization),
-    creates a JIT-compiled phase cost function, and runs L-BFGS-B with exact
+    creates a JIT-compiled cost function, and runs L-BFGS-B with exact
     gradients from jax.grad.
+
+    Args:
+        use_phase_cost: If True, use phase-based cost (Ernoult 2020).
+                       If False, use RMS cost (direct phase deviation from integer).
 
     Returns (radii_optimized, cost, n_evals).
     """
     import jax.numpy as jnp
     from backend.tmm_acoustics_jax import (
-        build_chain_for_optimizer, make_phase_cost,
+        build_chain_for_optimizer, make_phase_cost, make_rms_cost,
     )
 
     n_reg = 1 if closed_top else 2
@@ -350,7 +358,10 @@ def jax_stage2_refine(radii, L, hp, hd, hl, closed_top, targets,
         L, jnp.array(radii), hp, hd, hl, closed_top, n_cp, outer_diameter,
     )
 
-    cost_fn = make_phase_cost(chain, targets_sorted, fs_jax, wavelengths, n_register=n_reg)
+    if use_phase_cost:
+        cost_fn = make_phase_cost(chain, targets_sorted, fs_jax, wavelengths, n_register=n_reg)
+    else:
+        cost_fn = make_rms_cost(chain, targets_sorted, fs_jax, wavelengths)
     grad_fn = jax.grad(cost_fn)
 
     radii_jax = jnp.array(np.maximum(radii, rad_lo), dtype=jnp.float64)
