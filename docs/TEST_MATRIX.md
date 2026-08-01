@@ -55,7 +55,7 @@ Scheduled cadence (Task Scheduler): **daily 02:00 low tier**, **weekly Sunday 03
 
 ### chalumier — Kotlin/JVM integration
 - **Availability (low):** `ChalumierDesigner.is_available()` + presets list (fast, no JVM design).
-- **Design sweep (heavy, on-demand):** `scripts/benchmark_chalumier_dask.py --workers 1` — all 6 presets. Known issues (2026-08-01): 5/6 presets hit 600s wrapper timeout (timeout being raised); `d_major_flute` fails with a Clikt CLI parse error.
+- **Design sweep (heavy, on-demand):** `scripts/benchmark_chalumier_dask.py --workers 1` — all 6 presets. Wrapper now uses a 1800 s timeout and a `-Xmx2g` JVM heap cap (3 uncapped JVMs caused the original sweep timeouts). Known issue: `d_major_flute` fails fast with upstream chalumier's `AssertionException: balance must have two fewer value than numberOfHoles (4 vs 7)` — `examples/dmajor-folk-flute.chal` is an unmodified upstream example (commit `d86d60a`) that this chalumier build's `folkFlute` validation rejects.
 - **Pass:** availability True; sweep reports success/length/bore/holes per preset.
 
 ### jax — JAX optimizer
