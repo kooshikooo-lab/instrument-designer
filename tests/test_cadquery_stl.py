@@ -6,7 +6,7 @@ from backend.cadquery_export import generate_instrument, export_stl, export_step
 
 def test_cadquery_cylindrical_clarinet():
     """Test STL/STEP export for a cylindrical bore clarinet."""
-    output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "test_output")
+    output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "output")
     os.makedirs(output_dir, exist_ok=True)
 
     # Cylindrical bore clarinet
@@ -31,7 +31,7 @@ def test_cadquery_cylindrical_clarinet():
 
 def test_cadquery_conical_soprano_sax():
     """Test STL/STEP export for a conical bore soprano saxophone."""
-    output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "test_output")
+    output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "output")
     os.makedirs(output_dir, exist_ok=True)
 
     # Conical bore soprano sax (open-open)
@@ -56,7 +56,7 @@ def test_cadquery_conical_soprano_sax():
 
 def test_cadquery_flute_open_open():
     """Test STL export for an open-open cylindrical flute."""
-    output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "test_output")
+    output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "output")
     os.makedirs(output_dir, exist_ok=True)
 
     solid = generate_instrument(

@@ -58,7 +58,7 @@ def test_stl_export_legacy_bore_optimizer():
         'matched_frequencies': best_design.get('matched_frequencies', []),
     }
 
-    output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "test_output")
+    output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "output")
     os.makedirs(output_dir, exist_ok=True)
 
     stl_path = export_optimizer_result(export_result, os.path.join(output_dir, "legacy_clarinet.stl"))

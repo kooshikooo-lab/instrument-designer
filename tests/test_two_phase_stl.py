@@ -65,7 +65,7 @@ def test_stl_export_two_phase():
         'matched_frequencies': [],
     }
 
-    output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "test_output")
+    output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "output")
     os.makedirs(output_dir, exist_ok=True)
 
     stl_path = export_optimizer_result(export_result, os.path.join(output_dir, "two_phase_clarinet.stl"))
