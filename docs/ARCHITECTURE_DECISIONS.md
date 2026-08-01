@@ -4,6 +4,19 @@ All significant architectural decisions are recorded here as ADRs. Each ADR has 
 
 ---
 
+## BOOT SEQUENCE (summary)
+
+Every session/agent must run these 6 steps before writing code. Full version: `docs/CONSTRAINTS_AND_PREFERENCES.md`.
+
+1. **Read the AI Constitution** (`docs/AI_CONSTITUTION.md`) — state which laws apply to your task.
+2. **Read architecture docs** — `ARCHITECTURE.md`, `ARCHITECTURE_DECISIONS.md`, `CODING_STANDARDS.md`, `PHYSICS_PRINCIPLES.md`.
+3. **Identify your subsystem** — from the table in `CONSTRAINTS_AND_PREFERENCES.md`.
+4. **Search before building** — reuse existing functions/classes/tests; never duplicate.
+5. **Produce an implementation plan** — files, interfaces, tests, docs, ADRs.
+6. **Implement** — follow `CODING_STANDARDS.md`; run `ARCHITECTURE_CHECKLIST.md` and `COMPLIANCE_CHECK.md` on every trigger.
+
+---
+
 ## ADR-001: Explicit Geometry Layer
 
 **Status:** Accepted (2026-07-29)
@@ -43,7 +56,7 @@ Pipeline modules (`design_from_wav.py`, `design_from_unconventional.py`) call sh
 **Consequences:**
 - Positive: One place to maintain pymoo setup.
 - Positive: Pipeline modules are readable ~200-line orchestrators.
-- Negative: WAV-specific cost functions (timbre matching) still live in `design_from_wav.py` because they depend on the specific recording's target envelope ÔÇö they cannot be generalized.
+- Negative: WAV-specific cost functions (timbre matching) still live in `design_from_wav.py` because they depend on the specific recording's target envelope — they cannot be generalized.
 
 ---
 
@@ -56,14 +69,14 @@ Pipeline modules (`design_from_wav.py`, `design_from_unconventional.py`) call sh
 **Title:** `inverse_design.py` becomes a pure re-export module
 
 **Context:**
-After extracting sound analysis ÔåÆ `sound_analysis.py` and WAV pipeline ÔåÆ `design_from_wav.py`, ~20 files imported `analyze_wav`, `match_timbre`, `design_from_sound`, etc. from `backend.inverse_design`. Changing all callers simultaneously was risky.
+After extracting sound analysis → `sound_analysis.py` and WAV pipeline → `design_from_wav.py`, ~20 files imported `analyze_wav`, `match_timbre`, `design_from_sound`, etc. from `backend.inverse_design`. Changing all callers simultaneously was risky.
 
 **Decision:**
 `inverse_design.py` is gutted of all implementation and becomes a backward-compat re-export layer. All original names (`analyze_wav`, `match_timbre`, `design_from_sound`, `synthesize_harmonic`, etc.) are re-exported from their new homes.
 
 **Consequences:**
 - Positive: Zero breakage in `design_server.py`, tests, and scripts.
-- Positive: Clean migration path ÔÇö old imports keep working indefinitely.
+- Positive: Clean migration path — old imports keep working indefinitely.
 - Negative: `inverse_design.py` is now an empty shell. Future refactoring should remove it.
 
 ---
@@ -81,16 +94,16 @@ Both `inverse_design.py` (Tier 3) and `pareto_optimizer.py` (bi-objective front)
 
 **Decision:**
 `pareto_optimizer.py` exports three entry points:
-- `nsga2_minimize()` ÔÇö single-objective NSGA-II (generic cost function)
-- `run_pareto()` ÔÇö bi-objective NSGA-II (intonation vs timbre)
-- `pareto_sweep()` ÔÇö weighted-sum sweep with L-BFGS-B refinement
+- `nsga2_minimize()` — single-objective NSGA-II (generic cost function)
+- `run_pareto()` — bi-objective NSGA-II (intonation vs timbre)
+- `pareto_sweep()` — weighted-sum sweep with L-BFGS-B refinement
 
 No other module instantiates pymoo classes.
 
 **Consequences:**
 - Positive: If pymoo API changes, one file to update.
 - Positive: New optimization consumers call `nsga2_minimize(fn, bounds)` without learning pymoo.
-- Negative: The optimizer cannot know instrument-specific physics ÔÇö those details are passed via closures.
+- Negative: The optimizer cannot know instrument-specific physics — those details are passed via closures.
 
 ---
 
@@ -107,14 +120,14 @@ Inverse design from a WAV file involves fundamentally different operations: sign
 
 **Decision:**
 Three sequential tiers:
-1. `sound_analysis.analyze_wav()` ÔÇö FFT, autocorrelation, harmonic extraction. No geometry.
-2. `design_from_wav.design_scale()` ÔÇö calls generative agent to place holes for a 12-TET scale.
-3. `design_from_wav.match_timbre()` ÔÇö calls `nsga2_minimize` to optimize bore radii against the WAV's harmonic envelope.
+1. `sound_analysis.analyze_wav()` — FFT, autocorrelation, harmonic extraction. No geometry.
+2. `design_from_wav.design_scale()` — calls generative agent to place holes for a 12-TET scale.
+3. `design_from_wav.match_timbre()` — calls `nsga2_minimize` to optimize bore radii against the WAV's harmonic envelope.
 
 **Consequences:**
 - Positive: Each tier can be tested, tuned, and replaced independently.
 - Positive: Users can stop after Tier 1 (analysis only) or Tier 2 (playable instrument, any timbre).
-- Negative: Tier 2's result constrains Tier 3 ÔÇö if the hole placement is poor, timbre optimization cannot fully compensate.
+- Negative: Tier 2's result constrains Tier 3 — if the hole placement is poor, timbre optimization cannot fully compensate.
 
 ---
 
@@ -125,7 +138,7 @@ Three sequential tiers:
 **Title:** Transfer Matrix Method is the primary acoustic solver
 
 **Context:**
-The project needs an acoustic solver that runs fast enough for optimization (hundreds of evaluations per minute). FEM (OpenWind) is more accurate but 100ÔÇô1000├ù slower.
+The project needs an acoustic solver that runs fast enough for optimization (hundreds of evaluations per minute). FEM (OpenWind) is more accurate but 100–1000× slower.
 
 **Decision:**
 TMM in `tmm_acoustics.py` is the default solver for optimization loops. OpenWind FEM is available for final validation. The `AcousticNetwork` abstraction (when implemented) will allow plugging in alternative solvers.
