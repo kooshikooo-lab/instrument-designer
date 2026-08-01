@@ -29,6 +29,65 @@ Status: OPEN / RESOLVED / VERIFIED
 - Verified: now returns 3 designs, 3 best_candidates, n_evals=3 (accuracy ~345c — legacy optimizer quality is poor, but no longer crashes/empty)
 - Status: RESOLVED (quality caveat noted)
 
+## STL Export Tests Added (2026-07-31)
+Created comprehensive STL export test coverage for all optimizer pipelines:
+
+### 1. test_stl_export.py (FIXED)
+- **Before**: Used wrong parameters (open-top, 6mm bore, sax frequencies) → 6649c RMS failure
+- **After**: Realistic closed-top clarinet config (7.25mm bore, C4-C5 scale, variable bore 6 CP) → **1.29c RMS** → PASSED
+- Exports: STL, bore-only STL, JSON profile
+
+### 2. test_two_phase_stl.py (NEW)
+- Runs `two_phase_optimize()` (Noreland DE + L-BFGS-B pipeline)
+- Converts result to `stl_export` format (variable bore + holes)
+- Exports: STL, bore-only STL, JSON profile
+- **Result**: PASSED (~69s runtime)
+
+### 3. test_legacy_stl.py (NEW)
+- Runs legacy `BoreOptimizer` (NSGA-II multi-objective)
+- Converts Pareto front best design to `stl_export` format
+- Exports: STL, bore-only STL, JSON profile
+- **Result**: PASSED (~81s runtime)
+
+### 4. test_cadquery_stl.py (NEW)
+- Tests `cadquery_export.generate_instrument()` for 3 instrument types:
+  - Cylindrical clarinet (closed-top)
+  - Conical soprano saxophone (open-open)
+  - Cylindrical flute (open-open)
+- Exports both STL and STEP formats
+- **Result**: 3/3 PASSED (~8s total)
+
+**All 6 STL tests pass** (37 tests total including original 32).
+
+**Generated test artifacts** in `test_output/`:
+- 6 STL files (~0.5-0.8 MB each)
+- 3 STEP files (~9-10 KB each)
+- 3 JSON profiles (~18 KB each)
+
+---
+
+## STL Files Generated (2026-07-31)
+
+All STL files saved to `C:\designs\` with instrument-specific subdirectories:
+
+| Instrument | Optimizer | Config | RMS (cents) | STL File |
+|------------|-----------|--------|-------------|----------|
+| Demo Chalumeau (6-note) | Two-Phase | n_reg=1 | 0.00 | `demo_chalumeau/demo_chalumeau_two_phase.stl` |
+| Chalumeau C (8-note) | Two-Phase (n_reg=2) | 0.00 | `chalumeau_C/chalumeau_C_two_phase_nreg2.stl` |
+| Chalumeau C (8-note) | Sequential | 231.5 | `chalumeau_C/chalumeau_C_sequential.stl` |
+| Bass Chalumeau Bb (8-note) | Sequential | 88.7 | `bass_chalumeau_Bb/bass_chalumeau_Bb_sequential.stl` |
+| Bass Chalumeau Bb (8-note) | Two-Phase (n_reg=1) | 108.3 | `bass_chalumeau_Bb/bass_chalumeau_Bb_two_phase.stl` |
+| Bass Chalumeau Bb (8-note) | Two-Phase (n_reg=2) | - | `bass_chalumeau_Bb/bass_chalumeau_Bb_two_phase_nreg2.stl` |
+| Chalumeau C (6-note) | Two-Phase | 0.00 | `chalumeau_C/chalumeau_C_two_phase.stl` |
+| Baroque Clarinet (8-note) | Sequential (var bore) | 231.5 | `baroque_clarinet/baroque_clarinet_sequential_test_prototype.stl` |
+| Baroque Clarinet (8-note) | Sequential (uniform) | 274.1 | `baroque_clarinet/baroque_clarinet_uniform.stl` |
+| Contra-Alto Clarinet Eb | Sequential | 8.8 | `contra_alto_clarinet_Eb/sequential_test_prototype.stl` |
+| Contra-Bass Clarinet Bb | Sequential | 216.4 | `contra_bass_clarinet_Bb/sequential_test_prototype.stl` |
+
+All STL files include matching bore-only STL and JSON profile files.
+
+---
+
 ## Finding #4 - two_phase_optimizer: phase 2 L-BFGS-B "degrades" phase-1 result — VERIFIED: phase 1 is garbage, not a refinement bug
 - File: backend/two_phase_optimizer.py + backend/tmm_acoustics.py:phase_cost_with_offset
 - Test (5-note C4-G4, 600mm bore, open-open, reg=2, 5 holes): phase1 cost=0.0007 (9s) → phase2 cost=162c (60s)
