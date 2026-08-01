@@ -15,16 +15,6 @@ from backend.tmm_acoustics import (
     circle_area, end_flange_length_correction, hole_length_correction,
 )
 
-import pytest
-
-TMM_OPTIMIZER_REASON = (
-    "TMMBoreOptimizer lives in backend/archived_optimizers/tmm_optimizer.py, which "
-    "cannot be imported on main: the package __init__ eagerly runs an unguarded "
-    "benchmark (backend/archived_optimizers/benchmark_optimizers.py:383) and the "
-    "module's relative import of .tmm_acoustics points at a file that does not "
-    "exist there. See ADR-004 implementation-status annotation (PLANNED)."
-)
-
 
 def test_simple_flute():
     """Test: open-open cylindrical pipe (simple flute without holes)."""
@@ -183,151 +173,6 @@ def test_flute_with_holes():
     print("  PASS\n")
 
 
-@pytest.mark.skip(reason=TMM_OPTIMIZER_REASON)
-def test_optimizer_simple_flute():
-    """Test: optimize a simple flute bore to hit target frequencies."""
-    print("=" * 60)
-    print("TEST 4: TMM optimizer on simple flute (7-hole)")
-    print("=" * 60)
-
-    bore_length = 500.0
-    bore_diameter = 19.0
-    v = SPEED_OF_SOUND
-
-    # Target: 7-hole diatonic scale (C major from C5)
-    hole_positions = [100, 150, 200, 250, 300, 350, 400]
-    hole_diameters = [8.0] * 7
-    hole_lengths = [3.0] * 7
-
-    # Reference instrument to get target frequencies
-    ref_inst = TMMInstrument(
-        inner_positions=[0, bore_length],
-        inner_diameters=[bore_diameter, bore_diameter],
-        outer_diameters=[22.0, 22.0],
-        hole_positions=hole_positions,
-        hole_diameters=hole_diameters,
-        hole_lengths=hole_lengths,
-        closed_top=False,
-    )
-
-    # Fingerings: each hole open/closed for a diatonic scale
-    fingerings = [
-        [Hole.CLOSED] * 7,  # C (all closed)
-        [Hole.OPEN, Hole.CLOSED] * 3 + [Hole.CLOSED],  # D
-        [Hole.OPEN] * 2 + [Hole.CLOSED] * 5,  # E
-        [Hole.OPEN] * 3 + [Hole.CLOSED] * 4,  # F
-        [Hole.OPEN] * 4 + [Hole.CLOSED] * 3,  # G
-        [Hole.OPEN] * 5 + [Hole.CLOSED] * 2,  # A
-        [Hole.OPEN] * 6 + [Hole.CLOSED],  # B
-    ]
-
-    # Get target frequencies from reference
-    target_freqs = []
-    target_wls = []
-    for fing in fingerings:
-        wl = ref_inst.find_resonance(2.0 * bore_length, fing, n_register=1)
-        freq = ref_inst.frequency_from_wavelength(wl)
-        target_freqs.append(freq)
-        target_wls.append(wl)
-
-    print(f"  Target frequencies: {[f'{f:.1f}' for f in target_freqs]}")
-
-    # Optimize with perturbed bore
-    optimizer = TMMBoreOptimizer(
-        target_frequencies=target_freqs,
-        fingering_sets=fingerings,
-        n_control_points=8,
-        bore_length=bore_length,
-        hole_positions=hole_positions,
-        hole_diameters=hole_diameters,
-        hole_lengths=hole_lengths,
-        closed_top=False,
-        min_radius=5.0,
-        max_radius=15.0,
-    )
-
-    t0 = time.time()
-    result = optimizer.run(verbose=True, method="L-BFGS-B", maxiter=100)
-    wall_time = time.time() - t0
-
-    print(f"\n  Final RMS: {result['final_rms_cents']:.2f} cents")
-    print(f"  Wall time: {wall_time:.1f}s")
-
-    # Should achieve < 50 cents RMS (this is a simple case)
-    assert result['final_rms_cents'] < 100, \
-        f"Optimizer failed: {result['final_rms_cents']:.2f} cents > 100"
-    print("  PASS\n")
-
-
-@pytest.mark.skip(reason=TMM_OPTIMIZER_REASON)
-def test_optimizer_clarinet():
-    """Test: optimize a clarinet bore (closed-open pipe)."""
-    print("=" * 60)
-    print("TEST 5: TMM optimizer on clarinet (closed-open)")
-    print("=" * 60)
-
-    bore_length = 600.0
-    bore_diameter = 14.5
-    v = SPEED_OF_SOUND
-
-    # Simple clarinet with 5 holes
-    hole_positions = [120, 200, 280, 360, 440]
-    hole_diameters = [7.0] * 5
-    hole_lengths = [4.0] * 5
-
-    # Reference for target frequencies (5 harmonics of Bb clarinet)
-    ref_inst = TMMInstrument(
-        inner_positions=[0, bore_length],
-        inner_diameters=[bore_diameter, bore_diameter],
-        outer_diameters=[22.0, 22.0],
-        hole_positions=hole_positions,
-        hole_diameters=hole_diameters,
-        hole_lengths=hole_lengths,
-        closed_top=True,
-    )
-
-    # Fingerings for Bb clarinet odd harmonics
-    fingerings = [
-        [Hole.CLOSED] * 5,  # Chalumeau (lowest)
-        [Hole.OPEN, Hole.CLOSED] * 2 + [Hole.CLOSED],
-        [Hole.OPEN] * 2 + [Hole.CLOSED] * 3,
-        [Hole.OPEN] * 3 + [Hole.CLOSED] * 2,
-        [Hole.OPEN] * 4 + [Hole.CLOSED],
-    ]
-
-    target_freqs = []
-    for fing in fingerings:
-        wl = ref_inst.find_resonance(4.0 * bore_length, fing, n_register=1)
-        freq = ref_inst.frequency_from_wavelength(wl)
-        target_freqs.append(freq)
-
-    print(f"  Target frequencies: {[f'{f:.1f}' for f in target_freqs]}")
-
-    optimizer = TMMBoreOptimizer(
-        target_frequencies=target_freqs,
-        fingering_sets=fingerings,
-        n_control_points=8,
-        bore_length=bore_length,
-        hole_positions=hole_positions,
-        hole_diameters=hole_diameters,
-        hole_lengths=hole_lengths,
-        closed_top=True,
-        min_radius=5.0,
-        max_radius=12.0,
-    )
-
-    t0 = time.time()
-    result = optimizer.run(verbose=True, method="L-BFGS-B", maxiter=150)
-    wall_time = time.time() - t0
-
-    print(f"\n  Final RMS: {result['final_rms_cents']:.2f} cents")
-    print(f"  Wall time: {wall_time:.1f}s")
-
-    assert result['final_rms_cents'] < 200, \
-        f"Clarinet optimizer failed: {result['final_rms_cents']:.2f} cents > 200"
-    print("  PASS\n")
-
-
 def test_speed_benchmark():
     """Benchmark: TMM vs OpenWInD evaluation speed."""
     print("=" * 60)
@@ -367,8 +212,6 @@ if __name__ == "__main__":
     test_simple_clarinet()
     test_flute_with_holes()
     test_speed_benchmark()
-    test_optimizer_simple_flute()
-    test_optimizer_clarinet()
     print("\n" + "=" * 60)
     print("ALL TESTS PASSED")
     print("=" * 60)

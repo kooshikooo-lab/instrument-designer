@@ -216,7 +216,7 @@ def timbre_cost_from_bore(bore_points, fundamental_freq: float,
     
     For use in optimization cost functions.
     """
-    from .archived_optimizers.bore_optimizer import _compute_impedance_from_bore
+    from .optimizer import _compute_impedance_from_bore
     
     imp_result = _compute_impedance_from_bore(
         bore_points, freq_range, n_freqs, temperature

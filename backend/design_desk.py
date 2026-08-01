@@ -376,7 +376,7 @@ class DesignDesk:
 
             try:
                 sys.path.insert(0, str(Path(__file__).parent.parent))
-                from backend.archived_optimizers.bore_optimizer import BoreOptimizer
+                from backend.optimizer import BoreOptimizer
 
                 optimizer = BoreOptimizer(
                     target_frequencies=targets,
