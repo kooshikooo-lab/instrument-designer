@@ -283,6 +283,38 @@ INSTRUMENTS = {
 c = SPEED_OF_SOUND
 
 
+def resolve_fingerings(cfg: dict, n_holes: int) -> list[list[str]]:
+    """Return the fingering set that eval_all would use for the given hole count."""
+    fingerings = cfg["fingerings"]
+    if any(len(f) != n_holes for f in fingerings):
+        from backend.pareto_optimizer import build_fingerings
+        fingerings = build_fingerings(n_holes, cfg["closed_top"])
+    return fingerings
+
+
+def detect_registers(inst, targets: list[float], fingerings: list[list[str]], max_reg: int = 6) -> list[int]:
+    """Peak-search the best register (n_register) for each note on the actual instrument.
+
+    Authoritative detector: picks the register whose resonance is closest to each
+    target in cents. Used once per instrument (e.g. after bore-length Phase 1 or
+    after hole placement) to feed per-note registers into eval_all/eval_multi.
+    """
+    regs = []
+    for tgt, fl in zip(targets, fingerings):
+        best_pr, best_dist = 1, 1e10
+        for pr in range(1, max_reg + 1):
+            try:
+                wl = inst.find_resonance(c / tgt, fl, n_register=pr)
+                f = inst.frequency_from_wavelength(wl)
+                dist = abs(1200.0 * math.log2(f / tgt)) if f > 0 else 1e10
+                if dist < best_dist:
+                    best_dist, best_pr = dist, pr
+            except Exception:
+                continue
+        regs.append(best_pr)
+    return regs
+
+
 def eval_all(radii: np.ndarray, bore_length: float, hp: list[float], hd: list[float], hl: list[float], cfg: dict) -> float:
     """Evaluate and return RMS cents (absolute, not median-corrected).
 
@@ -299,15 +331,10 @@ def eval_all(radii: np.ndarray, bore_length: float, hp: list[float], hd: list[fl
         cfg["outer_diameter"], cfg["closed_top"], 0.5,
     )
     tw = [c / f for f in cfg["targets"]]
-    if cfg.get("_chromatic", False) and "_n_registers" in cfg:
-        n_reg = cfg["_n_registers"]
-    else:
+    n_reg = cfg.get("_n_registers", None)
+    fingerings = resolve_fingerings(cfg, len(hp))
+    if not (isinstance(n_reg, list) and len(n_reg) == len(fingerings)):
         n_reg = 1 if cfg["closed_top"] else 2
-    fingerings = cfg["fingerings"]
-    n_holes = len(hp)
-    if any(len(f) != n_holes for f in fingerings):
-        from backend.pareto_optimizer import build_fingerings
-        fingerings = build_fingerings(n_holes, cfg["closed_top"])
     freqs = inst.compute_fingered_frequencies(tw, fingerings, n_reg)
     cents = []
     for a, t in zip(freqs, cfg["targets"]):
@@ -334,15 +361,10 @@ def eval_multi(radii: np.ndarray, bore_length: float, hp: list[float], hd: list[
         cfg["outer_diameter"], cfg["closed_top"], 0.5,
     )
     tw = [c / f for f in cfg["targets"]]
-    if cfg.get("_chromatic", False) and "_n_registers" in cfg:
-        n_reg = cfg["_n_registers"]
-    else:
+    n_reg = cfg.get("_n_registers", None)
+    fingerings = resolve_fingerings(cfg, len(hp))
+    if not (isinstance(n_reg, list) and len(n_reg) == len(fingerings)):
         n_reg = 1 if cfg["closed_top"] else 2
-    fingerings = cfg["fingerings"]
-    n_holes = len(hp)
-    if any(len(f) != n_holes for f in fingerings):
-        from backend.pareto_optimizer import build_fingerings
-        fingerings = build_fingerings(n_holes, cfg["closed_top"])
     freqs = inst.compute_fingered_frequencies(tw, fingerings, n_reg)
     cents = np.array([
         1200.0 * math.log2(a / t) if a > 0 and math.isfinite(a) else 1e10
@@ -452,6 +474,18 @@ def sequential(cfg: dict) -> tuple[float, float, list[float], float]:
     hp = [hp[j] for j in idx]
     hd = [hd[j] for j in idx]
     hl = [hl[j] for j in idx]
+
+    # Detect per-note registers on the assembled instrument (peak search).
+    # Authoritative where the scalar hardcode (1 if closed_top else 2) fails
+    # (e.g. long closed-top bores, octave-boundary notes).
+    try:
+        inst_detect = tmm_instrument_from_radii(bore_radii, bore_length,
+            hp, hd, hl, cfg["outer_diameter"], closed_top, 0.5)
+        fing = resolve_fingerings(cfg, len(hp))
+        cfg["_n_registers"] = detect_registers(inst_detect, targets, fing)
+        print(f"    Detected registers: {cfg['_n_registers']}")
+    except Exception:
+        cfg.pop("_n_registers", None)
 
     rms = eval_all(bore_radii, bore_length, hp, hd, hl, cfg)
     return rms, bore_length, hp, time.time() - t0
@@ -606,6 +640,17 @@ def sequential_refined(cfg: dict, initial_radii: np.ndarray | None = None) -> tu
     radii = np.maximum(r.x[1:1+n_cp], rad_lo) if n_cp > 0 else radii
     hp = r.x[1+n_cp:1+n_cp+n_h].tolist()
     hd = r.x[1+n_cp+n_h:1+n_cp+2*n_h].tolist()
+
+    # Re-detect registers on the refined geometry (peak search)
+    try:
+        inst_detect = tmm_instrument_from_radii(radii, L, hp, hd, hl,
+            cfg["outer_diameter"], cfg["closed_top"], 0.5)
+        fing = resolve_fingerings(cfg, len(hp))
+        regs = detect_registers(inst_detect, sorted(cfg["targets"]), fing)
+        cfg["_n_registers"] = regs
+        print(f"    Re-detected registers: {regs}")
+    except Exception:
+        pass
 
     rms = safe_eval_all(radii, L, hp, hd, hl, cfg)
     return rms, L, hp, hd, radii, time.time() - t0 + t_seq

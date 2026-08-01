@@ -47,8 +47,11 @@ def estimate_registers(target_freqs: List[float], bore_length: float, closed_top
             # Closed-open: f_k = (2k-1) * c / (4L) => k = (4L*f/c + 1) / 2
             k_est = (4.0 * bore_length * f / c + 1.0) / 2.0
         else:
-            # Open-open: f_k = k * c / (2L) => k = 2L*f/c
-            k_est = 2.0 * bore_length * f / c
+            # Open-open: f_k = k * c / (2L) => k = 2L*f/c.
+            # find_resonance n_register is the PHASE register: the open-open
+            # fundamental has phase 2.0 (harmonic index k=1), so the phase
+            # register = harmonic index + 1 (off-by-one fixed 2026-08-01).
+            k_est = 2.0 * bore_length * f / c + 1.0
         
         k_est = int(round(k_est))
         regs.append(max(1, min(k_est, max_reg)))

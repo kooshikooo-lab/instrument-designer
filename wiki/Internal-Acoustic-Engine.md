@@ -51,6 +51,12 @@ Closed-open: 0.0 (reed) + 2L/λ + 0.5 (bell) = n  →  λ = 4L/(2n-1)
 
 Auto-detection: `n_register = 1 if closed_top else 2`
 
+> Note (2026-08-01): peak-search verification found register 1 works for all notes
+> on properly-sized closed-top instruments (incl. bass/contra-bass) and register 2
+> for all open-top notes. Register 2 on closed-top only appears at over-long bores.
+> Analytical `estimate_registers` open-top off-by-one (phase register = harmonic
+> index + 1) fixed. Machine/geometry-dependent — re-verify per instrument.
+
 ## Viscothermal Losses (KeefeLoss)
 
 ### Model
