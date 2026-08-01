@@ -84,7 +84,7 @@ for n, row in zip(names, chart_str):
 # H11 (opens for E2) slightly toward reed
 # ...
 # H1 (opens for D3) should be NEAR REED (~150-200mm for ~147Hz)
-# Effective length = 343000/(4*f) ≈ 1100mm at 77Hz, 580mm at 147Hz
+# Effective length = 346100/(4*f) ≈ 1124mm at 77Hz, 589mm at 147Hz
 # With small holes, position > effective length
 
 # Hole positions from REED (H1) to BELL (H12):

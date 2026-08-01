@@ -331,7 +331,7 @@ class Extension:
     def frequency_drop(self) -> float:
         """Approximate frequency drop from adding this extension (Hz)."""
         # For closed-open pipe: f = c / (4 * L)
-        c = 343000  # mm/s
+        c = 346100  # mm/s
         return c / (4 * self.length_mm)
 
     def recommended_for(self) -> str:

@@ -161,3 +161,23 @@ All STL files include matching bore-only STL and JSON profile files.
 - Fix applied: updated imports to `backend.archived_optimizers.tmm_optimizer_*` in all listed files.
 - Caveat: these files are still ignored by design; `tests/test_desktop_fixes.py` additionally fails at runtime with `KeyError: 'rms_cents'` (expects a result field that no longer exists) and was NOT made pytest-runnable — that one needs a real rewrite if it should rejoin the suite.
 - Status: RESOLVED (import paths) — files remain excluded from pytest via addopts --ignore
+
+## Finding #12 - Wiki "Two-Phase Optimizer Infinite Loop" (two_phase_optimizer.py:288) — STALE, already fixed
+- File: docs/wiki Internal-Known-Issues (updated 2026-07-29) claims "List mutation during iteration causes infinite loop in DE phase" at `two_phase_optimizer.py:288`.
+- VERIFIED: line 288 is now a `print()` (Targets). The bug was already fixed by commit `62cb225` (2026-07-25): `fingerings.append` → `fingerings_parsed.append`. Follow-up `06709e8` also fixed targets-overwrite + ignored optimizer params.
+- Current code audit: `two_phase_optimizer.py:311-315` appends to `fingerings_parsed` (iterated list `fingerings` untouched); `tmm_acoustics.wavelength_near` is bounded by `max_steps` (100/20); DE/`sp_min` both have iteration caps.
+- Live smoke test (3-hole, 4 notes, reg=2, popsize=6/maxiter=4, n_iters=20): pipeline TERMINATED in 61.5s. No hang. (Phase 2 degradation 0.0004→192.8c is the separately-tracked Finding #4.)
+- Status: RESOLVED (was already fixed; wiki entry needs updating)
+
+## Finding #13 - test_loss_integration.py fails (resonance 1160.6 Hz vs target 523.25) — PRE-EXISTING, unrelated to speed-of-sound standardization
+- File: tests/test_loss_integration.py:25 (n_register=2, wl_guess = 346100/523.25)
+- Symptom: `find_resonance` returns freq=1160.6 Hz, |err|=637.4c vs target 523.25 Hz → assertion fails.
+- VERIFIED pre-existing: monkeypatching `KeefeLoss._boundary_layers` back to c=343200 produces the IDENTICAL 1160.6 Hz result. The failure is not caused by the speed-of-sound standardization (343200→346100).
+- Likely cause: the 6-hole/320mm geometry has no n_register=2 resonance near 523.25 Hz (register-mismatch class, cf. Finding #4) or the instrument is too short for the target.
+- Status: OPEN (unrelated to standardization; needs register/geometry diagnosis)
+
+## Finding #14 - speed-of-sound standardization applied (2026-08-01)
+- Files: backend/instruments/clarinet.py, backend/instruments/brass.py, backend/physics/losses.py:96, backend/modular_components.py:334, backend/tone_hole_corrections.py, backend/mouthpiece_models.py, backend/trumpet_openwind.py (dead constant), tests/test_properties.py, tests/test_bell_first_correct.py (comment)
+- All `343000/343200/343.0` hardcodes in ACTIVE code standardized to the canonical `346100.0 mm/s` (346.1 m/s) from backend/tmm_acoustics.py (chalumier convention; asserted by tests/test_architecture.py).
+- NOT changed: backend/archived_optimizers/* (temperature-dependent `331300 + 606*T` formula, archived), scripts/debug_openwind_pipeline.py (OpenWind validation harness must match OpenWind's own 343 m/s @20°C convention).
+- Status: RESOLVED

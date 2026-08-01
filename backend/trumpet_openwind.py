@@ -41,7 +41,7 @@ except ImportError:
 # ============================================================================
 
 # Standard Bb trumpet dimensions (meters)
-SPEED_OF_SOUND = 343.0  # m/s at 20°C
+SPEED_OF_SOUND = 346.1  # m/s (matches backend/tmm_acoustics.py canonical 346100 mm/s)
 
 # Note names and MIDI numbers
 NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']

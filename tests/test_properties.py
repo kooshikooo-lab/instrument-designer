@@ -56,7 +56,7 @@ class TestTMMPhysics(unittest.TestCase):
     def test_zero_holes_matches_analytical(self):
         L = 1200.0
         r = 12.5
-        c = 343200.0
+        c = 346100.0
 
         net = self._make_cylinder(L, r)
         solver = TMMSolver()
