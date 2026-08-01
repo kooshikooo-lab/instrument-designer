@@ -1,0 +1,246 @@
+{
+  "name": "Spiral (spiral)",
+  "label": "Spiral",
+  "bore_type": "spiral",
+  "bore_length_mm": 794.93,
+  "n_holes": 7,
+  "hole_positions_mm": [
+    65.09,
+    127.6,
+    187.54,
+    244.91,
+    299.7,
+    351.93,
+    401.58
+  ],
+  "hole_diameters_mm": [],
+  "hole_offsets": [
+    -60.39,
+    -63.03
+  ],
+  "bore_profile": [
+    {
+      "position_mm": 0.0,
+      "radius_mm": 5.276
+    },
+    {
+      "position_mm": 16.223,
+      "radius_mm": 5.882
+    },
+    {
+      "position_mm": 32.446,
+      "radius_mm": 6.445
+    },
+    {
+      "position_mm": 48.669,
+      "radius_mm": 6.926
+    },
+    {
+      "position_mm": 64.892,
+      "radius_mm": 7.29
+    },
+    {
+      "position_mm": 81.115,
+      "radius_mm": 7.511
+    },
+    {
+      "position_mm": 97.338,
+      "radius_mm": 7.574
+    },
+    {
+      "position_mm": 113.561,
+      "radius_mm": 7.475
+    },
+    {
+      "position_mm": 129.784,
+      "radius_mm": 7.22
+    },
+    {
+      "position_mm": 146.008,
+      "radius_mm": 6.828
+    },
+    {
+      "position_mm": 162.231,
+      "radius_mm": 6.326
+    },
+    {
+      "position_mm": 178.454,
+      "radius_mm": 5.749
+    },
+    {
+      "position_mm": 194.677,
+      "radius_mm": 5.139
+    },
+    {
+      "position_mm": 210.9,
+      "radius_mm": 4.539
+    },
+    {
+      "position_mm": 227.123,
+      "radius_mm": 3.991
+    },
+    {
+      "position_mm": 243.346,
+      "radius_mm": 3.534
+    },
+    {
+      "position_mm": 259.569,
+      "radius_mm": 3.2
+    },
+    {
+      "position_mm": 275.792,
+      "radius_mm": 3.013
+    },
+    {
+      "position_mm": 292.015,
+      "radius_mm": 2.986
+    },
+    {
+      "position_mm": 308.238,
+      "radius_mm": 3.121
+    },
+    {
+      "position_mm": 324.461,
+      "radius_mm": 3.408
+    },
+    {
+      "position_mm": 340.684,
+      "radius_mm": 3.828
+    },
+    {
+      "position_mm": 356.907,
+      "radius_mm": 4.35
+    },
+    {
+      "position_mm": 373.13,
+      "radius_mm": 4.938
+    },
+    {
+      "position_mm": 389.353,
+      "radius_mm": 5.549
+    },
+    {
+      "position_mm": 405.577,
+      "radius_mm": 6.141
+    },
+    {
+      "position_mm": 421.8,
+      "radius_mm": 6.672
+    },
+    {
+      "position_mm": 438.023,
+      "radius_mm": 7.105
+    },
+    {
+      "position_mm": 454.246,
+      "radius_mm": 7.407
+    },
+    {
+      "position_mm": 470.469,
+      "radius_mm": 7.559
+    },
+    {
+      "position_mm": 486.692,
+      "radius_mm": 7.55
+    },
+    {
+      "position_mm": 502.915,
+      "radius_mm": 7.38
+    },
+    {
+      "position_mm": 519.138,
+      "radius_mm": 7.06
+    },
+    {
+      "position_mm": 535.361,
+      "radius_mm": 6.615
+    },
+    {
+      "position_mm": 551.584,
+      "radius_mm": 6.075
+    },
+    {
+      "position_mm": 567.807,
+      "radius_mm": 5.478
+    },
+    {
+      "position_mm": 584.03,
+      "radius_mm": 4.867
+    },
+    {
+      "position_mm": 600.253,
+      "radius_mm": 4.285
+    },
+    {
+      "position_mm": 616.476,
+      "radius_mm": 3.773
+    },
+    {
+      "position_mm": 632.699,
+      "radius_mm": 3.368
+    },
+    {
+      "position_mm": 648.922,
+      "radius_mm": 3.097
+    },
+    {
+      "position_mm": 665.146,
+      "radius_mm": 2.981
+    },
+    {
+      "position_mm": 681.369,
+      "radius_mm": 3.026
+    },
+    {
+      "position_mm": 697.592,
+      "radius_mm": 3.231
+    },
+    {
+      "position_mm": 713.815,
+      "radius_mm": 3.581
+    },
+    {
+      "position_mm": 730.038,
+      "radius_mm": 4.051
+    },
+    {
+      "position_mm": 746.261,
+      "radius_mm": 4.607
+    },
+    {
+      "position_mm": 762.484,
+      "radius_mm": 5.21
+    },
+    {
+      "position_mm": 778.707,
+      "radius_mm": 5.819
+    },
+    {
+      "position_mm": 794.93,
+      "radius_mm": 6.388
+    }
+  ],
+  "optimized_params": {
+    "base_radius_mm": 5.276,
+    "amplitude_mm": 2.2994,
+    "cycles": 2.0804
+  },
+  "fundamental_hz": 98.86,
+  "best_scale": "pentatonic_major",
+  "scale_rms_cents": 0.0,
+  "resonances_hz": [
+    98.86,
+    98.86,
+    98.86,
+    98.86,
+    98.86,
+    130.29,
+    199.57,
+    238.54
+  ],
+  "initial_cost_rms_cents": 84.34,
+  "final_cost_rms_cents": 0.0,
+  "total_time_s": 178.3,
+  "target_frequencies": null,
+  "notes": ""
+}

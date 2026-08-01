@@ -35,7 +35,6 @@ BACKEND_DIRS = [
 
 EXCLUDED_DIRS = [
     "__pycache__",
-    "archived_optimizers",
     ".git",
     "node_modules",
     "web",

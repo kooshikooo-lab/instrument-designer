@@ -1,0 +1,69 @@
+{
+  "name": "Parabolic (parabolic)",
+  "label": "Parabolic",
+  "bore_type": "parabolic",
+  "bore_length_mm": 1159.97,
+  "n_holes": 7,
+  "hole_positions_mm": [
+    82.65,
+    165.55,
+    248.69,
+    332.08,
+    415.71,
+    499.59,
+    583.7
+  ],
+  "hole_diameters_mm": [],
+  "hole_offsets": [
+    52.72,
+    5.99
+  ],
+  "bore_profile": [
+    {
+      "position_mm": 0.0,
+      "radius_mm": 9.738
+    },
+    {
+      "position_mm": 231.994,
+      "radius_mm": 9.988
+    },
+    {
+      "position_mm": 463.988,
+      "radius_mm": 10.738
+    },
+    {
+      "position_mm": 695.982,
+      "radius_mm": 11.988
+    },
+    {
+      "position_mm": 927.976,
+      "radius_mm": 13.738
+    },
+    {
+      "position_mm": 1159.97,
+      "radius_mm": 15.988
+    }
+  ],
+  "optimized_params": {
+    "radius_min_mm": 9.7382,
+    "radius_max_mm": 15.9882
+  },
+  "fundamental_hz": 58.81,
+  "best_scale": "minor",
+  "scale_rms_cents": 7.53,
+  "resonances_hz": [
+    58.81,
+    58.53,
+    66.11,
+    65.99,
+    70.54,
+    78.08,
+    87.99,
+    100.41
+  ],
+  "initial_cost_rms_cents": 202.274,
+  "final_cost_rms_cents": 7.525,
+  "total_time_s": 45.71,
+  "target_frequencies": null,
+  "notes": ""
+}

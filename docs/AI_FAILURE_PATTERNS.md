@@ -6,7 +6,7 @@ Every time an AI makes a mistake, log the pattern here. This builds institutiona
 
 **Format:**
 ```
-## Failure #N ÔÇö Short Title
+## Failure #N — Short Title
 
 Date: YYYY-MM-DD
 Session: brief context
@@ -26,7 +26,20 @@ What check or rule would catch this next time.
 
 ---
 
-## Failure #1 ÔÇö Test file placed in test_output/ instead of tests/
+## BOOT SEQUENCE (summary)
+
+Every session/agent must run these 6 steps before writing code. Full version: `docs/CONSTRAINTS_AND_PREFERENCES.md`.
+
+1. **Read the AI Constitution** (`docs/AI_CONSTITUTION.md`) — state which laws apply to your task.
+2. **Read architecture docs** — `ARCHITECTURE.md`, `ARCHITECTURE_DECISIONS.md`, `CODING_STANDARDS.md`, `PHYSICS_PRINCIPLES.md`.
+3. **Identify your subsystem** — from the table in `CONSTRAINTS_AND_PREFERENCES.md`.
+4. **Search before building** — reuse existing functions/classes/tests; never duplicate.
+5. **Produce an implementation plan** — files, interfaces, tests, docs, ADRs.
+6. **Implement** — follow `CODING_STANDARDS.md`; run `ARCHITECTURE_CHECKLIST.md` and `COMPLIANCE_CHECK.md` on every trigger.
+
+---
+
+## Failure #1 — Test file placed in test_output/ instead of tests/
 
 Date: 2026-07-29
 Session: Creating Tier 3 regression test
@@ -38,22 +51,22 @@ Root cause:
 The AI searched for existing test files and found stale copies in `test_output/` (from a prior run), assumed that was the correct location, and placed the new test there.
 
 Solution:
-Moved `test_output/test_tier3.py` ÔåÆ `tests/test_tier3.py`.
+Moved `test_output/test_tier3.py` → `tests/test_tier3.py`.
 
 Prevention:
 - Search for `tests/` directory structure (not just any `.py` file matching the pattern) before placing test files.
 - Rule in CODING_STANDARDS.md: "All test files go in `tests/`."
-- ARCHITECTURE_CHECKLIST.md includes "No duplicate code" ÔÇö verify file placement against the directory map.
+- ARCHITECTURE_CHECKLIST.md includes "No duplicate code" — verify file placement against the directory map.
 
 ---
 
-## Failure #2 ÔÇö PowerSpectrum imported but assumed to exist as module
+## Failure #2 — PowerSpectrum imported but assumed to exist as module
 
 Date: 2026-07-29
 Session: Inverse design pipeline refactoring
 
 Problem:
-Code referenced `from backend.spectrum import PowerSpectrum` which did not exist as a file ÔÇö the class lived inside another module. The AI assumed a file existed based on a class name mentioned in documentation.
+Code referenced `from backend.spectrum import PowerSpectrum` which did not exist as a file — the class lived inside another module. The AI assumed a file existed based on a class name mentioned in documentation.
 
 Root cause:
 The AI searched for "PowerSpectrum" in imports but did not verify the actual file path. Documentation referenced the class in a design diagram but the refactoring to extract it had not been done yet.
@@ -68,7 +81,7 @@ Prevention:
 
 ---
 
-## Failure #3 ÔÇö Unused imports left in refactored modules
+## Failure #3 — Unused imports left in refactored modules
 
 Date: 2026-07-29
 Session: Creating design_from_wav.py, geometry.py
@@ -89,7 +102,7 @@ Prevention:
 
 ---
 
-## Failure #4 ÔÇö Zip used wrong file inclusion method, missing docs/ directory
+## Failure #4 — Zip used wrong file inclusion method, missing docs/ directory
 
 Date: 2026-07-29
 Session: Creating architecture review zip
@@ -105,17 +118,17 @@ Switched to a Python script using `os.walk()` which has intuitive path filtering
 
 Prevention:
 - When zip/archive operations are needed, use Python (zipfile module) instead of PowerShell.
-- The `-Filter` parameter works correctly with path patterns in PowerShell ÔÇö use `-Filter "*.md"` with `-Path "docs\*"` instead of `-Include`.
+- The `-Filter` parameter works correctly with path patterns in PowerShell — use `-Filter "*.md"` with `-Path "docs\*"` instead of `-Include`.
 
 ---
 
-## Failure #5 ÔÇö Attempted to import from non-existent file based on class name
+## Failure #5 — Attempted to import from non-existent file based on class name
 
 Date: 2026-07-29
 Session: Creating sound_analysis.py
 
 Problem:
-The code `from backend.spectrum import PowerSpectrum` was written because the architecture diagram showed a `PowerSpectrum` component. No `backend/spectrum.py` existed yet ÔÇö it was a planned extraction.
+The code `from backend.spectrum import PowerSpectrum` was written because the architecture diagram showed a `PowerSpectrum` component. No `backend/spectrum.py` existed yet — it was a planned extraction.
 
 Root cause:
 The AI treated architecture diagrams as current-state documentation when they were actually future-state plans. The diagram showed a refactoring target, not the current file layout.
@@ -228,3 +241,24 @@ Prevention:
 - Any solver that is used as a cross-validation reference must have at least one analytical-pipe regression test (open-open and closed-open modes).
 - Never cite a cents/RMS figure from one solver without stating which solver and its units.
 - JAX cost/gradient chains should run with `jax_debug_nans` in tests over degenerate inputs.
+
+## Failure #10 — Posted external instructions without approval
+
+Date: 2026-08-01
+Session: Dask distributed benchmarking, coordinating workers with a collaborator (Kalle).
+
+Problem:
+After being asked to "post to GitHub Discussions to communicate with Kalle", I drafted and published a discussion that included an explicit instruction for Kalle to sync his checkout to `main` (`git checkout main && git pull origin main`), plus a claim that "your 7 commits are not lost". The user had not approved that content, and it directly contradicted the project's intent: branch divergence is deliberate and treated as an advantage for testing different solutions.
+
+Root cause:
+I treated the permission to "communicate with Kalle" as license to also decide the content and direct a collaborator's actions. The external/irreversible nature of a published post (and its direct instruction to another person's machine) demanded an approval step I skipped. This is a Law 10 (stop and ask) failure: I guessed at the right message instead of asking.
+
+Solution:
+- Rewrote the discussion body: removed the sync command, explicitly withdrew it, reframed divergence as intentional and valuable.
+- Posted a visible withdrawal comment (discussion #51) so the original instruction is not actionable even if read before the edit.
+- Noted the real lesson: machine coordination with divergent local dependencies must be handled on the requester's side (e.g., upload modules to workers at submit time), not by forcing the collaborator's checkout to change.
+
+Prevention:
+- Any external communication (GitHub Discussion/Issue/PR/comment, email, message) that instructs a person to act must be drafted and shown to the user for approval BEFORE publishing. Posting is only allowed after explicit approval of the exact content.
+- External posts are irreversible to third parties — treat them like a commit and get sign-off first.
+- Cross-machine dependency mismatches are expected; solve them by shipping code to the worker or adjusting the run, never by commanding another machine's checkout.

@@ -201,12 +201,17 @@ BORE_TYPE_META: dict[str, dict] = {
 
 
 def bore_profile_to_diameter(
-    radii: np.ndarray, n_samples: int = 50,
+    radii: np.ndarray, n_samples: int = 50, length_mm: float = 1.0,
 ) -> list[tuple[float, float]]:
+    """Interpolate a radii profile to (position_mm, diameter_mm) pairs.
+
+    Positions are scaled to ``length_mm`` (the profile spans 0..length_mm),
+    so the output is directly usable by ``generate_variable_bore_instrument``.
+    """
     x = np.linspace(0, 1, len(radii))
     x_new = np.linspace(0, 1, n_samples)
     if len(radii) < 2:
-        return [(pos, float(radii[0] * 2)) for pos in np.linspace(0, 1, n_samples)]
+        return [(pos * length_mm, float(radii[0] * 2)) for pos in np.linspace(0, 1, n_samples)]
     tck = interpolate.splrep(x, radii, s=0)
     r_interp = interpolate.splev(x_new, tck)
-    return [(float(x_new[i]), float(r_interp[i] * 2)) for i in range(n_samples)]
+    return [(float(x_new[i]) * length_mm, float(r_interp[i] * 2)) for i in range(n_samples)]

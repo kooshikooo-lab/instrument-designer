@@ -1,0 +1,68 @@
+{
+  "name": "Cylindrical (cylindrical)",
+  "label": "Cylindrical",
+  "bore_type": "cylindrical",
+  "bore_length_mm": 955.29,
+  "n_holes": 7,
+  "hole_positions_mm": [
+    62.76,
+    129.59,
+    200.51,
+    275.51,
+    354.59,
+    437.76,
+    525.0
+  ],
+  "hole_diameters_mm": [],
+  "hole_offsets": [
+    -100.0,
+    100.0
+  ],
+  "bore_profile": [
+    {
+      "position_mm": 0.0,
+      "radius_mm": 15.0
+    },
+    {
+      "position_mm": 191.058,
+      "radius_mm": 15.0
+    },
+    {
+      "position_mm": 382.116,
+      "radius_mm": 15.0
+    },
+    {
+      "position_mm": 573.174,
+      "radius_mm": 15.0
+    },
+    {
+      "position_mm": 764.232,
+      "radius_mm": 15.0
+    },
+    {
+      "position_mm": 955.29,
+      "radius_mm": 15.0
+    }
+  ],
+  "optimized_params": {
+    "radius_mm": 15.0
+  },
+  "fundamental_hz": 89.56,
+  "best_scale": "minor",
+  "scale_rms_cents": 15.82,
+  "resonances_hz": [
+    89.56,
+    90.82,
+    90.2,
+    101.36,
+    98.91,
+    106.62,
+    119.94,
+    139.69
+  ],
+  "initial_cost_rms_cents": 71.596,
+  "final_cost_rms_cents": 15.824,
+  "total_time_s": 12.231,
+  "target_frequencies": null,
+  "notes": ""
+}

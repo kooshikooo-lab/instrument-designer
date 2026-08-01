@@ -23,6 +23,7 @@ Usage:
 
 import os
 import json
+import re
 import subprocess
 import tempfile
 from pathlib import Path
@@ -94,7 +95,6 @@ class ChalumierDesigner:
 
     def _find_java(self) -> Optional[str]:
         """Find a Java 17+ executable. Checks JAVA_HOME, known JDK path, then system PATH."""
-        import re as _re
         # 1. Check JAVA_HOME
         java_home = os.environ.get("JAVA_HOME", "")
         if java_home:
@@ -120,7 +120,7 @@ class ChalumierDesigner:
                 capture_output=True, text=True, timeout=5
             )
             version_str = result.stderr  # java -version outputs to stderr
-            match = _re.search(r'version "(\d+)', version_str)
+            match = re.search(r'version "(\d+)', version_str)
             if match and int(match.group(1)) >= 17:
                 return True
             return False
@@ -231,7 +231,6 @@ class ChalumierDesigner:
                 try:
                     raw = json_files[0].read_text()
                     # JSON5 uses unquoted keys and trailing commas — strip them
-                    import re
                     cleaned = re.sub(r'//.*?$', '', raw, flags=re.MULTILINE)
                     cleaned = re.sub(r'/\*.*?\*/', '', cleaned, flags=re.DOTALL)
                     cleaned = re.sub(r'(?<=[{,\n])\s*(\w+)\s*:', r'"\1":', cleaned)

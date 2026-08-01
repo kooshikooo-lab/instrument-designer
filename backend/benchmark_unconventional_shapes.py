@@ -92,7 +92,7 @@ def benchmark_pipeline(
 
     t4 = time.time()
     try:
-        profile = bore_profile_to_diameter(radii, n_samples=32)
+        profile = bore_profile_to_diameter(radii, n_samples=32, length_mm=bore_length_mm)
         result["steps"]["cad_profile"] = {"time_s": round(time.time() - t4, 4), "n_profile_points": len(profile)}
     except Exception as e:
         result["steps"]["cad_profile"] = {"time_s": round(time.time() - t4, 4), "success": False, "error": str(e)}
@@ -122,12 +122,103 @@ def benchmark_pipeline(
     return result
 
 
+def _optimize_bore_type_dask(
+    repo_root: str, bore_type: str, params: dict, fingerings: list[list[str]],
+    hole_positions: list[float], hole_diameters: list[float],
+    pop_size: int, n_generations: int, optimize_holes: bool,
+) -> dict:
+    """Run one bore-type optimization inside a Dask worker.
+
+    All imports are local so the scheduler never needs the repo on its own
+    sys.path. Returns a JSON-safe dict (instrument objects are stripped).
+    """
+    import sys
+    if repo_root and repo_root not in sys.path:
+        sys.path.insert(0, repo_root)
+    from backend.physics.bore_optimizer import two_phase_optimize_bore_parameters
+
+    r = two_phase_optimize_bore_parameters(
+        bore_type=bore_type,
+        fingerings=fingerings, hole_positions=hole_positions,
+        hole_diameters=hole_diameters,
+        bore_length_mm=600.0, radius_params=params,
+        closed_top=True, pop_size=pop_size, n_generations=n_generations,
+        optimize_holes=optimize_holes,
+    )
+    clean = {k: v for k, v in r.items() if k != "best_instrument"}
+    for phase in ("phase1", "phase2"):
+        if isinstance(clean.get(phase), dict):
+            clean[phase] = {k: v for k, v in clean[phase].items() if k != "instrument"}
+    return clean
+
+
+def _sync_worker_modules(client) -> bool:
+    """Copy bore_generators/bore_optimizer to workers where missing.
+
+    The collaborator's worker checkout lacks ``backend/physics/bore_generators.py``
+    and ``backend/physics/bore_optimizer.py`` (deliberately diverged branch).
+    This writes both files into the worker's ``backend/physics/`` package dir so
+    the ``backend.physics.bore_optimizer`` subpackage import resolves, without
+    requiring any checkout change. Returns True if every worker can import the
+    module afterward.
+    """
+    local_dir = os.path.join(os.path.dirname(__file__), "physics")
+    files = ["bore_generators.py", "bore_optimizer.py"]
+    sources = {}
+    for fn in files:
+        p = os.path.join(local_dir, fn)
+        if not os.path.isfile(p):
+            raise FileNotFoundError(f"missing local module: {p}")
+        with open(p, "r", encoding="utf-8") as f:
+            sources[fn] = f.read()
+
+    def _ensure(payload: dict) -> dict:
+        import os
+        try:
+            import backend
+        except Exception as e:
+            return {"ok": False, "error": f"import backend: {e}"}
+        phys = os.path.join(backend.__path__[0], "physics")
+        os.makedirs(phys, exist_ok=True)
+        for fn, content in payload.items():
+            target = os.path.join(phys, fn)
+            same = False
+            if os.path.isfile(target):
+                try:
+                    with open(target, "r", encoding="utf-8") as f:
+                        same = f.read() == content
+                except Exception:
+                    same = False
+            if not same:
+                with open(target, "w", encoding="utf-8") as f:
+                    f.write(content)
+        try:
+            import backend.physics.bore_optimizer as bo
+            return {"ok": True, "backend": backend.__path__[0], "bore_optimizer": bo.__file__}
+        except Exception as e:
+            return {"ok": False, "error": f"import backend.physics.bore_optimizer: {e}"}
+
+    results = client.run(_ensure, sources)
+    ok = True
+    for addr, r in results.items():
+        if r.get("ok"):
+            print(f"    {addr}: synced -> {r.get('bore_optimizer')}")
+        else:
+            ok = False
+            print(f"    {addr}: FAILED {r.get('error')}")
+    return ok
+
+
 def benchmark_optimization(
     fingerings: list[list[str]], hole_positions: list[float],
     hole_diameters: list[float], pop_size: int = 12, n_generations: int = 12,
-    optimize_holes: bool = True,
+    optimize_holes: bool = True, use_dask: bool = False, scheduler: str = "tcp://100.69.113.41:8786",
 ) -> list[dict]:
-    """Run two-phase parametric optimization on closed-top bore types."""
+    """Run two-phase parametric optimization on closed-top bore types.
+
+    With ``use_dask=True``, each bore type is dispatched to a Dask worker
+    (all 7 types are independent); otherwise they run sequentially in-process.
+    """
     opt_tests = [
         ("cylindrical", {"radius_mm": 7.25}),
         ("parabolic", {"radius_min_mm": 4.0, "radius_max_mm": 10.0}),
@@ -137,19 +228,50 @@ def benchmark_optimization(
         ("ridged", {"base_radius_mm": 8.0, "ridge_depth_mm": 1.5, "n_ridges": 5}),
         ("stepped", {"radius_start_mm": 5.0, "radius_end_mm": 10.0, "n_steps": 4}),
     ]
+    repo_root = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
+
+    client = None
+    if use_dask:
+        from distributed import Client
+        print(f"\nConnecting to Dask scheduler: {scheduler}")
+        client = Client(scheduler, timeout=30)
+        info = client.scheduler_info()
+        workers = info.get("workers", {})
+        print(f"  Workers: {len(workers)}")
+        for addr, w in workers.items():
+            print(f"    {addr}: nthreads={w.get('nthreads', '?')}")
+        print(f"  Dashboard: {client.dashboard_link}")
+        print("  Ensuring worker modules...")
+        if not _sync_worker_modules(client):
+            print("  ERROR: could not sync bore_optimizer to workers; aborting Dask run.")
+            client.close()
+            return []
+
     results_list = []
-    for bore_type, params in opt_tests:
+    futures = []
+    if client is not None:
+        print(f"\nDispatching {len(opt_tests)} bore-type optimizations to workers...")
+        for bore_type, params in opt_tests:
+            futures.append(client.submit(
+                _optimize_bore_type_dask,
+                repo_root, bore_type, params, fingerings, hole_positions,
+                hole_diameters, pop_size, n_generations, optimize_holes,
+            ))
+    for i, (bore_type, params) in enumerate(opt_tests):
         label = BORE_TYPE_META[bore_type]["label"]
         print(f"\n-- Optimizing: {label} --")
         try:
-            r = two_phase_optimize_bore_parameters(
-                bore_type=bore_type,
-                fingerings=fingerings, hole_positions=hole_positions,
-                hole_diameters=hole_diameters,
-                bore_length_mm=600.0, radius_params=params,
-                closed_top=True, pop_size=pop_size, n_generations=n_generations,
-                optimize_holes=optimize_holes,
-            )
+            if client is not None:
+                r = futures[i].result(timeout=3600)
+            else:
+                r = two_phase_optimize_bore_parameters(
+                    bore_type=bore_type,
+                    fingerings=fingerings, hole_positions=hole_positions,
+                    hole_diameters=hole_diameters,
+                    bore_length_mm=600.0, radius_params=params,
+                    closed_top=True, pop_size=pop_size, n_generations=n_generations,
+                    optimize_holes=optimize_holes,
+                )
             print(f"  Initial: {r['initial_cost_rms_cents']:.1f} cents")
             print(f"  Fundamental: {r['fundamental_hz']} Hz")
             print(f"  Best scale: {r['best_scale']} ({r['scale_rms_cents']:.1f} cents RMS)")
@@ -165,10 +287,14 @@ def benchmark_optimization(
             import traceback
             traceback.print_exc()
             print(f"  FAILED: {e}")
+
+    if client is not None:
+        client.close()
     return results_list
 
 
-def run_all():
+def run_all(use_dask: bool = False, scheduler: str = "tcp://100.69.113.41:8786",
+            pop_size: int = 12, n_generations: int = 12):
     print("=" * 72)
     print("UNCONVENTIONAL BORE SHAPE BENCHMARK (SCALE-BASED OPTIMIZATION)")
     print("=" * 72)
@@ -231,7 +357,8 @@ def run_all():
     print("--- PART 2: Parametric optimization benchmark (closed-top types) ---")
     opt_results = benchmark_optimization(
         fingerings, hole_positions, hole_diameters,
-        pop_size=12, n_generations=12,
+        pop_size=pop_size, n_generations=n_generations,
+        use_dask=use_dask, scheduler=scheduler,
     )
 
     print(f"\n{'=' * 72}")
@@ -277,5 +404,20 @@ def run_all():
 
 
 if __name__ == "__main__":
-    success = run_all()
+    import argparse
+    parser = argparse.ArgumentParser(
+        description="Unconventional bore shape benchmark (scale-based optimization)."
+    )
+    parser.add_argument("--dask", action="store_true",
+                        help="Parallelize Part 2 optimizations across a Dask cluster.")
+    parser.add_argument("--scheduler", default="tcp://100.69.113.41:8786",
+                        help="Dask scheduler address (default: tcp://100.69.113.41:8786).")
+    parser.add_argument("--pop", type=int, default=12, help="DE population size (default: 12).")
+    parser.add_argument("--gen", type=int, default=12, help="DE max generations (default: 12).")
+    args = parser.parse_args()
+
+    success = run_all(
+        use_dask=args.dask, scheduler=args.scheduler,
+        pop_size=args.pop, n_generations=args.gen,
+    )
     sys.exit(0 if success else 1)

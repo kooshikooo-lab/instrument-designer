@@ -1,9 +1,9 @@
 [
   {
     "bore_type": "cylindrical",
-    "stl_path": "C:\\Users\\Admin\\Desktop\\instrument-designer\\backend\\..\\test_output\\unconventional\\optimized_cylindrical.stl",
-    "size_kb": 81.5,
-    "time_s": 2.993,
+    "stl_path": "E:\\Admin\\WoodwindDesigner\\woodwind-designer\\backend\\..\\test_output\\unconventional\\optimized_cylindrical.stl",
+    "size_kb": 5635.5,
+    "time_s": 12.274,
     "n_holes": 7,
     "n_radii": 6,
     "hole_positions_mm": [
@@ -18,9 +18,9 @@
   },
   {
     "bore_type": "parabolic",
-    "stl_path": "C:\\Users\\Admin\\Desktop\\instrument-designer\\backend\\..\\test_output\\unconventional\\optimized_parabolic.stl",
-    "size_kb": 752.0,
-    "time_s": 0.663,
+    "stl_path": "E:\\Admin\\WoodwindDesigner\\woodwind-designer\\backend\\..\\test_output\\unconventional\\optimized_parabolic.stl",
+    "size_kb": 7995.5,
+    "time_s": 7.541,
     "n_holes": 7,
     "n_radii": 6,
     "hole_positions_mm": [
@@ -35,9 +35,9 @@
   },
   {
     "bore_type": "exponential",
-    "stl_path": "C:\\Users\\Admin\\Desktop\\instrument-designer\\backend\\..\\test_output\\unconventional\\optimized_exponential.stl",
-    "size_kb": 79.4,
-    "time_s": 0.398,
+    "stl_path": "E:\\Admin\\WoodwindDesigner\\woodwind-designer\\backend\\..\\test_output\\unconventional\\optimized_exponential.stl",
+    "size_kb": 4654.9,
+    "time_s": 5.038,
     "n_holes": 7,
     "n_radii": 6,
     "hole_positions_mm": [
@@ -52,9 +52,9 @@
   },
   {
     "bore_type": "bessel",
-    "stl_path": "C:\\Users\\Admin\\Desktop\\instrument-designer\\backend\\..\\test_output\\unconventional\\optimized_bessel.stl",
-    "size_kb": 141.4,
-    "time_s": 0.519,
+    "stl_path": "E:\\Admin\\WoodwindDesigner\\woodwind-designer\\backend\\..\\test_output\\unconventional\\optimized_bessel.stl",
+    "size_kb": 6695.6,
+    "time_s": 7.701,
     "n_holes": 7,
     "n_radii": 6,
     "hole_positions_mm": [
@@ -69,9 +69,9 @@
   },
   {
     "bore_type": "spiral",
-    "stl_path": "C:\\Users\\Admin\\Desktop\\instrument-designer\\backend\\..\\test_output\\unconventional\\optimized_spiral.stl",
-    "size_kb": 7056.4,
-    "time_s": 5.5,
+    "stl_path": "E:\\Admin\\WoodwindDesigner\\woodwind-designer\\backend\\..\\test_output\\unconventional\\optimized_spiral.stl",
+    "size_kb": 7992.5,
+    "time_s": 11.918,
     "n_holes": 7,
     "n_radii": 50,
     "hole_positions_mm": [
@@ -86,9 +86,9 @@
   },
   {
     "bore_type": "ridged",
-    "stl_path": "C:\\Users\\Admin\\Desktop\\instrument-designer\\backend\\..\\test_output\\unconventional\\optimized_ridged.stl",
-    "size_kb": 2085.7,
-    "time_s": 2.515,
+    "stl_path": "E:\\Admin\\WoodwindDesigner\\woodwind-designer\\backend\\..\\test_output\\unconventional\\optimized_ridged.stl",
+    "size_kb": 4508.4,
+    "time_s": 9.035,
     "n_holes": 7,
     "n_radii": 50,
     "hole_positions_mm": [
@@ -103,9 +103,9 @@
   },
   {
     "bore_type": "stepped",
-    "stl_path": "C:\\Users\\Admin\\Desktop\\instrument-designer\\backend\\..\\test_output\\unconventional\\optimized_stepped.stl",
-    "size_kb": 219.9,
-    "time_s": 0.519,
+    "stl_path": "E:\\Admin\\WoodwindDesigner\\woodwind-designer\\backend\\..\\test_output\\unconventional\\optimized_stepped.stl",
+    "size_kb": 11616.7,
+    "time_s": 14.531,
     "n_holes": 7,
     "n_radii": 6,
     "hole_positions_mm": [
