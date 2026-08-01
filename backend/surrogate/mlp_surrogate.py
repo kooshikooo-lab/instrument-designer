@@ -73,7 +73,7 @@ class BoreSurrogate(nn.Module):
     @nn.compact
     def __call__(self, x: jnp.ndarray, training: bool = False) -> jnp.ndarray:
         # Input normalization layer (learned)
-        x = nn.BatchNorm(use_running_average=not training)(x)
+        x = nn.BatchNorm(use_running_average=not training, name="input_bn")(x)
         
         for i, dim in enumerate(self.config.hidden_dims):
             x = nn.Dense(dim, name=f"dense_{i}")(x)
@@ -106,15 +106,19 @@ class SurrogateTrainer:
         dummy_input = jnp.ones((1, 50))  # Will be reshaped on first call
         self._params = self._model.init(key, dummy_input)
         self._opt_state = self._tx.init(self._params)
+        self._rng_seq = jax.random.split(key, 1000)  # Pre-generate RNG keys for dropout
+        self._rng_idx = 0
     
     def loss_fn(self, params: dict, batch: tuple) -> float:
         inputs, targets = batch
-        preds = self._model.apply(params, inputs, training=True)
+        # Generate RNG key for dropout
+        rng = self._rng_seq[self._rng_idx % len(self._rng_seq)]
+        self._rng_idx += 1
+        preds, _ = self._model.apply(params, inputs, training=True, mutable=['batch_stats'], rngs={'dropout': rng})
         # MSE loss with descriptor-weighted loss (Petiot 2025)
         mse = jnp.mean((preds - targets) ** 2)
         return mse
     
-    @jax.jit
     def train_step(self, params: dict, opt_state: optax.OptState, 
                    batch: tuple) -> tuple:
         loss, grads = jax.value_and_grad(self.loss_fn)(params, batch)
