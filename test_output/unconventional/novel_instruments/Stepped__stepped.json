@@ -1,0 +1,70 @@
+{
+  "name": "Stepped (stepped)",
+  "label": "Stepped",
+  "bore_type": "stepped",
+  "bore_length_mm": 1185.56,
+  "n_holes": 7,
+  "hole_positions_mm": [
+    74.24,
+    149.24,
+    224.99,
+    301.5,
+    378.77,
+    456.79,
+    535.57
+  ],
+  "hole_diameters_mm": [],
+  "hole_offsets": [
+    -7.97,
+    18.54
+  ],
+  "bore_profile": [
+    {
+      "position_mm": 0.0,
+      "radius_mm": 8.94
+    },
+    {
+      "position_mm": 237.112,
+      "radius_mm": 8.565
+    },
+    {
+      "position_mm": 474.224,
+      "radius_mm": 8.19
+    },
+    {
+      "position_mm": 711.336,
+      "radius_mm": 7.44
+    },
+    {
+      "position_mm": 948.448,
+      "radius_mm": 7.065
+    },
+    {
+      "position_mm": 1185.56,
+      "radius_mm": 6.315
+    }
+  ],
+  "optimized_params": {
+    "radius_start_mm": 8.9404,
+    "radius_end_mm": 6.3154,
+    "n_steps": 7.5389
+  },
+  "fundamental_hz": 82.75,
+  "best_scale": "pentatonic_major",
+  "scale_rms_cents": 4.36,
+  "resonances_hz": [
+    82.75,
+    82.83,
+    82.82,
+    92.38,
+    104.21,
+    100.07,
+    105.13,
+    114.77
+  ],
+  "initial_cost_rms_cents": 183.493,
+  "final_cost_rms_cents": 4.358,
+  "total_time_s": 63.588,
+  "target_frequencies": null,
+  "notes": ""
+}

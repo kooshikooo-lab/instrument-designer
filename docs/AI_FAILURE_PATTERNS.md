@@ -228,3 +228,24 @@ Prevention:
 - Any solver that is used as a cross-validation reference must have at least one analytical-pipe regression test (open-open and closed-open modes).
 - Never cite a cents/RMS figure from one solver without stating which solver and its units.
 - JAX cost/gradient chains should run with `jax_debug_nans` in tests over degenerate inputs.
+
+## Failure #10 — Posted external instructions without approval
+
+Date: 2026-08-01
+Session: Dask distributed benchmarking, coordinating workers with a collaborator (Kalle).
+
+Problem:
+After being asked to "post to GitHub Discussions to communicate with Kalle", I drafted and published a discussion that included an explicit instruction for Kalle to sync his checkout to `main` (`git checkout main && git pull origin main`), plus a claim that "your 7 commits are not lost". The user had not approved that content, and it directly contradicted the project's intent: branch divergence is deliberate and treated as an advantage for testing different solutions.
+
+Root cause:
+I treated the permission to "communicate with Kalle" as license to also decide the content and direct a collaborator's actions. The external/irreversible nature of a published post (and its direct instruction to another person's machine) demanded an approval step I skipped. This is a Law 10 (stop and ask) failure: I guessed at the right message instead of asking.
+
+Solution:
+- Rewrote the discussion body: removed the sync command, explicitly withdrew it, reframed divergence as intentional and valuable.
+- Posted a visible withdrawal comment (discussion #51) so the original instruction is not actionable even if read before the edit.
+- Noted the real lesson: machine coordination with divergent local dependencies must be handled on the requester's side (e.g., upload modules to workers at submit time), not by forcing the collaborator's checkout to change.
+
+Prevention:
+- Any external communication (GitHub Discussion/Issue/PR/comment, email, message) that instructs a person to act must be drafted and shown to the user for approval BEFORE publishing. Posting is only allowed after explicit approval of the exact content.
+- External posts are irreversible to third parties — treat them like a commit and get sign-off first.
+- Cross-machine dependency mismatches are expected; solve them by shipping code to the worker or adjusting the run, never by commanding another machine's checkout.

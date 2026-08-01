@@ -47,7 +47,7 @@ def generate_stl_from_opt_result(result: dict, output_dir: str) -> dict:
     gen_time = time.time() - t0
 
     t1 = time.time()
-    profile = bore_profile_to_diameter(radii, n_samples=64)
+    profile = bore_profile_to_diameter(radii, n_samples=64, length_mm=length)
     prof_time = time.time() - t1
 
     t2 = time.time()
