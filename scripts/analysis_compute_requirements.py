@@ -18,10 +18,21 @@ os.environ['MKL_NUM_THREADS'] = '1'
 os.environ['OPENBLAS_NUM_THREADS'] = '1'
 
 import numpy as np
-from backend.v2_scipy_optimizer import (
-    ScipyBoreOptimizer, _objective_cents, _pava_isotonic,
-    _compute_impedance_from_bore, _match_peaks_to_targets
-)
+
+# QUARANTINED 2026-07-31: exercises the OpenWInD scipy optimizer path
+# (backend.v2_scipy_optimizer), deleted from backend/archived_optimizers
+# (docs/ARCHIVED_OPTIMIZERS.md). Superseded by backend/two_phase_optimizer.py
+# and backend/optimizer.py. Kept for reference; not collected by pytest.
+try:
+    from backend.v2_scipy_optimizer import (  # noqa: F401
+        ScipyBoreOptimizer, _objective_cents, _pava_isotonic,
+        _compute_impedance_from_bore, _match_peaks_to_targets
+    )
+except ModuleNotFoundError:
+    raise SystemExit(
+        "ARCHIVED: backend.v2_scipy_optimizer was deleted on 2026-07-31 "
+        "(see docs/ARCHIVED_OPTIMIZERS.md). Superseded by backend/two_phase_optimizer.py."
+    )
 
 TARGETS = [261.6, 784.8, 1308.0, 1831.2, 2354.4, 2877.6]
 BORE_LENGTH = 0.65

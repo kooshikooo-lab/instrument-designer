@@ -1,5 +1,19 @@
 """Full optimizer convergence test — starts from non-optimal bore."""
-import sys, io
+
+# QUARANTINED 2026-07-31: exercises TMMBoreOptimizerJAX, deleted from
+# backend/archived_optimizers (docs/ARCHIVED_OPTIMIZERS.md). Superseded by
+# backend/two_phase_optimizer.py. Kept for reference; not collected by pytest.
+import sys, os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+try:
+    import backend.tmm_optimizer_v2  # noqa: F401
+except ModuleNotFoundError:
+    raise SystemExit(
+        "ARCHIVED: TMMBoreOptimizerJAX was deleted on 2026-07-31 "
+        "(see docs/ARCHIVED_OPTIMIZERS.md). Superseded by backend/two_phase_optimizer.py."
+    )
+
+import io
 sys.path.insert(0, 'backend')
 if sys.platform == 'win32':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, line_buffering=True)
@@ -11,7 +25,6 @@ import jax.numpy as jnp
 import time
 from tmm_acoustics import TMMInstrument, tmm_instrument_from_radii, SPEED_OF_SOUND, end_flange_length_correction
 from tmm_acoustics_jax import build_action_chain_v2, make_rms_cost, MAX_HOLES
-from tmm_optimizer_v2 import TMMBoreOptimizerJAX
 
 print("=" * 70)
 print("FULL OPTIMIZER CONVERGENCE TEST — Non-optimal start")

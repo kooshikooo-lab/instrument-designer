@@ -32,6 +32,7 @@ from pymoo.operators.sampling.rnd import FloatRandomSampling
 from pymoo.operators.repair.rounding import RoundingRepair
 from pymoo.optimize import minimize
 from pymoo.termination import get_termination
+from backend.metrics import rms_cents, compute_metrics
 
 
 class MonotonicRepair(Repair):
@@ -283,9 +284,7 @@ class BoreOptimizationProblem(ElementwiseProblem):
         cents_errors = np.array([abs(m[3]) for m in matched])
         
         raw_cents = np.array([m[3] for m in matched])
-        global_offset = np.median(raw_cents)
-        corrected_errors = np.abs(raw_cents - global_offset)
-        freq_accuracy = np.sqrt(np.mean(corrected_errors ** 2))
+        freq_accuracy = rms_cents(raw_cents)
         
         if n_peaks >= n_targets:
             matched_peak_vals = np.array([m[1] for m in matched])
@@ -459,6 +458,7 @@ class BoreOptimizer:
                 _compute_impedance_from_bore(bore, self.freq_range, 5000, self.temperature)["peak_frequencies"],
                 self.target_frequencies,
             )
+            metrics_out = compute_metrics([m[3] for m in matched])
             designs.append({
                 "variables": X[i].tolist(),
                 "bore_profile": [{"position": p, "radius": r} for p, r in bore],
@@ -467,6 +467,7 @@ class BoreOptimizer:
                     "scale_evenness": float(F[i, 1]),
                     "projection": float(-F[i, 2]),
                 },
+                "metrics": metrics_out,
                 "matched_frequencies": [
                     {"target": m[0], "actual": m[1], "error_hz": m[2], "error_cents": m[3]}
                     for m in matched

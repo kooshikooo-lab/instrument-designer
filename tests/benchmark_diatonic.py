@@ -18,7 +18,17 @@ import numpy as np
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from backend.tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
-from backend.tmm_optimizer_v2 import TMMBoreOptimizerJAX
+
+# QUARANTINED 2026-07-31: exercises TMMBoreOptimizerJAX, deleted from
+# backend/archived_optimizers (docs/ARCHIVED_OPTIMIZERS.md). Superseded by
+# backend/two_phase_optimizer.py. Kept for reference; not collected by pytest.
+try:
+    from backend.tmm_optimizer_v2 import TMMBoreOptimizerJAX  # noqa: F401
+except ModuleNotFoundError:
+    raise SystemExit(
+        "ARCHIVED: TMMBoreOptimizerJAX was deleted on 2026-07-31 "
+        "(see docs/ARCHIVED_OPTIMIZERS.md). Superseded by backend/two_phase_optimizer.py."
+    )
 
 
 # ============================================================================

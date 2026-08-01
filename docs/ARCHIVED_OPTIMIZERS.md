@@ -60,3 +60,29 @@
 - `docs/AI_FAILURE_PATTERNS.md` — history of the import/restore failures.
 - `docs/PHYSICS_PRINCIPLES.md` — physics notes incl. finding C1.
 - `docs/OPTIMIZATION_THEORY.md` — current pipeline research notes.
+
+## Import repair / quarantine (2026-07-31)
+
+On both branches, 11+ files still imported modules deleted with this package,
+crashing with `ModuleNotFoundError`. Remediation (ADR-009 in
+`docs/ARCHITECTURE_DECISIONS.md`):
+
+- **Re-pointed where a live equivalent exists:** `scripts/profile_openwind.py`
+  now imports `_compute_impedance_from_bore` and `_pava_isotonic` from
+  `backend/optimizer.py` instead of the deleted `backend/v2_scipy_optimizer.py`.
+- **Quarantined with a documented `SystemExit` guard** where no live equivalent
+  exists (message: `ARCHIVED: … deleted on 2026-07-31 (docs/ARCHIVED_OPTIMIZERS.md).
+  Superseded by backend/two_phase_optimizer.py.`): `backend/benchmark_chalumeau.py`;
+  `tests/{benchmark_diatonic.py, benchmark_bass_clarinet.py, test_optimizer2.py,
+  test_bore_profile.py, diagnose_clustering.py, diagnose_fingering_direction.py,
+  test_desktop_fixes.py, test_stl_export.py, test_import2.py, test_cross_fingering.py,
+  test_cross_chatgpt.py, test_cross_realistic.py, test_correct_fingerings.py,
+  test_bell_first_correct.py, test_12hole_sequential_final.py, test_global_lbfsg.py,
+  test_minimal_de.py, test_final_correct.py, test_final_bell_first.py, test_staged.py}`;
+  `scripts/{analysis_minimal.py, analysis_init_quality.py,
+  analysis_compute_requirements.py, debug_scipy.py}`.
+- **Never silently restored** deleted files (Law 3; failed-restore precedent in
+  `AI_FAILURE_PATTERNS.md`).
+- **sys.path fix:** `scripts/benchmark_chalumier.py` and
+  `scripts/refine_chalumier.py` pointed at `<script_dir>/backend` (nonexistent);
+  now `<repo_root>/backend`.

@@ -13,8 +13,9 @@ from pathlib import Path
 from dataclasses import dataclass, field
 from typing import List, Tuple
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'backend'))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'backend'))
 from tmm_acoustics import TMMInstrument, SPEED_OF_SOUND
+from metrics import rms_cents, scale_rms_cents, median_offset_cents
 
 c = SPEED_OF_SOUND
 SEMITONE_MAP = {'C': 0, 'D': 2, 'E': 4, 'F': 5, 'G': 7, 'A': 9, 'B': 11}
@@ -282,8 +283,7 @@ def run_our_optimizer(fingerings, transpose=0, bore_length=None, n_holes=None,
         ca = np.array(cents)
         if np.any(np.abs(ca) > 1e5):
             return 1e10
-        med = np.median(ca)
-        return float(np.sqrt(np.mean((ca - med) ** 2)))
+        return rms_cents(ca)
     x0 = np.concatenate([
         np.linspace(bore_d0 / 2, bore_d1 / 2, 12),
         np.array(hole_d0) / 2,
@@ -312,9 +312,10 @@ def run_our_optimizer(fingerings, transpose=0, bore_length=None, n_holes=None,
             f = 0; err = 1e10
         per_note.append({'note': note, 'target': tgt, 'actual': f, 'cents': err, 'nth': nth})
     ca = np.array([r['cents'] for r in per_note if abs(r['cents']) < 1e5])
-    evenness = float(np.sqrt(np.mean((ca - np.median(ca))**2))) if len(ca) > 0 else 999
-    offset = float(np.median(ca)) if len(ca) > 0 else 999
-    return {'per_note': per_note, 'evenness': evenness, 'offset': offset, 'elapsed': elapsed,
+    evenness = scale_rms_cents(ca) if len(ca) > 0 else 999
+    offset = median_offset_cents(ca) if len(ca) > 0 else 999
+    return {'per_note': per_note, 'final_rms_cents': rms_cents(ca) if len(ca) > 0 else 999,
+            'evenness': evenness, 'offset': offset, 'elapsed': elapsed,
             'converged': result.success, 'bore_length': bore_length}
 
 def compute_stats(per_note):
