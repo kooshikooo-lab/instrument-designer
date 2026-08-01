@@ -1,5 +1,18 @@
+import sys, os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import numpy as np
-from backend.staged_optimizer import staged_optimize
+
+# QUARANTINED 2026-07-31: exercises backend.staged_optimizer, deleted from
+# backend/archived_optimizers (docs/ARCHIVED_OPTIMIZERS.md). Superseded by
+# backend/two_phase_optimizer.py. Kept for reference; not collected by pytest.
+try:
+    from backend.staged_optimizer import staged_optimize  # noqa: F401
+except ModuleNotFoundError:
+    raise SystemExit(
+        "ARCHIVED: staged_optimizer.py was deleted on 2026-07-31 "
+        "(see docs/ARCHIVED_OPTIMIZERS.md). Superseded by backend/two_phase_optimizer.py."
+    )
+
 from backend.target_frequencies import get_targets
 
 # Test staged optimizer with KeefeLoss

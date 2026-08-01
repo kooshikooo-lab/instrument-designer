@@ -9,8 +9,9 @@ import numpy as np
 from scipy.optimize import minimize as sp_min
 from pathlib import Path
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'backend'))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'backend'))
 from tmm_acoustics import TMMInstrument, SPEED_OF_SOUND
+from metrics import rms_cents, scale_rms_cents, median_offset_cents
 
 c = SPEED_OF_SOUND
 SEMITONE_MAP = {'C': 0, 'D': 2, 'E': 4, 'F': 5, 'G': 7, 'A': 9, 'B': 11}
@@ -121,16 +122,16 @@ def evaluate_inst(inst, fingerings, transpose=0, label=""):
 
 def print_results(results, label=""):
     ca = np.array([r['cents'] for r in results if abs(r['cents']) < 1e5])
-    med = np.median(ca)
-    even = float(np.sqrt(np.mean((ca - med)**2)))
-    off = float(med)
+    even = scale_rms_cents(ca)
+    off = median_offset_cents(ca)
+    abs_rms = rms_cents(ca)
     mean_abs = float(np.mean(np.abs(ca)))
     max_abs = float(np.max(np.abs(ca)))
-    print(f"  {label}: even={even:.1f}c off={off:+.1f}c mean_abs={mean_abs:.1f}c max_abs={max_abs:.1f}c")
+    print(f"  {label}: rms={abs_rms:.1f}c even={even:.1f}c off={off:+.1f}c mean_abs={mean_abs:.1f}c max_abs={max_abs:.1f}c")
     for r in results:
         if abs(r['cents']) < 1e5:
             print(f"    {r['note']:>6} {r.get('fingering',''):>10} pr={r.get('pr','?')} -> {r['cents']:+7.1f}c")
-    return even
+    return abs_rms
 
 def refine_with_lbfgsb(inst, inner_pos, inner_diams, outer_at, hole_pos, hole_diams, hole_lens,
                         fingerings, targets, detected_regs, transpose=0,
@@ -167,8 +168,7 @@ def refine_with_lbfgsb(inst, inner_pos, inner_diams, outer_at, hole_pos, hole_di
                 cents.append(1e10)
         ca = np.array(cents)
         if np.any(np.abs(ca) > 1e5): return 1e10
-        med = np.median(ca)
-        return float(np.sqrt(np.mean((ca - med)**2)))
+        return rms_cents(ca)
 
     x0 = np.concatenate([
         np.array(inner_diams) / 2.0,
@@ -342,8 +342,7 @@ def main():
                     cents.append(1e10)
             ca = np.array(cents)
             if np.any(np.abs(ca) > 1e5): return 1e10
-            med = np.median(ca)
-            return float(np.sqrt(np.mean((ca - med)**2)))
+            return rms_cents(ca)
 
         n_bore = len(pos)
         OD = float(np.mean(outer_at))

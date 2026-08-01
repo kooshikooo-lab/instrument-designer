@@ -155,9 +155,7 @@ TMM in `tmm_acoustics.py` is the default solver for optimization loops. OpenWind
 
 ## ADR-007: CadQuery-Based STL Generation (Replace Demakein Maker Pipeline)
 
-**Status:** Accepted (2026-07-31)
-
-**Title:** Replace demakein Maker-based STL pipeline with `backend/cadquery_export`
+**Status:** Accepted (2026-07-31)**Title:** Replace demakein Maker-based STL pipeline with `backend/cadquery_export`
 
 **Context:**
 The demakein library provides `Make_flute` and `Make_reed_instrument` Maker classes for generating STL from optimization results. These classes had several issues:
@@ -183,3 +181,52 @@ Remove `Make_flute`/`Make_reed_instrument` imports and the `_DESIGN_TO_MAKER` di
 
 **Revisions:**
 - **2026-07-31 (Revision 1):** Fixed hole positioning — holes now start at the inner bore surface (not bore centerline, which cut through empty cavity) and alternate around the circumference (even index +X, odd index −X) for more realistic tone hole placement. Added `hole_depth` as chimney height past outer wall. Extracted shared `_cut_holes()` helper to eliminate duplicate loop logic between `generate_instrument` and `generate_variable_bore_instrument`. Added `_interpolate_inner_radius()` helper for variable-bore radius lookup. STL `tolerance` default set to 0.01 (vs CadQuery default 0.001) for balance between file size (~2-7MB) and FDM print fidelity.
+
+---
+
+## ADR-008: Absolute-RMS Primary Metric Contract
+
+**Status:** Accepted (2026-07-31)
+
+**Implementation Status:** IMPLEMENTED — canonical module `backend/metrics.py` created and verified; production objectives converted in `backend/optimizer.py` (NSGA-II `freq_accuracy`), `scripts/benchmark_chalumier.py`, `scripts/refine_chalumier.py`, `scripts/debug_cone.py`.
+
+**Title:** One source of truth for tuning-error metrics; `final_rms_cents` is absolute RMS
+
+**Context:**
+Tuning-error metrics were computed inconsistently across the codebase. `scripts/benchmark_all.py` used absolute RMS with an explicit anti-median-masking comment, while `backend/optimizer.py` (NSGA-II), `scripts/benchmark_chalumier.py`, `scripts/debug_cone.py`, `scripts/refine_chalumier.py`, `backend/bore_optimizer_lbfgs.py`, and `tmm_acoustics.phase_cost_with_offset` all used median-corrected RMS. Median correction lets an optimizer score ~0¢ by making every note uniformly flat/sharp, hiding absolute intonation errors. The canonical names `final_rms_cents` / `scale_rms_cents` / `median_offset_cents` existed only on the port branch (`tmm_optimizer_sequential.py`), and `backend/ai_advisor.py` already read `final_rms_cents`.
+
+**Decision:**
+1. Create `backend/metrics.py` as the single source of truth (Laws 7/8): `compute_metrics()` returns `{final_rms_cents, scale_rms_cents, median_offset_cents, peak_error_cents}` plus `rms_cents()`, `scale_rms_cents()`, `median_offset_cents()`, `cents_from_frequencies()`. Non-finite readings are excluded; all-invalid inputs yield the `1e10` penalty sentinel.
+2. `final_rms_cents` (absolute RMS, no median correction) is the primary accuracy metric. `scale_rms_cents` (median-corrected) is a subordinate diagnostic for scale-fit/evenness.
+3. All production objectives minimize absolute RMS via `backend.metrics.rms_cents`.
+4. The optimizer result design dicts emit a `metrics` block (`final_rms_cents`, `scale_rms_cents`, `median_offset_cents`, `peak_error_cents`) alongside the legacy `objectives` keys, and the FastAPI job result (`design_server.py`) serializes it.
+
+**Consequences:**
+- Positive: Optimizers can no longer game the metric with a global offset.
+- Positive: `ai_advisor.py`, the API, and the benchmark scripts all read the same numbers from one module.
+- Negative: Previously-optimized median-corrected scores are not directly comparable with the new absolute scores.
+- Negative: Some callers still emit legacy keys (`frequency_accuracy`, `evenness`, `projection`, `rms_cents_median`) — kept as-is to avoid breaking consumers; they are not authoritative.
+
+---
+
+## ADR-009: Branch Canon and Deleted-Import Policy
+
+**Status:** Accepted (2026-07-31)
+
+**Title:** The port branch is the new laptop `main`; deleted-optimizer imports are repaired or quarantined, never silently restored
+
+**Context:**
+The repo exists in two working copies. The desktop copy is on `main` (`13a7a65` = `origin/main`); the port branch (`ccc7236`, 5 commits ahead) is now the new laptop `main` and is the authoritative reference for comparing algorithmic solutions between branches. Unique working solutions discovered on either branch are kept. Separately, on both branches, 11+ files still imported optimizer modules deleted from `backend/archived_optimizers/` (per `docs/ARCHIVED_OPTIMIZERS.md`), so `python -c "import scripts.benchmark_chalumier"` and several test files crashed with `ModuleNotFoundError`. The port branch claimed these were fixed in `PIPELINE_TEST_BUGLOG.md` but never completed the repair.
+
+**Decision:**
+1. **Branch canon:** treat the port branch as laptop `main`; compare algorithmic solutions between branches and keep unique working solutions. Do not merge remediation changes from desktop `main` into port unless the user asks.
+2. **Repair first, quarantine second:** where a live equivalent exists, re-point the import (e.g. `scripts/profile_openwind.py` → `backend.optimizer` helpers). Where no live equivalent exists (SequentialBoreOptimizer, TMMBoreOptimizerJAX, MultiStartOptimizer, ScipyBoreOptimizer, GlobalFingeringOptimizer, staged_optimize), guard the file with a deterministic `raise SystemExit("ARCHIVED: … deleted on 2026-07-31 (docs/ARCHIVED_OPTIMIZERS.md)…")` so it fails loudly with the reason instead of a bare `ModuleNotFoundError`.
+3. **Never silently restore** deleted optimizer files (Law 3; port's failed UTF-16/shadow-package restore precedent in `AI_FAILURE_PATTERNS.md`).
+4. `scripts/benchmark_chalumier.py` / `scripts/refine_chalumier.py` / `scripts/debug_cone.py` sys.path fix: point at `<repo_root>/backend` (was `<script_dir>/backend`, which does not exist).
+
+**Consequences:**
+- Positive: `python -c "import …"` and `pytest` collect no longer crash on the deleted optimizers.
+- Positive: The failure mode is self-documenting (points at the ADR and successor module).
+- Positive: Both branches can be diffed for algorithm comparison without import noise.
+- Negative: Quarantined files will not run until rewritten against `backend/two_phase_optimizer.py` or `backend/optimizer.py`.
+- Negative: Two branch copies still drift; the port's unfinished `PIPELINE_TEST_BUGLOG.md` claim remains a known discrepancy to reconcile in the port copy.

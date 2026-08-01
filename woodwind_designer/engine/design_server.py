@@ -212,6 +212,7 @@ def _run_optimization(job_id: str, req: OptimizeRequest):
             slim_designs.append({
                 "bore_profile": d["bore_profile"],
                 "objectives": d["objectives"],
+                "metrics": d.get("metrics", {}),
                 "matched_frequencies": d.get("matched_frequencies", []),
             })
 
@@ -220,6 +221,7 @@ def _run_optimization(job_id: str, req: OptimizeRequest):
             slim_best.append({
                 "bore_profile": d["bore_profile"],
                 "objectives": d["objectives"],
+                "metrics": d.get("metrics", {}),
                 "matched_frequencies": d.get("matched_frequencies", []),
                 "variables": d.get("variables", []),
             })

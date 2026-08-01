@@ -1,7 +1,17 @@
 """Test variable bore profile optimization."""
 import sys, time
 sys.path.insert(0, "C:\\instrument-designer")
-from backend.tmm_optimizer_sequential import SequentialBoreOptimizer
+
+# QUARANTINED 2026-07-31: exercises SequentialBoreOptimizer, deleted from
+# backend/archived_optimizers (docs/ARCHIVED_OPTIMIZERS.md). Superseded by
+# backend/two_phase_optimizer.py. Kept for reference; not collected by pytest.
+try:
+    from backend.tmm_optimizer_sequential import SequentialBoreOptimizer  # noqa: F401
+except ModuleNotFoundError:
+    raise SystemExit(
+        "ARCHIVED: SequentialBoreOptimizer was deleted on 2026-07-31 "
+        "(see docs/ARCHIVED_OPTIMIZERS.md). Superseded by backend/two_phase_optimizer.py."
+    )
 
 target_freqs = [466.2, 523.3, 587.3, 622.3, 698.5, 784.0, 880.0]
 fingerings = [
