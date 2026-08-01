@@ -57,6 +57,12 @@ $ErrorActionPreference = "Stop"
 $env:GIT_TERMINAL_PROMPT = "0"
 $ProgressPreference = "SilentlyContinue"
 
+# Scheduled tasks run with a limited PATH; make sure gh is reachable.
+$ghExe = "C:\Program Files\GitHub CLI\gh.exe"
+if (-not (Get-Command gh -ErrorAction SilentlyContinue) -and (Test-Path -LiteralPath $ghExe)) {
+    $env:PATH = (Split-Path -Parent $ghExe) + ";" + $env:PATH
+}
+
 if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
     Write-Error "gh CLI not found. Install it and run 'gh auth login'."
     exit 1
