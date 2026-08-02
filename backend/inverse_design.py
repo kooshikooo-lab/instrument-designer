@@ -246,7 +246,7 @@ def estimate_harmonic_magnitudes(
         k = 2.0 * math.pi / wavelength
         rad_loss = math.exp(-0.5 * (k * r_bell) ** 2)
         round_trip = cum_loss * cum_loss * rad_loss
-        magnitudes[h - 1] = 1.0 / round_trip if round_trip > 0.0 else 0.0
+        magnitudes[h - 1] = round_trip
 
     if magnitudes[0] > 0.0:
         magnitudes = magnitudes / magnitudes[0]

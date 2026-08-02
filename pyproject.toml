@@ -27,6 +27,7 @@ dependencies = [
 
 [project.optional-dependencies]
 jax = ["jax>=0.4", "jaxlib>=0.4"]
+surrogate = ["jax>=0.4", "jaxlib>=0.4", "flax", "optax", "botorch", "torch"]
 freecad = ["freecad"]
 dev = ["pytest>=7.0", "ruff>=0.1"]
 
