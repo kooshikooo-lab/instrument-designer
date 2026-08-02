@@ -38,6 +38,7 @@
 - **API/spectral search completed**: librosa (CQT/pyin; 0.11.0 installed), scipy.signal (Welch/find_peaks), sounddevice (0.5.5 installed), spectrum, OpenWInD (bore reconstruction), calcimpy, GNN surrogate paper (arXiv:2412.16817), torchlibrosa.
 - **Free compute + multimodal search completed**: Colab ~15-30 GPU-hr/wk, Kaggle ~30 GPU-hr/wk (best free fit for Phase 2G), HF ZeroGPU small, Lightning 80/hr-mo, GCP $300 credits, SageMaker Lab closing to new users Jul 30 2026; Gemini free tier strongest multimodal (audio/images/video/PDF, Flash ~10 RPM/250 RPD), Groq, OpenRouter multimodals, Qwen2.5-VL/LLaVA/InternVL open-weight. Repo already uses OpenRouter (`prompt_builder.py`/`ai_assistant.py`/`stl_verifier.py`) + Ollama; **Gemini NOT integrated** (only in chat-log).
 - **Compute research posted** (#23 comment 17867767): free-compute + Gemini multimodal findings.
+- **Boot-sequence fix committed**: `f5ae5ed` (BOOT_STATE.md + AGENTS.md pointer) and `ca67ce7` (watcher commit — previously uncommitted, at risk of loss).
 
 ### In Progress
 - `scripts/_research_msg.md` staged for #23, **not yet posted** (spectral APIs: librosa → OpenWInD → GNN surrogate; recommended order).
@@ -52,7 +53,8 @@
 - Messaging model: OS-level toast watcher handles notification (human is better at noticing) + bounded foreground `watch` prints into chat when I listen; background daemon never decides/responds unattended.
 - Spectral module: synthetic-only tests for now, no mic/recording integration; reuse `metrics.py`/`target_frequencies.py` (import, never modify — single source of truth).
 - Restart session after powershell command in compacted laptop message (nudged; laptop ack'd coordination is on-channel).
-- **Tool registry solution** (user approved direction, "integrated in a pipeline"): `docs/TOOLS.md` manifest + `scripts/toolcheck.py` (installed vs declared vs imported vs call-site) + `tests/test_tool_registry.py` guard that fails on forgotten/phantom deps. First action: reconcile pyproject to reality (torch, torchaudio, torchvision, dask, distributed, librosa, sounddevice are phantom).
+- **Tool registry solution** (proposed, user wants tools "integrated in a pipeline of some sort" — awaiting explicit build approval): `docs/TOOLS.md` manifest + `scripts/toolcheck.py` (installed vs declared vs imported vs call-site) + `tests/test_tool_registry.py` guard that fails on forgotten/phantom deps. First action: reconcile pyproject to reality (torch, torchaudio, torchvision, dask, distributed, librosa, sounddevice are phantom).
+- **Boot-state persistence** (user: "boot sequence is gone. Again." — fixed): `docs/session-logs/BOOT_STATE.md` is the versioned, reloadable session snapshot; AGENTS.md Step 0 points at it. Update at end of every session.
 
 ## Next Steps
 
