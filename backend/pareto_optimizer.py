@@ -94,6 +94,11 @@ def _build_fingerings(n_holes: int, closed_top: bool) -> list[list[str]]:
     return fingerings
 
 
+# Public alias kept for benchmark_all.resolve_fingerings compatibility.
+# Canonical implementation lives in _build_fingerings.
+build_fingerings = _build_fingerings
+
+
 def _bore_smoothness(radii: np.ndarray) -> float:
     """Second-difference standard deviation of bore radii.
 

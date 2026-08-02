@@ -71,7 +71,13 @@ def peak_cost_nearest(inst, targets, fingerings, detected_regs):
 
 
 def detect_registers(inst, targets, fingerings, max_reg=5):
-    """Detect the best register for each fingering using peak search."""
+    """Detect the best register for each fingering using peak search.
+    
+    NOTE: Per desktop decision (Discussion #23), registers should be derived
+    ONCE from the INITIAL geometry before optimization, frozen, and never
+    re-derived post-hoc. This function should only be called on the INITIAL
+    geometry before any optimization begins.
+    """
     regs = []
     for tgt, fl in zip(targets, fingerings):
         wl_guess = SPEED_OF_SOUND / tgt
@@ -288,6 +294,21 @@ def two_phase_optimize(
             fl.append('open')
         fingerings_parsed.append(fl[:len(hole_lens)])
 
+    # Detect registers ONCE from INITIAL geometry (before any optimization)
+    # Per desktop decision (Discussion #23): registers derived from initial geometry + closed_top,
+    # frozen, and never re-derived post-hoc. This prevents register drift during optimization.
+    initial_inst = tmm_instrument_from_radii(
+        x0[:6], bore_length,
+        sorted(x0[6+len(hole_lens):]),  # hole positions
+        x0[6:6+len(hole_lens)],  # hole diameters
+        hole_lens,
+        outer_diameter_mm=22.0, closed_top=False, cone_step=0.5,
+        loss_model=loss_model,
+    )
+    regs = detect_registers(inst=initial_inst, targets=targets, fingerings=fingerings_parsed)
+    if verbose:
+        print(f"  Initial registers (frozen): {regs}")
+
     # Phase 1: DE with phase cost (fast)
     print("\n  --- Phase 1: DE + phase cost (fast global search) ---")
     x1, cost1, t1 = phase1_de_search(
@@ -312,9 +333,9 @@ def two_phase_optimize(
     # Evaluate Phase 1
     print(f"\n  Phase 1 result: cost={cost1:.6f} ({t1:.1f}s)")
 
-    # Detect registers
-    regs = detect_registers(inst1, targets, fingerings)
-    print(f"  Detected registers: {regs}")
+    # Use frozen registers (detected from initial geometry)
+    if verbose:
+        print(f"  Using frozen registers: {regs}")
 
     # Phase 2: L-BFGS-B with phase-based absolute cost (smooth local refinement)
     print(f"\n  --- Phase 2: L-BFGS-B + phase-based cost (RMS cents) ---")
