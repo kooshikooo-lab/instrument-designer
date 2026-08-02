@@ -16,6 +16,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 from datetime import datetime, timezone
 
 if hasattr(sys.stdout, "reconfigure"):
@@ -115,6 +116,63 @@ def post_comment(body, discussion_num=23):
     print(f"POSTED: {url}")
 
 
+OTHER = {"laptop": "desktop", "desktop": "laptop"}
+
+
+def is_other_machine(comment):
+    """True if the comment is from the other machine (or carries no machine marker)."""
+    body = comment.get("body", "")
+    mine = MACHINE.lower()
+    marker = None
+    for candidate in ("desktop", "laptop"):
+        if f"[{candidate}]" in body.lower():
+            marker = candidate
+    if marker is None:
+        return True
+    return marker != mine
+
+
+def cmd_watch(interval=5, timeout=0):
+    """Poll until a NEW message from the other machine arrives, print it, return.
+
+    With timeout>0, gives up after that many seconds so the caller is never
+    locked out. Always returns (never blocks forever)."""
+    state = load_state()
+    last_seen = state.get("last_comment_date", "")
+    comments = fetch_comments()
+    if last_seen:
+        comments = [c for c in comments if c["date"] > last_seen]
+    new = [c for c in comments if is_other_machine(c)]
+    if new:
+        return _print_new(new, comments, state)
+    print(f"[{MACHINE}] watching for new team messages (polling every {interval}s)...", flush=True)
+    deadline = (time.time() + timeout) if timeout else None
+    while True:
+        time.sleep(interval)
+        if deadline and time.time() >= deadline:
+            print(f"[{MACHINE}] watch timed out after {timeout}s with no new messages.", flush=True)
+            return
+        comments = fetch_comments()
+        fresh = [c for c in comments if c["date"] > last_seen]
+        if not fresh:
+            continue
+        new = [c for c in fresh if is_other_machine(c)]
+        last_seen = comments[-1]["date"]
+        save_state(state)
+        if new:
+            return _print_new(new, comments, state)
+
+
+def _print_new(new, comments, state):
+    for c in new:
+        print("-" * 60)
+        print(f"[{c['date']}] {c['user']}:")
+        print(c["body"])
+    print("-" * 60)
+    state["last_comment_date"] = comments[-1]["date"]
+    save_state(state)
+
+
 def cmd_sync(as_json=False):
     state = load_state()
     last_seen = state.get("last_comment_date", "")
@@ -146,6 +204,12 @@ def main():
     p_sync = sub.add_parser("sync", help="fetch new comments since last read")
     p_sync.add_argument("--json", action="store_true", help="machine-readable output")
 
+    p_watch = sub.add_parser("watch", help="poll until the other machine posts a new message, then print it")
+    p_watch.add_argument("--interval", type=int, default=5,
+                         help="poll interval in seconds (default 5)")
+    p_watch.add_argument("--timeout", type=int, default=0,
+                         help="give up after N seconds (0 = never)")
+
     p_post = sub.add_parser("post", help="post a comment to a discussion")
     p_post.add_argument("message", nargs="?", help="message body (or use --file)")
     p_post.add_argument("--file", help="read message body from a file (avoids shell quoting issues)")
@@ -156,6 +220,8 @@ def main():
 
     if args.cmd == "sync":
         cmd_sync(as_json=args.json)
+    elif args.cmd == "watch":
+        cmd_watch(interval=args.interval, timeout=args.timeout)
     elif args.cmd == "post":
         if args.file:
             with open(args.file, "r", encoding="utf-8") as f:
