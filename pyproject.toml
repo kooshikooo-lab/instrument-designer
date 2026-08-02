@@ -27,6 +27,7 @@ dependencies = [
 
 [project.optional-dependencies]
 jax = ["jax>=0.4", "jaxlib>=0.4"]
+surrogate = ["jax>=0.4", "jaxlib>=0.4", "flax", "optax", "botorch", "torch"]
 freecad = ["freecad"]
 dev = ["pytest>=7.0", "ruff>=0.1"]
 
@@ -43,10 +44,12 @@ include = ["woodwind_designer*"]
 python_files = [
     "test_architecture.py",
     "test_cadquery_instrument.py",
+    "test_inverse_design.py",
     "test_openwind_solver.py",
     "test_phase2_objective.py",
     "test_properties.py",
     "test_server_routes.py",
+    "test_surrogate.py",
     "test_tmm.py",
 ]
 
