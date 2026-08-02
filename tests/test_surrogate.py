@@ -83,3 +83,29 @@ def test_generate_training_data_shape():
         assert tgt.shape == (4,)
         assert np.all(np.isfinite(inp))
         assert np.all(np.isfinite(tgt))
+
+
+def test_bi_objective_bo_end_to_end():
+    """Smoke-test BiObjectiveBO wiring (SingleTaskGP API + qNEHVI loop)."""
+    botorch = pytest.importorskip("botorch")
+
+    from backend.surrogate import BiObjectiveBO, BOConfig
+
+    dim = 4
+    bounds = np.array([[0.0, 1.0]] * dim)
+
+    def objective_fn(x):
+        # Simple bi-objective: minimize both norms of x
+        return np.stack([x[:, 0], x[:, 1]], axis=1)
+
+    bo = BiObjectiveBO(
+        objective_fn=objective_fn,
+        bounds=bounds,
+        config=BOConfig(n_initial=4, n_iterations=2, batch_size=2, mc_samples=32),
+    )
+    pareto_x, pareto_y = bo.optimize(None, n_iterations=2)
+
+    assert pareto_x.ndim == 2 and pareto_x.shape[1] == dim
+    assert pareto_y.ndim == 2 and pareto_y.shape[1] == 2
+    assert np.all(np.isfinite(pareto_y))
+
