@@ -107,7 +107,7 @@ ETA = 1.846e-5       # Pa*s
 KAPPA = 0.02624      # W/(m*K)
 CP = 1005.0          # J/(kg*K)
 GAMMA = 1.4          # ratio of specific heats
-C_BOUNDARY_MM_S = 343200.0  # c used inside KeefeLoss._boundary_layers
+C_BOUNDARY_MM_S = 346100.0  # c used inside KeefeLoss._boundary_layers (matches global SPEED_OF_SOUND)
 
 
 # ---------------------------------------------------------------------------
@@ -152,7 +152,7 @@ def _keefe_gamma_expr():
     `bore_loss`::
 
         lam_m   = wavelength * 1e-3            # mm -> m
-        f       = 343200.0 / lam_m             # Hz (c = 343.2 m/s)
+        f       = 346100.0 / lam_m             # Hz (c = 346.1 m/s, matches global SPEED_OF_SOUND)
         omega   = 2*pi*f
         delta_v = sqrt(2*ETA/(RHO*omega))*1000 # m -> mm
         delta_t = sqrt(2*KAPPA/(RHO*CP*omega))*1000
