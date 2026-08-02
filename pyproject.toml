@@ -42,6 +42,7 @@ include = ["woodwind_designer*"]
 # tests/ contains many ad-hoc scripts (module-level execution) that are not
 # pytest tests. Collect only the genuine pytest files to avoid import hangs.
 python_files = [
+    "test_analytical_pipes.py",
     "test_architecture.py",
     "test_cadquery_instrument.py",
     "test_inverse_design.py",
