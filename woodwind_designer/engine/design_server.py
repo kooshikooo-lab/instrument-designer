@@ -658,14 +658,17 @@ def export_cadquery(req: CadQueryExportRequest):
     """Generate STL via CadQuery from preset or custom parameters."""
     import sys, io, time
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
-    from backend.cadquery_export import generate_instrument, INSTRUMENTS
+    from backend.cadquery_export import generate_instrument, generate_folded_bore_instrument, INSTRUMENTS
 
     if req.preset:
         if req.preset not in INSTRUMENTS:
             raise HTTPException(400, f"Unknown preset: {req.preset}. Available: {list(INSTRUMENTS.keys())}")
         spec = {k: v for k, v in INSTRUMENTS[req.preset].items() if k != "_meta"}
         t0 = time.time()
-        solid = generate_instrument(**spec)
+        if "bend_radius_mm" in spec:
+            solid = generate_folded_bore_instrument(**spec)
+        else:
+            solid = generate_instrument(**spec)
         gen_time = time.time() - t0
         filename = f"{req.preset}.stl"
     else:

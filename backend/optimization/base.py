@@ -16,7 +16,8 @@ class OptimizationResult:
         success: whether optimization converged
         parameters: optimized parameter values
         cost: final cost value
-        rms_cents: RMS intonation error in cents
+        rms_cents: absolute RMS intonation error in cents (PRIMARY — accuracy)
+        rms_cents_median: median-corrected RMS in cents (SECONDARY — evenness)
         peak_cents: peak intonation error in cents
         n_evaluations: number of function evaluations
         wall_time: optimization time in seconds
@@ -25,7 +26,8 @@ class OptimizationResult:
     success: bool
     parameters: Dict[str, Any]
     cost: float
-    rms_cents: float = 0.0
+    rms_cents: float = 0.0          # absolute RMS — primary (accuracy)
+    rms_cents_median: float = 0.0   # median-corrected — secondary (evenness)
     peak_cents: float = 0.0
     n_evaluations: int = 0
     wall_time: float = 0.0

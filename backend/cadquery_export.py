@@ -28,19 +28,28 @@ import time
 import os
 
 
-def _cut_holes(solid, holes, wall_thickness, hole_depth, inner_radius_at):
+def _cut_single_hole(solid, diam, x, z, wall_thickness, hole_depth):
+    """Cut one tone hole through the tube wall at (x, z).
+
+    The hole cylinder is horizontal (axis along +X), entering the tube from
+    the side, with its center at axial position ``z`` and side offset ``x``.
+    """
     import cadquery as cq
+    cyl = (
+        cq.Workplane("XY")
+        .circle(diam / 2)
+        .extrude(wall_thickness + hole_depth)
+        .rotate((0, 0, 0), (0, 1, 0), 90)
+        .translate((x, 0, z))
+    )
+    return solid.cut(cyl)
+
+
+def _cut_holes(solid, holes, wall_thickness, hole_depth, inner_radius_at):
     for i, (pos, diam) in enumerate(holes):
         inner_r = inner_radius_at(pos)
         side = 1 if i % 2 == 0 else -1
-        cyl = (
-            cq.Workplane("XY")
-            .circle(diam / 2)
-            .extrude(wall_thickness + hole_depth)
-            .rotate((0, 0, 0), (0, 1, 0), 90)
-            .translate((inner_r * side, 0, pos))
-        )
-        solid = solid.cut(cyl)
+        solid = _cut_single_hole(solid, diam, inner_r * side, pos, wall_thickness, hole_depth)
     return solid
 
 
@@ -188,6 +197,115 @@ def generate_variable_bore_instrument(
         solid = solid.union(cap)
 
     solid = _cut_holes(solid, holes, wall_thickness, hole_depth, lambda pos: _interpolate_inner_radius(profile, pos))
+
+    return solid
+
+
+def generate_folded_bore_instrument(
+    bore_length: float,
+    bore_diameter: float,
+    wall_thickness: float,
+    bend_radius_mm: float,
+    holes: list[tuple[float, float]] = None,
+    closed_top: bool = False,
+    hole_depth: float = None,
+):
+    """Generate a folded (paperclip U-bend) 3D instrument solid.
+
+    The bore follows a U-shaped centerline in the XZ plane: two parallel
+    straight legs joined by a 180 deg semicircular bend. The total centerline
+    length equals ``bore_length``, so the acoustic length is unchanged by the
+    fold. Cylindrical bore only.
+
+    Layout (tube axis vertical, +Z up):
+        leg1 (mouthpiece / closed end) at x=0, from z=0 up to z=L1
+        180-deg bend centered at (Rb, 0, 0), from (0, 0, 0) to (2*Rb, 0, 0)
+        leg2 (bell / open end) at x=2*Rb, from z=0 up to z=L2
+
+    Unfolded position p is measured from the bell end (p=0 at the top of
+    leg2), matching the convention used by :func:`generate_instrument`.
+    Tone holes whose unfolded position falls inside the bend are skipped
+    (real folded instruments carry keys on the straight sections).
+
+    Args:
+        bore_length: total centerline (acoustic) length in mm
+        bore_diameter: inner bore diameter in mm (cylindrical)
+        wall_thickness: wall thickness in mm
+        bend_radius_mm: radius of the 180-deg U-bend centerline
+        holes: list of (position_from_bell_mm, diameter_mm) tuples
+        closed_top: cap the mouthpiece (closed) end
+        hole_depth: how deep tone holes cut (default: wall_thickness + 2mm)
+    Returns:
+        cadquery Workplane (solid)
+    """
+    import math
+
+    import cadquery as cq
+
+    if holes is None:
+        holes = []
+    if hole_depth is None:
+        hole_depth = wall_thickness + 2
+
+    if bend_radius_mm <= 0:
+        raise ValueError(f"bend_radius_mm must be positive, got {bend_radius_mm}")
+    bend_arc = math.pi * bend_radius_mm
+    if bore_length <= bend_arc:
+        raise ValueError(
+            f"bore_length {bore_length} must exceed pi*bend_radius "
+            f"{bend_arc:.1f} to fit a full U-bend"
+        )
+
+    inner_r = bore_diameter / 2.0
+    outer_r = inner_r + wall_thickness
+    leg1 = (bore_length - bend_arc) / 2.0  # mouthpiece (closed) leg, x=0
+    leg2 = bore_length - bend_arc - leg1   # bell (open) leg, x=2*Rb
+
+    def _path():
+        # Fresh path per sweep: CadQuery's sweep mutates the path workplane.
+        # Centerline in the XZ plane: down leg1, 180-deg U-bend, up leg2.
+        return (
+            cq.Workplane("XZ")
+            .moveTo(0, leg1)
+            .lineTo(0, 0)
+            .threePointArc((bend_radius_mm, -bend_radius_mm), (2 * bend_radius_mm, 0))
+            .lineTo(2 * bend_radius_mm, leg2)
+        )
+
+    def _sweep(radius):
+        # Circle profile at the mouthpiece end (path start), swept along the
+        # full centerline. isFrenet keeps the tube straight (no twisting).
+        return (
+            cq.Workplane("XY", origin=(0, 0, leg1))
+            .circle(radius)
+            .sweep(_path(), isFrenet=True)
+        )
+
+    solid = _sweep(outer_r).cut(_sweep(inner_r))
+
+    if closed_top:
+        cap = (
+            cq.Workplane("XY", origin=(0, 0, 0))
+            .circle(outer_r)
+            .extrude(wall_thickness)
+        )
+        cap = cap.translate((0, 0, leg1))
+        solid = solid.union(cap)
+
+    # Map unfolded hole positions onto the straight legs; skip bend region.
+    bend_start = leg2
+    bend_end = leg2 + bend_arc
+    for i, (pos, diam) in enumerate(holes):
+        side = 1 if i % 2 == 0 else -1
+        if pos <= leg2:
+            x = 2 * bend_radius_mm + inner_r * side
+            z = leg2 - pos
+        elif pos < bend_end:
+            continue  # inside the U-bend: not modeled this round
+        else:
+            x = inner_r * side
+            z = pos - bend_end
+        solid = _cut_single_hole(solid, diam, x, z, wall_thickness, hole_depth)
 
     return solid
 
@@ -930,38 +1048,52 @@ INSTRUMENTS = {
 
     "contra_alto_clarinet_Eb": {
         "bore_length": 1600.0, "bore_diameter": 32.0, "wall_thickness": 6.0,
-        "closed_top": True,
+        "closed_top": True, "bend_radius_mm": 70.0,
         "holes": [(200,11.0),(330,11.0),(460,11.0),(590,11.0),(720,11.0),(850,11.0),(980,11.0),(1110,11.0),(1240,11.0),(1370,11.0)],
-        "_meta": {"display_name": "Contra-Alto Clarinet Eb (Reference)", "family": "Clarinet", "subcategory": "Contra-Alto",
-                  "verified": False, "source": "Standard bore specs (Leblanc 340 Paperclip)",
-                  "description": "Contra-alto clarinet in Eb. One octave below alto sax. Bore 32mm. Low Eb/C models. Powerful low register. Leblanc 340 'Paperclip' is popular compact version."},
+        "_meta": {"display_name": "Contra-Alto Clarinet Eb (Folded Paperclip)", "family": "Clarinet", "subcategory": "Contra-Alto",
+                  "verified": False, "source": "Leblanc 340/350 paperclip layout (30mm bore ref); 32mm spec bore",
+                  "description": "Contra-alto clarinet in Eb, folded paperclip U-bend. One octave below alto sax. Bore 32mm. Low Eb/C models. Leblanc 'Paperclip' compact form. STL models the fold in 3D."},
     },
 
     "contra_bass_clarinet_Bb": {
         "bore_length": 1900.0, "bore_diameter": 38.0, "wall_thickness": 7.0,
-        "closed_top": True,
+        "closed_top": True, "bend_radius_mm": 80.0,
         "holes": [(250,13.0),(400,13.0),(550,13.0),(700,13.0),(850,13.0),(1000,13.0),(1150,13.0),(1300,13.0),(1450,13.0),(1600,13.0)],
-        "_meta": {"display_name": "Contra-Bass Clarinet Bb (Reference)", "family": "Clarinet", "subcategory": "Contra-Bass",
-                  "verified": False, "source": "Standard bore specs",
-                  "description": "Contra-bass clarinet in Bb. One octave below bass clarinet. Bore 38mm. Low C/Eb. Deepest standard clarinet. Doubled-back body."},
+        "_meta": {"display_name": "Contra-Bass Clarinet Bb (Folded Paperclip)", "family": "Clarinet", "subcategory": "Contra-Bass",
+                  "verified": False, "source": "Leblanc 340 paperclip (30mm bore ref); 38mm spec bore",
+                  "description": "Contra-bass clarinet in Bb, folded paperclip U-bend. One octave below bass clarinet. Bore 38mm. Leblanc 340 'Paperclip' doubled-back body."},
     },
 
     "octo_contra_alto_clarinet_EEb": {
         "bore_length": 2200.0, "bore_diameter": 42.0, "wall_thickness": 8.0,
-        "closed_top": True,
+        "closed_top": True, "bend_radius_mm": 90.0,
         "holes": [(300,14.0),(450,14.0),(600,14.0),(750,14.0),(900,14.0),(1050,14.0),(1200,14.0),(1350,14.0),(1500,14.0),(1650,14.0)],
-        "_meta": {"display_name": "Octo-Contra-Alto Clarinet EEb (Octocontralto)", "family": "Clarinet", "subcategory": "Sub-Contra",
-                  "verified": False, "source": "JDWoodwinds prototype 2025",
-                  "description": "Octo-contra-alto (octocontralto) in EEb. One of two sizes playing below 20Hz. JDWoodwinds prototype 2025 (2nd prototype range to low D, extended to low C 2026). Lowest note 19.445Hz. Rare experimental."},
+        "_meta": {"display_name": "Octo-Contra-Alto Clarinet EEb (Folded Paperclip)", "family": "Clarinet", "subcategory": "Sub-Contra",
+                  "verified": False, "source": "JDWoodwinds prototype 2025; paperclip-style fold",
+                  "description": "Octo-contra-alto (octocontralto) in EEb, folded paperclip U-bend. Two sizes playing below 20Hz. JDWoodwinds prototype 2025 (2nd prototype range to low D, extended to low C 2026). Lowest note 19.445Hz."},
     },
 
     "octo_contra_bass_clarinet_BBB": {
         "bore_length": 2600.0, "bore_diameter": 48.0, "wall_thickness": 9.0,
-        "closed_top": True,
+        "closed_top": True, "bend_radius_mm": 100.0,
         "holes": [(350,16.0),(500,16.0),(650,16.0),(800,16.0),(950,16.0),(1100,16.0),(1250,16.0),(1400,16.0),(1550,16.0),(1700,16.0)],
-        "_meta": {"display_name": "Octo-Contrabass Clarinet BBB (Octocontrabass)", "family": "Clarinet", "subcategory": "Sub-Contra",
-                  "verified": False, "source": "Leblanc original / Martin Foag prototype",
-                  "description": "Octocontrabass clarinet in BBB. Only two playable instruments built: Leblanc original and Martin Foag prototype. Deepest woodwind. Lowest notes below human hearing."},
+        "_meta": {"display_name": "Octo-Contrabass Clarinet BBB (Folded Paperclip)", "family": "Clarinet", "subcategory": "Sub-Contra",
+                  "verified": False, "source": "Leblanc original / Martin Foag prototype; paperclip-style fold",
+                  "description": "Octocontrabass clarinet in BBB, folded paperclip U-bend. Only two playable instruments built: Leblanc original and Martin Foag prototype. Deepest woodwind."},
+    },
+
+    # ═══════════════════════════════════════════════════════════════════════════════════
+    #  FOLDED HIGHER-KEY VARIANT (TEST) — paperclip-style U-bend, bass clarinet and below.
+    #  Compact bass clarinets are the historical precedent for folding the tube.
+    # ════════════════════════════════════════════════════════════════════════════════════
+
+    "bass_clarinet_7hole_folded": {
+        "bore_length": 1211.3, "bore_diameter": 25.0, "wall_thickness": 6.0,
+        "closed_top": True, "bend_radius_mm": 50.0,
+        "holes": [(175.9,11.0),(292.9,11.0),(337.5,11.0),(444.6,11.0),(532.0,11.0),(609.8,11.0),(636.4,11.0)],
+        "_meta": {"display_name": "Bass Clarinet Bb (Folded, Test)", "family": "Clarinet", "subcategory": "Bass",
+                  "verified": False, "source": "config/bass_clarinet_7hole.json folded into a compact U-bend",
+                  "description": "7-hole bass clarinet with the same acoustic length (1211.3mm) folded into a compact paperclip U-bend. Test variant for compact low clarinets."},
     },
 
     # Professional Bass Clarinet (3D printable) - Printgear3D Cults3D
@@ -1069,7 +1201,10 @@ def generate_by_name(name: str, output_dir: str = "output"):
         raise ValueError(f"Unknown instrument: {name}. Available: {list(INSTRUMENTS.keys())}")
 
     spec = {k: v for k, v in INSTRUMENTS[name].items() if k != "_meta"}
-    solid = generate_instrument(**spec)
+    if "bend_radius_mm" in spec:
+        solid = generate_folded_bore_instrument(**spec)
+    else:
+        solid = generate_instrument(**spec)
 
     stl_path = os.path.join(output_dir, f"{name}.stl")
     step_path = os.path.join(output_dir, f"{name}.step")
