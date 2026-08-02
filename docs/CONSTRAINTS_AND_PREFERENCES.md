@@ -15,23 +15,62 @@
 This project runs on TWO machines (laptop and desktop) that must coordinate through
 GitHub **Discussion #23**. Do not start any other work until you have checked it.
 
-Run:
+Run **twice per session**: once at the start, once at the end (before you stop):
 
 ```
 python scripts/team_chat.py sync
 ```
 
-Rules:
-
-- **If it prints new messages:** read every one of them, then **state in your response**
+- If it prints new messages, READ every one of them, then **state in your response**
   what the other machine said and whether it is waiting on you.
-- **If a message is addressed to you or asks for a decision:** reply in the SAME channel
-  before continuing: `python scripts/team_chat.py post "your reply"`.
-- **Never relay through the human.** If you need something from the other machine, post
-  it to Discussion #23. The human must never be the message bus between the two computers.
 - `sync` keeps a per-machine cursor (scripts/.team_state.json), so it only shows NEW messages.
 
 Skipping this step is the #1 cause of the human having to mediate. It is not optional.
+The rest of this section is the complete communications protocol — it is hard-coded here
+so it survives context drops. You do not need another file to know how to communicate.
+
+#### When to post to the channel
+
+Post a message to Discussion #23 whenever you:
+- start a task that affects shared state (repo, artifacts, runs, decisions),
+- finish a task the other machine needs to know about,
+- make a decision or change a convention the other machine relies on,
+- are blocked and need the other machine to do something.
+
+Post with:
+
+```
+python scripts/team_chat.py post --file path\to\message.md
+```
+
+Use `--file` (not inline text) for anything longer than a single short line.
+For other threads (e.g. Discussion #46), pass `--discussion N`.
+
+#### Replying to messages
+
+- Reply inside Discussion #23 to the relevant comment via `gh`:
+
+  ```
+  gh api repos/kooshikooo-lab/instrument-designer/discussions/23/comments \
+    -f body="your reply" -f reply_to_id=<parent_comment_id>
+  ```
+
+- Answer what was asked; if you cannot fully act, state exactly what you did and
+  what remains. Do not silently drop a request.
+
+#### Protocol rules
+
+1. **Never relay through the human.** If the other machine posted something, act
+   on it directly. The human must never be the message bus between the two computers.
+2. **Keep the channel canonical.** Decisions made in #23 win. If a conversation
+   also happens in a doc or another thread, mirror the binding decision back to #23.
+3. **Never lose work.** If you cannot finish something, leave a checkpoint commit
+   or a clearly marked stub, and say so in the channel.
+4. **Prefer direct-to-main, then audit.** Commits go to `main`; work lives in
+   feature branches that merge into `main`. If a change is provisional, mark it
+   for audit in the commit message (e.g. `AUDIT:` prefix) and say so in the channel.
+5. **Do not commit regenerable artifacts** (STLs, large JSON dumps, logs). The
+   `.gitignore` covers most; check with `git status` before committing.
 
 ### ☐ Step 1 — Read the AI Constitution
 
