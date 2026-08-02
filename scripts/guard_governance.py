@@ -16,7 +16,10 @@ Exit codes: 0 = OK (no change, or authorized change), 1 = blocked.
 import subprocess
 import sys
 
-GOVERNANCE_FILE = "docs/CONSTRAINTS_AND_PREFERENCES.md"
+GOVERNANCE_FILES = [
+    # The boot sequence + communications protocol live here. Instruction-only.
+    "docs/CONSTRAINTS_AND_PREFERENCES.md",
+]
 MARKER = "GOVERNANCE-UPDATE"
 
 
@@ -43,11 +46,14 @@ def commit_message(message_file=None):
 
 
 def governance_changed(staged=False):
-    if staged:
-        out, _ = run_git(["diff", "--cached", "HEAD", "--", GOVERNANCE_FILE])
-    else:
-        out, _ = run_git(["diff", "HEAD~1", "HEAD", "--", GOVERNANCE_FILE])
-    return bool(out.strip())
+    for f in GOVERNANCE_FILES:
+        if staged:
+            out, _ = run_git(["diff", "--cached", "HEAD", "--", f])
+        else:
+            out, _ = run_git(["diff", "HEAD~1", "HEAD", "--", f])
+        if out.strip():
+            return True
+    return False
 
 
 def main():
@@ -62,11 +68,12 @@ def main():
     msg = commit_message(args.message_file)
     if governance_changed(staged=args.staged):
         if MARKER in msg:
-            print(f"OK: {GOVERNANCE_FILE} changed with {MARKER} authorization.")
+            print(f"OK: governance file changed with {MARKER} authorization.")
             return 0
         print(
-            f"BLOCKED: {GOVERNANCE_FILE} was modified without {MARKER} in the "
-            f"commit message.\n"
+            f"BLOCKED: a protected governance file was modified without {MARKER} "
+            f"in the commit message.\n"
+            f"Protected: {', '.join(GOVERNANCE_FILES)}\n"
             f"This file is instruction-only. If the edit is authorized, include "
             f"'{MARKER}' in the commit message.",
             file=sys.stderr,

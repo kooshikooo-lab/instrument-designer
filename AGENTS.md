@@ -26,6 +26,23 @@ python scripts/team_chat.py post --file path\to\msg.md   # to send (use --file)
 - Provisional changes: mark `AUDIT:` in the commit message.
 - Don't commit regenerable artifacts (STLs, JSON dumps, logs).
 
+## MANDATORY — enable the governance guard (once per clone)
+
+The governance file (`docs/CONSTRAINTS_AND_PREFERENCES.md`) is instruction-only
+and protected. Enable the guard on this clone so your commits can't accidentally
+rewrite it:
+
+```
+powershell -ExecutionPolicy Bypass -File scripts\install_hooks.ps1
+```
+
+This sets `core.hooksPath` to the versioned hooks inside the repo (nothing is
+copied into `.git/hooks`), so hook updates merge with the repo. After that, any
+commit touching a protected governance file requires `GOVERNANCE-UPDATE` in the
+commit message; CI (`governance-guard.yml`) enforces the same rule on every push.
+If you see a BLOCKED message from the hook, you were about to rewrite the boot
+sequence without authorization — re-read the file instead of editing it.
+
 ## Environment
 
 - Repo: `kooshikooo-lab/instrument-designer` (remote: `origin`)
