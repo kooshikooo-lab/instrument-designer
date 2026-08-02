@@ -10,6 +10,29 @@
 
 ## BOOT SEQUENCE
 
+### [Step 0] - Sync with the team channel (MANDATORY, do this first)
+
+This project runs on TWO machines (laptop and desktop) that must coordinate through
+GitHub **Discussion #23**. Do not start any other work until you have checked it.
+
+Run:
+
+```
+python scripts/team_chat.py sync
+```
+
+Rules:
+
+- **If it prints new messages:** read every one of them, then **state in your response**
+  what the other machine said and whether it is waiting on you.
+- **If a message is addressed to you or asks for a decision:** reply in the SAME channel
+  before continuing: `python scripts/team_chat.py post "your reply"`.
+- **Never relay through the human.** If you need something from the other machine, post
+  it to Discussion #23. The human must never be the message bus between the two computers.
+- `sync` keeps a per-machine cursor (scripts/.team_state.json), so it only shows NEW messages.
+
+Skipping this step is the #1 cause of the human having to mediate. It is not optional.
+
 ### ☐ Step 1 — Read the AI Constitution
 
 Read `docs/AI_CONSTITUTION.md` completely.
@@ -108,4 +131,5 @@ Before finishing:
 - [ ] Architecture preserved (no new coordinate systems, no hidden physics)
 - [ ] `ARCHITECTURE_CHECKLIST.md` completed
 - [ ] `COMPLIANCE_CHECK.md` run at least once in this session
+- [ ] **Posted a session-status update to Discussion #23** via `python scripts/team_chat.py post "..."` (what you did, what you need, what's blocked)
 - [ ] If you made a mistake, log it in `AI_FAILURE_PATTERNS.md`
