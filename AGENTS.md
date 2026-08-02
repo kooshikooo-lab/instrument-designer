@@ -12,7 +12,18 @@ NOT be used to relay messages between machines.
 
 The FULL communications protocol is hard-coded in
 `docs/CONSTRAINTS_AND_PREFERENCES.md` under **Step 0**. Read it. It survives
-context drops. Highlights:
+context drops.
+
+Also reload the live session state from
+`docs/session-logs/BOOT_STATE.md` — this is the versioned snapshot of current
+goal, progress, next steps, decisions, and sync context. It survives context
+drops; update it at the end of every session.
+
+**Mid-session context loss:** if your context has been compacted, summarized,
+or you notice you can no longer recall this session's earlier details, STOP and
+RE-READ this file plus `docs/session-logs/BOOT_STATE.md` before doing anything
+else. This happens frequently mid-session — it is the #1 recurring failure.
+Highlights:
 
 ```
 python scripts/team_chat.py sync      # at session start AND before you stop
