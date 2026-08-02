@@ -262,35 +262,23 @@ def generate_training_data(n_samples: int,
             hl,
             [bore_length, outer_d, float(closed_top)]
         ])
-        
-        # Evaluate with TMM
-        if use_jax_tmm:
-            from backend.jax_optimizer import refine_sequential
-            from backend.benchmark_all import INSTRUMENTS
-            
-            cfg = {
-                "targets": np.array(targets),
-                "closed_top": closed_top,
-                "bore_radius": 7.25,
-                "outer_diameter": outer_d,
-                "hole_diameter": hd.mean(),
-                "hole_length": hl.mean(),
-            }
-            
-            try:
-                rms, L, radii_opt, hp_opt, hd_opt, hl_opt, dt = refine_sequential(
-                    cfg, use_jax_bore=True, use_phase_cost=True
-                )
-                target_vector = np.array([rms, 0.0, 0.0, 0.0])  # RMS, EFP, threshold, peak_error
-            except Exception:
-                target_vector = np.array([1e10, 0.0, 0.0, 0.0])
-        else:
-            # Fallback: use dummy targets for now
-            target_vector = np.array([np.random.uniform(0.1, 50.0), 
-                                      np.random.uniform(0.5, 2.0),
-                                      np.random.uniform(500.0, 5000.0),
-                                      np.random.uniform(0.1, 20.0)])
-        
+
+        # Evaluate with direct TMM (Petiot-style: geometry -> intonation descriptors,
+        # one forward pass, no per-sample optimization). Uses ADR-008 canonical metrics.
+        from backend.jax_optimizer import eval_metrics
+
+        try:
+            m = eval_metrics(radii, bore_length, hp, hd, hl, closed_top,
+                             targets=np.array(targets), outer_diameter_mm=outer_d)
+            target_vector = np.array([
+                m["final_rms_cents"],
+                m["peak_error_cents"],
+                m["median_offset_cents"],
+                m["scale_rms_cents"],
+            ])
+        except Exception:
+            target_vector = np.array([1e10, 1e10, 0.0, 1e10])
+
         # Normalize input features
         input_norm = np.concatenate([
             radii / 15.0,
@@ -299,9 +287,9 @@ def generate_training_data(n_samples: int,
             hl / 5.0,
             [bore_length / 400.0, outer_d / 25.0, float(closed_top)]
         ])
-        
+
         data.append((input_norm, target_vector))
-    
+
     return data
 
 

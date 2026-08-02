@@ -29,11 +29,11 @@ c = SPEED_OF_SOUND
 # Cost evaluation (matches benchmark_all.py eval_all exactly)
 # ============================================================================
 
-def eval_all(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg=None):
-    """RMS cents error — same logic as benchmark_all.py eval_all."""
+def eval_cents(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg=None, outer_diameter_mm=22.0):
+    """Per-note cents deviations for a geometry (same logic as eval_all)."""
     inst = tmm_instrument_from_radii(
         radii, bore_length, hp, hd, hl,
-        outer_diameter_mm=22.0, closed_top=closed_top, cone_step=0.5,
+        outer_diameter_mm=outer_diameter_mm, closed_top=closed_top, cone_step=0.5,
     )
     if n_reg is None:
         n_reg = 1 if closed_top else 2
@@ -53,10 +53,23 @@ def eval_all(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg=None):
     cents = []
     for a, t in zip(freqs, targets):
         cents.append(1200.0 * math.log2(a / t) if a > 0 and math.isfinite(a) else 1e10)
+    return cents
+
+
+def eval_all(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg=None, outer_diameter_mm=22.0):
+    """RMS cents error — same logic as benchmark_all.py eval_all."""
+    cents = eval_cents(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg, outer_diameter_mm)
     ca = np.array(cents)
     if np.any(np.abs(ca) > 1e5):
         return 1e10
     return float(np.sqrt(np.mean(ca ** 2)))
+
+
+def eval_metrics(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg=None, outer_diameter_mm=22.0) -> dict:
+    """Canonical metric dict (ADR-008) for a geometry, via eval_cents."""
+    from backend.metrics import compute_metrics
+    cents = eval_cents(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg, outer_diameter_mm)
+    return compute_metrics(cents)
 
 
 def safe_eval(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg=None):
