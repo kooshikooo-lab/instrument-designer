@@ -109,3 +109,26 @@ def test_bi_objective_bo_end_to_end():
     assert pareto_y.ndim == 2 and pareto_y.shape[1] == 2
     assert np.all(np.isfinite(pareto_y))
 
+
+def test_hybrid_warm_start_decode():
+    """Decode normalized 30-dim vector back to physical geometry (round-trip)."""
+    from scripts.hybrid_warm_start import decode
+
+    x = np.array([
+        7.5 / 15.0, 9.0 / 15.0, 5.5 / 15.0, 12.0 / 15.0, 6.0 / 15.0, 8.0 / 15.0,  # radii
+        100.0 / 400.0, 150.0 / 400.0, 200.0 / 400.0, 250.0 / 400.0,
+        300.0 / 400.0, 320.0 / 400.0, 340.0 / 400.0,                                # hp
+        7.0 / 10.0, 7.0 / 10.0, 7.0 / 10.0, 7.0 / 10.0, 7.0 / 10.0,
+        7.0 / 10.0, 7.0 / 10.0,                                                      # hd
+        3.0 / 5.0, 3.0 / 5.0, 3.0 / 5.0, 3.0 / 5.0, 3.0 / 5.0, 3.0 / 5.0,
+        3.0 / 5.0,                                                                   # hl
+        350.0 / 400.0, 22.0 / 25.0, 1.0,                                             # L, outer_d, closed
+    ])
+    radii, L, hp, hd, hl, outer_d = decode(x)
+    assert radii.shape == (6,)
+    assert hp.shape == (7,) and hd.shape == (7,) and hl.shape == (7,)
+    np.testing.assert_allclose(radii[0], 7.5)
+    np.testing.assert_allclose(L, 350.0)
+    np.testing.assert_allclose(hp[0], 100.0)
+    np.testing.assert_allclose(outer_d, 22.0)
+
