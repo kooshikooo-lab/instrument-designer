@@ -6,9 +6,26 @@ Generates training samples in parallel across Dask workers.
 
 from __future__ import annotations
 import numpy as np
-from dask.distributed import Client, as_completed
+from dask.distributed import Client, as_completed, WorkerPlugin
 from backend.surrogate import generate_training_data, build_surrogate_pipeline, SurrogateConfig
 import time
+
+
+class InstallPackagePlugin(WorkerPlugin):
+    """Worker plugin to install the instrument-designer package on each worker."""
+    
+    def setup(self, worker):
+        """Called when the plugin is attached to a worker."""
+        import subprocess
+        import sys
+        try:
+            subprocess.run([
+                "python", "-m", "pip", "install", "-e", 
+                r"C:\instrument-designer", "--quiet"
+            ], check=True, capture_output=True)
+            print(f"Worker {worker.id}: Package installed successfully")
+        except subprocess.CalledProcessError as e:
+            print(f"Worker {worker.id}: Failed to install package: {e}")
 
 
 def generate_batch(batch_id: int, n_samples: int, bore_param_ranges: dict) -> list:
@@ -46,6 +63,15 @@ def generate_training_data_distributed(
         }
     
     client = Client('tcp://100.100.66.117:8786', timeout='30s')
+    
+    # Register worker plugin to install package on each worker
+    client.register_plugin(InstallPackagePlugin(), name="install-package")
+    print("Registered worker plugin for package installation")
+    
+    # Wait a moment for plugin to install on all workers
+    import time
+    time.sleep(5)
+    
     print(f"Connected to scheduler with {len(client.ncores())} workers, {sum(client.ncores().values())} cores")
     
     n_batches = (n_total + batch_size - 1) // batch_size
