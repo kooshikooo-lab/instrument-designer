@@ -27,7 +27,9 @@ dependencies = [
 
 [project.optional-dependencies]
 jax = ["jax>=0.4", "jaxlib>=0.4"]
-surrogate = ["jax>=0.4", "jaxlib>=0.4", "flax", "optax", "botorch", "torch"]
+surrogate = ["jax>=0.4", "jaxlib>=0.4", "flax", "optax", "botorch", "torch", "gpytorch"]
+cad = ["cadquery>=2.4", "build123d>=0.7", "vtk>=9.0", "trimesh>=4.0"]
+bench = ["dask[distributed]>=2024.1", "psutil>=5.9", "cma>=3.0"]
 freecad = ["freecad"]
 dev = ["pytest>=7.0", "ruff>=0.1"]
 
@@ -52,6 +54,7 @@ python_files = [
     "test_server_routes.py",
     "test_surrogate.py",
     "test_tmm.py",
+    "test_tool_registry.py",
 ]
 
 [tool.ruff]
