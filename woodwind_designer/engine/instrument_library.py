@@ -416,6 +416,8 @@ LIBRARY = [
                     "Fixes intonation issues of the original design. Barrel fits standard "
                     "Eb mouthpiece. Raised key blocks away from body.",
     ),
+    InstrumentEntry(
+        name="Curvy Clarinet",
         family="Wind", subcategory="Woodwind", type_label="Single Reed",
         range="Soprano", key="C",
         source="Printables – Nkosi Smith",
@@ -1272,6 +1274,7 @@ LIBRARY = [
                     "Uses contra clarinet reed. Larger tip opening ~2.5mm. "
                     "Print in TPU or rigid with sanded lay. Experimental.",
     ),
+]
 
 
 def get_families() -> list[str]:
@@ -1325,3 +1328,97 @@ def get_tags() -> list[str]:
         for t in e.tags:
             tags.add(t)
     return sorted(tags)
+
+
+def save_novel_instrument(
+    result: Optional[dict] = None,
+    label: str = "",
+    output_dir: str = "",
+    name: str = "",
+    notes: str = "",
+    optimization_result: Optional[dict] = None,
+    target_frequencies: Optional[list] = None,
+) -> dict:
+    """Persist a novel instrument design from an optimization result.
+
+    Accepts the benchmark result dict from
+    ``backend.physics.bore_optimizer.two_phase_optimize_bore_parameters`` as the
+    positional ``result`` (with ``bore_type``, ``radii``, ``bore_length_mm``,
+    ``hole_positions_opt``, ``best_instrument``, ...), or the legacy keyword
+    form ``name=..., optimization_result=..., target_frequencies=...``. Builds a
+    bore profile from the result (falling back to the instrument's
+    ``inner_diameters``), writes a JSON record to ``output_dir`` and returns the
+    record.
+    """
+    import json
+    from pathlib import Path
+
+    if result is None:
+        result = optimization_result or {}
+    if not isinstance(result, dict):
+        result = {}
+
+    if name:
+        label = label or name
+
+    bore_type = str(result.get("bore_type") or label or "novel")
+    try:
+        bore_length_mm = float(result.get("bore_length_mm") or 0.0)
+    except (TypeError, ValueError):
+        bore_length_mm = 0.0
+
+    hole_positions = result.get("hole_positions_opt") or []
+    hole_diameters = result.get("hole_diameters") or []
+    n_holes = int(result.get("n_holes") or len(hole_positions) or 0)
+
+    radii = result.get("radii") or []
+    if not radii:
+        inst = result.get("best_instrument")
+        if inst is not None:
+            radii = [d / 2.0 for d in getattr(inst, "inner_diameters", []) or []]
+
+    profile = []
+    if radii and bore_length_mm > 0:
+        n = len(radii)
+        profile = [
+            {
+                "position_mm": round(bore_length_mm * i / max(n - 1, 1), 3),
+                "radius_mm": round(float(r), 3),
+            }
+            for i, r in enumerate(radii)
+        ]
+
+    record = {
+        "name": name or f"{label or bore_type} ({bore_type})",
+        "label": label,
+        "bore_type": bore_type,
+        "bore_length_mm": bore_length_mm,
+        "n_holes": n_holes,
+        "hole_positions_mm": [round(float(p), 2) for p in hole_positions],
+        "hole_diameters_mm": [round(float(d), 2) for d in hole_diameters],
+        "hole_offsets": result.get("hole_offsets"),
+        "bore_profile": profile,
+        "optimized_params": result.get("optimized_params") or {},
+        "fundamental_hz": result.get("fundamental_hz"),
+        "best_scale": result.get("best_scale"),
+        "scale_rms_cents": result.get("scale_rms_cents"),
+        "resonances_hz": result.get("resonances_hz"),
+        "initial_cost_rms_cents": result.get("initial_cost_rms_cents"),
+        "final_cost_rms_cents": result.get("final_cost_rms_cents"),
+        "total_time_s": result.get("total_time_s"),
+        "target_frequencies": target_frequencies,
+        "notes": notes,
+    }
+
+    out_dir = output_dir or str(
+        Path(__file__).parent.parent.parent / "test_output" / "unconventional" / "novel_instruments"
+    )
+    Path(out_dir).mkdir(parents=True, exist_ok=True)
+
+    safe_name = "".join(c if c.isalnum() or c in "-_" else "_" for c in record["name"]).strip("_") or "novel"
+    path = Path(out_dir) / f"{safe_name}.json"
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(record, f, indent=2)
+
+    record["saved_to"] = str(path)
+    return record

@@ -657,42 +657,17 @@ class TMMInstrument:
         n_register: Union[int, List[int]] = 1,
     ) -> float:
         """
-        Phase-based cost with global offset correction.
+        Phase-based cost with global offset correction — DEPRECATED.
 
-        Like phase_cost(), but first computes and removes the median phase
-        error (global tuning offset). This isolates scale evenness from
-        overall pitch.
+        This function uses median correction which measures scale evenness,
+        NOT pitch accuracy. It masks systematic tuning errors.
+        Use absolute RMS (eval_all in benchmark_all.py) for accuracy benchmarks.
 
-        Args:
-            target_frequencies: list of target frequencies in Hz
-            fingering_sets: list of fingering configurations (one per target)
-            n_register: which register(s) to target.
-                int: same register for all notes.
-                List[int]: one register per note.
-
-        Returns:
-            Cost value (0.0 = perfect evenness)
+        Kept for backward compatibility only. DO NOT USE for new benchmarks.
         """
-        deviations = []
-        is_list = isinstance(n_register, list)
-        for i, (target_freq, fingerings) in enumerate(zip(target_frequencies, fingering_sets)):
-            target_wl = self.speed_of_sound / target_freq
-            reg = n_register[i] if is_list else n_register
-            try:
-                phase = self.resonance_phase(target_wl, fingerings)
-                deviations.append(phase - reg)
-            except Exception:
-                deviations.append(0.0)
-
-        if not deviations:
-            return 1.0
-
-        # Remove global offset (median)
-        median_dev = np.median(deviations)
-        corrected = [d - median_dev for d in deviations]
-
-        # Cost: mean squared deviation from integer
-        return float(np.mean([math.sin(math.pi * d) ** 2 for d in corrected]))
+        # DEPRECATED: median correction hides accuracy errors
+        # Use absolute RMS instead
+        return self.phase_cost(target_frequencies, fingering_sets, n_register)
 
 
 # ============================================================================

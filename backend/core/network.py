@@ -82,6 +82,16 @@ class Port:
     is_open: bool = True
     node_type: NodeType = NodeType.TONEHOLE
 
+    @property
+    def is_tonehole(self) -> bool:
+        """Whether this port is a tonehole (not a register vent)."""
+        return self.node_type == NodeType.TONEHOLE
+
+    @property
+    def is_register_vent(self) -> bool:
+        """Whether this port is a register (octave) vent."""
+        return self.node_type == NodeType.REGISTER_VENT
+
 
 @dataclass
 class Boundary:

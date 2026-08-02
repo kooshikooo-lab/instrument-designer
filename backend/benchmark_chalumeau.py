@@ -12,9 +12,22 @@ import numpy as np
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from backend.tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
-from backend.tmm_optimizer import TMMBoreOptimizer
-from backend.archived_optimizers.tmm_optimizer_v2 import TMMBoreOptimizerJAX
-from backend.tmm_optimizer_multi import MultiStartOptimizer
+
+# QUARANTINED 2026-07-31: references the deleted backend/archived_optimizers
+# package (see docs/ARCHIVED_OPTIMIZERS.md). The optimizers benchmarked here
+# (TMMBoreOptimizer, TMMBoreOptimizerJAX, MultiStartOptimizer) were superseded
+# by backend/two_phase_optimizer.py. Cross-method comparison now lives in
+# backend/benchmark_all.py. Kept for reference; not collected by pytest.
+try:
+    from backend.tmm_optimizer import TMMBoreOptimizer  # noqa: F401
+    from backend.tmm_optimizer_v2 import TMMBoreOptimizerJAX  # noqa: F401
+    from backend.tmm_optimizer_multi import MultiStartOptimizer  # noqa: F401
+except ModuleNotFoundError:
+    raise SystemExit(
+        "ARCHIVED: this benchmark exercises optimizers deleted on 2026-07-31 "
+        "(docs/ARCHIVED_OPTIMIZERS.md). Superseded by backend/two_phase_optimizer.py "
+        "and backend/benchmark_all.py."
+    )
 
 
 # ============================================================================

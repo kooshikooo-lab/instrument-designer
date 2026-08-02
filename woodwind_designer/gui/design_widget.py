@@ -421,7 +421,7 @@ class DesignWidget(QWidget):
             n_stl = len(result.stl_files)
             has_yaml = "yes" if (result.config_yaml and os.path.exists(result.config_yaml)) else ""
             self.log_output.append(
-                f"  {transp:+>+9d}  {status:>8}  {n_stl:>6}  {has_yaml:>7}"
+                f"  {transp:>+9d}  {status:>8}  {n_stl:>6}  {has_yaml:>7}"
             )
 
         last_success = None

@@ -1,6 +1,19 @@
 """Test: cross-fingerings for 12-hole chromatic."""
-import sys, math, time
+import sys, os, math, time
 import numpy as np
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# QUARANTINED 2026-07-31: exercises GlobalFingeringOptimizer, deleted from
+# backend/archived_optimizers (docs/ARCHIVED_OPTIMIZERS.md). Superseded by
+# backend/two_phase_optimizer.py. Kept for reference; not collected by pytest.
+try:
+    import backend.optimizer_global  # noqa: F401
+except ModuleNotFoundError:
+    raise SystemExit(
+        "ARCHIVED: optimizer_global.py was deleted on 2026-07-31 "
+        "(see docs/ARCHIVED_OPTIMIZERS.md). Superseded by backend/two_phase_optimizer.py."
+    )
+
 sys.path.insert(0, 'backend')
 from optimizer_global import GlobalFingeringOptimizer
 

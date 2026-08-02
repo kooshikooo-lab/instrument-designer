@@ -6,7 +6,7 @@ os.environ['MKL_NUM_THREADS'] = '1'
 os.environ['OPENBLAS_NUM_THREADS'] = '1'
 
 import numpy as np
-from backend.v2_scipy_optimizer import _compute_impedance_from_bore, _pava_isotonic
+from backend.optimizer import _compute_impedance_from_bore, _pava_isotonic
 
 bore_length = 0.65
 n_cp = 12

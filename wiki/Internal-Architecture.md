@@ -16,7 +16,7 @@ backend/
 ├── solvers/
 │   ├── tmm_solver.py       # TMMSolver wrapper
 │   ├── openwind_solver.py  # OpenWindSolver wrapper
-│   └── external_solvers.py # chalumier + OpenWind wrappers
+│   └── impedance_solver.py # ImpedanceSolver (frequency sweeps)
 ├── physics/
 │   ├── losses.py           # KeefeLoss viscothermal model
 │   ├── propagation.py      # Pipe propagation

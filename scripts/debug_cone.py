@@ -3,6 +3,7 @@ import sys, math, numpy as np
 from scipy.optimize import minimize as sp_min
 sys.path.insert(0, 'backend')
 from tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
+from metrics import rms_cents, scale_rms_cents, median_offset_cents
 
 c = SPEED_OF_SOUND
 targets = [349.2, 392.0, 415.3, 466.2, 523.3, 587.3]
@@ -26,9 +27,9 @@ def eval_inst(inst, label):
     ca = np.array(cents)
     if np.any(np.abs(ca)>1e5):
         print(f"  {label}: FAIL"); return 999
-    even = float(np.sqrt(np.mean((ca-np.median(ca))**2)))
-    absr = float(np.sqrt(np.mean(ca**2)))
-    print(f"  {label}: Even={even:.1f}c  Abs={absr:.1f}c  Off={np.median(ca):+.1f}c")
+    even = scale_rms_cents(ca)
+    absr = rms_cents(ca)
+    print(f"  {label}: Even={even:.1f}c  Abs={absr:.1f}c  Off={median_offset_cents(ca):+.1f}c")
     for n,fr,ct in zip(names,targets,cents):
         print(f"    {n:>5} ({fr:.0f}Hz): {ct:>+7.1f}c")
     return even
@@ -69,8 +70,7 @@ def obj3(x):
         cents.append(1200*math.log2(f/tgt) if f>0 and math.isfinite(f) else 1e10)
     ca = np.array(cents)
     if np.any(np.abs(ca)>1e5): return 1e10
-    med = float(np.median(ca))
-    return float(np.sqrt(np.mean((ca-med)**2))) + 0.05*float(np.sqrt(np.mean(ca**2)))
+    return rms_cents(ca)
 
 res3 = sp_min(obj3, np.array(hp2), method='L-BFGS-B',
               bounds=[(50,L-20)]*6, options={"maxiter":300})
@@ -101,8 +101,7 @@ def obj5(x):
         cents.append(1200*math.log2(f/tgt) if f>0 and math.isfinite(f) else 1e10)
     ca = np.array(cents)
     if np.any(np.abs(ca)>1e5): return 1e10
-    med = float(np.median(ca))
-    return float(np.sqrt(np.mean((ca-med)**2))) + 0.05*float(np.sqrt(np.mean(ca**2)))
+    return rms_cents(ca)
 
 res5 = sp_min(obj5, np.array(hp4), method='L-BFGS-B',
               bounds=[(50,L-20)]*6, options={"maxiter":300})

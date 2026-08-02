@@ -1,0 +1,63 @@
+# AGENTS.md — Working Agreement for instrument-designer
+
+You are an agent working in this repository on behalf of one of two machines:
+- **desktop** (`TEAM_MACHINE=desktop`) — the human's primary machine
+- **laptop** (`TEAM_MACHINE=laptop`)
+
+Both machines build this repo with AI agents. Coordination happens over GitHub
+**Discussion #23** (the "team channel"). A human is sometimes present but must
+NOT be used to relay messages between machines.
+
+## MANDATORY — Step 0: sync the team channel
+
+The FULL communications protocol is hard-coded in
+`docs/CONSTRAINTS_AND_PREFERENCES.md` under **Step 0**. Read it. It survives
+context drops. Highlights:
+
+```
+python scripts/team_chat.py sync      # at session start AND before you stop
+python scripts/team_chat.py post --file path\to\msg.md   # to send (use --file)
+```
+
+- Post when you start/finish a task affecting shared state, make a decision, or
+  are blocked.
+- Reply in-channel; never silently drop a request.
+- **The human answers questions directly from the desktop.** If a question needs
+  the human's input, post it to #23 and the desktop will surface it and post the
+  answer back. Resolve machine-to-machine issues yourselves first; only escalate
+  to the human when a real decision is needed.
+- Channel is canonical — decisions in #23 win.
+- Provisional changes: mark `AUDIT:` in the commit message.
+- Don't commit regenerable artifacts (STLs, JSON dumps, logs).
+
+## MANDATORY — enable the governance guard (once per clone)
+
+The governance file (`docs/CONSTRAINTS_AND_PREFERENCES.md`) is instruction-only
+and protected. Enable the guard on this clone so your commits can't accidentally
+rewrite it:
+
+```
+powershell -ExecutionPolicy Bypass -File scripts\install_hooks.ps1
+```
+
+This sets `core.hooksPath` to the versioned hooks inside the repo (nothing is
+copied into `.git/hooks`), so hook updates merge with the repo. After that, any
+commit touching a protected governance file requires `GOVERNANCE-UPDATE` in the
+commit message; CI (`governance-guard.yml`) enforces the same rule on every push.
+If you see a BLOCKED message from the hook, you were about to rewrite the boot
+sequence without authorization — re-read the file instead of editing it.
+
+## Environment
+
+- Repo: `kooshikooo-lab/instrument-designer` (remote: `origin`)
+- Channel: Discussion #23 (GraphQL id `D_kwDOTOg0Rs4AoFZO`)
+- Git identity: `Admin <kooshikooo@gmail.com>`; `gh` authed as `kooshikooo-lab`.
+- Set `TEAM_MACHINE` to your machine name so sync output is self-identifying.
+
+## If things go wrong
+
+- `team_chat.py sync` fails: check `gh auth status` and network.
+- Merge conflict: prefer `main`'s structure where `main` intentionally refactored,
+  then commit and post the outcome to #23.
+- Other machine unresponsive: post your message anyway, note the expected action,
+  and proceed with what is safe on your side.

@@ -1,0 +1,246 @@
+{
+  "name": "Ridged (ridged)",
+  "label": "Ridged",
+  "bore_type": "ridged",
+  "bore_length_mm": 979.95,
+  "n_holes": 7,
+  "hole_positions_mm": [
+    62.76,
+    129.59,
+    200.51,
+    275.51,
+    354.59,
+    437.76,
+    525.0
+  ],
+  "hole_diameters_mm": [],
+  "hole_offsets": [
+    -100.0,
+    100.0
+  ],
+  "bore_profile": [
+    {
+      "position_mm": 0.0,
+      "radius_mm": 15.0
+    },
+    {
+      "position_mm": 19.999,
+      "radius_mm": 14.662
+    },
+    {
+      "position_mm": 39.998,
+      "radius_mm": 13.787
+    },
+    {
+      "position_mm": 59.997,
+      "radius_mm": 12.736
+    },
+    {
+      "position_mm": 79.996,
+      "radius_mm": 11.943
+    },
+    {
+      "position_mm": 99.995,
+      "radius_mm": 11.734
+    },
+    {
+      "position_mm": 119.994,
+      "radius_mm": 12.196
+    },
+    {
+      "position_mm": 139.993,
+      "radius_mm": 13.138
+    },
+    {
+      "position_mm": 159.992,
+      "radius_mm": 14.172
+    },
+    {
+      "position_mm": 179.991,
+      "radius_mm": 14.871
+    },
+    {
+      "position_mm": 199.99,
+      "radius_mm": 14.947
+    },
+    {
+      "position_mm": 219.989,
+      "radius_mm": 14.369
+    },
+    {
+      "position_mm": 239.988,
+      "radius_mm": 13.375
+    },
+    {
+      "position_mm": 259.987,
+      "radius_mm": 12.375
+    },
+    {
+      "position_mm": 279.986,
+      "radius_mm": 11.781
+    },
+    {
+      "position_mm": 299.985,
+      "radius_mm": 11.839
+    },
+    {
+      "position_mm": 319.984,
+      "radius_mm": 12.524
+    },
+    {
+      "position_mm": 339.983,
+      "radius_mm": 13.554
+    },
+    {
+      "position_mm": 359.982,
+      "radius_mm": 14.504
+    },
+    {
+      "position_mm": 379.981,
+      "radius_mm": 14.983
+    },
+    {
+      "position_mm": 399.98,
+      "radius_mm": 14.792
+    },
+    {
+      "position_mm": 419.979,
+      "radius_mm": 14.011
+    },
+    {
+      "position_mm": 439.978,
+      "radius_mm": 12.962
+    },
+    {
+      "position_mm": 459.977,
+      "radius_mm": 12.077
+    },
+    {
+      "position_mm": 479.976,
+      "radius_mm": 11.721
+    },
+    {
+      "position_mm": 499.974,
+      "radius_mm": 12.042
+    },
+    {
+      "position_mm": 519.973,
+      "radius_mm": 12.906
+    },
+    {
+      "position_mm": 539.972,
+      "radius_mm": 13.958
+    },
+    {
+      "position_mm": 559.971,
+      "radius_mm": 14.763
+    },
+    {
+      "position_mm": 579.97,
+      "radius_mm": 14.99
+    },
+    {
+      "position_mm": 599.969,
+      "radius_mm": 14.545
+    },
+    {
+      "position_mm": 619.968,
+      "radius_mm": 13.611
+    },
+    {
+      "position_mm": 639.967,
+      "radius_mm": 12.574
+    },
+    {
+      "position_mm": 659.966,
+      "radius_mm": 11.861
+    },
+    {
+      "position_mm": 679.965,
+      "radius_mm": 11.767
+    },
+    {
+      "position_mm": 699.964,
+      "radius_mm": 12.329
+    },
+    {
+      "position_mm": 719.963,
+      "radius_mm": 13.317
+    },
+    {
+      "position_mm": 739.962,
+      "radius_mm": 14.323
+    },
+    {
+      "position_mm": 759.961,
+      "radius_mm": 14.932
+    },
+    {
+      "position_mm": 779.96,
+      "radius_mm": 14.892
+    },
+    {
+      "position_mm": 799.959,
+      "radius_mm": 14.221
+    },
+    {
+      "position_mm": 819.958,
+      "radius_mm": 13.195
+    },
+    {
+      "position_mm": 839.957,
+      "radius_mm": 12.237
+    },
+    {
+      "position_mm": 859.956,
+      "radius_mm": 11.742
+    },
+    {
+      "position_mm": 879.955,
+      "radius_mm": 11.915
+    },
+    {
+      "position_mm": 899.954,
+      "radius_mm": 12.683
+    },
+    {
+      "position_mm": 919.953,
+      "radius_mm": 13.731
+    },
+    {
+      "position_mm": 939.952,
+      "radius_mm": 14.626
+    },
+    {
+      "position_mm": 959.951,
+      "radius_mm": 14.999
+    },
+    {
+      "position_mm": 979.95,
+      "radius_mm": 14.696
+    }
+  ],
+  "optimized_params": {
+    "base_radius_mm": 15.0,
+    "ridge_depth_mm": 3.2791,
+    "n_ridges": 2.5492
+  },
+  "fundamental_hz": 86.02,
+  "best_scale": "pentatonic_major",
+  "scale_rms_cents": 12.62,
+  "resonances_hz": [
+    86.02,
+    86.14,
+    87.21,
+    97.18,
+    96.01,
+    104.61,
+    115.59,
+    137.15
+  ],
+  "initial_cost_rms_cents": 71.446,
+  "final_cost_rms_cents": 12.616,
+  "total_time_s": 160.878,
+  "target_frequencies": null,
+  "notes": ""
+}

@@ -1,0 +1,979 @@
+{
+  "pipeline_results": {
+    "cylindrical": {
+      "bore_type": "cylindrical",
+      "label": "Cylindrical",
+      "bore_length_mm": 600.0,
+      "n_holes": 7,
+      "steps": {
+        "generate": {
+          "time_s": 0.0,
+          "n_radii": 50
+        },
+        "acoustic_model": {
+          "time_s": 0.0003,
+          "success": true
+        },
+        "resonance": {
+          "time_s": 0.0162,
+          "n_valid_resonances": 8,
+          "scale_fit_rms_cents": 71.596,
+          "best_scale": "pentatonic_major"
+        },
+        "cad_profile": {
+          "time_s": 0.0001,
+          "n_profile_points": 32
+        },
+        "stl_export": {
+          "time_s": 1.938,
+          "path": "E:\\Admin\\WoodwindDesigner\\woodwind-designer\\backend\\..\\test_output\\unconventional\\cylindrical_benchmark.stl"
+        }
+      },
+      "total_time_s": 4.96,
+      "overall": "PASS"
+    },
+    "conical": {
+      "bore_type": "conical",
+      "label": "Conical",
+      "bore_length_mm": 600.0,
+      "n_holes": 7,
+      "steps": {
+        "generate": {
+          "time_s": 0.0001,
+          "n_radii": 50
+        },
+        "acoustic_model": {
+          "time_s": 0.0002,
+          "success": true
+        },
+        "resonance": {
+          "time_s": 0.0107,
+          "n_valid_resonances": 8,
+          "scale_fit_rms_cents": 78.296,
+          "best_scale": "pentatonic_minor"
+        },
+        "cad_profile": {
+          "time_s": 0.0001,
+          "n_profile_points": 32
+        },
+        "stl_export": {
+          "time_s": 2.5385,
+          "path": "E:\\Admin\\WoodwindDesigner\\woodwind-designer\\backend\\..\\test_output\\unconventional\\conical_benchmark.stl"
+        }
+      },
+      "total_time_s": 3.06,
+      "overall": "PASS"
+    },
+    "parabolic": {
+      "bore_type": "parabolic",
+      "label": "Parabolic",
+      "bore_length_mm": 600.0,
+      "n_holes": 7,
+      "steps": {
+        "generate": {
+          "time_s": 0.0001,
+          "n_radii": 50
+        },
+        "acoustic_model": {
+          "time_s": 0.0002,
+          "success": true
+        },
+        "resonance": {
+          "time_s": 0.0169,
+          "n_valid_resonances": 8,
+          "scale_fit_rms_cents": 203.246,
+          "best_scale": "pentatonic_minor"
+        },
+        "cad_profile": {
+          "time_s": 0.0001,
+          "n_profile_points": 32
+        },
+        "stl_export": {
+          "time_s": 2.6332,
+          "path": "E:\\Admin\\WoodwindDesigner\\woodwind-designer\\backend\\..\\test_output\\unconventional\\parabolic_benchmark.stl"
+        }
+      },
+      "total_time_s": 3.22,
+      "overall": "PASS"
+    },
+    "exponential": {
+      "bore_type": "exponential",
+      "label": "Exponential",
+      "bore_length_mm": 600.0,
+      "n_holes": 7,
+      "steps": {
+        "generate": {
+          "time_s": 0.0001,
+          "n_radii": 50
+        },
+        "acoustic_model": {
+          "time_s": 0.0002,
+          "success": true
+        },
+        "resonance": {
+          "time_s": 0.018,
+          "n_valid_resonances": 8,
+          "scale_fit_rms_cents": 207.402,
+          "best_scale": "pentatonic_minor"
+        },
+        "cad_profile": {
+          "time_s": 0.0001,
+          "n_profile_points": 32
+        },
+        "stl_export": {
+          "time_s": 2.308,
+          "path": "E:\\Admin\\WoodwindDesigner\\woodwind-designer\\backend\\..\\test_output\\unconventional\\exponential_benchmark.stl"
+        }
+      },
+      "total_time_s": 3.32,
+      "overall": "PASS"
+    },
+    "bessel": {
+      "bore_type": "bessel",
+      "label": "Bessel",
+      "bore_length_mm": 600.0,
+      "n_holes": 7,
+      "steps": {
+        "generate": {
+          "time_s": 0.0001,
+          "n_radii": 50
+        },
+        "acoustic_model": {
+          "time_s": 0.0002,
+          "success": true
+        },
+        "resonance": {
+          "time_s": 0.0174,
+          "n_valid_resonances": 8,
+          "scale_fit_rms_cents": 193.2,
+          "best_scale": "pentatonic_minor"
+        },
+        "cad_profile": {
+          "time_s": 0.0001,
+          "n_profile_points": 32
+        },
+        "stl_export": {
+          "time_s": 1.9335,
+          "path": "E:\\Admin\\WoodwindDesigner\\woodwind-designer\\backend\\..\\test_output\\unconventional\\bessel_benchmark.stl"
+        }
+      },
+      "total_time_s": 3.3,
+      "overall": "PASS"
+    },
+    "spline": {
+      "bore_type": "spline",
+      "label": "Spline (Free-form)",
+      "bore_length_mm": 600.0,
+      "n_holes": 7,
+      "steps": {
+        "generate": {
+          "time_s": 0.0002,
+          "n_radii": 50
+        },
+        "acoustic_model": {
+          "time_s": 0.0002,
+          "success": true
+        },
+        "resonance": {
+          "time_s": 0.0166,
+          "n_valid_resonances": 8,
+          "scale_fit_rms_cents": 90.147,
+          "best_scale": "pentatonic_minor"
+        },
+        "cad_profile": {
+          "time_s": 0.0001,
+          "n_profile_points": 32
+        },
+        "stl_export": {
+          "time_s": 1.9769,
+          "path": "E:\\Admin\\WoodwindDesigner\\woodwind-designer\\backend\\..\\test_output\\unconventional\\spline_benchmark.stl"
+        }
+      },
+      "total_time_s": 2.51,
+      "overall": "PASS"
+    },
+    "spiral": {
+      "bore_type": "spiral",
+      "label": "Spiral",
+      "bore_length_mm": 600.0,
+      "n_holes": 7,
+      "steps": {
+        "generate": {
+          "time_s": 0.0001,
+          "n_radii": 50
+        },
+        "acoustic_model": {
+          "time_s": 0.0004,
+          "success": true
+        },
+        "resonance": {
+          "time_s": 0.036,
+          "n_valid_resonances": 8,
+          "scale_fit_rms_cents": 84.34,
+          "best_scale": "pentatonic_major"
+        },
+        "cad_profile": {
+          "time_s": 0.0001,
+          "n_profile_points": 32
+        },
+        "stl_export": {
+          "time_s": 1.6531,
+          "path": "E:\\Admin\\WoodwindDesigner\\woodwind-designer\\backend\\..\\test_output\\unconventional\\spiral_benchmark.stl"
+        }
+      },
+      "total_time_s": 3.28,
+      "overall": "PASS"
+    },
+    "ridged": {
+      "bore_type": "ridged",
+      "label": "Ridged",
+      "bore_length_mm": 600.0,
+      "n_holes": 7,
+      "steps": {
+        "generate": {
+          "time_s": 0.0001,
+          "n_radii": 50
+        },
+        "acoustic_model": {
+          "time_s": 0.0004,
+          "success": true
+        },
+        "resonance": {
+          "time_s": 0.0398,
+          "n_valid_resonances": 8,
+          "scale_fit_rms_cents": 71.446,
+          "best_scale": "pentatonic_major"
+        },
+        "cad_profile": {
+          "time_s": 0.0001,
+          "n_profile_points": 32
+        },
+        "stl_export": {
+          "time_s": 1.756,
+          "path": "E:\\Admin\\WoodwindDesigner\\woodwind-designer\\backend\\..\\test_output\\unconventional\\ridged_benchmark.stl"
+        }
+      },
+      "total_time_s": 4.49,
+      "overall": "PASS"
+    },
+    "elliptical": {
+      "bore_type": "elliptical",
+      "label": "Elliptical",
+      "bore_length_mm": 600.0,
+      "n_holes": 7,
+      "steps": {
+        "generate": {
+          "time_s": 0.0,
+          "n_radii": 50
+        },
+        "acoustic_model": {
+          "time_s": 0.0002,
+          "success": true
+        },
+        "resonance": {
+          "time_s": 0.0166,
+          "n_valid_resonances": 8,
+          "scale_fit_rms_cents": 73.746,
+          "best_scale": "pentatonic_major"
+        },
+        "cad_profile": {
+          "time_s": 0.0001,
+          "n_profile_points": 32
+        },
+        "stl_export": {
+          "time_s": 1.896,
+          "path": "E:\\Admin\\WoodwindDesigner\\woodwind-designer\\backend\\..\\test_output\\unconventional\\elliptical_benchmark.stl"
+        }
+      },
+      "total_time_s": 2.4,
+      "overall": "PASS"
+    },
+    "stepped": {
+      "bore_type": "stepped",
+      "label": "Stepped",
+      "bore_length_mm": 600.0,
+      "n_holes": 7,
+      "steps": {
+        "generate": {
+          "time_s": 0.0002,
+          "n_radii": 50
+        },
+        "acoustic_model": {
+          "time_s": 0.0002,
+          "success": true
+        },
+        "resonance": {
+          "time_s": 0.0223,
+          "n_valid_resonances": 8,
+          "scale_fit_rms_cents": 172.113,
+          "best_scale": "pentatonic_minor"
+        },
+        "cad_profile": {
+          "time_s": 0.0001,
+          "n_profile_points": 32
+        },
+        "stl_export": {
+          "time_s": 5.4288,
+          "path": "E:\\Admin\\WoodwindDesigner\\woodwind-designer\\backend\\..\\test_output\\unconventional\\stepped_benchmark.stl"
+        }
+      },
+      "total_time_s": 8.79,
+      "overall": "PASS"
+    }
+  },
+  "optimization_results": [
+    {
+      "phase1": {
+        "variables": [
+          955.2898485972153,
+          15.0,
+          -100.0,
+          100.0
+        ],
+        "cost": 15.8236,
+        "time_s": 12.1587
+      },
+      "phase2": {
+        "variables": [
+          955.2898485972153,
+          15.0,
+          -100.0,
+          100.0
+        ],
+        "cost": 15.8236,
+        "time_s": 0.0723
+      },
+      "total_time_s": 12.231,
+      "phase1_time_s": 12.159,
+      "refine_time_s": 0.072,
+      "initial_cost_rms_cents": 71.596,
+      "de_cost_rms_cents": 15.824,
+      "final_cost_rms_cents": 15.824,
+      "bore_type": "cylindrical",
+      "bore_length_mm": 955.29,
+      "optimized_params": {
+        "radius_mm": 15.0
+      },
+      "hole_offsets": [
+        -100.0,
+        100.0
+      ],
+      "hole_positions_opt": [
+        62.76,
+        129.59,
+        200.51,
+        275.51,
+        354.59,
+        437.76,
+        525.0
+      ],
+      "radii": [
+        15.0,
+        15.0,
+        15.0,
+        15.0,
+        15.0,
+        15.0
+      ],
+      "n_holes": 7,
+      "fundamental_hz": 89.56,
+      "best_scale": "minor",
+      "scale_rms_cents": 15.82,
+      "resonances_hz": [
+        89.56,
+        90.82,
+        90.2,
+        101.36,
+        98.91,
+        106.62,
+        119.94,
+        139.69
+      ],
+      "scale_frequencies_hz": [
+        89.56,
+        100.53,
+        106.51,
+        119.55,
+        134.19,
+        142.17,
+        159.58
+      ],
+      "optimize_holes": true
+    },
+    {
+      "phase1": {
+        "variables": [
+          1160.0037436849448,
+          9.991359389939987,
+          16.275881482551554,
+          52.63787116351022,
+          5.882954243283511
+        ],
+        "cost": 8.9407,
+        "time_s": 34.2561
+      },
+      "phase2": {
+        "variables": [
+          1159.9664333127616,
+          9.738211673756279,
+          15.988211839529754,
+          52.71833281242843,
+          5.986148173419579
+        ],
+        "cost": 7.525,
+        "time_s": 11.4539
+      },
+      "total_time_s": 45.71,
+      "phase1_time_s": 34.256,
+      "refine_time_s": 11.454,
+      "initial_cost_rms_cents": 202.274,
+      "de_cost_rms_cents": 8.941,
+      "final_cost_rms_cents": 7.525,
+      "bore_type": "parabolic",
+      "bore_length_mm": 1159.97,
+      "optimized_params": {
+        "radius_min_mm": 9.7382,
+        "radius_max_mm": 15.9882
+      },
+      "hole_offsets": [
+        52.72,
+        5.99
+      ],
+      "hole_positions_opt": [
+        82.65,
+        165.55,
+        248.69,
+        332.08,
+        415.71,
+        499.59,
+        583.7
+      ],
+      "radii": [
+        9.738211673756279,
+        9.988211680387218,
+        10.738211700280035,
+        11.988211733434731,
+        13.738211779851303,
+        15.988211839529754
+      ],
+      "n_holes": 7,
+      "fundamental_hz": 58.81,
+      "best_scale": "minor",
+      "scale_rms_cents": 7.53,
+      "resonances_hz": [
+        58.81,
+        58.53,
+        66.11,
+        65.99,
+        70.54,
+        78.08,
+        87.99,
+        100.41
+      ],
+      "scale_frequencies_hz": [
+        58.81,
+        66.01,
+        69.94,
+        78.51,
+        88.12,
+        93.36,
+        104.79
+      ],
+      "optimize_holes": true
+    },
+    {
+      "phase1": {
+        "variables": [
+          1027.923671195483,
+          18.71043417744376,
+          20.251148004912874,
+          79.42620944695138,
+          35.56848039021109
+        ],
+        "cost": 0.0,
+        "time_s": 42.6148
+      },
+      "phase2": {
+        "variables": [
+          1027.9236711958824,
+          18.71043419003028,
+          20.251147994499842,
+          79.42620944584887,
+          35.56848038968198
+        ],
+        "cost": 0.0,
+        "time_s": 1.7108
+      },
+      "total_time_s": 44.326,
+      "phase1_time_s": 42.615,
+      "refine_time_s": 1.711,
+      "initial_cost_rms_cents": 206.815,
+      "de_cost_rms_cents": 0.0,
+      "final_cost_rms_cents": 0.0,
+      "bore_type": "exponential",
+      "bore_length_mm": 1027.92,
+      "optimized_params": {
+        "radius_start_mm": 18.7104,
+        "radius_end_mm": 20.2511
+      },
+      "hole_offsets": [
+        79.43,
+        35.57
+      ],
+      "hole_positions_opt": [
+        87.07,
+        175.6,
+        265.57,
+        357.0,
+        449.88,
+        544.21,
+        639.99
+      ],
+      "radii": [
+        18.71043419003028,
+        19.00890158006453,
+        19.31213009867597,
+        19.62019569501713,
+        19.933175529775497,
+        20.251147994499842
+      ],
+      "n_holes": 7,
+      "fundamental_hz": 83.27,
+      "best_scale": "pentatonic_major",
+      "scale_rms_cents": 0.0,
+      "resonances_hz": [
+        83.27,
+        83.27,
+        83.27,
+        93.47,
+        93.47,
+        102.31,
+        116.65,
+        137.77
+      ],
+      "scale_frequencies_hz": [
+        83.27,
+        93.47,
+        104.92,
+        124.77,
+        140.05
+      ],
+      "optimize_holes": true
+    },
+    {
+      "phase1": {
+        "variables": [
+          875.5088700769938,
+          15.474387367097574,
+          11.554054426996888,
+          -7.4583407796742,
+          -11.301471527129724
+        ],
+        "cost": 9.9828,
+        "time_s": 29.4196
+      },
+      "phase2": {
+        "variables": [
+          881.4195354918775,
+          12.887846659439827,
+          9.084870911055129,
+          -13.5580747691611,
+          -50.03444214980152
+        ],
+        "cost": 0.2539,
+        "time_s": 14.6702
+      },
+      "total_time_s": 44.09,
+      "phase1_time_s": 29.42,
+      "refine_time_s": 14.67,
+      "initial_cost_rms_cents": 202.375,
+      "de_cost_rms_cents": 9.983,
+      "final_cost_rms_cents": 0.254,
+      "bore_type": "bessel",
+      "bore_length_mm": 881.42,
+      "optimized_params": {
+        "radius_start_mm": 12.8878,
+        "radius_end_mm": 9.0849
+      },
+      "hole_offsets": [
+        -13.56,
+        -50.03
+      ],
+      "hole_positions_opt": [
+        72.04,
+        142.04,
+        210.0,
+        275.91,
+        339.79,
+        401.62,
+        461.41
+      ],
+      "radii": [
+        12.887846659439827,
+        11.022350735196632,
+        10.221929840429922,
+        9.72193201753113,
+        9.362829761066475,
+        9.084870911055129
+      ],
+      "n_holes": 7,
+      "fundamental_hz": 109.36,
+      "best_scale": "pentatonic_major",
+      "scale_rms_cents": 0.09,
+      "resonances_hz": [
+        109.36,
+        109.37,
+        109.36,
+        122.74,
+        137.77,
+        138.55,
+        149.46,
+        166.65
+      ],
+      "scale_frequencies_hz": [
+        109.36,
+        122.75,
+        137.78,
+        163.85,
+        183.91
+      ],
+      "optimize_holes": true
+    },
+    {
+      "phase1": {
+        "variables": [
+          794.9297502968932,
+          5.276028457972134,
+          2.2993851227318247,
+          2.080370919368538,
+          -60.39221644232928,
+          -63.03115084307979
+        ],
+        "cost": 0.0,
+        "time_s": 173.2338
+      },
+      "phase2": {
+        "variables": [
+          794.9297502968932,
+          5.276028457972134,
+          2.2993851227318247,
+          2.080370919368538,
+          -60.39221644232928,
+          -63.03115084307979
+        ],
+        "cost": 0.0,
+        "time_s": 5.0663
+      },
+      "total_time_s": 178.3,
+      "phase1_time_s": 173.234,
+      "refine_time_s": 5.066,
+      "initial_cost_rms_cents": 84.34,
+      "de_cost_rms_cents": 0.0,
+      "final_cost_rms_cents": 0.0,
+      "bore_type": "spiral",
+      "bore_length_mm": 794.93,
+      "optimized_params": {
+        "base_radius_mm": 5.276,
+        "amplitude_mm": 2.2994,
+        "cycles": 2.0804
+      },
+      "hole_offsets": [
+        -60.39,
+        -63.03
+      ],
+      "hole_positions_opt": [
+        65.09,
+        127.6,
+        187.54,
+        244.91,
+        299.7,
+        351.93,
+        401.58
+      ],
+      "radii": [
+        5.276028457972134,
+        5.882168698583728,
+        6.445429877938782,
+        6.925966249137825,
+        7.2897841138316934,
+        7.511146575735973,
+        7.574394198423352,
+        7.47505277195719,
+        7.220149823674159,
+        6.827717482777348,
+        6.325516866673155,
+        5.749074227436969,
+        5.139167783676662,
+        4.538943022212859,
+        3.990860536469496,
+        3.5336923150149513,
+        3.199778966274287,
+        3.0127419065068484,
+        2.9858123535161574,
+        3.120895335008565,
+        3.4084349247312864,
+        3.8280902397411944,
+        4.350174377976174,
+        4.937754504022005,
+        5.549264520580112,
+        6.14144550223659,
+        6.672405881848848,
+        7.10458490842762,
+        7.4074097380782895,
+        7.559458192317061,
+        7.549974187738734,
+        7.379628633789714,
+        7.060471971858264,
+        6.615081713121636,
+        6.074965279308117,
+        5.478331131264634,
+        4.867385858271386,
+        4.285348435129717,
+        3.7733928619279684,
+        3.367735467682337,
+        3.0970729253599107,
+        2.980552216062597,
+        3.0264161494520234,
+        3.2314202578662403,
+        3.581062313712393,
+        4.050608233809732,
+        4.606841797023858,
+        5.210414398144307,
+        5.81862861370007,
+        6.388458667049756
+      ],
+      "n_holes": 7,
+      "fundamental_hz": 98.86,
+      "best_scale": "pentatonic_major",
+      "scale_rms_cents": 0.0,
+      "resonances_hz": [
+        98.86,
+        98.86,
+        98.86,
+        98.86,
+        98.86,
+        130.29,
+        199.57,
+        238.54
+      ],
+      "scale_frequencies_hz": [
+        98.86,
+        110.96,
+        124.55,
+        148.12,
+        166.25
+      ],
+      "optimize_holes": true
+    },
+    {
+      "phase1": {
+        "variables": [
+          979.9518483126009,
+          15.0,
+          3.279125728601289,
+          2.5492314585692637,
+          -100.0,
+          100.0
+        ],
+        "cost": 12.6158,
+        "time_s": 159.2758
+      },
+      "phase2": {
+        "variables": [
+          979.9518482321466,
+          15.0,
+          3.279125658712181,
+          2.549229886368195,
+          -100.0,
+          100.0
+        ],
+        "cost": 12.6158,
+        "time_s": 1.6021
+      },
+      "total_time_s": 160.878,
+      "phase1_time_s": 159.276,
+      "refine_time_s": 1.602,
+      "initial_cost_rms_cents": 71.446,
+      "de_cost_rms_cents": 12.616,
+      "final_cost_rms_cents": 12.616,
+      "bore_type": "ridged",
+      "bore_length_mm": 979.95,
+      "optimized_params": {
+        "base_radius_mm": 15.0,
+        "ridge_depth_mm": 3.2791,
+        "n_ridges": 2.5492
+      },
+      "hole_offsets": [
+        -100.0,
+        100.0
+      ],
+      "hole_positions_opt": [
+        62.76,
+        129.59,
+        200.51,
+        275.51,
+        354.59,
+        437.76,
+        525.0
+      ],
+      "radii": [
+        15.0,
+        14.66191986624666,
+        13.787104651740314,
+        12.73633058223367,
+        11.942939804307183,
+        11.73412887977288,
+        12.196012014236945,
+        13.138107319378758,
+        14.171892073082422,
+        14.871030569821407,
+        14.947196150491774,
+        14.368977917945344,
+        13.374834678270922,
+        12.374753866437505,
+        11.78117158867418,
+        11.838882826017027,
+        12.52408730379453,
+        13.554204791047944,
+        14.50441197312691,
+        14.982840767322086,
+        14.792185809255969,
+        14.011073733504123,
+        12.961637330976732,
+        12.076667090674349,
+        11.72112719921087,
+        12.041643295943858,
+        12.906033651800884,
+        13.957821281709037,
+        14.76324604396138,
+        14.990148528165005,
+        14.54495351922596,
+        13.611260676118627,
+        12.574127522263732,
+        11.861270652716058,
+        11.76667422165201,
+        12.32935006014522,
+        13.317249088609918,
+        14.322959002133947,
+        14.931722237306575,
+        14.89248314406515,
+        14.221424033515898,
+        13.195291547859759,
+        12.237265576013245,
+        11.742438691315856,
+        11.914878876241845,
+        12.683471319281217,
+        13.731246360849036,
+        14.626098661821729,
+        14.998988646300702,
+        14.696135448349345
+      ],
+      "n_holes": 7,
+      "fundamental_hz": 86.02,
+      "best_scale": "pentatonic_major",
+      "scale_rms_cents": 12.62,
+      "resonances_hz": [
+        86.02,
+        86.14,
+        87.21,
+        97.18,
+        96.01,
+        104.61,
+        115.59,
+        137.15
+      ],
+      "scale_frequencies_hz": [
+        86.02,
+        96.55,
+        108.38,
+        128.88,
+        144.67
+      ],
+      "optimize_holes": true
+    },
+    {
+      "phase1": {
+        "variables": [
+          1185.5705129069836,
+          8.838315943329155,
+          6.359344743400775,
+          7.538882382329444,
+          -7.9960102599347715,
+          18.52494707722503
+        ],
+        "cost": 6.9245,
+        "time_s": 50.0561
+      },
+      "phase2": {
+        "variables": [
+          1185.5602422391828,
+          8.940406992538644,
+          6.315406921558096,
+          7.538882382329444,
+          -7.971021158290217,
+          18.53991050430308
+        ],
+        "cost": 4.3583,
+        "time_s": 13.5323
+      },
+      "total_time_s": 63.588,
+      "phase1_time_s": 50.056,
+      "refine_time_s": 13.532,
+      "initial_cost_rms_cents": 183.493,
+      "de_cost_rms_cents": 6.925,
+      "final_cost_rms_cents": 4.358,
+      "bore_type": "stepped",
+      "bore_length_mm": 1185.56,
+      "optimized_params": {
+        "radius_start_mm": 8.9404,
+        "radius_end_mm": 6.3154,
+        "n_steps": 7.5389
+      },
+      "hole_offsets": [
+        -7.97,
+        18.54
+      ],
+      "hole_positions_opt": [
+        74.24,
+        149.24,
+        224.99,
+        301.5,
+        378.77,
+        456.79,
+        535.57
+      ],
+      "radii": [
+        8.940406992538644,
+        8.565406982398565,
+        8.190406972258488,
+        7.440406951978331,
+        7.065406941838253,
+        6.315406921558096
+      ],
+      "n_holes": 7,
+      "fundamental_hz": 82.75,
+      "best_scale": "pentatonic_major",
+      "scale_rms_cents": 4.36,
+      "resonances_hz": [
+        82.75,
+        82.83,
+        82.82,
+        92.38,
+        104.21,
+        100.07,
+        105.13,
+        114.77
+      ],
+      "scale_frequencies_hz": [
+        82.75,
+        92.88,
+        104.26,
+        123.99,
+        139.17
+      ],
+      "optimize_holes": true
+    }
+  ],
+  "all_pass": true,
+  "timestamp": 1785585715.768245
+}

@@ -33,7 +33,19 @@ print(f"  Done ({time.time()-t0:.1f}s), shape={Z.shape}")
 
 print("Step 5: Import PAVA...")
 t0 = time.time()
-from backend.v2_scipy_optimizer import _pava_isotonic
+
+# QUARANTINED 2026-07-31: exercises the OpenWInD scipy optimizer path
+# (backend.v2_scipy_optimizer), deleted from backend/archived_optimizers
+# (docs/ARCHIVED_OPTIMIZERS.md). Superseded by backend/two_phase_optimizer.py
+# and backend/optimizer.py. Kept for reference; not collected by pytest.
+try:
+    from backend.v2_scipy_optimizer import _pava_isotonic  # noqa: F401
+    from backend.v2_scipy_optimizer import _objective_cents, _compute_impedance_from_bore  # noqa: F401
+except ModuleNotFoundError:
+    raise SystemExit(
+        "ARCHIVED: backend.v2_scipy_optimizer was deleted on 2026-07-31 "
+        "(see docs/ARCHIVED_OPTIMIZERS.md). Superseded by backend/two_phase_optimizer.py."
+    )
 print(f"  Done ({time.time()-t0:.1f}s)")
 
 print("Step 6: Test PAVA...")
@@ -44,7 +56,6 @@ print(f"  Done ({time.time()-t0:.1f}s), result shape={result.shape}")
 
 print("Step 7: Test objective function...")
 t0 = time.time()
-from backend.v2_scipy_optimizer import _objective_cents, _compute_impedance_from_bore
 target_freqs = np.array([261.6, 784.8, 1308.0, 1831.2, 2354.4, 2877.6])
 bore_length = 0.65
 freq_range = (50, 10500)

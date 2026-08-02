@@ -1,65 +1,65 @@
 # Coding Standards
 
-## Python
+Implementation practices for the Instrument Designer project. Follow these whenever writing or modifying code. Read after `ARCHITECTURE.md` and `ARCHITECTURE_DECISIONS.md` (Step 2 of the boot sequence).
 
-- **Version:** 3.12+
-- **Style:** PEP 8, 4-space indentation
-- **Type hints:** Required on all function signatures
-- **Docstrings:** NumPy/Google style
-- **Imports:** stdlib → third-party → local (alphabetical within groups)
-- **Line length:** 100 characters max (soft), 120 hard
+---
 
-## File Naming
+## BOOT SEQUENCE (summary)
 
-- `snake_case.py` for Python files
-- `CamelCase.tsx` for React components
-- `kebab-case.css` for stylesheets
+Every session/agent must run these 6 steps before writing code. Full version: `docs/CONSTRAINTS_AND_PREFERENCES.md`.
 
-## Testing
+1. **Read the AI Constitution** (`docs/AI_CONSTITUTION.md`) — state which laws apply to your task.
+2. **Read architecture docs** — `ARCHITECTURE.md`, `ARCHITECTURE_DECISIONS.md`, `CODING_STANDARDS.md`, `PHYSICS_PRINCIPLES.md`.
+3. **Identify your subsystem** — from the table in `CONSTRAINTS_AND_PREFERENCES.md`.
+4. **Search before building** — reuse existing functions/classes/tests; never duplicate.
+5. **Produce an implementation plan** — files, interfaces, tests, docs, ADRs.
+6. **Implement** — follow this file; run `ARCHITECTURE_CHECKLIST.md` and `COMPLIANCE_CHECK.md` on every trigger.
 
-- Test files go in `tests/` — NOT `test_output/` or any other directory
-- Test file pattern: `tests/test_*.py`
-- Run: `python -m pytest tests/`
-- Property tests: `tests/test_properties.py` (4 tests, all must pass)
+---
 
-## Git
+## File Placement
 
-### Commit Messages
-- Format: `type(scope): description`
-- Types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`
-- Scope: module name (e.g., `tmm`, `optimizer`, `ui`, `api`)
-- Example: `feat(tmm): add KeefeLoss viscothermal model`
+- `backend/` root: ONLY core source modules (no test/debug files).
+- `tests/`: ALL test files (from any location).
+- `scripts/`: ALL utility/debug/benchmark scripts.
+- `docs/`: ALL documentation, prompts, session logs.
+- `test_output/`: OUTPUT ARTIFACTS ONLY — never place source or test files there.
+- Root: ONLY config files (`pyproject.toml`, `README.md`, etc.).
 
-### Branch Naming
-- `laptop` — active development
-- `main` — stable shared
-- `option-a-*` — Tauri UI features
-- `experiment/*` — research branches
-- `fix/*` — bug fixes
-- `refactor/*` — architecture changes
-- `ui/*` — UI experiments
+## Search Before Building
 
-## Module Structure
-
-- Every `.py` file has exactly one responsibility (Law 8)
-- If a module exceeds ~500 lines, split it
-- Pipeline modules must be thin orchestrators (Law 5)
-- GUI never contains physics (Law 6)
-
-## Error Handling
-
-- Optimization failures use sentinel values (1e10), not exceptions
-- No bare `except:` clauses
-- Validate inputs at function boundaries
+- Search the codebase for existing functions, classes, tests, and docs BEFORE writing new code (Law 3, boot sequence Step 4).
+- Search BOTH `woodwind_designer/` AND `backend/` directories (Failure #6) — CAD/geometry utilities often live in `backend/`.
+- The subsystem table in `CONSTRAINTS_AND_PREFERENCES.md` is authoritative for where code lives.
+- Before creating any new `.py` file, grep for the core function signature across the entire project.
 
 ## Imports
 
-- No unused imports — run static analysis after every refactoring
-- When extracting functions to new modules, verify which imports are consumed
+- Never import from a module without first verifying the file actually exists (Failures #2, #5).
+- Before importing, check for a same-named package directory: `git ls-files <name>.py <name>/` — a package `__init__.py` shadows a same-named module (Failure #8).
+- No unused imports. Run import-use verification after every refactor/extraction.
+- `from __future__ import annotations` false-positives are harmless; ignore them.
+- Package `__init__.py` files must NOT eagerly import modules that have import-time side effects (e.g., running benchmarks) or broken dependencies (Failure #8).
 
-## Documentation
+## Verification Discipline
 
-- All functions have type hints
-- All functions have NumPy-style docstrings
-- Architecture changes need an ADR in `docs/ARCHITECTURE_DECISIONS.md`
-- Coordinate conventions documented at function entry points
+- "Importable" means: `python -c "import <module>"` in a fresh interpreter, with a timeout (Failure #8).
+- Before claiming a file "does not exist": check `git branch --show-current`, `git rev-parse origin/main`, `git ls-tree -r origin/main -- <path>`, and `git log --all -- <path>` (Failure #7).
+- Every audit finding must state the branch and commit SHA it was produced against.
+
+## File Encoding
+
+- Never write tracked source files through PowerShell `Set-Content`/`Out-File` (defaults to UTF-16 — corrupts git blobs, Failure #8).
+- Write source bytes via UTF-8 (e.g., `git show <sha>:<path>` or a Python file write with `encoding="utf-8"`).
+- If a file shows mojibake (e.g., `ÔÇö` instead of `—`), it was UTF-8 misread as a legacy codepage — restore clean UTF-8.
+
+## Code Quality
+
+- All functions have type hints and NumPy-style docstrings.
+- One responsibility per module; split files that exceed ~500 lines or mix concerns (Law 8).
+- No bare `except:` clauses.
+- Error handling uses sentinel values (e.g., `1e10`) for optimization failures, not exceptions.
+- No hardcoded instrument-specific assumptions in general code.
+- No new coordinate systems without documentation (Law 7) — document conversions at function entry points.
+- No hidden physics: physics belongs in `backend.physics`, not in optimizers or pipelines (Law 4, Law 5).
+- The GUI (`woodwind_designer/`, `web/`) never contains physics (Law 6).

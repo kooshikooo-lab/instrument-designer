@@ -484,6 +484,52 @@ Generates a summary table comparing RMS and wall time across all instruments.
 | NESS | University of Edinburgh | Physical modeling synthesis |
 | Aalto Acoustics | Finland | FEM for musical instruments |
 
+---
+
+## 10. AI Governance System
+
+> **⚠ Important:** AI assistants working on this project must read `CONSTRAINTS_AND_PREFERENCES.md` first (6-step boot sequence), then `AI_CONSTITUTION.md` (10 non-negotiable laws), then the relevant ADRs from `ARCHITECTURE_DECISIONS.md`.
+
+### 10.1 Boot Sequence
+
+1. Read `CONSTRAINTS_AND_PREFERENCES.md` — project rules, boot sequence
+2. Read `AI_CONSTITUTION.md` — 10 non-negotiable laws
+3. Read `ARCHITECTURE_DECISIONS.md` — relevant ADRs
+4. Run `ARCHITECTURE_CHECKLIST.md` — pre-flight check
+5. Follow `COMPLIANCE_CHECK.md` triggers (15min, before code, after tests)
+6. Log new failure patterns to `AI_FAILURE_PATTERNS.md`
+
+### 10.2 Document Purpose
+
+| Document | Purpose |
+|----------|---------|
+| `CONSTRAINTS_AND_PREFERENCES.md` | 6-step boot sequence — first file every AI session reads |
+| `AI_CONSTITUTION.md` | 10 non-negotiable project laws |
+| `ARCHITECTURE_DECISIONS.md` | Architecture Decision Records (ADR-001 through ADR-006) |
+| `ARCHITECTURE_CHECKLIST.md` | 20-item pre-flight/pre-commit checklist |
+| `COMPLIANCE_CHECK.md` | Trigger-based compliance script |
+| `AI_FAILURE_PATTERNS.md` | Failure pattern log (5 seeded patterns) |
+
+### 10.3 Compliance Triggers
+
+- **15-minute timer**: Re-read constitution + relevant ADRs
+- **Before any code change**: Run ARCHITECTURE_CHECKLIST.md
+- **After tests pass**: Check compliance
+- **When feeling stuck/lost**: Re-run boot sequence from step 1
+
+### 10.4 Key ADRs
+
+| ADR | Decision |
+|-----|----------|
+| ADR-001 | Geometry layer (`geometry.py`) separates shape from acoustics |
+| ADR-002 | Pipeline modules are thin orchestrators — no custom NSGA-II |
+| ADR-003 | `inverse_design.py` is backward-compat re-export layer only |
+| ADR-004 | Shared optimizer (`pareto_optimizer.py`) — `nsga2_minimize`, `run_pareto`, `pareto_sweep` |
+| ADR-005 | Three-tier pipeline: Sound Analysis → Scale Optimization → Timbre Matching |
+| ADR-006 | TMM is primary solver (10ms eval); OpenWind is secondary reference |
+
+---
+
 ### Key Acoustic Constants
 
 ```python

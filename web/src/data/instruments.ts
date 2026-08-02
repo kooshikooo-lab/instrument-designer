@@ -33,6 +33,7 @@ export interface Instrument {
   image_url: string;
   audio_url: string;
   demakein_preset?: string;
+  compatible_with?: string[];
   tags: string[];
   difficulty: string;
   resources?: InstrumentResources;
@@ -41,7 +42,7 @@ export interface Instrument {
 export const INSTRUMENTS: Instrument[] = [
   {
     name: "Penny Whistle (Tin Whistle)",
-    family: "Wind", subcategory: "Flute", type_label: "Fipple Flute",
+    family: "Wind", subcategory: "Flutes", type_label: "Fipple / Duct Flutes",
     range: "Soprano", key: "D",
     source: "Demakein Built-in",
     demakein_preset: "folk_whistle",
@@ -54,7 +55,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Folk Flute",
-    family: "Wind", subcategory: "Flute", type_label: "Fipple Flute",
+    family: "Wind", subcategory: "Flutes", type_label: "Fipple / Duct Flutes",
     range: "Soprano", key: "D",
     source: "Demakein Built-in",
     demakein_preset: "folk_flute",
@@ -67,7 +68,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Recorder (Soprano)",
-    family: "Wind", subcategory: "Flute", type_label: "Fipple Flute",
+    family: "Wind", subcategory: "Flutes", type_label: "Fipple / Duct Flutes",
     range: "Soprano", key: "C",
     source: "Demakein Built-in",
     demakein_preset: "recorder",
@@ -80,7 +81,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Dorian Whistle",
-    family: "Wind", subcategory: "Flute", type_label: "Fipple Flute",
+    family: "Wind", subcategory: "Flutes", type_label: "Fipple / Duct Flutes",
     range: "Soprano", key: "D (Dorian)",
     source: "Demakein Built-in",
     demakein_preset: "dorian_whistle",
@@ -93,7 +94,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Three-Hole Whistle (Tabor Pipe)",
-    family: "Wind", subcategory: "Flute", type_label: "Fipple Flute",
+    family: "Wind", subcategory: "Flutes", type_label: "Fipple / Duct Flutes",
     range: "Soprano", key: "D",
     source: "Demakein Built-in",
     demakein_preset: "three_hole_whistle",
@@ -106,7 +107,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "BASS Tin Whistle (in A)",
-    family: "Wind", subcategory: "Flute", type_label: "Fipple Flute",
+    family: "Wind", subcategory: "Flutes", type_label: "Fipple / Duct Flutes",
     range: "Bass", key: "A",
     source: "Printables",
     image_url: "",
@@ -118,7 +119,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Pan Flute",
-    family: "Wind", subcategory: "Flute", type_label: "Pan Flute",
+    family: "Wind", subcategory: "Flutes", type_label: "Pan Flutes",
     range: "Soprano", key: "C",
     source: "Demakein Built-in",
     demakein_preset: "pflute",
@@ -131,7 +132,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Whistle Pan Flute",
-    family: "Wind", subcategory: "Flute", type_label: "Pan Flute",
+    family: "Wind", subcategory: "Flutes", type_label: "Pan Flutes",
     range: "Soprano", key: "C",
     source: "Printables",
     image_url: "https://media.printables.com/media/prints/160312/images/314365_eb3987af-4fb2-4f38-a6f1-35687d3681d8/thumbs/inside/1600x1200/jpg/20210828_134813.webp",
@@ -143,7 +144,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Daphnis Pan Flute",
-    family: "Wind", subcategory: "Flute", type_label: "Pan Flute",
+    family: "Wind", subcategory: "Flutes", type_label: "Pan Flutes",
     range: "Alto", key: "C",
     source: "Printables",
     image_url: "",
@@ -155,7 +156,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Slide Whistle",
-    family: "Wind", subcategory: "Flute", type_label: "Slide Whistle",
+    family: "Wind", subcategory: "Flutes", type_label: "Fipple / Duct Flutes",
     range: "Soprano", key: "Variable",
     source: "Printables",
     image_url: "https://media.printables.com/media/prints/560049/images/4463295_78a5db32-0bb8-4baf-95fd-9c8664997be9/thumbs/inside/1600x1200/jpg/20230821_214012.webp",
@@ -167,7 +168,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Transverse Flute (C)",
-    family: "Wind", subcategory: "Flute", type_label: "Transverse Flute",
+    family: "Wind", subcategory: "Flutes", type_label: "Transverse Flutes",
     range: "Soprano", key: "C",
     source: "Printables",
     image_url: "https://media.printables.com/media/prints/577149/images/4747814_2525ccfd-4678-4bb3-9c43-3e5f3429249c/thumbs/inside/1600x1200/jpg/20240619_131025.webp",
@@ -179,7 +180,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Axianov Irish Flute (D)",
-    family: "Wind", subcategory: "Flute", type_label: "Transverse Flute",
+    family: "Wind", subcategory: "Flutes", type_label: "Transverse Flutes",
     range: "Tenor", key: "D",
     source: "Printables",
     image_url: "https://woozle.org/blog/2024/12-04-3d-printed-flute/flute-on-chair.jpg",
@@ -191,7 +192,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Side-Blown Flute in A Major",
-    family: "Wind", subcategory: "Flute", type_label: "Transverse Flute",
+    family: "Wind", subcategory: "Flutes", type_label: "Transverse Flutes",
     range: "Alto", key: "A",
     source: "Printables",
     image_url: "",
@@ -203,7 +204,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Traditional Bansuri B Natural",
-    family: "Wind", subcategory: "Flute", type_label: "Transverse Flute",
+    family: "Wind", subcategory: "Flutes", type_label: "Transverse Flutes",
     range: "Tenor", key: "B (Natural)",
     source: "Cults3D",
     image_url: "",
@@ -215,7 +216,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Dragon Recorder",
-    family: "Wind", subcategory: "Flute", type_label: "Fipple Flute",
+    family: "Wind", subcategory: "Flutes", type_label: "Fipple / Duct Flutes",
     range: "Soprano", key: "C",
     source: "Printables",
     image_url: "https://media.printables.com/media/prints/400647/images/3296182_6a660404-4a45-448e-b29b-dc3ab0d7a5d3/thumbs/inside/1600x1200/jpg/20230420_220007.webp",
@@ -227,7 +228,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Glissonardo",
-    family: "Wind", subcategory: "Flute", type_label: "Fipple Flute",
+    family: "Wind", subcategory: "Flutes", type_label: "Fipple / Duct Flutes",
     range: "Soprano", key: "C",
     source: "Printables",
     image_url: "",
@@ -239,7 +240,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "12-Hole Ocarina (Alto C)",
-    family: "Wind", subcategory: "Flute", type_label: "Vessel Flute",
+    family: "Wind", subcategory: "Flutes", type_label: "Vessel Flutes (Ocarinas)",
     range: "Alto", key: "C",
     source: "Printables",
     image_url: "https://media.printables.com/media/prints/24540/images/40728_f1b60cd5-5a62-4c04-8bb8-6dbe59fc7496/thumbs/inside/1600x1200/jpg/20191208_104619.webp",
@@ -251,7 +252,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Small 5-Hole Ocarina",
-    family: "Wind", subcategory: "Flute", type_label: "Vessel Flute",
+    family: "Wind", subcategory: "Flutes", type_label: "Vessel Flutes (Ocarinas)",
     range: "Soprano", key: "C",
     source: "Printables",
     image_url: "https://media.printables.com/media/prints/249010/images/198208_c0e531ad-b62d-48cc-9d33-b22e45893f2e/thumbs/inside/1600x1200/jpg/20220524_125106.webp",
@@ -263,7 +264,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Reedpipe",
-    family: "Wind", subcategory: "Woodwind", type_label: "Single Reed",
+    family: "Wind", subcategory: "Woodwinds", type_label: "Clarinets",
     range: "Soprano", key: "C",
     source: "Demakein Built-in",
     demakein_preset: "reedpipe",
@@ -276,7 +277,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Modern Chalumeau in C",
-    family: "Wind", subcategory: "Woodwind", type_label: "Single Reed",
+    family: "Wind", subcategory: "Woodwinds", type_label: "Clarinets",
     range: "Soprano", key: "C",
     source: "Printables",
     image_url: "",
@@ -288,7 +289,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "C Clarinet Remix (14mm Bore)",
-    family: "Wind", subcategory: "Woodwind", type_label: "Single Reed",
+    family: "Wind", subcategory: "Woodwinds", type_label: "Clarinets",
     range: "Soprano", key: "C",
     source: "Printables",
     image_url: "",
@@ -300,7 +301,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Membrane Clarinet",
-    family: "Wind", subcategory: "Woodwind", type_label: "Single Reed",
+    family: "Wind", subcategory: "Membrane Instruments", type_label: "Membrane Reeds",
     range: "Soprano", key: "Variable",
     source: "Printables",
     image_url: "",
@@ -312,7 +313,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Curvy Clarinet",
-    family: "Wind", subcategory: "Woodwind", type_label: "Single Reed",
+    family: "Wind", subcategory: "Woodwinds", type_label: "Clarinets",
     range: "Soprano", key: "C",
     source: "Printables",
     image_url: "",
@@ -324,7 +325,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Chalumier TMM Bb Clarinet",
-    family: "Wind", subcategory: "Woodwind", type_label: "Single Reed",
+    family: "Wind", subcategory: "Woodwinds", type_label: "Clarinets",
     range: "Soprano", key: "Bb",
     source: "Chalumier Design Engine",
     source_url: "https://github.com/MarkChuCarroll/chalumier",
@@ -337,7 +338,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Chalumier TMM Bass Clarinet in G",
-    family: "Wind", subcategory: "Woodwind", type_label: "Single Reed",
+    family: "Wind", subcategory: "Woodwinds", type_label: "Clarinets",
     range: "Bass", key: "G",
     source: "Chalumier Design Engine",
     source_url: "https://github.com/MarkChuCarroll/chalumier",
@@ -350,7 +351,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Pocket Clarinet / Chalumeau",
-    family: "Wind", subcategory: "Woodwind", type_label: "Single Reed",
+    family: "Wind", subcategory: "Woodwinds", type_label: "Clarinets",
     range: "Soprano", key: "Bb",
     source: "Thingiverse",
     source_url: "https://www.thingiverse.com/thing:3834802",
@@ -363,7 +364,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Keyless Clarinet in Bb",
-    family: "Wind", subcategory: "Woodwind", type_label: "Single Reed",
+    family: "Wind", subcategory: "Woodwinds", type_label: "Clarinets",
     range: "Soprano", key: "Bb",
     source: "MakerWorld",
     source_url: "https://makerworld.com/en/models/clarinet",
@@ -376,7 +377,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "JDWoodwinds Piccolo Clarinet in A",
-    family: "Wind", subcategory: "Woodwind", type_label: "Single Reed",
+    family: "Wind", subcategory: "Woodwinds", type_label: "Clarinets",
     range: "Soprano", key: "A",
     source: "JDWoodwinds",
     source_url: "https://jdwoodwind.com/shop/p/piccolo-clarinet-stl",
@@ -389,7 +390,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Baroque Clarinet (2-Key Denner Style)",
-    family: "Wind", subcategory: "Woodwind", type_label: "Single Reed",
+    family: "Wind", subcategory: "Woodwinds", type_label: "Clarinets",
     range: "Soprano", key: "D",
     source: "Historical / YouTube",
     source_url: "https://www.youtube.com/watch?v=JQzPgg3jm50",
@@ -402,7 +403,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Alto Saxophone Hybrid (Zaxophone)",
-    family: "Wind", subcategory: "Woodwind", type_label: "Single Reed",
+    family: "Wind", subcategory: "Hybrid & Experimental", type_label: "Slide / Glissando",
     range: "Alto", key: "Bb",
     source: "Cults3D",
     image_url: "",
@@ -414,7 +415,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "3DP Minisax (Pocket Sax)",
-    family: "Wind", subcategory: "Woodwind", type_label: "Single Reed",
+    family: "Wind", subcategory: "Woodwinds", type_label: "Saxophones",
     range: "Soprano", key: "Bb",
     source: "Thingiverse",
     image_url: "",
@@ -426,7 +427,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Folk Shawm",
-    family: "Wind", subcategory: "Woodwind", type_label: "Double Reed",
+    family: "Wind", subcategory: "Woodwinds", type_label: "Shawms",
     range: "Soprano", key: "C",
     source: "Demakein Built-in",
     demakein_preset: "folk_shawm",
@@ -439,7 +440,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Shawm",
-    family: "Wind", subcategory: "Woodwind", type_label: "Double Reed",
+    family: "Wind", subcategory: "Woodwinds", type_label: "Shawms",
     range: "Soprano", key: "C",
     source: "Demakein Built-in",
     demakein_preset: "shawm",
@@ -452,7 +453,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Reed Drone",
-    family: "Wind", subcategory: "Woodwind", type_label: "Single Reed",
+    family: "Wind", subcategory: "Drone Instruments", type_label: "Reed Drones",
     range: "Bass", key: "C",
     source: "Demakein Built-in",
     demakein_preset: "reed_drone",
@@ -465,7 +466,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Rackett (Sausage Bassoon)",
-    family: "Wind", subcategory: "Woodwind", type_label: "Double Reed",
+    family: "Wind", subcategory: "Woodwinds", type_label: "Shawms",
     range: "Bass", key: "C",
     source: "Printables",
     image_url: "",
@@ -477,7 +478,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Classical Oboe (Lohner Copy / Yamamoto 2025)",
-    family: "Wind", subcategory: "Woodwind", type_label: "Double Reed",
+    family: "Wind", subcategory: "Woodwinds", type_label: "Shawms",
     range: "Soprano", key: "C",
     source: "Yamamoto et al. 2025 — Acoust. Sci. & Tech. 46(4)",
     source_url: "https://doi.org/10.1250/ast.e24.92",
@@ -490,7 +491,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Modern Conservatory Oboe",
-    family: "Wind", subcategory: "Woodwind", type_label: "Double Reed",
+    family: "Wind", subcategory: "Woodwinds", type_label: "Shawms",
     range: "Soprano", key: "C",
     source: "Standard orchestral instrument",
     image_url: "",
@@ -502,7 +503,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Baroque Oboe (Hautbois)",
-    family: "Wind", subcategory: "Woodwind", type_label: "Double Reed",
+    family: "Wind", subcategory: "Woodwinds", type_label: "Shawms",
     range: "Soprano", key: "C",
     source: "Historical instrument / museum copies",
     image_url: "",
@@ -514,7 +515,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Glissotar Purpleheart (Original)",
-    family: "Wind", subcategory: "Woodwind", type_label: "Single Reed + Slit",
+    family: "Wind", subcategory: "Hybrid & Experimental", type_label: "Slide / Glissando",
     range: "Soprano", key: "C",
     source: "Glissonic",
     source_url: "https://glissonic.com/shop/",
@@ -527,7 +528,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Glissotar Jam (3D-Printed)",
-    family: "Wind", subcategory: "Woodwind", type_label: "Single Reed + Slit",
+    family: "Wind", subcategory: "Hybrid & Experimental", type_label: "Slide / Glissando",
     range: "Soprano", key: "C",
     source: "Glissonic",
     source_url: "https://glissonic.com/shop/",
@@ -540,7 +541,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Glissotar Bass Clarinet",
-    family: "Wind", subcategory: "Woodwind", type_label: "Single Reed + Slit",
+    family: "Wind", subcategory: "Hybrid & Experimental", type_label: "Slide / Glissando",
     range: "Bass", key: "Bb",
     source: "Custom Design",
     image_url: "",
@@ -552,7 +553,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Glissopipe",
-    family: "Wind", subcategory: "Flute", type_label: "Fipple Flute + Slit",
+    family: "Wind", subcategory: "Flutes", type_label: "Fipple / Duct Flutes",
     range: "Soprano", key: "C",
     source: "Glissonic",
     source_url: "https://www.glissopipe.com/",
@@ -565,7 +566,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Kazoo",
-    family: "Wind", subcategory: "Other", type_label: "Membrane",
+    family: "Wind", subcategory: "Membrane Instruments", type_label: "Kazoos / Mirlitons",
     range: "Soprano", key: "Variable",
     source: "Printables",
     image_url: "https://media.printables.com/media/prints/30637/images/54951_a3a14df9-198a-4d95-b4f4-5122122e1cb0/thumbs/inside/1600x1200/jpg/kazoo.webp",
@@ -577,7 +578,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Double Native American Flute",
-    family: "Wind", subcategory: "Flute", type_label: "Fipple Flute",
+    family: "Wind", subcategory: "Flutes", type_label: "Fipple / Duct Flutes",
     range: "Tenor", key: "F#",
     source: "Printables",
     image_url: "https://media.printables.com/media/prints/452234/images/3711074_005a2640-4814-44ce-8f25-5557859a28a3/thumbs/inside/1600x1200/jpg/20230717_104256.webp",
@@ -589,7 +590,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Overly-Complicated Trumpet",
-    family: "Wind", subcategory: "Brass", type_label: "Brass",
+    family: "Wind", subcategory: "Brass", type_label: "Trumpets",
     range: "Soprano", key: "Bb",
     source: "Printables",
     image_url: "https://media.printables.com/media/prints/492588/images/4003235_9b8be94b-5141-4516-b68e-7677b04a60b9/thumbs/inside/1600x1200/jpg/20230902_220315.webp",
@@ -601,7 +602,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Kudu Horn Trumpet (Shofar)",
-    family: "Wind", subcategory: "Brass", type_label: "Brass",
+    family: "Wind", subcategory: "Brass", type_label: "Trumpets",
     range: "Alto", key: "Variable",
     source: "Printables",
     image_url: "https://media.printables.com/media/prints/217052/images/170379_fa1bc7d4-6c16-4915-812c-4b407524394b/thumbs/inside/1600x1200/jpg/kudu_horn_trumpet_shofar.webp",
@@ -613,7 +614,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Mini Ophicleide (Keyless Serpent)",
-    family: "Wind", subcategory: "Brass", type_label: "Brass",
+    family: "Wind", subcategory: "Brass", type_label: "Trumpets",
     range: "Bass", key: "C",
     source: "Printables",
     image_url: "",
@@ -625,7 +626,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "PrintBone Trombone",
-    family: "Wind", subcategory: "Brass", type_label: "Brass",
+    family: "Wind", subcategory: "Brass", type_label: "Trumpets",
     range: "Tenor", key: "Bb",
     source: "Printables",
     image_url: "",
@@ -637,7 +638,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "HEXADIDG Didgeridoo",
-    family: "Wind", subcategory: "Drone & Others", type_label: "Drone",
+    family: "Wind", subcategory: "Drone Instruments", type_label: "Drone Flutes",
     range: "Bass", key: "Variable",
     source: "Printables",
     image_url: "https://media.printables.com/media/prints/734618/images/5890934_9ab37dbc-c6e1-4e4d-99a7-31962d1b6091/thumbs/inside/1600x1200/jpg/20240720_180706.webp",
@@ -649,7 +650,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "D5 Drone Flute",
-    family: "Wind", subcategory: "Drone & Others", type_label: "Drone",
+    family: "Wind", subcategory: "Drone Instruments", type_label: "Drone Flutes",
     range: "Alto", key: "D (Hijaz)",
     source: "MakerWorld",
     image_url: "",
@@ -661,7 +662,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Bromiophone (PVC Contrabass Clarinet)",
-    family: "Wind", subcategory: "Drone & Others", type_label: "Contrabass Clarinet",
+    family: "Wind", subcategory: "Woodwinds", type_label: "Clarinets",
     range: "Contrabass", key: "Variable",
     source: "YouTube",
     image_url: "",
@@ -673,7 +674,8 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Clarinet Mouthpiece (Playable)",
-    family: "Wind", subcategory: "Parts & Accessories", type_label: "Mouthpiece",
+    family: "Wind", subcategory: "Parts & Accessories", type_label: "Mouthpieces",
+    compatible_with: ["Pocket Clarinet / Chalumeau", "Keyless Clarinet in Bb", "Chalumier TMM Bb Clarinet"],
     range: "Bb", key: "N/A",
     source: "Printables",
     image_url: "https://media.printables.com/media/prints/557889/images/4472165_2a477c32-4f05-4ef1-a7ab-7962379767e1/thumbs/inside/1600x1200/jpg/20230813_191035.webp",
@@ -685,7 +687,8 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Trumpet Mouthpiece 3C",
-    family: "Wind", subcategory: "Parts & Accessories", type_label: "Mouthpiece",
+    family: "Wind", subcategory: "Parts & Accessories", type_label: "Mouthpieces",
+    compatible_with: ["Overly-Complicated Trumpet", "Mini Ophicleide (Keyless Serpent)"],
     range: "Bb", key: "N/A",
     source: "Printables",
     image_url: "https://media.printables.com/media/prints/446505/images/3659168_259b1ea2-280e-4490-8a02-1c2f02bdfc35/thumbs/inside/1600x1200/jpg/20230706_175018.webp",
@@ -697,7 +700,8 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Trumpet Mouthpiece 7C",
-    family: "Wind", subcategory: "Parts & Accessories", type_label: "Mouthpiece",
+    family: "Wind", subcategory: "Parts & Accessories", type_label: "Mouthpieces",
+    compatible_with: ["Overly-Complicated Trumpet", "Mini Ophicleide (Keyless Serpent)"],
     range: "Bb", key: "N/A",
     source: "Printables",
     image_url: "https://media.printables.com/media/prints/100591/images/188785_d3e9d7e6-46e8-48d0-9810-050aca724ba6/thumbs/inside/1600x1200/jpg/trumpet_mouthpiece_7c.webp",
@@ -709,7 +713,8 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Trumpet Mouthpiece Puller",
-    family: "Wind", subcategory: "Parts & Accessories", type_label: "Tool",
+    family: "Wind", subcategory: "Parts & Accessories", type_label: "Tools",
+    compatible_with: ["Overly-Complicated Trumpet", "Mini Ophicleide (Keyless Serpent)"],
     range: "N/A", key: "N/A",
     source: "Printables",
     image_url: "https://media.printables.com/media/prints/692679/images/5560577_fedc73fe-afd7-4a65-b7a2-40d5ad1a72d5/thumbs/inside/1600x1200/jpg/20231224_142818.webp",
@@ -722,7 +727,7 @@ export const INSTRUMENTS: Instrument[] = [
 
   {
     name: "JDWoodwinds Bass Clarinet in G",
-    family: "Wind", subcategory: "Woodwind", type_label: "Single Reed",
+    family: "Wind", subcategory: "Woodwinds", type_label: "Clarinets",
     range: "Bass", key: "G",
     source: "JDWoodwinds",
     source_url: "https://jdwoodwind.com/shop/p/stl-files-bass-clarinet-in-g",
@@ -736,7 +741,7 @@ export const INSTRUMENTS: Instrument[] = [
 
   {
     name: "PVC Pipe Bass Clarinet (Hybrid)",
-    family: "Wind", subcategory: "Woodwind", type_label: "Single Reed",
+    family: "Wind", subcategory: "Woodwinds", type_label: "Clarinets",
     range: "Bass", key: "Bb",
     source: "Custom Design",
     source_url: "",
@@ -750,7 +755,7 @@ export const INSTRUMENTS: Instrument[] = [
 
   {
     name: "PVC Membrane Clarinet",
-    family: "Wind", subcategory: "Woodwind", type_label: "Membrane Reed",
+    family: "Wind", subcategory: "Membrane Instruments", type_label: "Membrane Reeds",
     range: "Soprano", key: "Variable",
     source: "Printables",
     source_url: "https://www.printables.com/model/441519-pvc-membrane-clarinet",
@@ -764,7 +769,7 @@ export const INSTRUMENTS: Instrument[] = [
 
   {
     name: "Dan Bruner's PVC Clarinet (A3)",
-    family: "Wind", subcategory: "Woodwind", type_label: "Single Reed",
+    family: "Wind", subcategory: "Woodwinds", type_label: "Clarinets",
     range: "Alto", key: "A",
     source: "Geocities",
     source_url: "https://www.geocities.ws/danielbruner/instruments/clarA3.html",
@@ -778,7 +783,7 @@ export const INSTRUMENTS: Instrument[] = [
 
   {
     name: "Inline Membrane Clarinet",
-    family: "Wind", subcategory: "Woodwind", type_label: "Membrane Reed",
+    family: "Wind", subcategory: "Membrane Instruments", type_label: "Membrane Reeds",
     range: "Soprano", key: "Variable",
     source: "Printables",
     source_url: "https://www.printables.com/model/487374-inline-membrane-clarinet-mouthpiece",
@@ -792,7 +797,7 @@ export const INSTRUMENTS: Instrument[] = [
 
   {
     name: "Ultra-Compact Bass Clarinet",
-    family: "Wind", subcategory: "Woodwind", type_label: "Single Reed",
+    family: "Wind", subcategory: "Woodwinds", type_label: "Clarinets",
     range: "Bass", key: "Bb",
     source: "MakerWorld",
     source_url: "https://makerworld.com/en/models/2021364-clarinet-mustache",
@@ -806,7 +811,7 @@ export const INSTRUMENTS: Instrument[] = [
 
   {
     name: "PVC Shakuhachi",
-    family: "Wind", subcategory: "Flute", type_label: "End-Blown Flute",
+    family: "Wind", subcategory: "Flutes", type_label: "End-Blown Flutes",
     range: "Tenor", key: "D",
     source: "shaku6.com",
     source_url: "https://shaku6.com/pvc.php",
@@ -820,7 +825,7 @@ export const INSTRUMENTS: Instrument[] = [
 
   {
     name: "PVC Native American Flute (G)",
-    family: "Wind", subcategory: "Flute", type_label: "Fipple Flute",
+    family: "Wind", subcategory: "Flutes", type_label: "Fipple / Duct Flutes",
     range: "Tenor", key: "G",
     source: "PhreshAyer / UO Makerspace",
     source_url: "https://www.youtube.com/watch?v=misjPOhd-9o",
@@ -834,7 +839,7 @@ export const INSTRUMENTS: Instrument[] = [
 
   {
     name: "PVC Pan Flute (8-Pipe)",
-    family: "Wind", subcategory: "Flute", type_label: "Pan Flute",
+    family: "Wind", subcategory: "Flutes", type_label: "Pan Flutes",
     range: "Soprano", key: "C",
     source: "DIY / Make Studio JUMP",
     source_url: "https://www.instructables.com/DIY-PVC-Pipe-Flutes/",
@@ -848,7 +853,7 @@ export const INSTRUMENTS: Instrument[] = [
 
   {
     name: "3D Printable Soprano Recorder (pfh)",
-    family: "Wind", subcategory: "Flute", type_label: "Fipple Flute",
+    family: "Wind", subcategory: "Flutes", type_label: "Fipple / Duct Flutes",
     range: "Soprano", key: "D",
     source: "Thingiverse (pfh)",
     source_url: "https://www.thingiverse.com/thing:162490",
@@ -862,7 +867,7 @@ export const INSTRUMENTS: Instrument[] = [
 
   {
     name: "Saxophone Low A Extension",
-    family: "Wind", subcategory: "Parts & Accessories", type_label: "Extension",
+    family: "Wind", subcategory: "Parts & Accessories", type_label: "Extensions",
     range: "Bass", key: "A",
     source: "DIY Design",
     source_url: "",
@@ -876,7 +881,8 @@ export const INSTRUMENTS: Instrument[] = [
 
   {
     name: "Bass Clarinet Low C Extension (Modular)",
-    family: "Wind", subcategory: "Parts & Accessories", type_label: "Extension",
+    family: "Wind", subcategory: "Parts & Accessories", type_label: "Extensions",
+    compatible_with: ["PVC Pipe Bass Clarinet (Hybrid)", "Ultra-Compact Bass Clarinet"],
     range: "Bass", key: "C",
     source: "Academic / DIY",
     source_url: "",
@@ -890,7 +896,7 @@ export const INSTRUMENTS: Instrument[] = [
 
   {
     name: "Bassoon Bocal / Crook",
-    family: "Wind", subcategory: "Parts & Accessories", type_label: "Bocal",
+    family: "Wind", subcategory: "Parts & Accessories", type_label: "Bocals / Crooks",
     range: "Tenor", key: "C",
     source: "Heckel System",
     source_url: "",
@@ -903,7 +909,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Koncovka (Slovak Overtone Flute)",
-    family: "Wind", subcategory: "Overtone Flute", type_label: "Overtone Flute",
+    family: "Wind", subcategory: "Flutes", type_label: "Overtone Flutes",
     range: "Alto", key: "C",
     source: "Folk tradition / Flutopedia",
     image_url: "",
@@ -915,7 +921,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Fujara (Large Slovak Overtone Flute)",
-    family: "Wind", subcategory: "Overtone Flute", type_label: "Overtone Flute",
+    family: "Wind", subcategory: "Flutes", type_label: "Overtone Flutes",
     range: "Bass", key: "G",
     source: "Folk tradition / Fujara.sk",
     image_url: "",
@@ -927,7 +933,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Tilinca (Romanian Overtone Flute)",
-    family: "Wind", subcategory: "Overtone Flute", type_label: "Overtone Flute",
+    family: "Wind", subcategory: "Flutes", type_label: "Overtone Flutes",
     range: "Soprano", key: "G",
     source: "Folk tradition",
     image_url: "",
@@ -939,7 +945,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Seljefløyte (Norwegian Willow Flute)",
-    family: "Wind", subcategory: "Overtone Flute", type_label: "Overtone Flute",
+    family: "Wind", subcategory: "Flutes", type_label: "Overtone Flutes",
     range: "Soprano", key: "D",
     source: "Scandinavian folk tradition",
     image_url: "",
@@ -951,7 +957,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Tabor Pipe (Overtone with Holes)",
-    family: "Wind", subcategory: "Overtone Flute", type_label: "Overtone Flute",
+    family: "Wind", subcategory: "Flutes", type_label: "Overtone Flutes",
     range: "Soprano", key: "D",
     source: "Demakein / Czech-Slovak folk",
     demakein_preset: "three_hole_whistle",
@@ -964,7 +970,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "PVC Overtone Flute (BY BRAS System)",
-    family: "Wind", subcategory: "Overtone Flute", type_label: "Overtone Flute",
+    family: "Wind", subcategory: "Flutes", type_label: "Overtone Flutes",
     range: "Alto", key: "C",
     source: "Instruments BY BRAS (Nicolas Bras)",
     image_url: "",
@@ -976,7 +982,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Cornett (Historical Hybrid)",
-    family: "Wind", subcategory: "Hybrid", type_label: "Lip-Vibrated Aerophone",
+    family: "Wind", subcategory: "Hybrid & Experimental", type_label: "Experimental / Novel",
     range: "Soprano", key: "C",
     source: "Royal College of Music / Simian 2023",
     image_url: "",
@@ -988,7 +994,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Tárogató (Reed-Conical Hybrid)",
-    family: "Wind", subcategory: "Hybrid", type_label: "Single-Reed Aerophone",
+    family: "Wind", subcategory: "Hybrid & Experimental", type_label: "Hybrid Reeds",
     range: "Alto", key: "Bb",
     source: "Hungarian folk tradition",
     image_url: "",
@@ -1000,7 +1006,7 @@ export const INSTRUMENTS: Instrument[] = [
   },
   {
     name: "Slide Saxophone",
-    family: "Wind", subcategory: "Hybrid", type_label: "Single-Reed Aerophone",
+    family: "Wind", subcategory: "Hybrid & Experimental", type_label: "Hybrid Reeds",
     range: "Alto", key: "Eb",
     source: "Custom makers / experimental",
     image_url: "",
@@ -1025,79 +1031,110 @@ export const DEMAKEIN_PRESETS: Record<string, string> = {
   reed_drone: "Reed Drone",
 };
 
+import { getDisplayLabel, DEMAKEIN_PRESET_TO_SUBFAMILY } from "./taxonomy";
+
 export interface PresetGroup {
   label: string;
   presets: { key: string; name: string }[];
 }
 
-export const DEMAKEIN_PRESET_GROUPS: PresetGroup[] = [
-  {
-    label: "Flute",
-    presets: [
-      { key: "folk_whistle", name: "Penny Whistle (Tin Whistle)" },
-      { key: "folk_flute", name: "Folk Flute" },
-      { key: "recorder", name: "Soprano Recorder" },
-      { key: "dorian_whistle", name: "Dorian Whistle" },
-      { key: "pflute", name: "Pan Flute" },
-      { key: "three_hole_whistle", name: "Three-Hole Whistle (Tabor Pipe)" },
-    ],
-  },
-  {
-    label: "Woodwind (Reed)",
-    presets: [
-      { key: "reedpipe", name: "Reedpipe" },
-      { key: "folk_shawm", name: "Folk Shawm" },
-      { key: "shawm", name: "Shawm" },
-      { key: "reed_drone", name: "Reed Drone" },
-    ],
-  },
-  {
-    label: "Clarinet",
-    presets: [
-      { key: "chalumier_clarinet", name: "Bb Clarinet (Chalumier TMM)" },
-      { key: "chalumier_bass_clarinet", name: "Bass Clarinet in G (Chalumier TMM)" },
-      { key: "baroque_clarinet", name: "Baroque Clarinet (2-Key Denner)" },
-    ],
-  },
-  {
-    label: "Double Reed",
-    presets: [
-      { key: "lohner_oboe", name: "Classical Oboe (Yamamoto 2025)" },
-      { key: "modern_oboe", name: "Modern Conservatory Oboe" },
-      { key: "baroque_oboe", name: "Baroque Oboe (Hautbois)" },
-    ],
-  },
-  {
-    label: "Saxophone",
-    presets: [
-      { key: "soprano_sax", name: "Soprano Saxophone" },
-      { key: "alto_sax", name: "Alto Saxophone" },
-      { key: "tenor_sax", name: "Tenor Saxophone" },
-      { key: "baritone_sax", name: "Baritone Saxophone" },
-    ],
-  },
-  {
-    label: "Brass",
-    presets: [
-      { key: "trumpet_bb", name: "Bb Trumpet" },
-      { key: "trombone", name: "Tenor Trombone" },
-      { key: "french_horn", name: "French Horn in F" },
-      { key: "tuba", name: "Tuba" },
-    ],
-  },
-  {
-    label: "Mouthpieces",
-    presets: [
-      { key: "clarinet_mouthpiece", name: "Bb Clarinet Mouthpiece" },
-      { key: "bass_clarinet_mouthpiece", name: "Bass Clarinet Mouthpiece" },
-      { key: "alto_sax_mouthpiece", name: "Alto Saxophone Mouthpiece" },
-      { key: "tenor_sax_mouthpiece", name: "Tenor Saxophone Mouthpiece" },
-      { key: "trumpet_mouthpiece", name: "Bb Trumpet Mouthpiece (Cup)" },
-    ],
-  },
+function buildDemakeinPresetGroups(): PresetGroup[] {
+  // Group presets by their subfamily from the taxonomy
+  const groupsMap = new Map<string, { key: string; name: string }[]>();
+  
+  for (const [presetKey, subfamilyId] of Object.entries(DEMAKEIN_PRESET_TO_SUBFAMILY)) {
+    const displayName = DEMAKEIN_PRESETS[presetKey];
+    if (!displayName) continue;
+    
+    const label = getDisplayLabel(subfamilyId);
+    if (!groupsMap.has(label)) {
+      groupsMap.set(label, []);
+    }
+    groupsMap.get(label)!.push({ key: presetKey, name: displayName });
+  }
+  
+  // Convert to array, sorted by family then subfamily
+  const sortedLabels = Array.from(groupsMap.keys()).sort((a, b) => {
+    const [familyA] = a.split(" – ");
+    const [familyB] = b.split(" – ");
+    const familyOrder = ["Flutes", "Single Reed", "Double Reed", "Brass", "Drone", "Membrane", "Hybrid & Experimental", "Parts & Accessories"];
+    const idxA = familyOrder.indexOf(familyA);
+    const idxB = familyOrder.indexOf(familyB);
+    if (idxA !== idxB) return idxA - idxB;
+    return a.localeCompare(b);
+  });
+  
+  return sortedLabels.map(label => ({
+    label,
+    presets: groupsMap.get(label)!,
+  }));
+}
+
+export const DEMAKEIN_PRESET_GROUPS: PresetGroup[] = buildDemakeinPresetGroups();
+
+const SUBCATEGORY_ORDER = [
+  "Flutes",
+  "Single Reed",
+  "Double Reed",
+  "Brass",
+  "Drone",
+  "Membrane",
+  "Hybrid & Experimental",
+  "Parts & Accessories",
 ];
 
-export const SUBCATEGORIES = [...new Set(INSTRUMENTS.map(i => i.subcategory))].sort();
-export const TYPE_LABELS = [...new Set(INSTRUMENTS.map(i => i.type_label))].sort();
+const TYPE_LABEL_ORDER = [
+  // Flutes
+  "Fipple / Duct Flutes",
+  "Transverse Flutes",
+  "Pan Flutes",
+  "Vessel Flutes",
+  "End-Blown Flutes",
+  "Overtone Flutes",
+  "Recorders",
+  "Whistles / Pennywhistles",
+  "Folk Flutes",
+  "Nordic Folk Flutes",
+  "Historical Flutes",
+  // Single Reed
+  "Clarinets",
+  "Saxophones",
+  "Chalumeaux",
+  "Pocket Sax / Xaphoon",
+  "Experimental Single Reed",
+  // Double Reed
+  "Oboes",
+  "Bassoons",
+  "Shawms",
+  "Folk Double Reeds",
+  "Historical Double Reeds",
+  // Brass
+  "Trumpets",
+  "Horns",
+  "Trombones",
+  "Tubas",
+  "Natural Horns / Lip-Vibrated",
+  // Drone
+  "Drone Flutes",
+  "Didgeridoo / Yidaki",
+  "Reed Drones",
+  // Membrane
+  "Kazoo / Mirliton",
+  "Membrane Reeds",
+  // Hybrid & Experimental
+  "Slide / Glissando Mechanisms",
+  "Tarogato / Hybrid Reeds",
+  "Glissando Reeds",
+  "Experimental / Novel",
+  // Parts & Accessories
+  "Mouthpieces",
+  "Bocals / Crooks",
+  "Extensions",
+  "Tools",
+  "Reeds",
+];
+
+export const SUBCATEGORIES = SUBCATEGORY_ORDER.filter((s) => INSTRUMENTS.some((i) => i.subcategory === s));
+export const TYPE_LABELS = TYPE_LABEL_ORDER.filter((t) => INSTRUMENTS.some((i) => i.type_label === t));
 export const TAGS = [...new Set(INSTRUMENTS.flatMap(i => i.tags))].sort();
 export const DIFFICULTIES = ["Beginner", "Intermediate", "Advanced", "Expert"];

@@ -1,6 +1,19 @@
-# AI Constitution
+﻿# AI Constitution
 
 Non-negotiable principles of the Instrument Designer project. These rules override implementation convenience.
+
+---
+
+## BOOT SEQUENCE (summary)
+
+Every session/agent must run these 6 steps before writing code. Full version: `docs/CONSTRAINTS_AND_PREFERENCES.md`.
+
+1. **Read the AI Constitution** (this file) — state which laws apply to your task.
+2. **Read architecture docs** — `ARCHITECTURE.md`, `ARCHITECTURE_DECISIONS.md`, `CODING_STANDARDS.md`, `PHYSICS_PRINCIPLES.md`.
+3. **Identify your subsystem** — from the table in `CONSTRAINTS_AND_PREFERENCES.md`.
+4. **Search before building** — reuse existing functions/classes/tests; never duplicate.
+5. **Produce an implementation plan** — files, interfaces, tests, docs, ADRs.
+6. **Implement** — follow `CODING_STANDARDS.md`; run `ARCHITECTURE_CHECKLIST.md` and `COMPLIANCE_CHECK.md` on every trigger.
 
 ---
 

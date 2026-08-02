@@ -42,6 +42,16 @@
 | [experiment/trumpet](https://github.com/kooshikooo-lab/instrument-designer/wiki/Branch-experiment-trumpet) | Trumpet model |
 | [refactor/architecture](https://github.com/kooshikooo-lab/instrument-designer/wiki/Branch-refactor-architecture) | Architecture redesign |
 
+### Governance
+| Page | Content |
+|------|---------|
+| [Governance-Boot-Sequence](https://github.com/kooshikooo-lab/instrument-designer/wiki/Governance-Boot-Sequence) | AI boot sequence (CONSTRAINTS_AND_PREFERENCES.md) |
+| [Governance-Constitution](https://github.com/kooshikooo-lab/instrument-designer/wiki/Governance-Constitution) | 10 non-negotiable laws (AI_CONSTITUTION.md) |
+| [Governance-ADRs](https://github.com/kooshikooo-lab/instrument-designer/wiki/Governance-ADRs) | Architecture Decision Records (ARCHITECTURE_DECISIONS.md) |
+| [Governance-Checklist](https://github.com/kooshikooo-lab/instrument-designer/wiki/Governance-Checklist) | Pre-flight/pre-commit checklist (ARCHITECTURE_CHECKLIST.md) |
+| [Governance-Compliance](https://github.com/kooshikooo-lab/instrument-designer/wiki/Governance-Compliance) | Compliance triggers (COMPLIANCE_CHECK.md) |
+| [Governance-Failure-Patterns](https://github.com/kooshikooo-lab/instrument-designer/wiki/Governance-Failure-Patterns) | Failure pattern log (AI_FAILURE_PATTERNS.md) |
+
 ## Quick Reference
 
 | What | Where |
