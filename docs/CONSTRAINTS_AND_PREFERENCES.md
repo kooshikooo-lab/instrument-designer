@@ -1,5 +1,21 @@
 # Instrument Designer — AI Boot Sequence & Governance Index
 
+> ## IMMUTABLE — INSTRUCTION-ONLY FILE
+> This file is the source of **instructions**, not a scratchpad for assumptions.
+> It is protected by a pre-commit hook and a CI check (`.github/workflows/governance-guard.yml`).
+> **Do not edit it unless you are following an explicit, direct instruction to do so**
+> (from a human or an existing instruction in this repo), and you must keep the
+> BOOT SEQUENCE section byte-for-byte intact unless the instruction is about the
+> boot sequence itself.
+>
+> If you are an agent and you "assumed" this file should change: STOP. Do not
+> rewrite, summarize, truncate, or rephrase it. If the boot sequence or protocol
+> is missing from your context, re-read this file — do not re-create it from memory.
+> Violations are blocked by the commit hook and fail CI.
+>
+> Authorized edits (e.g. a human asked you to update governance) must include
+> `GOVERNANCE-UPDATE` in the commit message, otherwise the hook blocks the commit.
+
 **Read this file first.** It is the initialization procedure every AI agent must follow before writing code.
 
 **Never begin coding until every step below is complete.**
