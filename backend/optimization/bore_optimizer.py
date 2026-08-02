@@ -1,6 +1,18 @@
-"""Bore optimizer.
+"""
+Bore optimizer — Absolute RMS primary metric.
 
 Optimizes bore geometry (length, profile) for a given fingering chart.
+Uses absolute RMS cents as the cost function (no median correction).
+
+Methodology:
+- Two-phase approach (Noreland 2013): Phase 1 DE global search, Phase 2 L-BFGS-B refinement
+- Cost function: absolute RMS cents deviation from target frequencies
+- Median correction (evenness) is reported separately, NOT used for optimization
+
+References:
+- Noreland et al. (2013) "The Logical Clarinet" — two-phase optimization essential
+- Ernoult et al. (2020) JASA — phase-based resonance tracking (to implement)
+- Petiot et al. (2025) — NSGA-II Pareto front (intonation vs timbre)
 """
 import time
 import numpy as np
@@ -139,7 +151,7 @@ class BoreOptimizer(Optimizer):
 
         dt = time.time() - t0
 
-        # Compute final RMS and peak cents
+        # Compute final metrics — absolute RMS is primary, median-corrected is secondary
         temp_net = self._make_network(best_length)
         target_wavelengths = [self.network.speed_of_sound / f for f in self.targets]
         try:
@@ -155,18 +167,21 @@ class BoreOptimizer(Optimizer):
             cents_arr = np.array(cents)
             rms_cents_abs = float(np.sqrt(np.mean(cents_arr ** 2)))
             offset = np.median(cents_arr)
-            corrected = cents_arr - offset
+            rms_cents_median = float(np.sqrt(np.mean((cents_arr - offset) ** 2)))
+            peak_cents = float(np.max(np.abs(cents_arr - offset)))
+            # Primary metric is absolute RMS (accuracy), median-corrected is evenness
             rms_cents = rms_cents_abs
-            peak_cents = float(np.max(np.abs(corrected)))
         except Exception:
             rms_cents = best_cost
+            rms_cents_median = 0.0
             peak_cents = 0.0
 
         return OptimizationResult(
             success=best_cost < 50.0,
             parameters={"bore_length": best_length},
             cost=best_cost,
-            rms_cents=rms_cents,
+            rms_cents=rms_cents,           # absolute RMS — primary (accuracy)
+            rms_cents_median=rms_cents_median,  # median-corrected — secondary (evenness)
             peak_cents=peak_cents,
             n_evaluations=self._n_evaluations,
             wall_time=dt,

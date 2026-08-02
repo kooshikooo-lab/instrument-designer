@@ -3,14 +3,21 @@
 Usage:
     python scripts/github_monitor.py
 
-Writes updates to scripts/github_updates.log.
+Writes updates to scripts/github_updates.log. New messages from the team channel
+(Discussion #23) are also reported through scripts/team_chat.py so the per-machine
+cursor stays in sync. Keep this running in the background on each machine; agents
+check for news with `python scripts/team_chat.py sync` at session start (Step 0).
 """
 
 import json
 import subprocess
+import sys
 import time
 import os
 from datetime import datetime, timezone
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from team_chat import cmd_sync
 
 REPO = "kooshikooo-lab/instrument-designer"
 DISCUSSION_NUM = 23
@@ -20,8 +27,8 @@ POLL_INTERVAL = 60
 
 def gh(*args):
     result = subprocess.run(
-        ["gh"] + list(args),
-        capture_output=True, text=True
+        ["gh"] + list(args), capture_output=True, text=True,
+        encoding="utf-8", errors="replace"
     )
     return result.stdout.strip() if result.returncode == 0 else ""
 

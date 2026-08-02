@@ -1,0 +1,17 @@
+name: governance-guard
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Block unauthorized governance file edits
+        run: |
+          python scripts/guard_governance.py

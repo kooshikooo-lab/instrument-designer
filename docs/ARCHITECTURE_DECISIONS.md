@@ -230,3 +230,30 @@ The repo exists in two working copies. The desktop copy is on `main` (`13a7a65` 
 - Positive: Both branches can be diffed for algorithm comparison without import noise.
 - Negative: Quarantined files will not run until rewritten against `backend/two_phase_optimizer.py` or `backend/optimizer.py`.
 - Negative: Two branch copies still drift; the port's unfinished `PIPELINE_TEST_BUGLOG.md` claim remains a known discrepancy to reconcile in the port copy.
+
+---
+
+## ADR-010: Folded (paperclip U-bend) Geometry in CAD Export
+
+**Status:** Accepted (2026-08-02)
+
+**Title:** Folded (paperclip U-bend) geometry in CAD export
+
+**Context:**
+The contra-alto and contra-bass clarinets in the instrument library were exported as straight cylindrical pipes. Real instruments of this class (Leblanc "paperclip" models 340/350, octo-contra designs) are folded into a compact U-bend so the long low-register tube fits in a playable footprint. The CAD exporter only lofted straight bores, so the STL did not match the physical instrument.
+
+**Decision:**
+Add `generate_folded_bore_instrument()` to `backend/cadquery_export.py`. The bore follows a U-shaped centerline in the XZ plane - two straight legs joined by a 180-degree semicircular bend - whose total length equals the acoustic `bore_length`, so folding does not change the acoustic length. Geometry is built by sweeping a circular profile (outer, then inner) along the centerline and cutting, producing a single fused solid. Tone holes are cut only on the straight legs; holes whose unfolded position falls inside the bend are skipped (real folded instruments carry keys on the straight sections). The `"bend_radius_mm"` key is an OPTIONAL, purely geometric property of an INSTRUMENTS entry; when present, `design_server.py` dispatches to the folded generator. Cylindrical bores only in v1.
+
+**Consequences:**
+- Positive: Folded contra STLs now match the physical paperclip shape of the Leblanc 340/350 and octo-contra instruments.
+- Positive: Acoustic length is preserved - the folded centerline total equals `bore_length`, so the sounding length is unchanged.
+- Positive: Reuses the existing position-from-bell tone hole convention shared with `generate_instrument` and `generate_variable_bore_instrument`.
+- Positive: Higher-key folding is limited to bass clarinet and below per product decision.
+- Negative: Holes whose unfolded position falls inside the bend are not modeled (v1 limitation).
+- Negative: No conical-bore folding yet - v1 supports cylindrical bores only.
+- Negative: CAD models only the shape, not the bend's acoustic impedance; bend acoustics stay in the acoustics layer, per Law 4 - the CAD module contains no physics.
+
+**Laws Satisfied:**
+- Law 4 (geometry separate from acoustics - the CAD module contains no physics)
+- Law 9 (document architectural decisions - this ADR records the interface change)
