@@ -10,7 +10,8 @@
 ## Goal
 
 - Converge both machines on `main`: settle laptop's reconciliation decisions (speed-of-sound 346100, 5-stage `sequential_refined`), then run research/spectral API work (librosa, OpenWInD, free compute, Gemini multimodal) and scope a `backend/spectral` validation module.
-- Tools must be **integrated into a pipeline**, never just installed and forgotten (recurring problem — see "Tool adoption rule" below).
+- Overnight autonomous run (Dask benchmark, unconventional shapes, WAV inverse design, analytical cross-check) **completed**. Next: Phase 2G surrogate training (Kaggle) on the laptop, spectral module design, Gemini integration.
+- Tools must be **integrated into a pipeline**, never just installed and forgotten (recurring problem — see "Tool adoption rule" below). The tool registry guard is now built and live.
 
 ## Constraints & Preferences
 
@@ -39,12 +40,26 @@
 - **Free compute + multimodal search completed**: Colab ~15-30 GPU-hr/wk, Kaggle ~30 GPU-hr/wk (best free fit for Phase 2G), HF ZeroGPU small, Lightning 80/hr-mo, GCP $300 credits, SageMaker Lab closing to new users Jul 30 2026; Gemini free tier strongest multimodal (audio/images/video/PDF, Flash ~10 RPM/250 RPD), Groq, OpenRouter multimodals, Qwen2.5-VL/LLaVA/InternVL open-weight. Repo already uses OpenRouter (`prompt_builder.py`/`ai_assistant.py`/`stl_verifier.py`) + Ollama; **Gemini NOT integrated** (only in chat-log).
 - **Compute research posted** (#23 comment 17867767): free-compute + Gemini multimodal findings.
 - **Boot-sequence fix committed**: `f5ae5ed` (BOOT_STATE.md + AGENTS.md pointer) and `ca67ce7` (watcher commit — previously uncommitted, at risk of loss).
+- **Mid-session context-loss protocol** (`3125d5b`, GOVERNANCE-UPDATE): AGENTS.md now says stop-and-re-read after compaction; boot FINAL CHECK requires BOOT_STATE.md update before session ends.
+- **Overnight run (user asleep) — all complete**:
+  - Dask cluster verified live (8 workers, `tcp://100.100.66.117:8786`); `benchmark_dask.py` defaulted to stale `100.69.113.41:8786` (0 workers) — patched via `scripts/_run_benchmark_live.py`.
+  - **Main Dask benchmark: 12/12 pass <3c RMS, 4.09× speedup** (298.8s → 73.0s, 8 workers).
+  - **Unconventional shapes: ALL PASSED** (10/10 bore types → STL; optimizations: exponential 0.0c, spiral 0.04c, parabolic 1.2c, stepped 1.9c, ridged 5.4c, bessel 7.0c, cylindrical 15.8c).
+  - **WAV inverse design**: `backend/inverse_design.py` extracted from kalles-main-branch; **fixed `1.0/round_trip` amplification bug** (used `round_trip` directly); Tier 1 f0 recovery +3.9c/−4.5c, Tier 3 cost 0.064; Tier 2 blocked (generative_agent not on main).
+  - **botorch installed + declared** (was phantom — imported by `bi_objective_bo.py`, never in pyproject). gpytorch dep added.
+  - **Analytical cross-check**: constant 0.66r end correction, worst error 0.04c / 72 cases; new test `tests/test_analytical_pipes.py` (73 tests).
+  - **Tool registry built**: `scripts/toolcheck.py` + `tests/test_tool_registry.py` guard + `docs/TOOLS.md`; new extras `cad` (cadquery/build123d/vtk/trimesh) and `bench` (dask[distributed]/psutil/cma); **PHANTOM deps now empty**.
+  - **Desktop suite: 26 → 113 passed** (added inverse_design 9, surrogate 4, analytical pipes 73, tool registry 1). OpenWind standalone cross-check: 3 passed.
+  - Commits pushed: `b3e41a2` (WAV + tests) → `a9aa7c6` (analytical pipes) → `ea6fe6a` (tool registry). Full results posted to #23 (comment 17867933).
+  - **Phase 2G decisions posted** (#23 comment 17867858): target contract APPROVED; direction = **Kaggle** (`train_surrogate.py --epochs 200 --batch 256`, upload samples_2000_seed42.csv).
 
 ### In Progress
-- `scripts/_research_msg.md` staged for #23, **not yet posted** (spectral APIs: librosa → OpenWInD → GNN surrogate; recommended order).
+- **Phase 2G** (laptop): awaiting Kaggle dataset upload + notebook run of `train_surrogate.py`. Desktop monitors #23.
+- **Spectral research post**: `scripts/_research_msg.md` (librosa/OpenWInD/scipy/GNN) still staged for #23, not yet posted — can be folded into the next spectral update.
 
 ### Blocked
 - `backend/spectral` implementation **awaits user approval of design** (scoped but not presented).
+- Inverse-design Tier 2 (`design_from_sound` full pipeline): `generative_agent`, `instrument_knowledge`, `spline_bore` not on `main` (ADR: PLANNED).
 
 ## Key Decisions
 
@@ -53,35 +68,45 @@
 - Messaging model: OS-level toast watcher handles notification (human is better at noticing) + bounded foreground `watch` prints into chat when I listen; background daemon never decides/responds unattended.
 - Spectral module: synthetic-only tests for now, no mic/recording integration; reuse `metrics.py`/`target_frequencies.py` (import, never modify — single source of truth).
 - Restart session after powershell command in compacted laptop message (nudged; laptop ack'd coordination is on-channel).
-- **Tool registry solution** (proposed, user wants tools "integrated in a pipeline of some sort" — awaiting explicit build approval): `docs/TOOLS.md` manifest + `scripts/toolcheck.py` (installed vs declared vs imported vs call-site) + `tests/test_tool_registry.py` guard that fails on forgotten/phantom deps. First action: reconcile pyproject to reality (torch, torchaudio, torchvision, dask, distributed, librosa, sounddevice are phantom).
+- **Tool registry solution** (BUILT — commit `ea6fe6a`, guard live): `docs/TOOLS.md` manifest + `scripts/toolcheck.py` (installed vs declared vs imported across live pipeline) + `tests/test_tool_registry.py` pytest guard that fails on undeclared third-party imports. Adoption rule now enforced: install + declare + import + whitelisted test. New pyproject extras: `cad`, `bench`, `surrogate` (+gpytorch). PHANTOM = empty.
 - **Boot-state persistence** (user: "boot sequence is gone. Again." — fixed): `docs/session-logs/BOOT_STATE.md` is the versioned, reloadable session snapshot; AGENTS.md Step 0 points at it. Update at end of every session.
 
 ## Next Steps
 
-1. Post `scripts/_research_msg.md` to #23; remove the file.
-2. Implement the tool registry: `docs/TOOLS.md` + `scripts/toolcheck.py` + pytest guard, with a governance commit (see "Key Decisions").
-3. Team sync + check `scripts/.team_inbox.md` for Phase 2F results / laptop ack.
-4. Verify push credibility + monitor Phase 2F; hand off to Phase 2G (Kaggle free GPU candidate).
-5. Wire Gemini free Flash into `ai_assistant.py` as second provider (multimodal audio/image for spectral + STL verification; first deploy once Gemini integration lands).
-6. Implement `backend/spectral` per design once approved.
+1. Monitor #23 / `scripts/.team_inbox.md` for laptop's Phase 2G Kaggle ack; verify push credibility.
+2. Post `scripts/_research_msg.md` to #23 (spectral API research) or fold into next spectral update; remove the file.
+3. Present `backend/spectral` design for user approval (metrics.py/target_frequencies.py reuse, synthetic-only tests).
+4. Wire Gemini free Flash into `ai_assistant.py` as second provider (multimodal audio/image for spectral + STL verification).
+5. Update `docs/ARCHIVED_TOOLS.md` for genuinely forgotten packages (FORGOTTEN list in toolcheck) — informational only, no auto-uninstall.
+6. Keep tool registry current: re-run `python scripts/toolcheck.py` after any dependency change.
 
 ## Critical Context
 
-- **Sync**: `kalles-main-branch` = `3175b01` = clean superset of `origin/main` (`3ce892e`): **14 ahead / 0 behind**, no divergence; laptop local `0732868` now pushed.
-- **`origin/main` log**: `3ce892e` (speed-of-sound) → `cc202b5` (laptop merge `kalles-main-branch` in) → `dd0ab01` (Phase 2 surrogate stack) → `2a4b263` (port) → `60b5d25` (rename).
+- **Sync**: `origin/main` = `ea6fe6a`; laptop `kalles-main-branch` ahead with Phase 2G `train_surrogate.py` (commit `e261691`) — laptop "nothing on main", working on kalles only.
+- **`origin/main` log**: `3ce892e` → `cc202b5` → `dd0ab01` → `2a4b263` → `60b5d25` → `3125d5b` (governance mid-session) → `b3e41a2` (WAV pipeline + tests) → `a9aa7c6` (analytical pipes) → `ea6fe6a` (tool registry).
 - Desktop worktree `..\instrument-designer-port` on `main`; original repo `C:\Users\Admin\Desktop\instrument-designer` on `benchmarking-experiments` (untouched).
-- `origin/HEAD -> origin/experiment/unconventional-shapes` (harmless remote HEAD pointer; branch kept as unmerged).
-- Background watcher PID 24148 running (toast+sound; log shows 06:41/06:42 starts); `git fetch origin` post-push on Windows prints stderr lines as "RemoteException" but is non-fatal.
-- Desktop test suite = 26 passed (unit 8 + sympy 18 equivalent subset); laptop = 84 passed.
+- Dask live cluster = `tcp://100.100.66.117:8786` (8 workers); `benchmark_dask.py` default scheduler `100.69.113.41:8786` is stale/empty — use `_run_benchmark_live.py`.
+- Background watcher running (toast+sound, `scripts/.team_watch.log`); `git fetch` stderr lines print as "RemoteException" on Windows but are non-fatal.
+- Desktop test suite = **113 passed**; laptop = 84 passed.
+- Python 3.14; pip warns of invalid distributions (`~emakein`, `~nstrument-designer`, `~yside6-addons`) — harmless.
 - ADR-010 (folded geometry) appended to `docs/ARCHITECTURE_DECISIONS.md`; ADR numbering 001–009 pre-existing.
-- Laptop uses identity `big-pickle`; remote push `211f98b..3175b01` confirmed. Laptop branch-local calls still import 5-stage `sequential_refined` (`generative_agent.py`, `benchmark_unconventional_shapes.py:98`).
+- Laptop uses identity `big-pickle`; laptop branch-local calls still import 5-stage `sequential_refined` (`generative_agent.py`, `benchmark_unconventional_shapes.py:98`).
+- Regenerable artifacts deliberately uncommitted: `test_output/inverse_design/`, `test_output/unconventional/`, `backend/benchmark_results.json`, all benchmark logs.
 
 ## Relevant Files
 
 - `scripts/team_watch.ps1` — background toast watcher (3s, no-toast/no-sound/log/inbox hooks); log `scripts/.team_watch.log`.
 - `scripts/team_chat.py` — sync/post/`--file`/`watch --timeout`/`sync --json`; state `scripts/.team_state.json`.
 - `scripts/.team_inbox.md` — inbox for landed messages.
+- `scripts/toolcheck.py` — tool registry checker (installed/declared/imported; use `importlib.metadata`).
+- `tests/test_tool_registry.py` — whitelisted guard; fails on undeclared third-party imports.
+- `docs/TOOLS.md` — tool registry manifest + adoption steps + current declarations.
+- `docs/ARCHIVED_TOOLS.md` — target for genuinely forgotten packages (informational).
+- `scripts/_overnight_results.md` — posted to #23 (comment 17867933), file can be removed.
 - `scripts/_research_msg.md` — staged spectral research post (librosa/OpenWInD/scipy/GNN).
+- `backend/inverse_design.py` — WAV→instrument pipeline (Tier 1 + Tier 3 work; Tier 2 blocked). `backend/benchmark_inverse_design.py` — WAV benchmark.
+- `tests/test_analytical_pipes.py` — TMM vs closed-form pipes (73 cases, 0.66r end correction).
+- `scripts/_run_benchmark_live.py` — patches `benchmark_dask.py` to the live scheduler address.
 - `backend/physics/losses.py:96` — `f = 346100.0 / lam_m` (was 343200).
 - `tests/test_sympy_validation.py` lines 110/155/164 — `C_BOUNDARY_MM_S = 346100.0`; 18 tests pass.
 - `tests/unit/test_basic.py` — unit test conventions (SPEED_OF_SOUND == 346100.0; fixture registry).
