@@ -54,7 +54,7 @@
   - **Phase 2G decisions posted** (#23 comment 17867858): target contract APPROVED; direction = **Kaggle** (`train_surrogate.py --epochs 200 --batch 256`, upload samples_2000_seed42.csv).
 
 ### In Progress
-- **Phase 2G** (laptop): awaiting Kaggle dataset upload + notebook run of `train_surrogate.py`. Desktop monitors #23.
+- **Phase 2G/2H (laptop)**: surrogate trained on mixed 10K (best val 0.685; tail-weighted 0.660). Phase 2H CLOSED — standalone surrogate-BO not viable (0/20 top-20 elite overlap, unconstrained search → invalid geometry); **hybrid warm-start validated** (surrogate ranks → `refine_sequential` finishes: 8/10 reach 0¢ vs 5/10 random). Awaiting desktop direction on Kaggle GPU run vs warm-start-only.
 - **Spectral research post**: the draft `scripts/_research_msg.md` (librosa/OpenWInD/scipy/GNN) is gone (never committed). The spectral API findings live in BOOT_STATE Done + #23 comment 17867767; fold into the next spectral update instead of re-staging.
 
 ### Blocked
@@ -73,7 +73,7 @@
 
 ## Next Steps
 
-1. Monitor #23 / `scripts/.team_inbox.md` for laptop's Phase 2G Kaggle ack; verify push credibility.
+1. Monitor #23 for desktop's response on Phase 2H close-out: Kaggle GPU surrogate run vs treat surrogate as warm-start-only. Verify laptop push `b067afc` credibility.
 2. Present `backend/spectral` design for user approval (metrics.py/target_frequencies.py reuse, synthetic-only tests). Include the spectral API research (librosa → OpenWInD → GNN surrogate) that was summarized in Done / #23 comment 17867767.
 3. Wire Gemini free Flash into `ai_assistant.py` as second provider (multimodal audio/image for spectral + STL verification).
 4. Update `docs/ARCHIVED_TOOLS.md` for genuinely forgotten packages (FORGOTTEN list in toolcheck) — informational only, no auto-uninstall.
@@ -83,10 +83,11 @@
 
 - **Sync**: `origin/main` = `ea6fe6a`; laptop `kalles-main-branch` ahead with Phase 2G `train_surrogate.py` (commit `e261691`) — laptop "nothing on main", working on kalles only.
 - **`origin/main` log**: `3ce892e` → `cc202b5` → `dd0ab01` → `2a4b263` → `60b5d25` → `3125d5b` (governance mid-session) → `b3e41a2` (WAV pipeline + tests) → `a9aa7c6` (analytical pipes) → `ea6fe6a` (tool registry).
+- **Laptop `kalles-main-branch` HEAD**: `b067afc` (tail-weight feature), ahead of `origin/main` with: speed-of-sound merge `3175b01`, Phase 2F AUDIT generation `5409846`, inverse-design merge `c2eb6aa`, tool-registry merge `9460e77`, mixed sampling `d5550db`, botorch-API fixes `77dd2d6`. Laptop test suite = **172 passed**. No laptop work on `main`; all on `kalles-main-branch`.
 - Desktop worktree `..\instrument-designer-port` on `main`; original repo `C:\Users\Admin\Desktop\instrument-designer` on `benchmarking-experiments` (untouched).
 - Dask live cluster = `tcp://100.100.66.117:8786` (8 workers); `benchmark_dask.py` default scheduler `100.69.113.41:8786` is stale/empty — use `_run_benchmark_live.py`.
 - Background watcher running (toast+sound, `scripts/.team_watch.log`); `git fetch` stderr lines print as "RemoteException" on Windows but are non-fatal.
-- Desktop test suite = **113 passed**; laptop = 84 passed.
+- Desktop test suite = **113 passed**; laptop = **172 passed**.
 - Python 3.14; pip warns of invalid distributions (`~emakein`, `~nstrument-designer`, `~yside6-addons`) — harmless.
 - ADR-010 (folded geometry) appended to `docs/ARCHITECTURE_DECISIONS.md`; ADR numbering 001–009 pre-existing.
 - Laptop uses identity `big-pickle`; laptop branch-local calls still import 5-stage `sequential_refined` (`generative_agent.py`, `benchmark_unconventional_shapes.py:98`).
