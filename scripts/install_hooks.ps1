@@ -4,7 +4,7 @@
 
 $repoRoot = git rev-parse --show-toplevel
 if (-not $repoRoot) { Write-Error "Not a git repo."; exit 1 }
-$hooksDir = Join-Path $repoRoot ".git\hooks"
+$hooksDir = git rev-parse --git-path hooks
 $sourceDir = Join-Path $repoRoot "scripts\git-hooks"
 
 foreach ($hook in @("commit-msg")) {
