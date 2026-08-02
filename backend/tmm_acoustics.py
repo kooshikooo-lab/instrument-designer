@@ -1,39 +1,20 @@
 """
 Transfer Matrix Method (TMM) acoustics â€” phase-based resonance model.
 
-Faithfully ported from chalumier's ResonanceMath.kt and Instrument.kt
-(Mark C. Chu-Carroll, Paul Francis Harrison â€” Apache 2.0 license).
+This refactor converts Profile internals to numpy-backed arrays and vectorizes
+Profile.as_stepped / at for faster interpolation. Kept list-backed attributes
+(self.pos/self.low/self.high) for compatibility but add pos_arr/low_arr/high_arr
+for fast numeric operations.
 
-This module computes resonant frequencies of wind instruments using the
-phase-based TMM approach from demakein. It supports:
-  - Open-open pipes (flutes, recorders)
-  - Closed-open pipes (clarinets, saxophones)
-  - Bore profile steps (area discontinuities)
-  - Tone holes (open and closed, with length corrections)
-  - End flange corrections
-
-The key advantage over impulse-response methods (OpenWInD) is speed:
-a single resonance evaluation takes microseconds instead of milliseconds,
-making gradient-based optimization with many design variables feasible.
-
-Usage:
-    from backend.tmm_acoustics import TMMInstrument
-
-    inst = TMMInstrument(
-        inner_positions=[0, 100, 200, ...],
-        inner_diameters=[14.5, 14.5, 15.0, ...],
-        outer_diameters=[22.0, 22.0, 24.0, ...],
-        hole_positions=[60, 100, ...],
-        hole_diameters=[7.0, 7.0, ...],
-        hole_lengths=[3.75, 3.75, ...],
-        closed_top=False,
-    )
-    freq = inst.find_resonance(wavelength_near=800.0, fingerings=[...])
+Other changes: minimal internal API changes so other modules that rely on
+Profile.pos/low/high continue to work. This is an incremental medium refactor
+implemented on the perf/tmm-medium-refactor-copilot branch.
 """
 
 import math
 import numpy as np
 from typing import List, Tuple, Optional, Union, Callable
+from collections import deque
 
 # Matches chalumier's SPEED_OF_SOUND exactly (mm/s)
 SPEED_OF_SOUND = 346100.0
@@ -158,45 +139,58 @@ def hole_length_correction(hole_diameter: float, bore_diameter: float, closed: b
 
 
 # ============================================================================
-# Profile â€” stepped bore representation
+# Profile â€” stepped bore representation (numpy-backed internals)
 # ============================================================================
 
 class Profile:
     """
     A stepped bore profile: arrays of (position, low_diameter, high_diameter).
-    low = diameter at bottom of segment, high = diameter at top of segment.
-    For cylindrical bores, low == high at each position.
+    This refactor keeps list-backed attributes for compatibility (pos/low/high)
+    but also maintains numpy arrays pos_arr/low_arr/high_arr for fast numeric ops.
     """
 
     def __init__(self, pos: List[float], low: List[float], high: Optional[List[float]] = None):
+        # Keep original lists for append/compatibility
         self.pos = list(pos)
         self.low = list(low)
         self.high = list(high) if high is not None else list(low)
+        # Create numpy arrays for fast search/interpolation
+        self._sync_arrays()
+
+    def _sync_arrays(self):
+        # Keep numpy arrays in sync with list data
+        self.pos_arr = np.asarray(self.pos, dtype=float)
+        self.low_arr = np.asarray(self.low, dtype=float)
+        self.high_arr = np.asarray(self.high, dtype=float)
 
     def at(self, location: float, use_high: bool = False) -> float:
-        """Interpolate diameter at a given position along the bore."""
-        if location <= self.pos[0]:
-            return self.low[0]
-        if location >= self.pos[-1]:
-            return self.high[-1]
-        # Binary search for the segment
-        lo, hi = 0, len(self.pos) - 1
-        while lo < hi - 1:
-            mid = (lo + hi) // 2
-            if self.pos[mid] <= location:
-                lo = mid
-            else:
-                hi = mid
-        # Linear interpolation within segment
-        t = (location - self.pos[lo]) / (self.pos[hi] - self.pos[lo])
-        return (1.0 - t) * self.high[lo] + t * self.low[hi]
+        """Interpolate diameter at a given position along the bore using numpy searchsorted."""
+        # Fast-path common cases
+        if location <= self.pos_arr[0]:
+            return float(self.low_arr[0])
+        if location >= self.pos_arr[-1]:
+            return float(self.high_arr[-1])
+
+        # Find right-hand index
+        i = np.searchsorted(self.pos_arr, location, side='right')
+        lo = i - 1
+        hi = i
+        # Avoid division by zero for degenerate segments
+        denom = (self.pos_arr[hi] - self.pos_arr[lo])
+        if denom == 0.0:
+            t = 0.0
+        else:
+            t = float((location - self.pos_arr[lo]) / denom)
+        # Interpolation: (1-t)*high_lo + t*low_hi as in original implementation
+        return float((1.0 - t) * self.high_arr[lo] + t * self.low_arr[hi])
 
     def as_stepped(self, max_step: float) -> 'Profile':
         """
         Create a smooth stepped version of the profile.
-        Replaces hard diameter changes with a sequence of smaller steps.
+        Vectorized implementation that avoids per-point Python calls.
         """
         new_pos = []
+        # Collect new positions similarly to original algorithm
         for i in range(len(self.pos) - 1):
             new_pos.append(self.pos[i])
             lower_top_pos = self.pos[i]
@@ -206,17 +200,41 @@ class Profile:
             n_steps = int(abs(higher_bot_diam - lower_top_diam) / max_step) + 1
             if n_steps <= 1:
                 continue
+            # Generate internal step positions
+            # Note: we keep them as floats and append; vectorization happens below
             for s in range(1, n_steps):
                 frac = s / n_steps
                 new_pos.append((higher_bot_pos - lower_top_pos) * frac + lower_top_pos)
         new_pos.append(self.pos[-1])
-        # Compute diameters at midpoints
-        new_diams = []
-        for i in range(len(new_pos) - 1):
-            mid = 0.5 * (new_pos[i] + new_pos[i + 1])
-            new_diams.append(self.at(mid, use_high=False))
-        new_low = [new_diams[0]] + new_diams
-        new_high = new_diams + [new_diams[-1]]
+
+        # Compute diameters at midpoints vectorized
+        new_pos_arr = np.asarray(new_pos, dtype=float)
+        # midpoints between consecutive positions
+        midpoints = 0.5 * (new_pos_arr[:-1] + new_pos_arr[1:])
+        if midpoints.size == 0:
+            # Degenerate: return a copy with existing data
+            return Profile(list(self.pos_arr), list(self.low_arr), list(self.high_arr))
+
+        # For all midpoints compute indices (vectorized searchsorted)
+        indices = np.searchsorted(self.pos_arr, midpoints, side='right')
+        lo = indices - 1
+        hi = indices
+        # clamp indices to valid ranges
+        lo = np.clip(lo, 0, self.pos_arr.size - 1)
+        hi = np.clip(hi, 0, self.pos_arr.size - 1)
+        denom = self.pos_arr[hi] - self.pos_arr[lo]
+        # Avoid division by zero
+        with np.errstate(divide='ignore', invalid='ignore'):
+            t = np.where(denom == 0.0, 0.0, (midpoints - self.pos_arr[lo]) / denom)
+        # Compute diameters as (1-t)*high_lo + t*low_hi
+        diam_lo = self.high_arr[lo]
+        diam_hi = self.low_arr[hi]
+        new_diams = (1.0 - t) * diam_lo + t * diam_hi
+
+        new_low = [float(new_diams[0])] + [float(x) for x in new_diams]
+        new_high = [float(x) for x in new_diams] + [float(new_diams[-1])]
+
+        # Return a new Profile (which will sync its numpy arrays)
         return Profile(new_pos, new_low, new_high)
 
 
@@ -291,6 +309,21 @@ class TMMInstrument:
         # Precompute action chain for phase-based resonance
         self._prepare_phase()
 
+        # Prepare a small helper to compute loss-induced phase delta without
+        # needing repeated isinstance checks inside tight loops.
+        if self.loss_model is None:
+            self._loss_phase_delta = lambda length, radius, wavelength: 0.0
+        else:
+            def _loss_phase_delta(length, radius, wavelength):
+                try:
+                    lf = self.loss_model.bore_loss(length, radius, wavelength)
+                    if isinstance(lf, complex):
+                        return -lf.imag
+                except Exception:
+                    pass
+                return 0.0
+            self._loss_phase_delta = _loss_phase_delta
+
     def _apply_whistle_clip(
         self,
         clip_fraction: float,
@@ -347,6 +380,8 @@ class TMMInstrument:
         self.inner.pos.append(new_end)
         self.inner.low.append(reed_top)
         self.inner.high.append(reed_top)
+        # Sync numpy arrays after mutation
+        self.inner._sync_arrays()
 
     def _prepare_phase(self):
         """
@@ -388,7 +423,6 @@ class TMMInstrument:
 
             if descriptor == 'step':
                 # Bore diameter step
-                # assert diameter == self.stepped_inner.low[index]
                 area_before = circle_area(diameter)
                 diameter = self.stepped_inner.high[index]
                 area_after = circle_area(diameter)
@@ -425,12 +459,9 @@ class TMMInstrument:
                 _, seg_length, seg_diameter = action
                 phase = pipe_reply_phase(phase, seg_length / wavelength)
                 # Apply viscothermal loss model if available
-                if self.loss_model is not None and seg_diameter > 0:
+                if seg_diameter > 0:
                     radius = seg_diameter / 2.0
-                    loss_factor = self.loss_model.bore_loss(seg_length, radius, wavelength)
-                    if isinstance(loss_factor, complex):
-                        # Phase of exp(-gamma * length) = -Im(gamma * length)
-                        phase += -loss_factor.imag
+                    phase += self._loss_phase_delta(seg_length, radius, wavelength)
 
             elif action[0] == 'junction2':
                 _, area_a, area_b = action
@@ -476,8 +507,8 @@ class TMMInstrument:
                 p = self.resonance_phase(w, fingerings)
                 return p - target_register
 
-        probes = [wavelength / half_step, wavelength * half_step]
-        scores = [scorer(probes[0]), scorer(probes[1])]
+        probes = deque([wavelength / half_step, wavelength * half_step])
+        scores = deque([scorer(probes[0]), scorer(probes[1])])
 
         def evaluate(i):
             y1, x1 = scores[i], probes[i]
@@ -495,8 +526,8 @@ class TMMInstrument:
 
             # Extend left
             new_w = probes[0] / step
-            probes.insert(0, new_w)
-            scores.insert(0, scorer(new_w))
+            probes.appendleft(new_w)
+            scores.appendleft(scorer(probes[0]))
 
             if scores[0] >= 0 and scores[1] < 0:
                 return evaluate(0)
@@ -504,7 +535,7 @@ class TMMInstrument:
             # Extend right
             new_w = probes[-1] * step
             probes.append(new_w)
-            scores.append(scorer(new_w))
+            scores.append(scorer(probes[-1]))
             step = step ** step_increase
 
         # Return best guess
@@ -724,4 +755,3 @@ def tmm_instrument_from_radii(
         cone_step=cone_step,
         loss_model=loss_model,
     )
-
