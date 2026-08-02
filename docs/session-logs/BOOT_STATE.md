@@ -54,11 +54,11 @@
   - **Phase 2G decisions posted** (#23 comment 17867858): target contract APPROVED; direction = **Kaggle** (`train_surrogate.py --epochs 200 --batch 256`, upload samples_2000_seed42.csv).
 
 ### In Progress
-- **Phase 2G** (laptop): awaiting Kaggle dataset upload + notebook run of `train_surrogate.py`. Desktop monitors #23.
+- **Phase 2G/2H** (laptop): laptop posted Phase 2H verdict (comment 17869601 context — hybrid warm-start validated: 8/10 reach 0c vs 5/10 random, ~5x fewer outliers; standalone surrogate-BO CLOSED; tail-weighting kept but dormant). Desktop replied (comment 17869601) approving close-out and offering a **desktop-Dask bulk sampling job (~50K tail-focused samples) → Kaggle** — awaiting laptop green-light + schema/commit confirmation. Laptop branch now 26 ahead of main (`b087cd7`), includes `9460e77` merge of desktop tool registry.
 - **Spectral research post**: the draft `scripts/_research_msg.md` (librosa/OpenWInD/scipy/GNN) is gone (never committed). The spectral API findings live in BOOT_STATE Done + #23 comment 17867767; fold into the next spectral update instead of re-staging.
 
 ### Blocked
-- `backend/spectral` implementation **awaits user approval of design** (scoped but not presented).
+- `backend/spectral` implementation **awaits user approval of design** — draft committed `ca266b4` (`docs/DESIGN_spectral.md`); present to user when awake. Has 3 open questions (scope of first commit; reuse of timbre_objectives sharpness; librosa extra timing).
 - Inverse-design Tier 2 (`design_from_sound` full pipeline): `generative_agent`, `instrument_knowledge`, `spline_bore` not on `main` (ADR: PLANNED).
 
 ## Key Decisions
@@ -73,15 +73,15 @@
 
 ## Next Steps
 
-1. Monitor #23 / `scripts/.team_inbox.md` for laptop's Phase 2G Kaggle ack; verify push credibility.
-2. Present `backend/spectral` design for user approval (metrics.py/target_frequencies.py reuse, synthetic-only tests). Include the spectral API research (librosa → OpenWInD → GNN surrogate) that was summarized in Done / #23 comment 17867767.
+1. Monitor #23 / `scripts/.team_inbox.md` for laptop's Phase 2G Kaggle ack AND the Dask bulk-sampling green-light; verify push credibility.
+2. Present `backend/spectral` design (`docs/DESIGN_spectral.md`, commit `ca266b4`) for user approval — includes the spectral API research summarized in Done / #23 comment 17867767.
 3. Wire Gemini free Flash into `ai_assistant.py` as second provider (multimodal audio/image for spectral + STL verification).
 4. Update `docs/ARCHIVED_TOOLS.md` for genuinely forgotten packages (FORGOTTEN list in toolcheck) — informational only, no auto-uninstall.
 5. Keep tool registry current: re-run `python scripts/toolcheck.py` after any dependency change.
 
 ## Critical Context
 
-- **Sync**: `origin/main` = `ea6fe6a`; laptop `kalles-main-branch` ahead with Phase 2G `train_surrogate.py` (commit `e261691`) — laptop "nothing on main", working on kalles only.
+- **Sync**: `origin/main` = `ca266b4`; laptop `kalles-main-branch` = `b087cd7` = **26 ahead / 0 behind** (clean superset, no divergence). Laptop HEAD `b067afc`; includes `77dd2d6` (botorch>=0.16 API fixes), `d5550db` (Phase 2F.2 mixed sampling), `20956ee` (early stopping), `9460e77` (merged desktop tool registry).
 - **`origin/main` log**: `3ce892e` → `cc202b5` → `dd0ab01` → `2a4b263` → `60b5d25` → `3125d5b` (governance mid-session) → `b3e41a2` (WAV pipeline + tests) → `a9aa7c6` (analytical pipes) → `ea6fe6a` (tool registry).
 - Desktop worktree `..\instrument-designer-port` on `main`; original repo `C:\Users\Admin\Desktop\instrument-designer` on `benchmarking-experiments` (untouched).
 - Dask live cluster = `tcp://100.100.66.117:8786` (8 workers); `benchmark_dask.py` default scheduler `100.69.113.41:8786` is stale/empty — use `_run_benchmark_live.py`.
@@ -100,6 +100,7 @@
 - `scripts/toolcheck.py` — tool registry checker (installed/declared/imported; use `importlib.metadata`).
 - `tests/test_tool_registry.py` — whitelisted guard; fails on undeclared third-party imports.
 - `docs/TOOLS.md` — tool registry manifest + adoption steps + current declarations.
+- `docs/DESIGN_spectral.md` — `backend/spectral` design draft (commit `ca266b4`), awaiting user approval.
 - `docs/ARCHIVED_TOOLS.md` — target for genuinely forgotten packages (informational).
 - `scripts/_overnight_results.md` — posted to #23 (comment 17867933), file can be removed.
 - `backend/inverse_design.py` — WAV→instrument pipeline (Tier 1 + Tier 3 work; Tier 2 blocked). `backend/benchmark_inverse_design.py` — WAV benchmark.
