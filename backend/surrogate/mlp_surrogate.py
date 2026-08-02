@@ -111,14 +111,17 @@ class SurrogateTrainer:
         self._rng_idx = 0
     
     def loss_fn(self, params: dict, batch: tuple) -> float:
-        inputs, targets = batch
+        inputs, targets = batch[:2]
+        weights = batch[2] if len(batch) > 2 and batch[2] is not None else None
         # Generate RNG key for dropout
         rng = self._rng_seq[self._rng_idx % len(self._rng_seq)]
         self._rng_idx += 1
         preds, _ = self._model.apply(params, inputs, training=True, mutable=['batch_stats'], rngs={'dropout': rng})
         # MSE loss with descriptor-weighted loss (Petiot 2025)
-        mse = jnp.mean((preds - targets) ** 2)
-        return mse
+        errs = (preds - targets) ** 2
+        if weights is not None:
+            return jnp.sum(errs * weights[:, None]) / jnp.sum(weights)
+        return jnp.mean(errs)
     
     def train_step(self, params: dict, opt_state: optax.OptState, 
                    batch: tuple) -> tuple:
@@ -129,7 +132,8 @@ class SurrogateTrainer:
     
     def train(self, train_data: list, val_data: list, epochs: int = 100,
               batch_size: int = 32, verbose: bool = True,
-              patience: Optional[int] = None) -> dict:
+              patience: Optional[int] = None,
+              sample_weights: Optional[np.ndarray] = None) -> dict:
         """Train the surrogate model.
 
         Args:
@@ -139,6 +143,8 @@ class SurrogateTrainer:
             batch_size: Mini-batch size
             verbose: Whether to print progress
             patience: Early-stopping epochs without val improvement (None = disable)
+            sample_weights: Optional per-sample weights (len == len(train_data));
+                used to up-weight rare/low-target samples. None = unweighted MSE.
 
         Returns:
             Training history dict (params restored to best-val checkpoint when
@@ -152,19 +158,24 @@ class SurrogateTrainer:
         best_params = None
         best_epoch = -1
 
+        order = list(range(len(train_data)))
+
         for epoch in range(epochs):
             # Shuffle and batch
-            np.random.shuffle(train_data)
+            np.random.shuffle(order)
             epoch_losses = []
 
-            for i in range(0, len(train_data), batch_size):
-                batch = train_data[i:i+batch_size]
-                if len(batch) < batch_size:
+            for start in range(0, len(order), batch_size):
+                batch_idx = order[start:start + batch_size]
+                if len(batch_idx) < batch_size:
                     continue
-                inputs = jnp.stack([b[0] for b in batch])
-                targets = jnp.stack([b[1] for b in batch])
-
-                params, opt_state, loss = self.train_step(params, opt_state, (inputs, targets))
+                inputs = jnp.stack([train_data[j][0] for j in batch_idx])
+                targets = jnp.stack([train_data[j][1] for j in batch_idx])
+                if sample_weights is not None:
+                    wts = jnp.asarray([sample_weights[j] for j in batch_idx], dtype=jnp.float32)
+                else:
+                    wts = None
+                params, opt_state, loss = self.train_step(params, opt_state, (inputs, targets, wts))
                 epoch_losses.append(float(loss))
 
             avg_train_loss = np.mean(epoch_losses)

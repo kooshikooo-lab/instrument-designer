@@ -43,6 +43,9 @@ def main():
     parser.add_argument("--hidden", type=str, default="256,256,128")
     parser.add_argument("--val-fraction", type=float, default=0.1)
     parser.add_argument("--patience", type=int, default=0, help="early-stop epochs (0 = disable)")
+    parser.add_argument("--weight-tail", type=float, default=0.0,
+                        help="up-weight low-rms tail samples: w = 1 + k*max(0,1-rms/thr)")
+    parser.add_argument("--weight-thr", type=float, default=50.0, help="rms cents threshold for tail weights")
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
 
@@ -70,6 +73,16 @@ def main():
     val = [(jnp.array(x, dtype=jnp.float32), jnp.array(t, dtype=jnp.float32))
            for x, t in zip(X[val_idx], y_va)]
 
+    # Optional tail-weighting: up-weight samples with low final_rms (sparse,
+    # elite region) using RAW targets, so the MLP spends more capacity there.
+    sample_weights = None
+    if args.weight_tail > 0:
+        rms = y[train_idx, 0]
+        thr = args.weight_thr
+        sample_weights = 1.0 + args.weight_tail * np.maximum(0.0, 1.0 - rms / thr)
+        n_w = int(np.sum(sample_weights > 1.0))
+        print(f"tail weighting: {n_w}/{len(rms)} train samples up-weighted (max w={sample_weights.max():.1f})")
+
     hidden = tuple(int(h) for h in args.hidden.split(","))
     cfg = SurrogateConfig(hidden_dims=hidden, output_dim=4, input_dim=X.shape[1])
     trainer = SurrogateTrainer(cfg, learning_rate=args.lr)
@@ -77,7 +90,7 @@ def main():
     print(f"Training {hidden} MLP, {args.epochs} epochs, batch {args.batch}...")
     t0 = time.time()
     hist = trainer.train(train, val, epochs=args.epochs, batch_size=args.batch, verbose=False,
-                         patience=args.patience or None)
+                         patience=args.patience or None, sample_weights=sample_weights)
     dt = time.time() - t0
 
     # Report in original units (cents^2) + standardized
@@ -105,6 +118,7 @@ def main():
             "epochs": args.epochs, "batch": args.batch, "lr": args.lr,
             "val_final_std_loss": float(hist["val_loss"][-1]),
             "baseline_std_loss": base,
+            "weight_tail": args.weight_tail, "weight_thr": args.weight_thr,
             "y_mean": y_mean.tolist(), "y_std": y_std.tolist(),
         }, f, indent=2)
 
