@@ -27,6 +27,7 @@ class SurrogateConfig:
     activation: str = "relu"  # "relu", "tanh", "swish", "snake"
     output_dim: int = 4  # RMS, EFP, threshold_pressure, peak_error
     dropout_rate: float = 0.1
+    input_dim: int = 30  # radii(6) + holes(3*7) + [L, outer_d, closed_top]
     dtype: jnp.dtype = jnp.float32
 
 
@@ -103,7 +104,7 @@ class SurrogateTrainer:
         self._model = BoreSurrogate(self.config)
         self._tx = optax.adamw(self.learning_rate, weight_decay=self.weight_decay)
         key = jax.random.PRNGKey(self.seed)
-        dummy_input = jnp.ones((1, 50))  # Will be reshaped on first call
+        dummy_input = jnp.ones((1, self.config.input_dim))  # Will be reshaped on first call
         self._params = self._model.init(key, dummy_input)
         self._opt_state = self._tx.init(self._params)
         self._rng_seq = jax.random.split(key, 1000)  # Pre-generate RNG keys for dropout
