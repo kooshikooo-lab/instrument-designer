@@ -128,51 +128,71 @@ class SurrogateTrainer:
         return new_params, new_opt_state, loss
     
     def train(self, train_data: list, val_data: list, epochs: int = 100,
-              batch_size: int = 32, verbose: bool = True) -> dict:
+              batch_size: int = 32, verbose: bool = True,
+              patience: Optional[int] = None) -> dict:
         """Train the surrogate model.
-        
+
         Args:
             train_data: List of (inputs, targets) tuples
             val_data: List of (inputs, targets) tuples for validation
             epochs: Number of training epochs
             batch_size: Mini-batch size
             verbose: Whether to print progress
-            
+            patience: Early-stopping epochs without val improvement (None = disable)
+
         Returns:
-            Training history dict
+            Training history dict (params restored to best-val checkpoint when
+            patience is used)
         """
         params = self._params
         opt_state = self._opt_state
         history = {"train_loss": [], "val_loss": []}
-        
+
+        best_val = float("inf")
+        best_params = None
+        best_epoch = -1
+
         for epoch in range(epochs):
             # Shuffle and batch
             np.random.shuffle(train_data)
             epoch_losses = []
-            
+
             for i in range(0, len(train_data), batch_size):
                 batch = train_data[i:i+batch_size]
                 if len(batch) < batch_size:
                     continue
                 inputs = jnp.stack([b[0] for b in batch])
                 targets = jnp.stack([b[1] for b in batch])
-                
+
                 params, opt_state, loss = self.train_step(params, opt_state, (inputs, targets))
                 epoch_losses.append(float(loss))
-            
+
             avg_train_loss = np.mean(epoch_losses)
             history["train_loss"].append(avg_train_loss)
-            
+
             # Validation
             val_inputs = jnp.stack([b[0] for b in val_data])
             val_targets = jnp.stack([b[1] for b in val_data])
             val_preds = self._model.apply(params, val_inputs, training=False)
             val_loss = float(jnp.mean((val_preds - val_targets) ** 2))
             history["val_loss"].append(val_loss)
-            
+
+            if val_loss < best_val:
+                best_val = val_loss
+                best_params = params
+                best_epoch = epoch
+
             if verbose and (epoch + 1) % 10 == 0:
                 print(f"Epoch {epoch+1}/{epochs}: train_loss={avg_train_loss:.6f}, val_loss={val_loss:.6f}")
-        
+
+            if patience is not None and (epoch - best_epoch) >= patience:
+                if verbose:
+                    print(f"Early stopping at epoch {epoch+1} (best val={best_val:.6f} at epoch {best_epoch+1})")
+                break
+
+        # Restore best-val checkpoint
+        if best_params is not None:
+            params = best_params
         self._params = params
         self._opt_state = opt_state
         return history

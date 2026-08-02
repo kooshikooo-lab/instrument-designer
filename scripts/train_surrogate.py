@@ -42,6 +42,7 @@ def main():
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--hidden", type=str, default="256,256,128")
     parser.add_argument("--val-fraction", type=float, default=0.1)
+    parser.add_argument("--patience", type=int, default=0, help="early-stop epochs (0 = disable)")
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
 
@@ -75,7 +76,8 @@ def main():
 
     print(f"Training {hidden} MLP, {args.epochs} epochs, batch {args.batch}...")
     t0 = time.time()
-    hist = trainer.train(train, val, epochs=args.epochs, batch_size=args.batch, verbose=False)
+    hist = trainer.train(train, val, epochs=args.epochs, batch_size=args.batch, verbose=False,
+                         patience=args.patience or None)
     dt = time.time() - t0
 
     # Report in original units (cents^2) + standardized
