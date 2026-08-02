@@ -34,6 +34,7 @@ Usage:
 import math
 import numpy as np
 from typing import List, Tuple, Optional, Union, Callable
+from collections import deque
 
 # Matches chalumier's SPEED_OF_SOUND exactly (mm/s)
 SPEED_OF_SOUND = 346100.0
@@ -291,6 +292,21 @@ class TMMInstrument:
         # Precompute action chain for phase-based resonance
         self._prepare_phase()
 
+        # Prepare a small helper to compute loss-induced phase delta without
+        # needing repeated isinstance checks inside tight loops.
+        if self.loss_model is None:
+            self._loss_phase_delta = lambda length, radius, wavelength: 0.0
+        else:
+            def _loss_phase_delta(length, radius, wavelength):
+                try:
+                    lf = self.loss_model.bore_loss(length, radius, wavelength)
+                    if isinstance(lf, complex):
+                        return -lf.imag
+                except Exception:
+                    pass
+                return 0.0
+            self._loss_phase_delta = _loss_phase_delta
+
     def _apply_whistle_clip(
         self,
         clip_fraction: float,
@@ -425,12 +441,9 @@ class TMMInstrument:
                 _, seg_length, seg_diameter = action
                 phase = pipe_reply_phase(phase, seg_length / wavelength)
                 # Apply viscothermal loss model if available
-                if self.loss_model is not None and seg_diameter > 0:
+                if seg_diameter > 0:
                     radius = seg_diameter / 2.0
-                    loss_factor = self.loss_model.bore_loss(seg_length, radius, wavelength)
-                    if isinstance(loss_factor, complex):
-                        # Phase of exp(-gamma * length) = -Im(gamma * length)
-                        phase += -loss_factor.imag
+                    phase += self._loss_phase_delta(seg_length, radius, wavelength)
 
             elif action[0] == 'junction2':
                 _, area_a, area_b = action
@@ -476,8 +489,8 @@ class TMMInstrument:
                 p = self.resonance_phase(w, fingerings)
                 return p - target_register
 
-        probes = [wavelength / half_step, wavelength * half_step]
-        scores = [scorer(probes[0]), scorer(probes[1])]
+        probes = deque([wavelength / half_step, wavelength * half_step])
+        scores = deque([scorer(probes[0]), scorer(probes[1])])
 
         def evaluate(i):
             y1, x1 = scores[i], probes[i]
@@ -495,8 +508,8 @@ class TMMInstrument:
 
             # Extend left
             new_w = probes[0] / step
-            probes.insert(0, new_w)
-            scores.insert(0, scorer(new_w))
+            probes.appendleft(new_w)
+            scores.appendleft(scorer(probes[0]))
 
             if scores[0] >= 0 and scores[1] < 0:
                 return evaluate(0)
@@ -504,7 +517,7 @@ class TMMInstrument:
             # Extend right
             new_w = probes[-1] * step
             probes.append(new_w)
-            scores.append(scorer(new_w))
+            scores.append(scorer(probes[-1]))
             step = step ** step_increase
 
         # Return best guess
@@ -724,4 +737,3 @@ def tmm_instrument_from_radii(
         cone_step=cone_step,
         loss_model=loss_model,
     )
-
