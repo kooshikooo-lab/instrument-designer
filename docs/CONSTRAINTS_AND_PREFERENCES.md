@@ -196,5 +196,6 @@ Before finishing:
 - [ ] Architecture preserved (no new coordinate systems, no hidden physics)
 - [ ] `ARCHITECTURE_CHECKLIST.md` completed
 - [ ] `COMPLIANCE_CHECK.md` run at least once in this session
+- [ ] **Updated `docs/session-logs/BOOT_STATE.md`** with this session's progress, decisions, and next steps — the session is NOT done until this file reflects reality (it is the reloadable boot context for the next session, and mid-session context loss is a known frequent failure).
 - [ ] **Posted a session-status update to Discussion #23** via `python scripts/team_chat.py post "..."` (what you did, what you need, what's blocked)
 - [ ] If you made a mistake, log it in `AI_FAILURE_PATTERNS.md`
