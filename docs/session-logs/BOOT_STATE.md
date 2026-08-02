@@ -55,7 +55,7 @@
 
 ### In Progress
 - **Phase 2G** (laptop): awaiting Kaggle dataset upload + notebook run of `train_surrogate.py`. Desktop monitors #23.
-- **Spectral research post**: `scripts/_research_msg.md` (librosa/OpenWInD/scipy/GNN) still staged for #23, not yet posted — can be folded into the next spectral update.
+- **Spectral research post**: the draft `scripts/_research_msg.md` (librosa/OpenWInD/scipy/GNN) is gone (never committed). The spectral API findings live in BOOT_STATE Done + #23 comment 17867767; fold into the next spectral update instead of re-staging.
 
 ### Blocked
 - `backend/spectral` implementation **awaits user approval of design** (scoped but not presented).
@@ -74,11 +74,10 @@
 ## Next Steps
 
 1. Monitor #23 / `scripts/.team_inbox.md` for laptop's Phase 2G Kaggle ack; verify push credibility.
-2. Post `scripts/_research_msg.md` to #23 (spectral API research) or fold into next spectral update; remove the file.
-3. Present `backend/spectral` design for user approval (metrics.py/target_frequencies.py reuse, synthetic-only tests).
-4. Wire Gemini free Flash into `ai_assistant.py` as second provider (multimodal audio/image for spectral + STL verification).
-5. Update `docs/ARCHIVED_TOOLS.md` for genuinely forgotten packages (FORGOTTEN list in toolcheck) — informational only, no auto-uninstall.
-6. Keep tool registry current: re-run `python scripts/toolcheck.py` after any dependency change.
+2. Present `backend/spectral` design for user approval (metrics.py/target_frequencies.py reuse, synthetic-only tests). Include the spectral API research (librosa → OpenWInD → GNN surrogate) that was summarized in Done / #23 comment 17867767.
+3. Wire Gemini free Flash into `ai_assistant.py` as second provider (multimodal audio/image for spectral + STL verification).
+4. Update `docs/ARCHIVED_TOOLS.md` for genuinely forgotten packages (FORGOTTEN list in toolcheck) — informational only, no auto-uninstall.
+5. Keep tool registry current: re-run `python scripts/toolcheck.py` after any dependency change.
 
 ## Critical Context
 
@@ -103,7 +102,6 @@
 - `docs/TOOLS.md` — tool registry manifest + adoption steps + current declarations.
 - `docs/ARCHIVED_TOOLS.md` — target for genuinely forgotten packages (informational).
 - `scripts/_overnight_results.md` — posted to #23 (comment 17867933), file can be removed.
-- `scripts/_research_msg.md` — staged spectral research post (librosa/OpenWInD/scipy/GNN).
 - `backend/inverse_design.py` — WAV→instrument pipeline (Tier 1 + Tier 3 work; Tier 2 blocked). `backend/benchmark_inverse_design.py` — WAV benchmark.
 - `tests/test_analytical_pipes.py` — TMM vs closed-form pipes (73 cases, 0.66r end correction).
 - `scripts/_run_benchmark_live.py` — patches `benchmark_dask.py` to the live scheduler address.
