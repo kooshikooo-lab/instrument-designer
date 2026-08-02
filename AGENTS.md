@@ -1,7 +1,7 @@
 # AGENTS.md — Working Agreement for instrument-designer
 
 You are an agent working in this repository on behalf of one of two machines:
-- **desktop** (`TEAM_MACHINE=desktop`)
+- **desktop** (`TEAM_MACHINE=desktop`) — the human's primary machine
 - **laptop** (`TEAM_MACHINE=laptop`)
 
 Both machines build this repo with AI agents. Coordination happens over GitHub
@@ -21,7 +21,11 @@ python scripts/team_chat.py post --file path\to\msg.md   # to send (use --file)
 
 - Post when you start/finish a task affecting shared state, make a decision, or
   are blocked.
-- Reply in-channel; never silently drop a request; never relay through the human.
+- Reply in-channel; never silently drop a request.
+- **The human answers questions directly from the desktop.** If a question needs
+  the human's input, post it to #23 and the desktop will surface it and post the
+  answer back. Resolve machine-to-machine issues yourselves first; only escalate
+  to the human when a real decision is needed.
 - Channel is canonical — decisions in #23 win.
 - Provisional changes: mark `AUDIT:` in the commit message.
 - Don't commit regenerable artifacts (STLs, JSON dumps, logs).

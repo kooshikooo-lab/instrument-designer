@@ -31,6 +31,10 @@
 This project runs on TWO machines (laptop and desktop) that must coordinate through
 GitHub **Discussion #23**. Do not start any other work until you have checked it.
 
+The human works **from the desktop**. When the laptop needs an answer from the
+human, it posts the question to Discussion #23; the desktop machine surfaces it to
+the human and posts the answer back in-channel.
+
 Run **twice per session**: once at the start, once at the end (before you stop):
 
 ```
@@ -76,16 +80,22 @@ For other threads (e.g. Discussion #46), pass `--discussion N`.
 
 #### Protocol rules
 
-1. **Never relay through the human.** If the other machine posted something, act
-   on it directly. The human must never be the message bus between the two computers.
-2. **Keep the channel canonical.** Decisions made in #23 win. If a conversation
+1. **Never relay through the human for machine-to-machine coordination.** If the
+   other machine posted something, act on it directly. The human must never be the
+   message bus between the two computers.
+2. **The human answers questions directly from the desktop.** The human works
+   mostly from the desktop. When a question needs human input, post it to #23; the
+   desktop machine surfaces it and posts the human's answer back in-channel. Both
+   machines should resolve machine-to-machine issues themselves first and only
+   escalate to the human when a real decision is needed.
+3. **Keep the channel canonical.** Decisions made in #23 win. If a conversation
    also happens in a doc or another thread, mirror the binding decision back to #23.
-3. **Never lose work.** If you cannot finish something, leave a checkpoint commit
+4. **Never lose work.** If you cannot finish something, leave a checkpoint commit
    or a clearly marked stub, and say so in the channel.
-4. **Prefer direct-to-main, then audit.** Commits go to `main`; work lives in
+5. **Prefer direct-to-main, then audit.** Commits go to `main`; work lives in
    feature branches that merge into `main`. If a change is provisional, mark it
    for audit in the commit message (e.g. `AUDIT:` prefix) and say so in the channel.
-5. **Do not commit regenerable artifacts** (STLs, large JSON dumps, logs). The
+6. **Do not commit regenerable artifacts** (STLs, large JSON dumps, logs). The
    `.gitignore` covers most; check with `git status` before committing.
 
 ### ☐ Step 1 — Read the AI Constitution
