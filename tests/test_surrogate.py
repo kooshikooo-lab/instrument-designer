@@ -19,7 +19,7 @@ from backend.surrogate import SurrogateConfig, SurrogateTrainer, generate_traini
 
 
 def _small_config():
-    return SurrogateConfig(hidden_dims=(32, 32), output_dim=4, dropout_rate=0.0)
+    return SurrogateConfig(hidden_dims=(32, 32), output_dim=4, dropout_rate=0.0, input_dim=50)
 
 
 def test_trainer_init_and_forward_shape():
