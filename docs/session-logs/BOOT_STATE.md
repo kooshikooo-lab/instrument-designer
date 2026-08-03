@@ -146,10 +146,11 @@
 
 ## Critical Context
 
-- **`main` HEAD = `cf7e625`** (Claude artifact ports + doc/wiki + toolcheck fix)
-  over `91b0df8` (string port) over `80a4435`/`e8780d7` (BOOT_STATE) over
-  `b42b5bf` (wiki cross-link fixes) over `32d4c9f` (numba wiring) over
-  `5c7529f` (wiki restructure); `origin/main` = `cf7e625`.
+- **`main` HEAD = `0c794fd`** (BOOT_STATE update) over `5d5c5a0` (Appendix B)
+  over `401e889` (BOOT_STATE) over `cf7e625` (Claude artifact ports + doc/wiki +
+  toolcheck fix) over `91b0df8` (string port) over `80a4435`/`e8780d7` (BOOT_STATE)
+  over `b42b5bf` (wiki cross-link fixes) over `32d4c9f` (numba wiring) over
+  `5c7529f` (wiki restructure); `origin/main` = `0c794fd`.
 - Env: Windows, Python 3.14.6, numpy 2.4.6, numba 0.66.0, pytest 9.1.1, dask
   2026.7.1, jax 0.11.0; **conda NOT on PATH** — use system Python +
   `PYTHONPATH=<repo root>`; `tmmbench` env unavailable on desktop.
@@ -157,14 +158,17 @@
   `bench_perf_tmm_medium.txt`, `bench_perf_tmm_refactor.txt`.
 - #23 stream: laptop confirmation (01:41:04Z) + laptop's three `team_chat.py`
   bugfixes pushed to `kalles-main-branch` (`45ddcb2`, `591c384`, `827c051`).
-- **Laptop reported a low-clarinet family batch on #23 (02:31/02:39Z)** —
-  `cc5b447` family+STLs, graded HR arrays, 12th-intonation curve — but **none of
-  it is on any origin branch** (checked after `git fetch origin`; origin/main =
-  `404f123`). Desktop posted reconciliation (discussioncomment-17875549) asking
-  laptop to re-push. Reported physics: L2 homogenized under-estimates vs L1
-  explicit array (43–47% rel. err. at f0/base=4, 1.4–4% at f0/base=12–20; tests
-  enforce f1_L1 < f1_L2); graded arrays give 2.0x stopband vs uniform at same
-  target; depth-vs-12th curve 0.95x→+2..7c … 0.80x→+83..96c … 0.75x→+143..159c.
+- **Laptop's low-clarinet metamaterial batch** — initially reported as "on main"
+  but actually on `kalles-main-branch` (laptop corrected 02:48Z): commits
+  `cc5b447` (family + STLs), `6a260d6` (graded arrays), `a4aed67` (12th-intonation
+  curve), `fbbd1b8` (subcontrabass) = 83 tests passed, now at
+  `origin/kalles-main-branch` = `fbbd1b8`. Physics: L2 homogenized under-estimates
+  vs L1 explicit array (43–47% rel. err. at f0/base=4, 1.4–4% at f0/base=12–20;
+  tests enforce f1_L1 < f1_L2); graded arrays give 2.0x stopband vs uniform at
+  same target; depth-vs-12th curve 0.95x→+2..7c … 0.80x→+83..96c … 0.75x→+143..159c.
+  Desktop can now run L2-vs-L1 parity sweep against ported `folded_bore_elements.py`
+  / `metamaterial_elements.py` (laptop offers to port their code to `backend/experiments/`
+  or adjust structure).
 - **Laptop implemented metamaterials** (`3d318dc` on `kalles-main-branch`,
   186 passed, 02:06:45Z post): L1 `MetamaterialSideBranch` (Helmholtz side
   branch via `junction3_reply_phase`), L2 `MetamaterialSegment` (Dell/Krynkin/
