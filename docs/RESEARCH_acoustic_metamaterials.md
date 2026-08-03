@@ -38,6 +38,12 @@ Ranking takeaway (Kimi, §2.4): **low woodwinds are the standout unproven catego
 percussion is the proven case; folded bores add a parallel-waveguide topology a
 straight bore cannot reach.
 
+Status 2026-08-03: the Claude-sketched elements are now ported as runnable experiment
+scripts in `backend/experiments/` (`metamaterial_elements.py`, `brass_scaffold.py`,
+`string_metamaterial.py`, `folded_bore_elements.py`) — see §7. The laptop also has a
+production L1 `MetamaterialSideBranch` / L2 `MetamaterialSegment` implementation on
+`kalles-main-branch` (not yet on `main`).
+
 ## 1. Mechanisms and what transplants
 
 | Mechanism | Structure | Band gap from | Transplants to |
@@ -246,6 +252,11 @@ signature — timbre-on-demand without a second instrument.
 - `backend/mouthpiece_models.py` (Helmholtz mouthpiece model) and
   `backend/trumpet_acoustics.py` (Helmholtz resonator in the mouthpiece) — the repo
   already computes Helmholtz resonances.
+- `backend/experiments/` — ported Claude artifacts (2026-08-03): `metamaterial_elements.py`
+  (Helmholtz shunt + local-resonance effective density), `brass_scaffold.py`
+  (cyl/cone + bell-flare TMM, radiation, peak finding), `string_metamaterial.py`
+  (Bloch band gaps), `folded_bore_elements.py` (folded low-clarinet builder + tonehole
+  shunts). All reproduce the Claude conversation's documented outputs exactly; see §7.
 
 ### Feasible integration paths (future work, not built)
 
@@ -261,22 +272,76 @@ signature — timbre-on-demand without a second instrument.
 3. **Resonator-distribution design**: use the Piva/Gower/Abrahams effective-properties
    formulas to size a *distribution* of resonator volumes along a bore segment for a
    target suppression band, then run it through the existing optimizers.
-4. **String metamaterial calculator**: port `string_metamaterial.py` (Bloch
-   transfer-matrix, reproduced in the Claude chat) as a standalone script if/when the
-   guitar/string direction is started. It is mechanically the exact analog of the bore
-   transfer matrix: state `(Y, F)` ↔ `(pressure, volume velocity)`, `Z0 = sqrt(T·μ)`.
+4. **String metamaterial calculator** — **DONE**: `backend/experiments/string_metamaterial.py`
+   (Bloch transfer-matrix, ported 2026-08-03; band-gap outputs match the Claude
+   conversation exactly). It is mechanically the exact analog of the bore transfer
+   matrix: state `(Y, F)` ↔ `(pressure, volume velocity)`, `Z0 = sqrt(T·μ)`.
 5. **Not worth pursuing**: 2D cloaking in a wind bore (no excitation-position freedom);
    electric-guitar pickup metamaterials (different physics domain).
 
 ### Guardrails
 
-- All of the above are *future-work* items; nothing here is implemented.
-- Any new third-party package (none needed for the doc) would require declaration per
-  the tool-registry guard.
+- The §6 integration paths are *future-work* items; the ported `backend/experiments/`
+  scripts (§7) are the working reference implementations, and the laptop's L1/L2
+  land on `kalles-main-branch` first (not yet merged).
+- Any new third-party package (none needed for the ported scripts — numpy + scipy only,
+  both already declared) would require declaration per the tool-registry guard.
 - The TMM numba fast path (`TMM_USE_NUMBA`) is lossless-only; a resonator element that
   adds loss would need to stay on the pure-Python path or extend the njit function.
 
-## 7. Language / tooling notes (from the conversation's open question)
+## 7. Ported Claude artifacts — numerical findings (2026-08-03)
+
+Four scripts from the Claude metamaterials conversation were ported into
+`backend/experiments/` and verified against the conversation's documented outputs
+(band gaps, brass-valve peaks, folded-bore fundamentals all reproduce exactly):
+
+- `metamaterial_elements.py` — `helmholtz_shunt_matrix` (ABCD shunt: cavity compliance +
+  neck inertance + Ingard end corrections + wall loss), `resonance_frequency`, and
+  `effective_density_locally_resonant` (Liu-style negative-density local resonance).
+- `brass_scaffold.py` — cylinder/cone (Webster `psi=r·p`) matrices, chained bell flare,
+  radiation load, `find_impedance_peaks`, `cents`. Demo reproduces the trumpet
+  1-3-combination sharpness: open peaks 684.5/715.6/846.2 Hz, the 1-3 nearest partial at
+  838.3 Hz (−16.2c), and a 4 cm³ / 24.9 mm-neck Helmholtz resonator in the valve slide
+  pulls it to 852.2 Hz (+12.2c) — proving the mechanism and the need for an optimizer
+  loop on (V, neck, position) rather than a single hand-tuned shunt.
+- `string_metamaterial.py` — Bloch band gaps for rigid mass loading and locally-resonant
+  attachment; reproduces the conversation's exact gaps (rigid 5 cm/50 mg:
+  (1580.0, 4183.3) + (4768.6, 8000.0); local 100 mg @ 1500 Hz: (921.1, 2925.6) +
+  (4183.8, 5918.5)).
+- `folded_bore_elements.py` — folded low-clarinet builder + open/closed tonehole shunts,
+  reed-end (impedance-max) driver, first-order bend correction. Run results:
+
+| Instrument (illustrative) | straight | folded (n bends) | shift |
+|---|---|---|---|
+| bass clarinet | 251.4 Hz | 249.6 Hz (1) | −12.8c |
+| contra-alto clarinet | 172.7 Hz | 170.4 Hz (2) | −22.9c |
+| contrabass clarinet | 63.9 Hz | 62.8 Hz (3) | −27.8c |
+
+**Fold-count trend**: each additional fold pushes the fundamental flat, matching the
+reported intonation difficulty of contra-alto/contrabass vs. soprano clarinet — a
+testable hypothesis that fold count/geometry is a real contributor, not just "bigger
+tube = harder to voice". The bend model is a first-order placeholder; validate against
+OpenWInD FEM before trusting magnitudes.
+
+**Rigid-cavity resonator feasibility (the important failure mode)** — neck length needed
+to tune a rigid Helmholtz resonator to each folded fundamental (r_neck = 10 mm):
+
+| Instrument | V=10 cm³ | V=30 cm³ | V=100 cm³ |
+|---|---|---|---|
+| bass clarinet (251→250 Hz) | 148.8 cm | 48.5 cm | 13.4 cm |
+| contra-alto (173→170 Hz) | unreachable (<3 m) | 105.9 cm | 30.6 cm |
+| contrabass (64→63 Hz) | unreachable | unreachable | 235.7 cm |
+
+Design implication (non-obvious, derived from the numbers): a rigid air-column resonator
+is **geometry-limited** at low frequencies — pulling a ~63 Hz contrabass fundamental
+needs a 2+ m neck. Therefore:
+- Rigid Helmholtz resonators are the right tool for **upper partials / formants**
+  (same neck-length scale as the ~1 kHz soprano-clarinet case).
+- For the **fundamental register**, the locally-resonant liner mechanism
+  (`effective_density_locally_resonant`) is the better fit: its tuning knob is spring
+  stiffness, not air-column length, so it does not hit this wall.
+
+## 8. Language / tooling notes (from the conversation's open question)
 
 The chat ended with "any thoughts on best languages for coding this?" (unanswered).
 Existing repo precedent: Python + numpy for TMM/solvers, numba for hot paths, JAX for

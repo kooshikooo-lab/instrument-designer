@@ -82,13 +82,17 @@ def _is_local(root: str) -> bool:
         return True
     # backend.foo / woodwind_designer.bar appear as their second segment in
     # ImportFrom.module when scanning relative-import-adjacent code; treat any
-    # subpackage dir OR module file under a local root as local.
+    # subpackage dir OR module file under a local root as local. Modules nested
+    # deeper than the top level (e.g. backend/experiments/sibling.py imported
+    # bare by another experiment) are local too.
     for base in LOCAL_ROOTS:
         base_dir = ROOT / base
         if not base_dir.exists():
             continue
         candidate = base_dir / root
         if candidate.is_dir() or (candidate.with_suffix(".py")).is_file():
+            return True
+        if any(p.name == root + ".py" or p.name == root for p in base_dir.rglob("*")):
             return True
     return False
 
