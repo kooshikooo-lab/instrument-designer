@@ -40,5 +40,8 @@ scripts/github_updates_check_state.json
 
 # Team channel per-machine cursor
 scripts/.team_state.json
+# Team watcher runtime log + inbox
+scripts/.team_watch.log
+scripts/.team_inbox.md
 # GitHub monitor runtime log
 scripts/github_updates.log
