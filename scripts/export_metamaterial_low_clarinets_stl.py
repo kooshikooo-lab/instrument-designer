@@ -59,9 +59,21 @@ def cavity_dims(volume_mm3):
 
 
 def folded_body(key):
-    preset = FOLDED_PRESET[key]
-    spec = {k: v for k, v in INSTRUMENTS[preset].items() if k != "_meta"}
-    return generate_folded_bore_instrument(**spec)
+    if key in FOLDED_PRESET:
+        preset = FOLDED_PRESET[key]
+        spec = {k: v for k, v in INSTRUMENTS[preset].items() if k != "_meta"}
+        return generate_folded_bore_instrument(**spec)
+    # No cadquery preset (e.g. the subcontrabass extrapolation): build the
+    # folded paperclip directly from the acoustic family spec.
+    spec = LOW_CLARINETS[key]
+    return generate_folded_bore_instrument(
+        bore_length=spec["bore_length_mm"],
+        bore_diameter=spec["bore_diameter_mm"],
+        wall_thickness=spec["wall_thickness_mm"],
+        closed_top=True,
+        bend_radius_mm=spec["bend_radius_mm"],
+        holes=[],
+    )
 
 
 def metamaterial_section(key):

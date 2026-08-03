@@ -189,7 +189,12 @@ def test_tune_every_family_member_reaches_target():
     """Every family member can hit its extension target (0.8 x plain f1)."""
     for key in KEYS:
         target = LOW_CLARINETS[key]["extension_target_hz"]
-        _, _, achieved = tune_f0_to_fundamental(key, target, spacing_mm=40.0)
+        # The deep subcontrabass needs an HR f0 below the 120 Hz default floor
+        # in the conservative L2 fast model (the L1 physical model reaches it
+        # at f0=219 Hz); the floor is only a bisection bound, not physics.
+        lo = 60.0 if key == "subcontrabass" else 120.0
+        _, _, achieved = tune_f0_to_fundamental(
+            key, target, spacing_mm=40.0, lo_hz=lo)
         cents = 1200.0 * math.log2(achieved / target)
         assert abs(cents) < 10.0, f"{key}: {achieved:.2f} vs {target:.2f}"
 
@@ -227,9 +232,11 @@ def test_stopband_finite_gap_all_family():
     f0 (gap present, medium recovers higher up)."""
     for key in KEYS:
         target = LOW_CLARINETS[key]["extension_target_hz"]
-        f0, seg, _ = tune_f0_to_fundamental(key, target, spacing_mm=40.0)
-        lo, hi = stopband_bounds(key, f0, seg.spacing_mm)
-        assert lo is not None
+        lo = 60.0 if key == "subcontrabass" else 120.0
+        f0, seg, _ = tune_f0_to_fundamental(
+            key, target, spacing_mm=40.0, lo_hz=lo)
+        lo_b, hi = stopband_bounds(key, f0, seg.spacing_mm)
+        assert lo_b is not None
         assert hi > f0
 
 

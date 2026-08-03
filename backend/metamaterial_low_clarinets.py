@@ -104,6 +104,18 @@ LOW_CLARINETS = {
         "extension_target_hz": 0.8 * SPEED_OF_SOUND / (4.0 * 2600.0),
         "source": "cadquery octo_contra_bass_clarinet_BBB",
     },
+    "subcontrabass": {
+        "name": "Sub-contrabass clarinet BBBb",
+        "bore_length_mm": 3000.0,
+        "bore_diameter_mm": 55.0,
+        "outer_diameter_mm": 75.0,
+        "wall_thickness_mm": 10.0,
+        "bend_radius_mm": 110.0,
+        "holes": [],
+        "low_note": ("BBb0", None),
+        "extension_target_hz": 0.8 * SPEED_OF_SOUND / (4.0 * 3000.0),
+        "source": "family extrapolation (deepest woodwind beyond the octocontras)",
+    },
 }
 
 
