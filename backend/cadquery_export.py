@@ -293,7 +293,6 @@ def generate_folded_bore_instrument(
         solid = solid.union(cap)
 
     # Map unfolded hole positions onto the straight legs; skip bend region.
-    bend_start = leg2
     bend_end = leg2 + bend_arc
     for i, (pos, diam) in enumerate(holes):
         side = 1 if i % 2 == 0 else -1
@@ -306,6 +305,77 @@ def generate_folded_bore_instrument(
             x = inner_r * side
             z = pos - bend_end
         solid = _cut_single_hole(solid, diam, x, z, wall_thickness, hole_depth)
+
+    return solid
+
+
+def generate_metamaterial_section(
+    bore_length: float,
+    bore_diameter: float,
+    wall_thickness: float,
+    resonators: list[tuple] | None = None,
+    closed_end: bool = False,
+):
+    """Generate a straight bore section carrying Helmholtz-resonator side
+    branches (the printable low-register metamaterial array).
+
+    Each resonator tuple is ``(position_mm, neck_radius_mm, neck_length_mm,
+    cavity_radius_mm, cavity_length_mm)``. The bore axis runs along +Z; each
+    resonator protrudes radially in +X from the outer wall as a neck cylinder
+    (radius ``neck_radius``, length ``neck_length``) capped by a cavity
+    cylinder (bulb). Positions are measured from the z=0 tube end, matching
+    the phase-TMM metamaterial segment convention (closed end at the far end).
+
+    Args:
+        bore_length: section length (mm)
+        bore_diameter: inner bore diameter (mm)
+        wall_thickness: wall thickness (mm)
+        resonators: list of HR side-branch specs (see above)
+        closed_end: cap the z=bore_length end (the reed/closed end)
+    Returns:
+        cadquery Workplane (solid)
+    """
+    import cadquery as cq
+
+    if resonators is None:
+        resonators = []
+
+    bore_r = bore_diameter / 2.0
+    outer_r = bore_r + wall_thickness
+
+    solid = (
+        cq.Workplane("XY")
+        .circle(outer_r)
+        .circle(bore_r)
+        .extrude(bore_length)
+    )
+
+    if closed_end:
+        cap = (
+            cq.Workplane("XY")
+            .workplane(offset=bore_length)
+            .circle(outer_r)
+            .extrude(wall_thickness)
+        )
+        solid = solid.union(cap)
+
+    for (pos, neck_r, neck_l, cavity_r, cavity_l) in resonators:
+        neck_start = outer_r
+        neck = (
+            cq.Workplane("YZ")
+            .center(0, pos)
+            .circle(neck_r)
+            .extrude(neck_l)
+            .translate((neck_start, 0, 0))
+        )
+        cavity = (
+            cq.Workplane("YZ")
+            .center(0, pos)
+            .circle(cavity_r)
+            .extrude(cavity_l)
+            .translate((neck_start + neck_l, 0, 0))
+        )
+        solid = solid.union(neck).union(cavity)
 
     return solid
 
@@ -482,23 +552,6 @@ INSTRUMENTS = {
                   "verified": False, "source": "Standard bore specs (Benade)",
                   "description": "Standard 10-hole bass clarinet. Bore 23.5mm, range Bb1-C4."},
     },
-    "contra_alto_clarinet_Eb": {
-        "bore_length": 1600.0, "bore_diameter": 32.0, "wall_thickness": 6.0,
-        "closed_top": True,
-        "holes": [(200,11.0),(330,11.0),(460,11.0),(590,11.0),(720,11.0),(850,11.0),(980,11.0),(1110,11.0),(1240,11.0),(1370,11.0)],
-        "_meta": {"display_name": "Contra-Alto Clarinet Eb", "family": "Clarinet", "subcategory": "Contra-Alto",
-                  "verified": False, "source": "Standard bore specs",
-                  "description": "Contra-alto clarinet. One octave below alto sax. Powerful low register."},
-    },
-    "contra_bass_clarinet_Bb": {
-        "bore_length": 1900.0, "bore_diameter": 38.0, "wall_thickness": 7.0,
-        "closed_top": True,
-        "holes": [(250,13.0),(400,13.0),(550,13.0),(700,13.0),(850,13.0),(1000,13.0),(1150,13.0),(1300,13.0),(1450,13.0),(1600,13.0)],
-        "_meta": {"display_name": "Contra-Bass Clarinet Bb", "family": "Clarinet", "subcategory": "Contra-Bass",
-                  "verified": False, "source": "Standard bore specs",
-                  "description": "Contra-bass clarinet. One octave below bass. Deepest clarinet."},
-    },
-
     # ═══════════════════════════════════════════════════════════
     #  SAXOPHONE FAMILY — Adolphe Sax proportions
     # ═══════════════════════════════════════════════════════════
