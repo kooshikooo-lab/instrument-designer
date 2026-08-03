@@ -74,6 +74,11 @@ The registry is enforced automatically:
 | psutil | psutil | run_all_tests.py (guarded import) |
 | cma | cma | backend/experiments/ |
 
+### Extra: `perf`
+| pip package | import root | where used |
+|---|---|---|
+| numba | numba | backend/tmm_numba.py (guarded, TMM resonance fast path) |
+
 ### Extra: `freecad`
 | pip package | import root | where used |
 |---|---|---|

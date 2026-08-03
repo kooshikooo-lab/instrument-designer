@@ -23,7 +23,6 @@ and can be used to inspect the numeric action representation.
 
 from typing import List, Tuple
 import numpy as np
-from backend.tmm_acoustics import Hole
 
 try:
     import numba
@@ -82,7 +81,6 @@ def build_action_arrays(actions: List[Tuple]) -> Tuple[np.ndarray, np.ndarray, n
 if _NUMBA_AVAILABLE:
     @njit
     def _compiled_resonance_phase(types, p1, p2, p3, p4, p5, fingering_mask, wavelength, closed_top):
-        import math
         phase = 0.5
         n = types.shape[0]
         for i in range(n):
@@ -95,8 +93,8 @@ if _NUMBA_AVAILABLE:
                 area_a = p1[i]
                 area_b = p2[i]
                 # junction2: untanner(area_b/area_a * tanner(phase-shift)) + shift
-                shift = math.floor(phase + 0.5)
-                phase = math.atan((area_b / area_a) * math.tan((phase - shift) * math.pi)) / math.pi + shift
+                shift = np.floor(phase + 0.5)
+                phase = np.arctan((area_b / area_a) * np.tan((phase - shift) * np.pi)) / np.pi + shift
             elif t == 2:
                 hole_idx = int(p1[i])
                 area_bore = p2[i]
@@ -109,10 +107,10 @@ if _NUMBA_AVAILABLE:
                 else:
                     hole_phase = 0.0 + 2.0 * (closed_length / wavelength)
                 # junction3: untanner(a1/a0 * tanner(p1-shift1) + a2/a0 * tanner(p2-shift2)) + shift1 + shift2
-                shift1 = math.floor(phase + 0.5)
-                shift2 = math.floor(hole_phase + 0.5)
-                val = (area_bore / area_bore) * math.tan((phase - shift1) * math.pi) + (hole_area / area_bore) * math.tan((hole_phase - shift2) * math.pi)
-                phase = math.atan(val) / math.pi + shift1 + shift2
+                shift1 = np.floor(phase + 0.5)
+                shift2 = np.floor(hole_phase + 0.5)
+                val = (area_bore / area_bore) * np.tan((phase - shift1) * np.pi) + (hole_area / area_bore) * np.tan((hole_phase - shift2) * np.pi)
+                phase = np.arctan(val) / np.pi + shift1 + shift2
             else:
                 # ignore unknown actions
                 pass
