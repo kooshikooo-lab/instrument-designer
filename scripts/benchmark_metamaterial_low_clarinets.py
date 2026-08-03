@@ -107,15 +107,22 @@ def family_tuned_table():
     for key, spec in LOW_CLARINETS.items():
         target = spec["extension_target_hz"]
         spacing = 30.0 if key == "bass" else 40.0
-        f0, n, achieved, inst = tune_f0_to_fundamental_l1(key, target,
-                                                          spacing_mm=spacing)
+        start_frac = spec.get("meta_segment_frac", 0.9)
+        try:
+            f0, n, achieved, inst = tune_f0_to_fundamental_l1(key, target,
+                                                              spacing_mm=spacing,
+                                                              start_frac=start_frac)
+        except ValueError as e:
+            print(f"{key:<16} {target:>10.2f}  UNREACHABLE (segment too short for "
+                  f"default 10% fraction with {spacing:.0f} mm spacing)")
+            continue
         fingers = all_closed_fingers(key)
         r = registers(inst, fingers, 3)
         twelfth = r[1] / r[0]
         twelfth_cents = 1200.0 * math.log2(twelfth / 3.0)
-        lo, hi = stopband_bounds(key, f0, spacing)
+        lo, hi = stopband_bounds(key, f0, spacing, start_frac=start_frac)
         # fast-model cross-check: what would the homogenized L2 predict?
-        seg, _ = make_hr_segment(key, f0, spacing)
+        seg, _ = make_hr_segment(key, f0, spacing, start_frac=start_frac)
         inst_l2 = make_low_clarinet(key, metamaterial_segments=[seg])
         f_l2 = fundamental(inst_l2, fingers)
         leff = 346100.0 / (4.0 * achieved)
