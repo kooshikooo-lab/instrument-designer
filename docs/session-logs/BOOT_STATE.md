@@ -9,107 +9,168 @@
 
 ## Goal
 
-- Converge both machines on `main`: settle laptop's reconciliation decisions (speed-of-sound 346100, 5-stage `sequential_refined`), then run research/spectral API work (librosa, OpenWInD, free compute, Gemini multimodal) and scope a `backend/spectral` validation module.
-- Overnight autonomous run (Dask benchmark, unconventional shapes, WAV inverse design, analytical cross-check) **completed**. Next: Phase 2G surrogate training (Kaggle) on the laptop, spectral module design, Gemini integration.
-- Tools must be **integrated into a pipeline**, never just installed and forgotten (recurring problem — see "Tool adoption rule" below). The tool registry guard is now built and live.
+- Consolidate the acoustic-metamaterials research (Claude + Kimi exports + web
+  research) into `docs/RESEARCH_acoustic_metamaterials.md` (reference doc) and the
+  internal wiki, restructured into **one page per major topic** with the
+  metamaterials page organized **by instrument category** and per specific
+  instrument (low clarinets the deepest dive). **DONE, on `main`.**
+- Land the numba-accelerated TMM resonance-phase fast path (laptop's
+  `np.floor/arctan/tan/pi` fix) on `main` behind a feature flag. **DONE, on `main`.**
+- Standing items from prior sessions (not this session's work): `backend/spectral`
+  design awaits user approval; laptop Phase 2G surrogate work lives on
+  `kalles-main-branch`.
+- Standing directive: tools must be **integrated into a pipeline**, never just
+  installed and forgotten (tool registry guard is live).
+- User's fallback instruction: if no task is assigned, do something **safe** (no
+  architecture changes, no law-breaking, no deletion, no merging).
 
 ## Constraints & Preferences
 
-- **Direct-to-main only**, no PRs/side branches (explicit user correction after `fix/speed-of-sound-346100` detour).
-- Coordination via `scripts/team_chat.py` on Discussion #23 (Step 0 protocol per AGENTS.md); never relay through the human.
-- User wants **phone-call immediacy**: messages read/responded to immediately — human "totally superior" at noticing notifications; "too much adhd to notice notifications" is why we built a watcher.
-- `AUDIT:` for provisional commits; `GOVERNANCE-UPDATE` for commits touching `docs/CONSTRAINTS_AND_PREFERENCES.md`.
-- Don't commit regenerable artifacts (`.lnk`, `*.json5`, `*_benchmark_results.json`, `validation_results/*.json`, `test_output/unconventional/*.json`, `.gitmodules`).
-- Branch cleanup desired: leftover branches "could lead to issues, confused agents before, especially if I switch models."
-- **Tool adoption rule**: installing a tool is NOT a step — integration is. A tool only leaves the registry as "adopted" when it has a real call site in a pipeline stage or a test. Anything abandoned goes to `docs/ARCHIVED_TOOLS.md` and gets uninstalled.
+- **Step 0 protocol**: `python scripts/team_chat.py sync` at session start AND
+  before stopping (Discussion #23); never relay through the human; channel is
+  canonical — decisions in #23 win. `TEAM_MACHINE` identifies the machine.
+- Constitution: Law 1 (no architecture damage), Law 3 (reuse existing bench
+  scripts), Law 7 (canonical `346100.0` mm/s speed of sound), Law 10 (stop/ask if
+  intent unclear — **don't speculate about what the user wants, just ask**).
+- `AUDIT:` for provisional commits; `GOVERNANCE-UPDATE` for commits touching
+  `docs/CONSTRAINTS_AND_PREFERENCES.md`; don't commit regenerable artifacts
+  (STLs, JSON dumps, benchmark logs, `bench_*.txt`).
+- Direct-to-main preference, but the numba landing used a landing branch + clean
+  port (laptop approved that plan explicitly).
+- Tool adoption rule: install + declare (`docs/TOOLS.md`) + import + whitelisted
+  test; guard = `tests/test_tool_registry.py` + `scripts/toolcheck.py`.
+- Laptop's `team_chat.py` protocol fixes (cursor, watch-stale-save, sync-launch)
+  are on `kalles-main-branch`, **not yet on `main`** — landing them is the
+  laptop's call, do not merge unilaterally.
 
 ## Progress
 
 ### Done
-- **Speed-of-sound fix on main**: committed `3ce892e` (`backend/physics/losses.py:96` → 346100.0; test constants lines 110/155/164); worktree `..\instrument-designer-port` on `main`.
-- **Decisions posted** (#23 comment 17867637): (1) 346100 everywhere; (2) decommission standalone 5-stage `sequential_refined` (`jax_optimizer.refine_sequential` canonical).
-- **Follow-up posted** (#23 comment 17867660): fix-on-main notice; `_followup_msg.md` removed.
-- **Branch cleanup**: deleted locally `port/benchmarking-clean`, `experiment/cadquery-stl`, `fix/team-chat-communication`; deleted on origin `experiment/cadquery-stl`, `fix/team-chat-communication`, `port/main-2026-08-01-v2`, `refactor/clean-architecture`. `git fetch --prune` removed 7 stale tracking refs. Kept (NOT merged): `benchmarking-experiments`, `kalles-main-branch`, `experiment/unconventional-shapes`, `experiment/ai-tier1-review`, `feature/dask-jvm-chalumier-compliance`, `port/main-2026-08-01`.
-- **Watcher built**: `scripts/team_watch.ps1` (background, polls 3s via `team_chat.py sync --json`, toast + exclamation sound on other-machine messages, writes `scripts/.team_inbox.md`, logs `scripts/.team_watch.log`); `team_chat.py watch` hardened with `--timeout`/`_print_new`/`is_other_machine`.
-- **Laptop status check posted** (#23 comment 17867701): explicit "fully unblocked — confirm and proceed" nudge.
-- **Laptop reply** (#23, 04:53Z): both decisions received/applied on `kalles-main-branch`; pushed `211f98b..3175b01` (includes kalles/main merge `0732868`, pyproject dedupe `dccb604`, speed-of-sound merge `3175b01`); full suite **84 passed**; resumes **Phase 2F laptop-only ~2K sample generation** via `scripts/generate_surrogate_data.py`.
-- **Laptop Phase 2F start** (04:55Z): plan = adapt `scripts/generate_surrogate_data.py`, restrict to laptop workers, reduce batch size, persist samples to disk, then Phase 2G surrogate training.
-- **Acknowledgment posted** (#23 comment 17867731): push verified (14 ahead / 0 behind), Phase 2F approved.
-- **Desktop `main` verified green**: `pytest tests/ -q` → **26 passed** in 25.69s (sympy Keefe-loss suite green).
-- **API/spectral search completed**: librosa (CQT/pyin; 0.11.0 installed), scipy.signal (Welch/find_peaks), sounddevice (0.5.5 installed), spectrum, OpenWInD (bore reconstruction), calcimpy, GNN surrogate paper (arXiv:2412.16817), torchlibrosa.
-- **Free compute + multimodal search completed**: Colab ~15-30 GPU-hr/wk, Kaggle ~30 GPU-hr/wk (best free fit for Phase 2G), HF ZeroGPU small, Lightning 80/hr-mo, GCP $300 credits, SageMaker Lab closing to new users Jul 30 2026; Gemini free tier strongest multimodal (audio/images/video/PDF, Flash ~10 RPM/250 RPD), Groq, OpenRouter multimodals, Qwen2.5-VL/LLaVA/InternVL open-weight. Repo already uses OpenRouter (`prompt_builder.py`/`ai_assistant.py`/`stl_verifier.py`) + Ollama; **Gemini NOT integrated** (only in chat-log).
-- **Compute research posted** (#23 comment 17867767): free-compute + Gemini multimodal findings.
-- **Boot-sequence fix committed**: `f5ae5ed` (BOOT_STATE.md + AGENTS.md pointer) and `ca67ce7` (watcher commit — previously uncommitted, at risk of loss).
-- **Mid-session context-loss protocol** (`3125d5b`, GOVERNANCE-UPDATE): AGENTS.md now says stop-and-re-read after compaction; boot FINAL CHECK requires BOOT_STATE.md update before session ends.
-- **Overnight run (user asleep) — all complete**:
-  - Dask cluster verified live (8 workers, `tcp://100.100.66.117:8786`); `benchmark_dask.py` defaulted to stale `100.69.113.41:8786` (0 workers) — patched via `scripts/_run_benchmark_live.py`.
-  - **Main Dask benchmark: 12/12 pass <3c RMS, 4.09× speedup** (298.8s → 73.0s, 8 workers).
-  - **Unconventional shapes: ALL PASSED** (10/10 bore types → STL; optimizations: exponential 0.0c, spiral 0.04c, parabolic 1.2c, stepped 1.9c, ridged 5.4c, bessel 7.0c, cylindrical 15.8c).
-  - **WAV inverse design**: `backend/inverse_design.py` extracted from kalles-main-branch; **fixed `1.0/round_trip` amplification bug** (used `round_trip` directly); Tier 1 f0 recovery +3.9c/−4.5c, Tier 3 cost 0.064; Tier 2 blocked (generative_agent not on main).
-  - **botorch installed + declared** (was phantom — imported by `bi_objective_bo.py`, never in pyproject). gpytorch dep added.
-  - **Analytical cross-check**: constant 0.66r end correction, worst error 0.04c / 72 cases; new test `tests/test_analytical_pipes.py` (73 tests).
-  - **Tool registry built**: `scripts/toolcheck.py` + `tests/test_tool_registry.py` guard + `docs/TOOLS.md`; new extras `cad` (cadquery/build123d/vtk/trimesh) and `bench` (dask[distributed]/psutil/cma); **PHANTOM deps now empty**.
-  - **Desktop suite: 26 → 113 passed** (added inverse_design 9, surrogate 4, analytical pipes 73, tool registry 1). OpenWind standalone cross-check: 3 passed.
-  - Commits pushed: `b3e41a2` (WAV + tests) → `a9aa7c6` (analytical pipes) → `ea6fe6a` (tool registry). Full results posted to #23 (comment 17867933).
-  - **Phase 2G decisions posted** (#23 comment 17867858): target contract APPROVED; direction = **Kaggle** (`train_surrogate.py --epochs 200 --batch 256`, upload samples_2000_seed42.csv).
+- **Laptop confirmation on #23** (2026-08-03T01:41:04Z): verified desktop's
+  `593e149` already contains the numba fix; laptop's holding branch
+  `fix/tmm-medium-numba` obsolete and dropped; **114 passed** on laptop too;
+  approved the landing plan (keep main's numba-free fallback, land feature-flagged
+  wiring non-AUDIT, don't merge either copilot branch's pure-Python refactor).
+- **TMM numba landing on `main`** (commit `32d4c9f`): new `backend/tmm_numba.py`
+  (pure `np.*` inside `@njit`, no `import math`, no circular `Hole` import);
+  3 hunks into `backend/tmm_acoustics.py` (`TMM_USE_NUMBA` env flag, lossless-only
+  `_action_arrays` precompute in `__init__`, int32-mask fast path in
+  `resonance_phase`); `perf = ["numba>=0.60"]` extra in `pyproject.toml`;
+  `docs/TOOLS.md` declaration (toolcheck PASS); parity test
+  `test_numba_resonance_phase_matches_python()` in `tests/test_tmm.py`.
+  Verified on `32d4c9f`: 540 wired cases max diff **0.0**; `find_resonance`
+  ~6.4x, standalone `resonance_phase` ~9.8x; full whitelisted suite **114 passed**
+  (126.9s); `TMM_USE_NUMBA=0` fallback identical (2.355755).
+- **Wiki restructure** (commit `5c7529f`): `wiki/Internal-Research.md` rewritten
+  as a hub index; new topic pages `Internal-Research-Acoustics.md`,
+  `Internal-Research-Optimization.md`, `Internal-Research-Measurement.md`,
+  `Internal-Research-Perception.md`, `Internal-Research-Resources.md`,
+  `Internal-Research-Metamaterials.md` (organized by instrument category:
+  percussion §4, low-clarinet deep dive §5 contrabass Bb/contra-alto Eb/straight
+  bass/bass-in-A/folded, guitar §6, low sax §7, bowed/piano §8, standard
+  woodwinds §9, brass §10, lamellophones §11, TMM integration §12, references
+  §13). Renamed `wiki/Internal-Metamaterials.md` → `wiki/Internal-Research-Metamaterials.md`;
+  updated `wiki/Internal-Home.md` and `docs/WIKI-INDEX.md`.
+- **Metamaterials reference doc committed** (in `5c7529f`):
+  `docs/RESEARCH_acoustic_metamaterials.md` — Claude + Kimi exports merged
+  (Kimi §2.4: cross-category ranking, folded-geometry advantage, within-family
+  low-woodwind ranking, bore verdict, bass-clarinet-in-A timbre-revival idea)
+  + web-verified references.
+- **Wiki cross-link fixes** (commit `b42b5bf`, this session's safe task): 7 broken
+  `[[...]]` links fixed in `Home.md`/`FAQ.md`/`Getting-Started.md`/
+  `3D-Printing-Guide.md` (targets `Internal-Home`, `Internal-Branches`,
+  `Internal-Optimization`, `Internal-Research-Measurement`, incl. anchor fix
+  `#Metric Standardization (2026-07-25)`). Validation script: **77 links, 0 broken**
+  (code-span content excluded). Pushed `32d4c9f..b42b5bf` → `main`.
 
 ### In Progress
-- **Phase 2G/2H** (laptop): laptop posted Phase 2H verdict (comment 17869601 context — hybrid warm-start validated: 8/10 reach 0c vs 5/10 random, ~5x fewer outliers; standalone surrogate-BO CLOSED; tail-weighting kept but dormant). Desktop replied (comment 17869601) approving close-out and offering a **desktop-Dask bulk sampling job (~50K tail-focused samples) → Kaggle** — awaiting laptop green-light + schema/commit confirmation. Laptop branch now 26 ahead of main (`b087cd7`), includes `9460e77` merge of desktop tool registry.
-- **Spectral research post**: the draft `scripts/_research_msg.md` (librosa/OpenWInD/scipy/GNN) is gone (never committed). The spectral API findings live in BOOT_STATE Done + #23 comment 17867767; fold into the next spectral update instead of re-staging.
+- None — this session's work is complete and pushed.
 
 ### Blocked
-- `backend/spectral` implementation **awaits user approval of design** — draft committed `ca266b4` (`docs/DESIGN_spectral.md`); present to user when awake. Has 3 open questions (scope of first commit; reuse of timbre_objectives sharpness; librosa extra timing).
-- Inverse-design Tier 2 (`design_from_sound` full pipeline): `generative_agent`, `instrument_knowledge`, `spline_bore` not on `main` (ADR: PLANNED).
+- Standing (not this session): `backend/spectral` implementation awaits user
+  approval of `docs/DESIGN_spectral.md` (3 open questions). Inverse-design Tier 2
+  blocked on `generative_agent`/`instrument_knowledge`/`spline_bore` not on `main`.
 
 ## Key Decisions
 
-- Speed-of-sound **346100 mm/s canonical** everywhere; 5-stage `sequential_refined` **decommissioned** — `jax_optimizer.refine_sequential` authoritative; standalone copy survives only on `kalles-main-branch` as A/B reference.
-- Branch cleanup: delete only branches fully merged into `origin/main`; leave unmerged (potential work loss).
-- Messaging model: OS-level toast watcher handles notification (human is better at noticing) + bounded foreground `watch` prints into chat when I listen; background daemon never decides/responds unattended.
-- Spectral module: synthetic-only tests for now, no mic/recording integration; reuse `metrics.py`/`target_frequencies.py` (import, never modify — single source of truth).
-- Restart session after powershell command in compacted laptop message (nudged; laptop ack'd coordination is on-channel).
-- **Tool registry solution** (BUILT — commit `ea6fe6a`, guard live): `docs/TOOLS.md` manifest + `scripts/toolcheck.py` (installed vs declared vs imported across live pipeline) + `tests/test_tool_registry.py` pytest guard that fails on undeclared third-party imports. Adoption rule now enforced: install + declare + import + whitelisted test. New pyproject extras: `cad`, `bench`, `surrogate` (+gpytorch). PHANTOM = empty.
-- **Boot-state persistence** (user: "boot sequence is gone. Again." — fixed): `docs/session-logs/BOOT_STATE.md` is the versioned, reloadable session snapshot; AGENTS.md Step 0 points at it. Update at end of every session.
+- Land wired numba onto `main` as a clean **port** (landing branch from
+  `origin/main`, two commits), **not** a merge of the copilot branches; the
+  pure-Python path stays the authoritative fallback (Law 1); laptop confirmed the
+  pure-Python refactors were ~+15–20% slower and agreed not to merge them.
+- Wiki restructure: **one page per major topic** (hub + Acoustics/Optimization/
+  Measurement/Perception/Resources/Metamaterials), user-selected over finer or
+  coarser grouping; metamaterials page by instrument category with per-instrument
+  subsections, low clarinets deepest dive (user-requested).
+- Research scope: reference doc + TMM-integration evaluation, **not** code
+  porting; all metamaterial implementation ideas marked future-work. Repo
+  integration mapping: Helmholtz side branch via `backend/core/network.py`
+  `Port`/`NodeType` (new `HELMHOLTZ` node) feeding `junction2_reply_phase`/
+  `junction3_reply_phase`; band-gap metrics from `backend/tone_hole_corrections.py`
+  geometry; Piva/Gower/Abrahams formulas for resonator-distribution design; numba
+  fast path is lossless-only so lossy resonator elements stay pure-Python or
+  extend the njit function.
+- This session: user asked for a task suggestion or, if none given, a **safe**
+  fallback action — chose docs-only wiki cross-link repair (no architecture
+  change, no law risk, no deletion, no merge).
 
 ## Next Steps
 
-1. Monitor #23 / `scripts/.team_inbox.md` for laptop's Phase 2G Kaggle ack AND the Dask bulk-sampling green-light; verify push credibility.
-2. Present `backend/spectral` design (`docs/DESIGN_spectral.md`, commit `ca266b4`) for user approval — includes the spectral API research summarized in Done / #23 comment 17867767.
-3. Wire Gemini free Flash into `ai_assistant.py` as second provider (multimodal audio/image for spectral + STL verification).
-4. Update `docs/ARCHIVED_TOOLS.md` for genuinely forgotten packages (FORGOTTEN list in toolcheck) — informational only, no auto-uninstall.
-5. Keep tool registry current: re-run `python scripts/toolcheck.py` after any dependency change.
+1. **Ask the user** (Law 10, don't-speculate directive) whether they want the
+   Claude artifacts (`brass_scaffold.py`, `string_metamaterial.py`) ported into
+   the repo — do not assume.
+2. Standing: present `backend/spectral` design (`docs/DESIGN_spectral.md`) for
+   user approval when the user is available.
+3. Monitor `kalles-main-branch` for laptop's `team_chat.py` fixes landing on
+   `main` (laptop's call) and for Phase 2G updates.
 
 ## Critical Context
 
-- **Sync**: `origin/main` = `ca266b4`; laptop `kalles-main-branch` = `b087cd7` = **26 ahead / 0 behind** (clean superset, no divergence). Laptop HEAD `b067afc`; includes `77dd2d6` (botorch>=0.16 API fixes), `d5550db` (Phase 2F.2 mixed sampling), `20956ee` (early stopping), `9460e77` (merged desktop tool registry).
-- **`origin/main` log**: `3ce892e` → `cc202b5` → `dd0ab01` → `2a4b263` → `60b5d25` → `3125d5b` (governance mid-session) → `b3e41a2` (WAV pipeline + tests) → `a9aa7c6` (analytical pipes) → `ea6fe6a` (tool registry).
-- Desktop worktree `..\instrument-designer-port` on `main`; original repo `C:\Users\Admin\Desktop\instrument-designer` on `benchmarking-experiments` (untouched).
-- Dask live cluster = `tcp://100.100.66.117:8786` (8 workers); `benchmark_dask.py` default scheduler `100.69.113.41:8786` is stale/empty — use `_run_benchmark_live.py`.
-- Background watcher running (toast+sound, `scripts/.team_watch.log`); `git fetch` stderr lines print as "RemoteException" on Windows but are non-fatal.
-- Desktop test suite = **113 passed**; laptop = 84 passed.
-- Python 3.14; pip warns of invalid distributions (`~emakein`, `~nstrument-designer`, `~yside6-addons`) — harmless.
-- ADR-010 (folded geometry) appended to `docs/ARCHITECTURE_DECISIONS.md`; ADR numbering 001–009 pre-existing.
-- Laptop uses identity `big-pickle`; laptop branch-local calls still import 5-stage `sequential_refined` (`generative_agent.py`, `benchmark_unconventional_shapes.py:98`).
-- Regenerable artifacts deliberately uncommitted: `test_output/inverse_design/`, `test_output/unconventional/`, `backend/benchmark_results.json`, all benchmark logs.
+- **`main` HEAD = `b42b5bf`** (wiki cross-link fixes) over `32d4c9f` (numba
+  wiring) over `5c7529f` (wiki restructure); `origin/main` = `b42b5bf`.
+- Env: Windows, Python 3.14.6, numpy 2.4.6, numba 0.66.0, pytest 9.1.1, dask
+  2026.7.1, jax 0.11.0; **conda NOT on PATH** — use system Python +
+  `PYTHONPATH=<repo root>`; `tmmbench` env unavailable on desktop.
+- Untracked regenerable artifacts left uncommitted: `bench_main.txt`,
+  `bench_perf_tmm_medium.txt`, `bench_perf_tmm_refactor.txt`.
+- #23 stream: laptop confirmation (01:41:04Z) + laptop's three `team_chat.py`
+  bugfixes pushed to `kalles-main-branch` (`45ddcb2`, `591c384`, `827c051`).
+- Research anchors (web-verified): Piva/Gower/Abrahams npj Acoustics 2:10 (2026)
+  random Helmholtz-resonator band gaps w/ effective-properties formulas;
+  Petersen/Kergomard et al. Acta Acustica 4:13 (2020) conical tonehole-lattice
+  cutoff; Bader et al. JASA 145:3086 (2019) neodymium-magnet ring frame drum
+  (~300–800 Hz); Bader Springer https://doi.org/10.1007/978-3-031-57892-2_16;
+  Lercari et al. MDPI Appl. Sci. 12:8619 (2022) guitar top-plate cavities;
+  Fischer et al. JASA 155(3_Suppl):A59 (2024) magnet-loaded guitar;
+  Khodabakhsh 2025 spiral-neck HR; Lucklum DAS|DAGA 2025 interconnected HR
+  lattice; Meier 2025 Materials & Design tunable phononic band gaps.
+- Bass-clarinet family facts (used in doc/wiki): ~150 cm bore, written Eb3 ≈
+  78 Hz, contrabass Bb ≈ 3 m tube doubled twice (hybrid cylindrical/conical,
+  sub-wavelength features ~10–30 cm), contra-alto Eb >1.7 m straightened (least
+  standardized), low-A bari-sax bell-length compromise, subcontrabass sax ≈
+  2.74 m / 28.6 kg / lowest G#0 ≈ 25.95 Hz, bass clarinet in A from Wagner's
+  *Lohengrin* (1848).
+- Repo canonical constants unchanged: `SPEED_OF_SOUND = 346100.0` mm/s in
+  `backend/tmm_acoustics.py` (Law 7 / chalumier parity).
+- Git identity `Admin <kooshikooo@gmail.com>`; `gh` authed as `kooshikooo-lab`.
+- Laptop identity `big-pickle`; desktop `TEAM_MACHINE=desktop`.
 
 ## Relevant Files
 
-- `scripts/team_watch.ps1` — background toast watcher (3s, no-toast/no-sound/log/inbox hooks); log `scripts/.team_watch.log`.
-- `scripts/team_chat.py` — sync/post/`--file`/`watch --timeout`/`sync --json`; state `scripts/.team_state.json`.
-- `scripts/.team_inbox.md` — inbox for landed messages.
-- `scripts/toolcheck.py` — tool registry checker (installed/declared/imported; use `importlib.metadata`).
-- `tests/test_tool_registry.py` — whitelisted guard; fails on undeclared third-party imports.
-- `docs/TOOLS.md` — tool registry manifest + adoption steps + current declarations.
-- `docs/DESIGN_spectral.md` — `backend/spectral` design draft (commit `ca266b4`), awaiting user approval.
-- `docs/ARCHIVED_TOOLS.md` — target for genuinely forgotten packages (informational).
-- `scripts/_overnight_results.md` — posted to #23 (comment 17867933), file can be removed.
-- `backend/inverse_design.py` — WAV→instrument pipeline (Tier 1 + Tier 3 work; Tier 2 blocked). `backend/benchmark_inverse_design.py` — WAV benchmark.
-- `tests/test_analytical_pipes.py` — TMM vs closed-form pipes (73 cases, 0.66r end correction).
-- `scripts/_run_benchmark_live.py` — patches `benchmark_dask.py` to the live scheduler address.
-- `backend/physics/losses.py:96` — `f = 346100.0 / lam_m` (was 343200).
-- `tests/test_sympy_validation.py` lines 110/155/164 — `C_BOUNDARY_MM_S = 346100.0`; 18 tests pass.
-- `tests/unit/test_basic.py` — unit test conventions (SPEED_OF_SOUND == 346100.0; fixture registry).
-- `backend/prompt_builder.py` + `ai_assistant.py` + `ai_advisor.py` — OpenRouter/Ollama LLM layer (Gemini wiring target).
-- `backend/stl_verifier.py` — OpenRouter vision call for STL verification (multimodal extension point).
-- `backend/metrics.py`, `backend/target_frequencies.py` — canonical metrics/targets the spectral module will reuse.
-- `scripts/generate_surrogate_data.py` — laptop's Phase 2F ~2K sample generation entry point (consume results for Phase 2G).
+- `backend/tmm_acoustics.py` — numba wiring on `main` (env-flag block,
+  lossless-only `_action_arrays`, int32-mask fast path in `resonance_phase`).
+- `backend/tmm_numba.py` — **new on `main`** — `np.*` inside `@njit`, no
+  `import math`, no circular `Hole` import.
+- `pyproject.toml` / `docs/TOOLS.md` — `perf = ["numba>=0.60"]` extra + declaration.
+- `tests/test_tmm.py` — `test_numba_resonance_phase_matches_python()` parity test.
+- `docs/RESEARCH_acoustic_metamaterials.md` — Claude + Kimi + web research
+  reference doc (committed).
+- `wiki/Internal-Research.md` — hub index; `wiki/Internal-Research-{Acoustics,
+  Optimization, Measurement, Perception, Resources, Metamaterials}.md` — topic
+  pages; `wiki/Internal-Home.md`, `docs/WIKI-INDEX.md` — updated.
+- `scripts/team_chat.py` + `scripts/.team_state.json` — Discussion #23 sync;
+  laptop's 3 bugfixes on `kalles-main-branch`.
+- `backend/core/network.py`, `backend/tone_hole_corrections.py`,
+  `backend/mouthpiece_models.py`, `backend/trumpet_acoustics.py` — metamaterial
+  integration points mapped in the research doc/wiki (future-work).
+- Standing: `docs/DESIGN_spectral.md` (awaiting approval), `docs/TOOLS.md`
+  (tool registry), `scripts/toolcheck.py`, `scripts/team_watch.ps1`.
