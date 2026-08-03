@@ -16,6 +16,10 @@
   instrument (low clarinets the deepest dive). **DONE, on `main`.**
 - Land the numba-accelerated TMM resonance-phase fast path (laptop's
   `np.floor/arctan/tan/pi` fix) on `main` behind a feature flag. **DONE, on `main`.**
+- Port the Claude metamaterial artifacts into `backend/experiments/` (user
+  authorized porting when present). **DONE, on `main`** — `string_metamaterial.py`,
+  `brass_scaffold.py`, `metamaterial_elements.py`, `folded_bore_elements.py`, all
+  reproducing documented outputs exactly.
 - Standing items from prior sessions (not this session's work): `backend/spectral`
   design awaits user approval; laptop Phase 2G surrogate work lives on
   `kalles-main-branch`.
@@ -80,8 +84,25 @@
   `[[...]]` links fixed in `Home.md`/`FAQ.md`/`Getting-Started.md`/
   `3D-Printing-Guide.md` (targets `Internal-Home`, `Internal-Branches`,
   `Internal-Optimization`, `Internal-Research-Measurement`, incl. anchor fix
-  `#Metric Standardization (2026-07-25)`). Validation script: **77 links, 0 broken**
-  (code-span content excluded). Pushed `32d4c9f..b42b5bf` → `main`.
+   `#Metric Standardization (2026-07-25)`). Validation script: **77 links, 0 broken**
+   (code-span content excluded). Pushed `32d4c9f..b42b5bf` → `main`.
+- **Claude artifact ports** (this session): `string_metamaterial.py` (commit
+  `91b0df8`), then `brass_scaffold.py` + `metamaterial_elements.py` +
+  `folded_bore_elements.py` + doc/wiki updates + toolcheck fix (commit `cf7e625`),
+  all pushed. Verified exact reproductions: string band gaps (rigid
+  `(1580.0,4183.3),(4768.6,8000.0)`; local `(921.1,2925.6),(4183.8,5918.5)`);
+  brass open peaks 684.5/715.6/846.2, 1-3 combo 705.5/736.1/838.3/888.4
+  (838.3 Hz = −16.2c), 4cm³/24.9mm resonator → 852.2 Hz (+12.2c); folded
+  low-clarinet −12.8c bass / −22.9c contra-alto / −27.8c contrabass + rigid-HR
+  feasibility table (contrabass fundamental unreachable below V=100). Design
+  finding: rigid HRs suit upper partials/formants; `effective_density_locally_resonant`
+  liner for fundamentals. Captured in `docs/RESEARCH_acoustic_metamaterials.md`
+  §7 (new) + `wiki/Internal-Research-Metamaterials.md` §5.8 (new) + §10/§12.2/§12.3.
+- **toolcheck guard fix** (commit `cf7e625`): `scripts/toolcheck.py` `_is_local`
+  now resolves sibling modules nested under local roots (e.g.
+  `backend/experiments/brass_scaffold.py` imported bare by another experiment) —
+  no longer misreported as PHANTOM. Guard PASS (29 imported, 0 phantom);
+  `tests/test_tool_registry.py` passes.
 
 ### In Progress
 - None — this session's work is complete and pushed.
@@ -115,18 +136,20 @@
 
 ## Next Steps
 
-1. **Ask the user** (Law 10, don't-speculate directive) whether they want the
-   Claude artifacts (`brass_scaffold.py`, `string_metamaterial.py`) ported into
-   the repo — do not assume.
-2. Standing: present `backend/spectral` design (`docs/DESIGN_spectral.md`) for
+1. Standing: present `backend/spectral` design (`docs/DESIGN_spectral.md`) for
    user approval when the user is available.
-3. Monitor `kalles-main-branch` for laptop's `team_chat.py` fixes landing on
-   `main` (laptop's call) and for Phase 2G updates.
+2. Monitor `kalles-main-branch` for laptop's `team_chat.py` fixes landing on
+   `main` (laptop's call) and for Phase 2G updates; laptop may want the L2-vs-L1
+   parity sweep now that `main` has the ported experiment scripts.
+3. Optional user-verification: folded/low-clarinet notes wording in
+   `docs/RESEARCH_acoustic_metamaterials.md` §7 / wiki §5.8.
 
 ## Critical Context
 
-- **`main` HEAD = `b42b5bf`** (wiki cross-link fixes) over `32d4c9f` (numba
-  wiring) over `5c7529f` (wiki restructure); `origin/main` = `b42b5bf`.
+- **`main` HEAD = `cf7e625`** (Claude artifact ports + doc/wiki + toolcheck fix)
+  over `91b0df8` (string port) over `80a4435`/`e8780d7` (BOOT_STATE) over
+  `b42b5bf` (wiki cross-link fixes) over `32d4c9f` (numba wiring) over
+  `5c7529f` (wiki restructure); `origin/main` = `cf7e625`.
 - Env: Windows, Python 3.14.6, numpy 2.4.6, numba 0.66.0, pytest 9.1.1, dask
   2026.7.1, jax 0.11.0; **conda NOT on PATH** — use system Python +
   `PYTHONPATH=<repo root>`; `tmmbench` env unavailable on desktop.
@@ -139,9 +162,10 @@
   branch via `junction3_reply_phase`), L2 `MetamaterialSegment` (Dell/Krynkin/
   Horoshenkov effective-medium stopband), `TMMInstrument` `meta_slots`/
   `metamaterial_segments` args, `tests/test_metamaterial.py` (13 tests), doc
-  `chat-logs/2026-08-03-metamaterial-implementation-research.md`. Desktop acked
-  (discussioncomment-17875306) and offered to run the L2-vs-L1 parity sweep.
-  **Not yet on `main`** — wiki §12 still labels implementation future-work.
+   `chat-logs/2026-08-03-metamaterial-implementation-research.md`. Desktop acked
+   (discussioncomment-17875306) and offered to run the L2-vs-L1 parity sweep.
+   **Not yet on `main`** — wiki §12 implementation items marked DONE on desktop's
+   port side; laptop's own implementation is on `kalles-main-branch`.
 - Research anchors (web-verified): Piva/Gower/Abrahams npj Acoustics 2:10 (2026)
   random Helmholtz-resonator band gaps w/ effective-properties formulas;
   Petersen/Kergomard et al. Acta Acustica 4:13 (2020) conical tonehole-lattice
@@ -171,10 +195,15 @@
 - `pyproject.toml` / `docs/TOOLS.md` — `perf = ["numba>=0.60"]` extra + declaration.
 - `tests/test_tmm.py` — `test_numba_resonance_phase_matches_python()` parity test.
 - `docs/RESEARCH_acoustic_metamaterials.md` — Claude + Kimi + web research
-  reference doc (committed).
+  reference doc (committed); §7 = ported-artifact numerical findings, §8 =
+  language/tooling.
 - `wiki/Internal-Research.md` — hub index; `wiki/Internal-Research-{Acoustics,
   Optimization, Measurement, Perception, Resources, Metamaterials}.md` — topic
   pages; `wiki/Internal-Home.md`, `docs/WIKI-INDEX.md` — updated.
+- `backend/experiments/` — ported Claude artifacts: `string_metamaterial.py`,
+  `brass_scaffold.py`, `metamaterial_elements.py`, `folded_bore_elements.py`
+  (all on `main`, exact reproductions verified; standalone `__main__` demos).
+- `scripts/toolcheck.py` — `_is_local` resolves nested sibling modules (guard fix).
 - `scripts/team_chat.py` + `scripts/.team_state.json` — Discussion #23 sync;
   laptop's 3 bugfixes on `kalles-main-branch`.
 - `backend/core/network.py`, `backend/tone_hole_corrections.py`,
