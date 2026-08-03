@@ -97,7 +97,7 @@
   feasibility table (contrabass fundamental unreachable below V=100). Design
   finding: rigid HRs suit upper partials/formants; `effective_density_locally_resonant`
   liner for fundamentals. Captured in `docs/RESEARCH_acoustic_metamaterials.md`
-  §7 (new) + `wiki/Internal-Research-Metamaterials.md` §5.8 (new) + §10/§12.2/§12.3.
+  §7 (new) + Appendix A/B + `wiki/Internal-Research-Metamaterials.md` §5.8/§10/§12.2/§12.3.
 - **toolcheck guard fix** (commit `cf7e625`): `scripts/toolcheck.py` `_is_local`
   now resolves sibling modules nested under local roots (e.g.
   `backend/experiments/brass_scaffold.py` imported bare by another experiment) —
