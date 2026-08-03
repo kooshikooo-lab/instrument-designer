@@ -89,6 +89,8 @@ def resolve_discussion_id(discussion_num=23):
 
 def comment_id_from_url(url):
     """Extract the numeric discussion-comment id from either an API or HTML url."""
+    if not url:
+        return None
     m = re.search(r"discussioncomment-(\d+)", url) or re.search(r"/comments/(\d+)", url)
     return m.group(1) if m else None
 
