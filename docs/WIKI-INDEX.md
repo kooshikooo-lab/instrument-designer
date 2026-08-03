@@ -29,7 +29,13 @@
 |------|---------|
 | [Instrument Library](https://github.com/kooshikooo-lab/instrument-designer/wiki/Internal-Instruments) | 91 instruments, benchmark results |
 | [Branch Comparison](https://github.com/kooshikooo-lab/instrument-designer/wiki/Internal-Branches) | All branches, merge/keep/discard |
-| [Research References](https://github.com/kooshikooo-lab/instrument-designer/wiki/Internal-Research) | Papers, books, repos (indexed by topic) |
+| [Research References](https://github.com/kooshikooo-lab/instrument-designer/wiki/Internal-Research) | Hub — topic pages below |
+| [Research — Acoustics](https://github.com/kooshikooo-lab/instrument-designer/wiki/Internal-Research-Acoustics) | TMM, tone holes, radiation, instrument-specific |
+| [Research — Optimization](https://github.com/kooshikooo-lab/instrument-designer/wiki/Internal-Research-Optimization) | Algorithms, multi-objective, four key methods |
+| [Research — Measurement](https://github.com/kooshikooo-lab/instrument-designer/wiki/Internal-Research-Measurement) | Impedance/BIAS, intonation metrics, databases |
+| [Research — Perception](https://github.com/kooshikooo-lab/instrument-designer/wiki/Internal-Research-Perception) | Timbre & intonation perception |
+| [Research — Resources](https://github.com/kooshikooo-lab/instrument-designer/wiki/Internal-Research-Resources) | GitHub repos, books |
+| [Research — Metamaterials](https://github.com/kooshikooo-lab/instrument-designer/wiki/Internal-Research-Metamaterials) | Acoustic metamaterials in instruments |
 | [Code Conventions](https://github.com/kooshikooo-lab/instrument-designer/wiki/Internal-Conventions) | Style, testing, commit messages |
 | [Known Issues](https://github.com/kooshikooo-lab/instrument-designer/wiki/Internal-Known-Issues) | Bugs, design decisions, tech debt |
 
