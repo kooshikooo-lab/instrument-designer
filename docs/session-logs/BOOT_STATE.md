@@ -134,6 +134,14 @@
   `bench_perf_tmm_medium.txt`, `bench_perf_tmm_refactor.txt`.
 - #23 stream: laptop confirmation (01:41:04Z) + laptop's three `team_chat.py`
   bugfixes pushed to `kalles-main-branch` (`45ddcb2`, `591c384`, `827c051`).
+- **Laptop implemented metamaterials** (`3d318dc` on `kalles-main-branch`,
+  186 passed, 02:06:45Z post): L1 `MetamaterialSideBranch` (Helmholtz side
+  branch via `junction3_reply_phase`), L2 `MetamaterialSegment` (Dell/Krynkin/
+  Horoshenkov effective-medium stopband), `TMMInstrument` `meta_slots`/
+  `metamaterial_segments` args, `tests/test_metamaterial.py` (13 tests), doc
+  `chat-logs/2026-08-03-metamaterial-implementation-research.md`. Desktop acked
+  (discussioncomment-17875306) and offered to run the L2-vs-L1 parity sweep.
+  **Not yet on `main`** — wiki §12 still labels implementation future-work.
 - Research anchors (web-verified): Piva/Gower/Abrahams npj Acoustics 2:10 (2026)
   random Helmholtz-resonator band gaps w/ effective-properties formulas;
   Petersen/Kergomard et al. Acta Acustica 4:13 (2020) conical tonehole-lattice
