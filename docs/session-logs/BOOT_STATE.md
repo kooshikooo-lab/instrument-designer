@@ -11,11 +11,11 @@
 
 - Benchmark the two copilot TMM perf branches (`perf/tmm-refactor-copilot`,
   `perf/tmm-medium-refactor-copilot`) against `main`, then land a real speedup.
-- **Status: numba fast path is wired into `backend/tmm_acoustics.py` on branch
-  `perf/tmm-medium-refactor-copilot` and gives ~6.4x on `find_resonance`
-  (bit-identical output). Wiring is local/uncommitted — coordinate a commit with
-  the laptop via #23 (laptop fixed the numba import bug and its fix is also
-  uncommitted on the same branch).**
+- **Status: numba fast path wired into `backend/tmm_acoustics.py` on branch
+  `perf/tmm-medium-refactor-copilot` (6.4x on `find_resonance`, bit-identical)
+  and committed as `593e149` (AUDIT:). Explicit OK + landing plan posted to #23
+  (comment 17874878) telling laptop to push its numba fix. Next: reconcile numba
+  wiring onto `main` after laptop confirms push.**
 
 ## Constraints & Preferences
 
@@ -67,12 +67,23 @@
   (parity: numba vs pure-Python, bit-identical).
 - Full whitelisted suite: **114 passed, 0 failed** (46.9s). `TMM_USE_NUMBA=0`
   fallback verified OK.
+- **Committed `593e149`** (AUDIT:) on `perf/tmm-medium-refactor-copilot` —
+  tmm_acoustics.py wiring, tmm_numba.py fix, pyproject perf extra, TOOLS.md,
+  test_tmm.py parity test, BOOT_STATE refresh.
+- **OK posted** to laptop (#23 comment 17874878): go-ahead to push its numba fix,
+  landing plan = keep main's tmm_acoustics.py as fallback + reconcile wiring onto
+  main (direct-to-main); will wait for laptop push confirmation before reconciling.
 
 ### In Progress
-- **Uncommitted local edits** on `perf/tmm-medium-refactor-copilot`:
-  `backend/tmm_acoustics.py`, `backend/tmm_numba.py`, `tests/test_tmm.py`,
-  `pyproject.toml`, `docs/TOOLS.md`. Bench txt artifacts (`bench_*.txt`)
-  untracked — do NOT commit. Decision on commit/merge coordination pending #23.
+- **Waiting on laptop** (per #23 comment 17874878): laptop to push its
+  `tmm_numba.py` fix + confirm. Then desktop reconciles the numba wiring onto
+  `main` as a normal commit (feature-flagged, bit-identical, main stays the
+  numba-free fallback path for loss model).
+- **Team-chat procedure note**: laptop was waiting for a reply that desktop had
+  already posted (17874846) — likely because desktop asked a confirmation
+  question instead of giving an explicit OK. Lesson: give explicit go/no-go
+  replies (now fixed with 17874878). No script bug found; cursor/state logic
+  verified against the live comment stream.
 
 ### Blocked
 - Merging the copilot perf branches as-is: both are **pure-Python regressions**
@@ -95,14 +106,13 @@
 
 ## Next Steps
 
-1. Post this status + wiring summary to #23 (team_chat.py), confirm laptop's
-   numba fix is same-as-desktop's; decide where to land (proposal: AUDIT: commit
-   on the copilot branch, then cherry-pick/merge numba wiring onto main).
-2. Consider committing as `AUDIT:` on `perf/tmm-medium-refactor-copilot` if
-   laptop confirms; then reconcile to main per direct-to-main policy.
-3. Re-run `python scripts/toolcheck.py` (must stay PHANTOM-empty after numba).
-4. If pursuing further speedup beyond numba: revisit the slower branch refactors
-   (deque/lambda in refactor, numpy Profile in medium) — likely drop them.
+1. Await laptop's push confirmation of its numba fix on #23, then reconcile the
+   numba wiring onto `main` (normal, non-AUDIT commit, direct-to-main) — main's
+   tmm_acoustics.py remains the numba-free fallback.
+2. Re-run `python scripts/toolcheck.py` after the main reconcile (must stay
+   PHANTOM-empty).
+3. Do NOT merge the copilot perf branches' pure-Python refactors (confirmed
+   ~+15–20% slower on both machines); numba fast path supersedes them.
 
 ## Critical Context
 
