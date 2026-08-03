@@ -375,3 +375,346 @@ effective-properties formulas are all scalar-matrix math, no special language ne
   cross-category ranking, folded-geometry (parallel-waveguide) analysis, extended
   low-woodwind family numbers (contrabass Bb, contra-alto Eb, low-A baritone sax,
   bass clarinet in A), Section 2.4.
+
+---
+
+## Appendix A: Verbatim excerpts from the source Claude conversation (2026-08-02)
+
+*Source: `Metamaterials in woodwind instruments - Claude.html` export. The
+research doc above synthesizes these passages; they are preserved here for
+traceability.*
+
+### A.1 Brass scaffold — mechanism validation and optimizer loop needed
+
+> **Claude:** "Two things worth flagging, both useful:
+>
+> 1. **The direction and rough magnitude are right, but the naive tuning overshot.**
+>    I placed the resonator's own resonance frequency directly at the sharp
+>    peak, which is a first guess, not a solved design — the resonator's f0,
+>    its position within the slide, and its cavity volume all interact with
+>    the surrounding tubing in a way that isn't a clean one-to-one mapping to
+>    'how many cents of correction you get.' Real design work here means
+>    wrapping this in an optimizer loop (exactly the pattern from your
+>    `two_phase_optimizer` / `v2_scipy_optimizer` work) with cents-deviation
+>    as the objective and (V, neck length, position-along-slide) as free
+>    parameters, rather than hand-placing it. That's the honest state of this
+>    sketch: it demonstrates the mechanism has real leverage — more than 15
+>    cents of pull from a 4cm³ resonator — not that I've solved the placement
+>    problem.
+>
+> 2. **The geometry is illustrative, not calibrated.**
+>    Bore radius, slide lengths, and bell profile are round numbers chosen
+>    to produce a plausible-looking impedance curve, not measured from a real
+>    Bb trumpet. Before this means anything quantitatively you'd want to
+>    swap in your actual leadpipe/valve-tubing/bell dimensions — the
+>    `cone_matrix` sanity check (verified against the cylinder limit) means
+>    the machinery itself is trustworthy, but garbage-in-garbage-out still
+>    applies to the geometry.
+>
+> **How I'd actually use this**: treat `brass_scaffold.py` as a geometry-input
+> problem, not a code problem — drop in real leadpipe/bell profile points and
+> real valve slide lengths, then wrap the resonator placement in a small
+> optimizer (2-3 parameters: V, neck length, split-point along the slide)
+> targeting the known 1-3 and 1-2-3 sharpness numbers from brass acoustics
+> literature. That would tell you fairly quickly whether an embedded
+> resonator can pull a valve combination into tune without also dragging the
+> open partials out of tune — which is really the whole question for whether
+> this is a genuinely useful mechanism or just a neat idea."
+
+### A.2 Frame drum / membrane cloaking — verified and contextualized
+
+> **Claude:** "Good — that claim from the other AI checks out, with the details
+> basically accurate. It's Bader, Fischer, Münster & Kontopidis's 2019 JASA
+> paper on a modified frame drum, and the mechanism is real: adding point
+> masses arranged in a ring on the drum membrane produces cloaking behavior,
+> where frequencies within a certain band can't leave the ring when the drum
+> is struck at its center. The physical implementation was a 40cm mylar
+> frame-drum membrane with a 10cm-diameter ring marked out by 2×10 neodymium
+> magnets stuck to front and back, and the resulting band gap sits between
+> roughly 300–400 Hz and 700–800 Hz, depending on the ring diameter.
+> Striking inside the ring gives that gapped spectrum, striking outside
+> gives an ordinary drum spectrum, and striking at the rim gives something
+> in between — so the 'two non-overlapping timbral families'
+> characterization is fair, and there's actually a third, blended zone at
+> the boundary.
+>
+> Worth knowing this is part of a broader program from the same group, not a
+> one-off: the same paper set also covers a one-dimensional metamaterial
+> string with added masses producing a dispersion relation in the harmonic
+> overtones — a detectable but very different pitch character — and a
+> labyrinth-sphere resonator with clear band-gap damping, small enough to
+> be usable in loudspeakers, instruments, or room acoustics.
+>
+> **Where this sits relative to your project, and why it's a genuinely
+> different animal than the bore-acoustics work:**
+>
+> The drum and string cases are 2D/1D *distributed vibrating structures*
+> with a spatial dimension the excitation can be localized within (you
+> strike a specific point on a membrane, or a specific point on a string).
+> The cloaking effect depends on that — the ring is a spatial boundary
+> that traps certain frequencies inside it. A clarinet bore doesn't have
+> that kind of spatial freedom for the player; excitation happens at one
+> end (the reed), and the 'space' the wave travels through is 1D by
+> construction. So direct transplant of the *cloaking* mechanism
+> isn't really available to you — there's no meaningful 'strike inside vs.
+> outside the ring' analog in a wind instrument, because there's only one
+> place air gets pumped in.
+>
+> What *does* transplant, though, is the underlying method, not the specific
+> cloaking geometry: periodic or patterned mass/stiffness loading creating
+> frequency-dependent dispersion and band gaps. That's precisely what the
+> Helmholtz side-branch and locally-resonant liner ideas from earlier in
+> this conversation are doing to your bore — same toolkit (add resonant
+> elements, get selective band suppression or dispersion shaping), just
+> applied to a 1D acoustic waveguide instead of a 2D membrane or a string.
+> The frame-drum and sonic-crystal-string work is good validation that the
+> *general* metamaterial-in-acoustic-instruments idea is sound and has been
+> demonstrated experimentally, even though the specific mechanism (spatial
+> cloaking on a 2D membrane) isn't one you can borrow directly for a bore.
+>
+> **One place it might transplant more literally**: if you ever get into
+> pad/key mechanism design, or resonant elements in a bell or mute wall
+> (the brass mute idea from earlier), those *are* effectively small 2D
+> plates or membranes, and the mass-ring/cloaking mechanism could apply
+> there in something closer to its original form — e.g., a mute's flat
+> reflective surface with an embedded mass pattern shaping which frequencies
+> get reflected vs. absorbed. That's a more direct lift from the Bader work
+> than anything in the main bore."
+
+### A.3 Guitar metamaterial research synthesis
+
+> **Claude:** "This is a much richer research area than I expected — there's a
+> real, small but active line of guitar-specific metamaterial work, and it
+> maps onto ideas your printer is unusually well-suited to test.
+>
+> **Acoustic guitar — soundboard/top-plate work is the most developed strand.**
+> Two threads exist: Espinoza-Oñate and colleagues explored locally coupling
+> tunable mechanical metamaterials to a guitar soundboard to absorb specific
+> frequency ranges and change its vibrational properties, essentially the
+> 2D-plate analog of the Helmholtz side-branch idea — a resonant patch
+> bonded onto the top, tuned to selectively damp or reshape particular
+> resonances rather than changing the whole plate. Separately, a numerical
+> FEM study modeled mechanical metamaterials (deliberately patterned
+> perforation geometries) in classical guitar top plates, evaluating impact
+> on modal behavior, sound pressure level, and structural integrity under
+> actual string tension, concluding the approach is feasible and beneficial
+> — and the stated motivation is the interesting part: it lets a maker
+> independently tune density and stiffness rather than being at the mercy
+> of natural wood variation, addressing the classic luthier problem where
+> two guitars built the same way from the same tree still sound different
+> because of intrinsic material inconsistency.
+>
+> **This connects directly to your fabrication advantage.** There's a
+> directly relevant printed-instrument study: researchers compared ukulele
+> soundboards made from Engelmann spruce, Chilean laurel, and 3D-printed
+> PLA+, and found the printed plates were dramatically more consistent
+> between samples — correlation around 0.94 between printed plates versus
+> only 0.19–0.65 between natural wood plates of the same species. That's
+> not really a metamaterial result on its own, but it's the enabling
+> condition for one: it confirms your printer can hit repeatable target
+> mechanical properties, which is exactly what a perforated/lattice
+> metamaterial soundboard design needs in order to be worth engineering
+> in the first place.
+>
+> **Electric guitar** doesn't show up in this literature at all — the
+> metamaterial research is squarely acoustic (vibrating plates and strings),
+> and electric guitar tone is dominated by string vibration sensed
+> electromagnetically by the pickup, not by the body radiating sound. That
+> said, a couple of things do transfer: body chambering (already a
+> mainstream tone-shaping technique) is structurally the same problem as
+> the guitar-top perforation work — engineered internal lattice geometry to
+> hit a target stiffness/mass/damping profile instead of relying on which
+> slab of wood you got. And the sonic-crystal string concept (periodic mass
+> loading, from the Bader/Kontopidis work mentioned earlier) applies
+> identically to a steel or nylon guitar string regardless of whether it's
+> amplified magnetically or acoustically, since it changes the string's
+> own dispersion before the signal ever reaches a pickup or a soundboard.
+>
+> **One thing worth flagging as a genuinely available idea, not speculation**:
+> an acoustic guitar's body-plus-soundhole is already a Helmholtz resonator
+> (the classic 'main air resonance,' usually around 90–100 Hz). That means
+> the side-branch element from your `metamaterial_elements.py` isn't just
+> an analogy for guitar work — a secondary internal resonator coupled to
+> that main air cavity is a literal, direct extension of code you already
+> have, no new physics needed.
+>
+> **Most prototypable idea overall**: a small mass on a compliant mount
+> clamped to a guitar string (or embedded in a printed bridge/saddle piece)
+> is a buildable object, unlike an equivalent structure inside a woodwind
+> bore. That's probably the most immediately prototypable idea in this
+> whole conversation if you ever want a fast physical test: no bore, no
+> reed, no viscothermal loss model — just a string, a clip-on resonant
+> mass, and a tuner."
+
+### A.4 String metamaterial — Bloch band gaps and physical interpretation
+
+> **Claude:** "Here's the mass-loaded string element I promised, implemented
+> via the Bloch transfer-matrix method (same technique as computing
+> phononic-crystal band structure) — includes both a rigid periodic
+> mass-loading case (the classical Brillouin loaded-string problem, closest
+> to the Bader '1D string' result) and a spring-mass local-resonator case
+> (the modern locally-resonant-metamaterial mechanism, closer to what gives
+> a genuine deep sub-wavelength band gap):
+>
+> ```text
+> Rigid periodic mass-loading (5cm spacing, 50mg masses):
+>   Gaps: (1580.0, 4183.3), (4768.6, 8000.0)
+>   → first gap's upper edge lands almost exactly at c/(2a) = 4183 Hz,
+>     confirming it's Bragg-scattering behavior set by lattice spacing
+>
+> Locally-resonant attachment (100mg mass, spring tuned to 1500 Hz):
+>   Gaps: (921.1, 2925.6), (4183.8, 5918.5)
+> ```
+>
+> One honest note on that second result: the gap opens at 921 Hz, below the
+> resonator's own bare tuning of 1500 Hz — that's real physics
+> (hybridization between the resonator and the string pulls the gap edge
+> down from the nominal f0, an 'avoided crossing' effect), not a bug, but
+> it does mean 'tune the resonator to f0 and expect the gap to sit exactly
+> there' is only a first approximation — same lesson as the trumpet
+> valve-slide case: naive placement gets you in the right neighborhood, a
+> proper design needs a small optimizer loop around this function rather
+> than hand-picking (mass, spring stiffness) once.
+>
+> **Physically, what a spring-mass string attachment could even mean for a
+> guitar** — this isn't just a math abstraction. A small mass on a compliant
+> mount clamped to a string (or embedded in a printed bridge/saddle piece)
+> is a buildable object, unlike an equivalent structure inside a woodwind
+> bore. That's probably the most immediately prototypable idea in this
+> whole conversation if you ever want a fast physical test: no bore, no
+> reed, no viscothermal loss model — just a string, a clip-on resonant
+> mass, and a tuner."
+
+### A.5 Open question on languages (unanswered in conversation)
+
+> **User:** "also, any thought on best languages for coding this?
+> this being very broad, from the more traditional modeling to metamaterial related modeling"
+>
+> *No response recorded in the export — the conversation ended here. See §8
+> for this repo's precedent (Python + numpy/numba/JAX).*
+
+---
+
+## Appendix B: Verbatim excerpts from the continuation Claude conversation (2026-08-03)
+
+*Source: `Metamaterials in woodwind instruments2 - Claude.html` export.
+This continuation focused on folded low clarinets, a general bore-modeling
+and optimization framework, and a JAX-autodiff Helmholtz element.*
+
+### B.1 Folded low clarinets — concrete problem, failure mode, design implication
+
+> **Claude:** "Folded low clarinets are a good target for this — the folds
+> themselves are a known source of the notoriously rough intonation on
+> contra-alto/contrabass instruments, which gives the metamaterial
+> approach a concrete problem to aim at rather than just a novelty."
+
+> **Claude (after running the folded bore model):**
+> ```text
+> bass clarinet:      251.4 Hz straight -> 249.6 Hz folded (1 bend)   -12.8 cents
+> contra-alto:        172.7 Hz straight -> 170.4 Hz folded (2 bends)  -22.9 cents
+> contrabass:          63.9 Hz straight -> 62.8 Hz folded (3 bends)   -27.8 cents
+> ```
+>
+> **The trend** — more folds, larger flat-ward shift — matches what's
+> actually reported about these instruments being harder to keep in tune
+> than soprano clarinet, and gives you a testable hypothesis: fold
+> count/geometry is a real contributor, not just "bigger tube = harder to
+> voice."
+>
+> **The more useful result was the failure mode, not a clean fix.**
+> I initially tried to correct the contrabass fundamental with a rigid
+> Helmholtz resonator the same way as the trumpet valve slide earlier —
+> and it required an unreasonable neck length. The feasibility table makes
+> why explicit: pulling a ~250 Hz bass-clarinet fundamental into tune
+> needs a 13–150 cm neck depending on cavity size; a ~63 Hz contrabass
+> fundamental needs 2+ meters even with a generous 100 cm³ cavity. That's
+> not a bug, it's the physics — a rigid air-column resonator's tuning is
+> fundamentally geometry-limited, and low frequencies demand long
+> geometry.
+>
+> **The actual design implication**: for these low instruments, rigid
+> Helmholtz resonators are the right tool for shaping upper partials and
+> formants (same neck-length scale as the ~1kHz soprano clarinet work
+> earlier), but the wrong tool for correcting the fundamental itself. For
+> that register, the locally-resonant liner mechanism from
+> `metamaterial_elements.py` (`effective_density_locally_resonant`) is a
+> better fit precisely because its tuning knob is spring stiffness, not
+> physical air-column length — it doesn't hit this wall. That's a real,
+> non-obvious conclusion from working through the numbers rather than
+> something I'd have guessed going in."
+
+### B.2 General bore modeling + benchmarking + optimization framework (Part A + B)
+
+> **Claude:** "Good to know — I have scipy here but not jax or pymoo (no
+> network in this sandbox to install them). I'll build and fully test the
+> scipy-based parts, and write the JAX-autodiff piece to mirror the tested
+> math exactly (since that's what plugs into your existing JAX branch) —
+> flagged clearly as untested-here rather than pretending I ran it.
+>
+> **Part A finding worth flagging**: the sanity test surfaced something
+> real, not a bug — opening the tonehole closest to the reed produced a
+> *lower* impedance peak (201.6 Hz) than fully closed (425.1 Hz), which
+> is backwards from the usual 'opening a hole raises pitch' intuition.
+> Checking all peaks shows it's genuinely the strongest resonance in the
+> range, not noise...
+>
+> That resolved cleanly — my demo's frequency scan started at 200 Hz and
+> clipped the true fundamental (141.5 Hz); the '425 Hz' I originally
+> reported was actually the 3rd harmonic of a closed-open pipe series.
+> Once scanned from 30 Hz, the physics checks out (odd-harmonic series
+> for all-closed; partial-venting behavior — real physics, not a bug —
+> for the too-small tonehole).
+>
+> **Part B: benchmarking metrics + two-phase optimizer** (fully tested
+> here with scipy; JAX/pymoo pieces flagged separately since I can't
+> install them in this sandbox)...
+>
+> That sensitivity result is a grid-resolution artifact, not a real zero
+> — worth catching and fixing rather than shipping:
+>
+> Now it gives a real, actionable number — 0.4 cents of expected pitch
+> drift from ±0.1mm print tolerance on that hole's position for this
+> design, well within the audible-just-noticeable-difference range, which
+> is exactly the kind of check that matters before committing a design to
+> print.
+>
+> One more piece to sketch — the JAX-autodiff version for your existing
+> branch (I can't test this here since jax isn't installed and I have no
+> network access to add it, but it mirrors the tested
+> `helmholtz_shunt_matrix` math exactly, so translation risk is low):"
+
+### B.3 JAX resonator sketch (flagged untested)
+
+> **Claude:** "Here's the mass-loaded string element I promised,
+> implemented via the Bloch transfer-matrix method... [string metamaterial
+> code already in Appendix A.4]
+>
+> **JAX-autodiff version of the Helmholtz shunt element**, for use in the
+> project's existing JAX optimizer branch.
+>
+> ```python
+> STATUS: UNTESTED IN THIS SANDBOX. jax isn't installed here and this
+> sandbox has no network access to install it. This mirrors
+> metamaterial_elements.helmholtz_shunt_matrix line-for-line (same
+> formulas, same variable names), which HAS been tested -- so translation
+> risk is low, but run this yourself before trusting it.
+> ```
+>
+> **Why this matters for your project specifically**: your JAX branch's
+> known limitation is that it can't differentiate with respect to hole
+> positions/diameters because they're baked into a static action chain at
+> trace time. A resonator defined purely algebraically like this (no
+> Python-level branching on the frequency array, no scipy calls) traces
+> cleanly and IS differentiable end-to-end with respect to every
+> geometric parameter passed in — V, neck_length, neck_radius all become
+> ordinary JAX tracers. Use `jax.grad` / `jax.value_and_grad` directly
+> instead of finite differences, which should sidestep the PAVA-plateau
+> and slow-serial-finite-difference issues from your `two_phase_optimizer`
+> work.
+>
+> For a multi-element chain (several resonators + bore segments), the
+> same pattern extends: write the whole chain multiplication in
+> `jax.numpy` (jnp.matmul / the `@` operator both trace fine), and
+> `jax.grad` will differentiate through the ENTIRE chain automatically —
+> true adjoint-equivalent gradients, no finite differences, no PAVA
+> plateau."
