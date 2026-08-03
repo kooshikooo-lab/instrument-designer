@@ -1,9 +1,9 @@
-"""7-hole diatonic optimization — fast version, single DE + L-BFGS-B."""
+"""7-hole diatonic optimization â€” fast version, single DE + L-BFGS-B."""
 import sys, time
 import numpy as np
 from scipy.optimize import differential_evolution, minimize
 sys.path.insert(0, '.')
-from tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
+from backend.tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
 
 targets = [73.416, 82.407, 87.307, 98.000, 110.000, 123.471, 146.832]
 names = ['D2', 'E2', 'F2', 'G2', 'A2', 'B2', 'D3']

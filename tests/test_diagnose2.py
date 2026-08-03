@@ -34,7 +34,7 @@ def untanner(x):
     return jnp.arctan(x) / jnp.pi
 
 def resonance_phase_simple(wl, bore_radii):
-    """Direct implementation without lax.scan — pure Python loop."""
+    """Direct implementation without lax.scan â€” pure Python loop."""
     phase = jnp.array(0.5)
     for i in range(n_actions):
         act = c_at[i]
@@ -127,7 +127,7 @@ print(f"Grad diff: {np.max(np.abs(np.array(grad_loop) - np.array(grad_scan))):.2
 
 # Now test: what does the ACTUAL cost function's _find_resonance gradient look like?
 print("\n--- Full cost function gradient (JAX vs FD) ---")
-from tmm_acoustics import SPEED_OF_SOUND, end_flange_length_correction
+from backend.tmm_acoustics import SPEED_OF_SOUND, end_flange_length_correction
 from tmm_acoustics_jax import make_rms_cost, MAX_HOLES
 
 eff = bore_length + end_flange_length_correction(od, 19.0)

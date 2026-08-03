@@ -10,7 +10,7 @@ from scipy.optimize import minimize as sp_min
 from pathlib import Path
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'backend'))
-from tmm_acoustics import TMMInstrument, SPEED_OF_SOUND
+from backend.tmm_acoustics import TMMInstrument, SPEED_OF_SOUND
 from metrics import rms_cents, scale_rms_cents, median_offset_cents
 
 c = SPEED_OF_SOUND

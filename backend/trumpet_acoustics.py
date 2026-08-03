@@ -45,7 +45,7 @@ try:
         pipe_reply_phase, junction2_reply_phase,
     )
 except ImportError:
-    from tmm_acoustics import (
+    from backend.tmm_acoustics import (
         SPEED_OF_SOUND, TMMInstrument, Profile,
         circle_area, end_flange_length_correction,
         pipe_reply_phase, junction2_reply_phase,

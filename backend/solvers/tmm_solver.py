@@ -24,7 +24,7 @@ try:
 except ImportError:
     import sys, os
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
-    from tmm_acoustics import (
+    from backend.tmm_acoustics import (
         TMMInstrument, tmm_instrument_from_radii,
         SPEED_OF_SOUND as CHALUMIER_SPEED_OF_SOUND,
     )

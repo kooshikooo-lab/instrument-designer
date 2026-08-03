@@ -20,7 +20,7 @@ PHYSICS:
 """
 import sys
 sys.path.insert(0, 'backend')
-from tmm_acoustics import SPEED_OF_SOUND
+from backend.tmm_acoustics import SPEED_OF_SOUND
 
 # Bass clarinet parameters
 BORE_RADIUS = 12.5  # mm

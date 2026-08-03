@@ -1,7 +1,7 @@
 """Check if the closedTop=True issue is in the model or the search"""
 import sys, math, numpy as np
 sys.path.insert(0, 'backend')
-from tmm_acoustics import TMMInstrument, SPEED_OF_SOUND
+from backend.tmm_acoustics import TMMInstrument, SPEED_OF_SOUND
 
 c = SPEED_OF_SOUND
 

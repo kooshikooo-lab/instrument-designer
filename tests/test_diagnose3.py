@@ -79,7 +79,7 @@ fingerings = [
 ]
 
 # Compute targets from baseline
-from tmm_acoustics import TMMInstrument
+from backend.tmm_acoustics import TMMInstrument
 inst = TMMInstrument(
     inner_positions=bp, inner_diameters=(base_radii2 * 2).tolist(),
     outer_diameters=[od]*n_bore,

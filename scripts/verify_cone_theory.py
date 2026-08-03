@@ -6,7 +6,7 @@ THEORY (from Benade, Fletcher & Rossing, Nederveen):
     f = nc/(2L) for n=1,2,3,...
 
   This is IDENTICAL to the resonance structure of an open-open pipe.
-  The cone's area taper creates this equivalence — it's a fundamental
+  The cone's area taper creates this equivalence â€” it's a fundamental
   property of the wave equation in spherical coordinates.
 
   In contrast, a CYLINDRICAL bore with closed small end resonates at
@@ -17,16 +17,16 @@ TMM IMPLICATION:
   sections. With closedTop=True, it models a closed-open CYLINDER, giving
   odd harmonics only. With closedTop=False, it models an open-open
   stepped-cylinder whose area changes approximate the cone's behavior,
-  giving ALL harmonics — which is the correct physics for a closed cone.
+  giving ALL harmonics â€” which is the correct physics for a closed cone.
 
 CONCLUSION:
   For saxophone (and all conical reed instruments), use closedTop=False.
-  The reed is NOT a rigid closure in the TMM — its impedance is modeled
+  The reed is NOT a rigid closure in the TMM â€” its impedance is modeled
   separately via mouthpiece_models.py.
 """
 import sys, math
 sys.path.insert(0, 'backend')
-from tmm_acoustics import TMMInstrument, SPEED_OF_SOUND
+from backend.tmm_acoustics import TMMInstrument, SPEED_OF_SOUND
 
 c = SPEED_OF_SOUND
 
