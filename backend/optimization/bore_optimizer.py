@@ -20,6 +20,7 @@ from scipy.optimize import differential_evolution, minimize
 from typing import List, Dict, Any, Optional
 
 from .base import Optimizer, OptimizationResult
+from .problem import build_metric_summary, cents_from_frequency_pairs
 from ..core.network import AcousticNetwork
 from ..solvers.tmm_solver import TMMSolver
 
@@ -81,19 +82,13 @@ class BoreOptimizer(Optimizer):
         except Exception:
             return 1e10
 
-        # Compute cents error
-        cents = []
-        for target, actual in zip(self.targets, freqs):
-            if actual > 0 and np.isfinite(actual):
-                cents.append(1200.0 * np.log2(actual / target))
-            else:
-                cents.append(1e6)
-
+        cents = cents_from_frequency_pairs(freqs, self.targets)
         cents_arr = np.array(cents)
+        metrics = build_metric_summary(cents_arr)
         if np.any(np.abs(cents_arr) > 1e5):
             return 1e10
 
-        return float(np.sqrt(np.mean(cents_arr ** 2)))
+        return float(metrics["final_rms_cents"])
 
     def _make_network(self, bore_length: float, bore_radii=None) -> AcousticNetwork:
         """Create a temporary network with modified bore."""
@@ -158,19 +153,12 @@ class BoreOptimizer(Optimizer):
             freqs = self.solver.compute_frequencies(
                 temp_net, target_wavelengths, self.fingering_sets, self.n_register
             )
-            cents = []
-            for target, actual in zip(self.targets, freqs):
-                if actual > 0 and np.isfinite(actual):
-                    cents.append(1200.0 * np.log2(actual / target))
-                else:
-                    cents.append(1e6)
+            cents = cents_from_frequency_pairs(freqs, self.targets)
             cents_arr = np.array(cents)
-            rms_cents_abs = float(np.sqrt(np.mean(cents_arr ** 2)))
-            offset = np.median(cents_arr)
-            rms_cents_median = float(np.sqrt(np.mean((cents_arr - offset) ** 2)))
-            peak_cents = float(np.max(np.abs(cents_arr - offset)))
-            # Primary metric is absolute RMS (accuracy), median-corrected is evenness
-            rms_cents = rms_cents_abs
+            metrics = build_metric_summary(cents_arr)
+            rms_cents = float(metrics["final_rms_cents"])
+            rms_cents_median = float(metrics["scale_rms_cents"])
+            peak_cents = float(metrics["peak_error_cents"])
         except Exception:
             rms_cents = best_cost
             rms_cents_median = 0.0

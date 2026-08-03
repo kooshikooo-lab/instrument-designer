@@ -58,6 +58,7 @@ from backend.tmm_acoustics import (
     TMMInstrument,
     tmm_instrument_from_radii,
 )
+from backend.optimization.problem import build_metric_summary, cents_from_frequency_pairs
 
 c = SPEED_OF_SOUND
 
@@ -224,17 +225,13 @@ def compute_intonation_cost(
     except Exception:
         return 1e10
 
-    cents = []
-    for f, t in zip(freqs, targets):
-        if f > 0 and math.isfinite(f):
-            cents.append(1200.0 * math.log2(f / t))
-
+    cents = cents_from_frequency_pairs(freqs, targets)
     if not cents:
         return 1e10
     ca = np.array(cents)
     if np.any(np.abs(ca) > 1e5):
         return 1e10
-    return float(np.sqrt(np.mean(ca ** 2)))
+    return float(build_metric_summary(ca)["final_rms_cents"])
 
 
 # ============================================================================

@@ -23,6 +23,7 @@ from scipy.optimize import differential_evolution, minimize as sp_min
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 from backend.tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
 from backend.physics.losses import KeefeLoss
+from backend.optimization.problem import build_metric_summary
 
 c = SPEED_OF_SOUND
 SEMITONE_MAP = {'C': 0, 'D': 2, 'E': 4, 'F': 5, 'G': 7, 'A': 9, 'B': 11}
@@ -67,7 +68,7 @@ def peak_cost_nearest(inst, targets, fingerings, detected_regs):
     ca = np.array(cents)
     if np.any(np.abs(ca) > 1e5):
         return 1e10
-    return float(np.sqrt(np.mean(ca ** 2)))
+    return float(build_metric_summary(ca)["final_rms_cents"])
 
 
 def detect_registers(inst, targets, fingerings, max_reg=5):
