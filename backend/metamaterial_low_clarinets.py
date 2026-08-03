@@ -204,6 +204,16 @@ def registers(inst: TMMInstrument, fingers, n: int = 3):
         for r in range(1, n + 1)]
 
 
+def twelfth_deviation(inst: TMMInstrument, fingers) -> float:
+    """Register-2 vs register-1 ratio in cents relative to a perfect 12th (3:1).
+
+    Positive = the 12th is sharp. Near-closed-end compliance arrays stretch
+    this ratio (the low-register extension trades against 12th intonation).
+    """
+    r = registers(inst, fingers, 2)
+    return 1200.0 * math.log2((r[1] / r[0]) / 3.0)
+
+
 def _gamma2(freq_hz, bore_diameter_mm, v_mm3, neck_r_mm, neck_l_mm, spacing_mm,
             speed_of_sound, rho=1.2e-9):
     """Propagation-constant condition gamma^2 (mm-2); > 0 => stopband."""
