@@ -64,4 +64,4 @@ python -m woodwind_designer
 | `option-a-tauri` | Tauri UI, optimization UI, AI assistant |
 | `refactor/architecture-redesign` | Solver-agnostic architecture |
 
-See [[Branch-Comparison]] for detailed branch documentation.
+See [[Internal-Branches]] for detailed branch documentation.

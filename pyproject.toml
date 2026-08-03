@@ -30,8 +30,7 @@ jax = ["jax>=0.4", "jaxlib>=0.4"]
 surrogate = ["jax>=0.4", "jaxlib>=0.4", "flax", "optax", "botorch", "torch", "gpytorch"]
 cad = ["cadquery>=2.4", "build123d>=0.7", "vtk>=9.0", "trimesh>=4.0"]
 bench = ["dask[distributed]>=2024.1", "psutil>=5.9", "cma>=3.0"]
-fem = ["scikit-fem>=12", "gmsh>=4.12", "meshio>=5.3"]
-spectral = ["librosa>=0.11", "sounddevice>=0.5"]
+perf = ["numba>=0.60"]
 freecad = ["freecad"]
 dev = ["pytest>=7.0", "ruff>=0.1"]
 
@@ -42,81 +41,23 @@ woodwind-designer = "woodwind_designer.main:main"
 [tool.setuptools.packages.find]
 include = ["woodwind_designer*"]
 
+[tool.pytest.ini_options]
+# tests/ contains many ad-hoc scripts (module-level execution) that are not
+# pytest tests. Collect only the genuine pytest files to avoid import hangs.
+python_files = [
+    "test_analytical_pipes.py",
+    "test_architecture.py",
+    "test_cadquery_instrument.py",
+    "test_inverse_design.py",
+    "test_openwind_solver.py",
+    "test_phase2_objective.py",
+    "test_properties.py",
+    "test_server_routes.py",
+    "test_surrogate.py",
+    "test_tmm.py",
+    "test_tool_registry.py",
+]
+
 [tool.ruff]
 line-length = 100
 target-version = "py310"
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = ["test_*.py"]
-filterwarnings = ["ignore::DeprecationWarning"]
-addopts = [
-    "--ignore=tests/benchmark_diatonic.py",
-    "--ignore=tests/benchmark_bass_clarinet.py",
-    "--ignore=tests/test_12hole_sequential_final.py",
-    "--ignore=tests/test_bell_first_correct.py",
-    "--ignore=tests/test_bell_lbfsg.py",
-    "--ignore=tests/test_bell_phase.py",
-    "--ignore=tests/test_chart_designs.py",
-    "--ignore=tests/test_correct_fingerings.py",
-    "--ignore=tests/test_cross_7plus5.py",
-    "--ignore=tests/test_cross_chatgpt.py",
-    "--ignore=tests/test_cross_extend.py",
-    "--ignore=tests/test_cross_fast.py",
-    "--ignore=tests/test_cross_fingering.py",
-    "--ignore=tests/test_cross_quick.py",
-    "--ignore=tests/test_cross_realistic.py",
-    "--ignore=tests/test_cross_spacing.py",
-    "--ignore=tests/test_diagnose2.py",
-    "--ignore=tests/test_diagnose3.py",
-    "--ignore=tests/test_direction.py",
-    "--ignore=tests/test_final_bell_first.py",
-    "--ignore=tests/test_final_correct.py",
-    "--ignore=tests/test_global_lbfsg.py",
-    "--ignore=tests/test_grad_dias.py",
-    "--ignore=tests/test_larger_holes.py",
-    "--ignore=tests/test_minimal_de.py",
-    "--ignore=tests/test_multistart.py",
-    "--ignore=tests/test_opt7_fast.py",
-    "--ignore=tests/test_optimize_7hole.py",
-    "--ignore=tests/test_optimize_cross.py",
-    "--ignore=tests/test_optimizer2.py",
-    "--ignore=tests/test_phase_opt.py",
-    "--ignore=tests/test_phase_register.py",
-    "--ignore=tests/test_phase_vs_freq.py",
-    "--ignore=tests/test_physical.py",
-    "--ignore=tests/test_profile.py",
-    "--ignore=tests/test_simple_sequential.py",
-    "--ignore=tests/test_bore_profile.py",
-    "--ignore=tests/test_verify_baseline.py",
-    "--ignore=tests/test_fix.py",
-    "--ignore=tests/test_bore_check.py",
-    "--ignore=tests/test_cadquery_instrument.py",
-    "--ignore=tests/test_compare_optimizers.py",
-    "--ignore=tests/test_compare_quick.py",
-    "--ignore=tests/test_compute_analysis.py",
-    "--ignore=tests/test_desktop_fixes.py",
-    "--ignore=tests/test_hole_methods.py",
-    "--ignore=tests/test_import2.py",
-    "--ignore=tests/test_instruments.py",
-    "--ignore=tests/test_lbfgs.py",
-    "--ignore=tests/test_loss.py",
-    "--ignore=tests/test_loss_integration.py",
-    "--ignore=tests/test_measure.py",
-    "--ignore=tests/test_module.py",
-    "--ignore=tests/test_nregister.py",
-    "--ignore=tests/test_staged.py",
-    "--ignore=tests/test_stl_export.py",
-    "--ignore=tests/test_two_phase.py",
-    "--ignore=tests/test_two_phase_quick.py",
-    "--ignore=tests/test_twophase.py",
-    "--ignore=tests/test_twophase_full.py",
-    "--ignore=tests/test_variable_bore.py",
-]
-markers = [
-    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-]
-
-[tool.coverage.run]
-source = ["backend", "scripts"]
-omit = ["*/tests/*", "*/archived_optimizers/*"]
