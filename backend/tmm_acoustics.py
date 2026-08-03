@@ -158,6 +158,251 @@ def hole_length_correction(hole_diameter: float, bore_diameter: float, closed: b
 
 
 # ============================================================================
+# Acoustic metamaterial elements (Helmholtz-resonator side branches / segments)
+# ============================================================================
+#
+# An acoustic-metamaterial treatment is modeled as Helmholtz resonators (neck +
+# cavity) attached to the bore as side branches. The phase-based junction3
+# (three-pipe junction) already handles a side branch: a0 = a1 = bore area,
+# a2 = neck area, and the branch phase p2 is set by the resonator's shunt
+# admittance instead of a plain open/closed pipe length.
+#
+# Reference implementation targets (see chat-logs/2026-08-03-metamaterial-
+# implementation-research.md):
+#   - Level 1: explicit HR side-branch array (one junction3 per resonator).
+#   - Level 2: homogenized effective-medium segment (distributed shunt model,
+#     Dell/Krynkin/Horoshenkov, Applied Acoustics 182 (2021); reduces to the
+#     classic bandgap condition Re(k_eff) -> 0).
+#
+# Units follow the rest of the module: mm, mm/s.
+
+AIR_DENSITY_KG_MM3 = 1.2e-9  # kg/mm^3 (1.2 kg/m^3)
+
+# End correction for the HR neck as a bore side branch (UNSW/Fahy):
+# ~0.85*r at the bore-side (flanged) mouth + ~0.6*r at the cavity end.
+HR_NECK_END_CORRECTION_FACTOR = 1.45
+
+
+class MetamaterialSideBranch:
+    """
+    A Helmholtz-resonator side branch attached to the bore.
+
+    Args:
+        position_mm: where the neck mouths into the bore (mm)
+        neck_radius_mm: resonator neck radius (mm)
+        neck_length_mm: resonator neck length, physical only (mm)
+        cavity_volume_mm3: resonator cavity volume (mm^3)
+        neck_end_correction_mm: extra neck length from end corrections (mm).
+            Defaults to HR_NECK_END_CORRECTION_FACTOR * neck_radius.
+        resistive_ratio: neck resistance R = resistive_ratio * rho*c/S_neck.
+            Bounds the resonant shunt susceptance (finite-Q physical behavior
+            and numerical stability); 0 = lossless.
+    """
+
+    def __init__(
+        self,
+        position_mm: float,
+        neck_radius_mm: float,
+        neck_length_mm: float,
+        cavity_volume_mm3: float,
+        neck_end_correction_mm: Optional[float] = None,
+        resistive_ratio: float = 0.02,
+    ):
+        self.position_mm = float(position_mm)
+        self.neck_radius_mm = float(neck_radius_mm)
+        self.neck_length_mm = float(neck_length_mm)
+        self.cavity_volume_mm3 = float(cavity_volume_mm3)
+        if neck_end_correction_mm is None:
+            neck_end_correction_mm = HR_NECK_END_CORRECTION_FACTOR * self.neck_radius_mm
+        self.neck_end_correction_mm = float(neck_end_correction_mm)
+        self.resistive_ratio = float(resistive_ratio)
+
+    @property
+    def neck_area_mm2(self) -> float:
+        return math.pi * self.neck_radius_mm * self.neck_radius_mm
+
+    @property
+    def effective_neck_length_mm(self) -> float:
+        return self.neck_length_mm + self.neck_end_correction_mm
+
+    def helmholtz_frequency(self, speed_of_sound_mm_s: float = SPEED_OF_SOUND) -> float:
+        """Resonant frequency (Hz) of the resonator as a side branch."""
+        c = speed_of_sound_mm_s
+        s = self.neck_area_mm2
+        l = self.effective_neck_length_mm
+        v = self.cavity_volume_mm3
+        if s <= 0.0 or l <= 0.0 or v <= 0.0:
+            return float("inf")
+        return c / (2.0 * math.pi) * math.sqrt(s / (v * l))
+
+    def __repr__(self) -> str:
+        return (
+            f"MetamaterialSideBranch(pos={self.position_mm:.1f}, "
+            f"r_neck={self.neck_radius_mm:.2f}, L_neck={self.neck_length_mm:.2f}, "
+            f"V={self.cavity_volume_mm3:.1f})"
+        )
+
+
+def helmholtz_branch_phase(
+    wavelength_mm: float,
+    neck_area_mm2: float,
+    effective_neck_length_mm: float,
+    cavity_volume_mm3: float,
+    bore_area_mm2: float,
+    speed_of_sound_mm_s: float = SPEED_OF_SOUND,
+    rho: float = AIR_DENSITY_KG_MM3,
+    resistive_ratio: float = 0.02,
+) -> float:
+    """
+    Branch phase (tangent domain) for a Helmholtz-resonator side branch.
+
+    The branch enters junction3_reply_phase as a2/a0 * tanner(p2), which
+    equals the branch admittance normalized by the bore characteristic
+    admittance (same relationship as an open/closed tone hole). Here the
+    branch admittance is the HR's shunt admittance Y_HR = 1/(R + j(w*M -
+    1/(w*C))), so:
+
+        a2/a0 * tanner(p2) == Im(Y_HR)/Y_c_bore
+
+    Below resonance the HR is a compliance-like reactance and above resonance
+    an inertance-like reactance; the susceptance diverges at f0, which is the
+    stopband / negative-effective-bulk-modulus signature.
+
+    Args:
+        wavelength_mm: acoustic wavelength (mm)
+        neck_area_mm2: resonator neck cross-sectional area (mm^2)
+        effective_neck_length_mm: neck length + end corrections (mm)
+        cavity_volume_mm3: resonator cavity volume (mm^3)
+        bore_area_mm2: main bore area at the junction (mm^2)
+        speed_of_sound_mm_s: speed of sound (mm/s)
+        rho: air density (kg/mm^3)
+        resistive_ratio: R = resistive_ratio * rho*c/S_neck bounds the
+            susceptance near resonance (finite-Q / stability).
+    """
+    c = speed_of_sound_mm_s
+    omega = 2.0 * math.pi * c / wavelength_mm
+    s_n = neck_area_mm2
+    l_n = effective_neck_length_mm
+    v = cavity_volume_mm3
+    a = bore_area_mm2
+
+    if s_n <= 0.0 or l_n <= 0.0 or v <= 0.0 or a <= 0.0:
+        # Degenerate: no resonator -> inert branch (no shunting).
+        return 0.0
+
+    # Acoustic mass / compliance (mm-consistent units).
+    m_ac = rho * l_n / s_n
+    c_ac = v / (rho * c * c)
+    denom = omega * m_ac - 1.0 / (omega * c_ac)
+
+    # Neck resistance bounds the susceptance at resonance (finite Q).
+    r_res = resistive_ratio * (rho * c / s_n)
+
+    # Normalized shunt susceptance: Im(Y_HR)/Y_c_bore, then fold in the
+    # a0/a2 area ratio so junction3's a2/a0 * tanner(p2) reproduces it.
+    y_c_bore = a / (rho * c)
+    b = -denom / ((denom * denom + r_res * r_res) * y_c_bore)
+    return untanner((a / s_n) * b)
+
+
+class MetamaterialSegment:
+    """
+    A bore segment homogenized as an effective medium (Level 2).
+
+    Models N identical Helmholtz resonators spaced `spacing_mm` apart over
+    [start_mm, end_mm] using the distributed-shunt transmission-line model:
+    the shunt admittance per unit length Y_HR/spacing shifts the propagation
+    constant. The stopband (Re(k_eff) -> 0 / evanescence) is where
+    gamma^2 = -w^2/c^2 + w*rho/(A*d*(w*M - 1/(w*C))) > 0.
+
+    Args:
+        start_mm: segment start position along the bore (mm)
+        end_mm: segment end position along the bore (mm)
+        resonator: the HR cell (MetamaterialSideBranch; position_mm ignored)
+        spacing_mm: center-to-center resonator spacing (mm)
+    """
+
+    def __init__(
+        self,
+        start_mm: float,
+        end_mm: float,
+        resonator: MetamaterialSideBranch,
+        spacing_mm: float,
+    ):
+        if end_mm <= start_mm:
+            raise ValueError("MetamaterialSegment: end_mm must be > start_mm")
+        self.start_mm = float(start_mm)
+        self.end_mm = float(end_mm)
+        self.resonator = resonator
+        self.spacing_mm = float(spacing_mm)
+
+    @property
+    def length_mm(self) -> float:
+        return self.end_mm - self.start_mm
+
+    def __repr__(self) -> str:
+        return (
+            f"MetamaterialSegment([{self.start_mm:.1f}, {self.end_mm:.1f}], "
+            f"spacing={self.spacing_mm:.1f}, {self.resonator!r})"
+        )
+
+
+def metamaterial_phase_advance(
+    length_mm: float,
+    bore_diameter_mm: float,
+    resonator: MetamaterialSideBranch,
+    spacing_mm: float,
+    wavelength_mm: float,
+    speed_of_sound_mm_s: float = SPEED_OF_SOUND,
+    rho: float = AIR_DENSITY_KG_MM3,
+) -> float:
+    """
+    Phase advance (half-wavelength units, matching pipe_reply_phase) through a
+    homogenized metamaterial segment.
+
+    In the propagating band the segment advances Re(k_eff)*L/pi (which reduces
+    to 2L/lambda with no resonators); in the stopband (gamma^2 > 0) the
+    effective wavenumber is evanescent and no phase accumulates (lossless
+    bandgap -> full reflection).
+
+    Args:
+        length_mm: segment length (mm)
+        bore_diameter_mm: bore diameter over the segment (mm)
+        resonator: HR cell of the periodic array
+        spacing_mm: resonator spacing (mm)
+        wavelength_mm: acoustic wavelength (mm)
+        speed_of_sound_mm_s: speed of sound (mm/s)
+        rho: air density (kg/mm^3)
+    """
+    c = speed_of_sound_mm_s
+    omega = 2.0 * math.pi * c / wavelength_mm
+    a = circle_area(bore_diameter_mm)
+    s_n = resonator.neck_area_mm2
+    l_n = resonator.effective_neck_length_mm
+    v = resonator.cavity_volume_mm3
+    d = spacing_mm
+
+    if length_mm <= 0.0:
+        return 0.0
+    if a <= 0.0 or s_n <= 0.0 or l_n <= 0.0 or v <= 0.0 or d <= 0.0:
+        # Degenerate: no metamaterial -> plain air pipe.
+        return 2.0 * length_mm / wavelength_mm
+
+    m_ac = rho * l_n / s_n
+    c_ac = v / (rho * c * c)
+    denom = omega * m_ac - 1.0 / (omega * c_ac)
+    if denom == 0.0:
+        return 2.0 * length_mm / wavelength_mm
+
+    gamma2 = -omega * omega / (c * c) + (omega * rho / (a * d * denom))
+    if gamma2 > 0.0:
+        # Stopband: evanescent, lossless full-reflection model.
+        return 0.0
+    k_eff = math.sqrt(-gamma2)
+    return length_mm * k_eff / math.pi
+
+
+# ============================================================================
 # Profile â€” stepped bore representation
 # ============================================================================
 
@@ -263,6 +508,8 @@ class TMMInstrument:
         whistle_windway_diameter: float = 0.0,
         whistle_windway_length: float = 0.0,
         loss_model: Optional[object] = None,
+        meta_slots: Optional[List[MetamaterialSideBranch]] = None,
+        metamaterial_segments: Optional[List[MetamaterialSegment]] = None,
     ):
         self.closed_top = closed_top
         self.cone_step = cone_step
@@ -283,6 +530,8 @@ class TMMInstrument:
         self.hole_lengths = list(hole_lengths)
         self.n_holes = len(hole_positions)
         self.loss_model = loss_model
+        self.meta_slots = list(meta_slots) if meta_slots else []
+        self.metamaterial_segments = list(metamaterial_segments) if metamaterial_segments else []
 
         # Build stepped inner profile
         self.stepped_inner = self.inner.as_stepped(cone_step)
@@ -365,6 +614,15 @@ class TMMInstrument:
         for i, pos in enumerate(self.hole_positions):
             events.append((pos, 'hole', i))
 
+        # Metamaterial side branches (Helmholtz resonators)
+        for i, mb in enumerate(self.meta_slots):
+            events.append((mb.position_mm, 'meta_branch', i))
+
+        # Metamaterial segment boundaries (homogenized effective medium)
+        for i, seg in enumerate(self.metamaterial_segments):
+            events.append((seg.start_mm, 'meta_seg_start', i))
+            events.append((seg.end_mm, 'meta_seg_end', i))
+
         # The end of the instrument
         events.append((self.length, 'end', 0))
 
@@ -378,12 +636,16 @@ class TMMInstrument:
             self.stepped_inner.at(0.0, use_high=True),
         )
         diameter = self.stepped_inner.at(0.0, use_high=True)
+        active_seg = None  # index of the metamaterial segment currently enclosing the walk
 
         for pos, descriptor, index in events:
             seg_length = pos - position
 
-            # Pipe segment action
-            self.actions.append(('pipe', seg_length, diameter))
+            # Pipe segment action (homogenized advance inside a metamaterial segment)
+            if active_seg is not None:
+                self.actions.append(('pipe_meta', seg_length, diameter, active_seg))
+            else:
+                self.actions.append(('pipe', seg_length, diameter))
             position = pos
 
             if descriptor == 'step':
@@ -403,6 +665,20 @@ class TMMInstrument:
                 open_length = true_length + hole_length_correction(hole_dia, diameter, False)
                 closed_length = true_length + hole_length_correction(hole_dia, diameter, True)
                 self.actions.append(('hole', index, area_bore, hole_area, open_length, closed_length))
+
+            elif descriptor == 'meta_branch':
+                # Helmholtz-resonator side branch
+                area_bore = circle_area(diameter)
+                meta = self.meta_slots[index]
+                neck_area = meta.neck_area_mm2
+                self.actions.append(('meta_branch', index, area_bore, neck_area))
+
+            elif descriptor == 'meta_seg_start':
+                # Enter homogenized effective-medium segment.
+                active_seg = index
+
+            elif descriptor == 'meta_seg_end':
+                active_seg = None
 
         self.emission_divide = circle_area(diameter)
 
@@ -432,6 +708,19 @@ class TMMInstrument:
                         # Phase of exp(-gamma * length) = -Im(gamma * length)
                         phase += -loss_factor.imag
 
+            elif action[0] == 'pipe_meta':
+                # Homogenized effective-medium segment pipe (Level 2).
+                _, seg_length, seg_diameter, seg_index = action
+                seg = self.metamaterial_segments[seg_index]
+                phase += metamaterial_phase_advance(
+                    seg_length,
+                    seg_diameter,
+                    seg.resonator,
+                    seg.spacing_mm,
+                    wavelength,
+                    self.speed_of_sound,
+                )
+
             elif action[0] == 'junction2':
                 _, area_a, area_b = action
                 phase = junction2_reply_phase(area_a, area_b, phase)
@@ -446,6 +735,21 @@ class TMMInstrument:
                     hole_phase = pipe_reply_phase(0.0, closed_length / wavelength)
 
                 phase = junction3_reply_phase(area_bore, area_bore, hole_area, phase, hole_phase)
+
+            elif action[0] == 'meta_branch':
+                # Helmholtz-resonator side branch (Level 1).
+                _, meta_idx, area_bore, neck_area = action
+                meta = self.meta_slots[meta_idx]
+                branch_phase = helmholtz_branch_phase(
+                    wavelength,
+                    neck_area,
+                    meta.effective_neck_length_mm,
+                    meta.cavity_volume_mm3,
+                    area_bore,
+                    self.speed_of_sound,
+                    resistive_ratio=meta.resistive_ratio,
+                )
+                phase = junction3_reply_phase(area_bore, area_bore, neck_area, phase, branch_phase)
 
         if not self.closed_top:
             phase += 0.5
@@ -684,6 +988,8 @@ def tmm_instrument_from_radii(
     closed_top: bool = False,
     cone_step: float = 0.5,
     loss_model: Optional[object] = None,
+    meta_slots: Optional[List[MetamaterialSideBranch]] = None,
+    metamaterial_segments: Optional[List[MetamaterialSegment]] = None,
 ) -> TMMInstrument:
     """
     Create a TMMInstrument from an array of bore radii.
@@ -723,6 +1029,8 @@ def tmm_instrument_from_radii(
         closed_top=closed_top,
         cone_step=cone_step,
         loss_model=loss_model,
+        meta_slots=meta_slots,
+        metamaterial_segments=metamaterial_segments,
     )
 
 
