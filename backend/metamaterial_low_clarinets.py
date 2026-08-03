@@ -319,6 +319,80 @@ def explicit_hr_array(
     return make_low_clarinet(key, meta_slots=slots)
 
 
+def resonator_f0(slot: MetamaterialSideBranch) -> float:
+    """Resonance frequency of an explicit HR side branch."""
+    return hr_f0(slot.cavity_volume_mm3, slot.neck_radius_mm,
+                 slot.neck_length_mm)
+
+
+def graded_f0_schedule(n: int, f0_start_hz: float, f0_stop_hz: float,
+                       profile: str = "linear") -> list:
+    """Per-resonator HR resonance frequencies for a graded array.
+
+    Linear profile interpolates f0 linearly across the array; geometric
+    profile interpolates the f0 ratio geometrically (constant semitone steps).
+    With ``f0_start == f0_stop`` both collapse to a uniform array.
+    """
+    if n < 1:
+        raise ValueError("n must be >= 1")
+    if profile == "linear":
+        if n == 1:
+            return [f0_start_hz]
+        return [f0_start_hz + (f0_stop_hz - f0_start_hz) * i / (n - 1)
+                for i in range(n)]
+    if profile == "geometric":
+        if n == 1:
+            return [f0_start_hz]
+        r = (f0_stop_hz / f0_start_hz) ** (1.0 / (n - 1))
+        return [f0_start_hz * r ** i for i in range(n)]
+    raise ValueError(f"unknown profile: {profile!r} (use 'linear' or 'geometric')")
+
+
+def graded_hr_array(
+    key: str,
+    f0_start_hz: float,
+    f0_stop_hz: float,
+    spacing_mm: float,
+    start_frac: float = 0.9,
+    neck_r_mm: float = DEFAULT_NECK_RADIUS_MM,
+    neck_l_mm: float = DEFAULT_NECK_LENGTH_MM,
+    profile: str = "linear",
+) -> TMMInstrument:
+    """Level 1 graded HR array over the closed-end segment.
+
+    Each resonator's cavity volume is tuned so its resonance sweeps
+    ``f0_start -> f0_stop`` along the array (IOP 2025 graded HR arrays:
+    non-uniform resonators broaden the attenuation band vs a uniform array).
+    Homogenized (Level 2) segments hold a single f0, so graded designs are
+    explicit-array (Level 1) only. With ``f0_start == f0_stop`` this reduces
+    to the uniform ``explicit_hr_array``.
+    """
+    spec = LOW_CLARINETS[key]
+    start = spec["bore_length_mm"] * start_frac
+    end = spec["bore_length_mm"]
+    schedule = graded_f0_schedule(
+        int((end - start) // spacing_mm) or 1, f0_start_hz, f0_stop_hz,
+        profile)
+    slots = []
+    for i, f0 in enumerate(schedule):
+        pos = start + i * spacing_mm + spacing_mm / 2.0
+        if pos > end:
+            break
+        v = cavity_volume_for_f0(f0, neck_r_mm, neck_l_mm)
+        slots.append(MetamaterialSideBranch(
+            position_mm=pos, neck_radius_mm=neck_r_mm,
+            neck_length_mm=neck_l_mm, cavity_volume_mm3=v))
+    return make_low_clarinet(key, meta_slots=slots)
+
+
+def array_resonance_band(slots) -> tuple:
+    """(f0_min, f0_max) resonance-frequency band spanned by an explicit array."""
+    f0s = [resonator_f0(s) for s in slots]
+    if not f0s:
+        return (None, None)
+    return (min(f0s), max(f0s))
+
+
 def tune_f0_to_fundamental_l1(
     key: str,
     target_hz: float,
