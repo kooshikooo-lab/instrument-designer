@@ -55,6 +55,7 @@
 
 ### In Progress
 - **Phase 2G/2H (laptop)**: surrogate trained on mixed 10K (best val 0.685; tail-weighted 0.660). Phase 2H CLOSED — standalone surrogate-BO not viable (0/20 top-20 elite overlap, unconstrained search → invalid geometry); **hybrid warm-start validated** (surrogate ranks → `refine_sequential` finishes: 8/10 reach 0¢ vs 5/10 random). Awaiting desktop direction on Kaggle GPU run vs warm-start-only.
+- **TMM medium branch testing (laptop)**: `perf/tmm-medium-refactor-copilot` cross-check posted to #23 (comment 17874801). Confirmed: pure-Python medium ~+19% slower than main (matches desktop); numba `import math`-in-njit crash on py3.14/numba 0.66 CONFIRMED + FIXED (np.floor/arctan/tan replace math.*; numba now bit-identical to Python, 480 cases max diff 0.0e+00); **corrected finding: wiring numba into `find_resonance` = ~5.5-6.3x speedup** (my earlier 0.94x was a perf_counter instrumentation artifact). Medium suite **114 passed**. Fix committed locally to holding branch `fix/tmm-medium-numba` (a37a621, NOT pushed — awaiting desktop OK to push to perf branch / wire numba into `tmm_acoustics.py`).
 - **Spectral research post**: the draft `scripts/_research_msg.md` (librosa/OpenWInD/scipy/GNN) is gone (never committed). The spectral API findings live in BOOT_STATE Done + #23 comment 17867767; fold into the next spectral update instead of re-staging.
 
 ### Blocked
@@ -74,16 +75,18 @@
 ## Next Steps
 
 1. Monitor #23 for desktop's response on Phase 2H close-out: Kaggle GPU surrogate run vs treat surrogate as warm-start-only. Verify laptop push `b067afc` credibility.
-2. Present `backend/spectral` design for user approval (metrics.py/target_frequencies.py reuse, synthetic-only tests). Include the spectral API research (librosa → OpenWInD → GNN surrogate) that was summarized in Done / #23 comment 17867767.
-3. Wire Gemini free Flash into `ai_assistant.py` as second provider (multimodal audio/image for spectral + STL verification).
-4. Update `docs/ARCHIVED_TOOLS.md` for genuinely forgotten packages (FORGOTTEN list in toolcheck) — informational only, no auto-uninstall.
-5. Keep tool registry current: re-run `python scripts/toolcheck.py` after any dependency change.
+2. TMM medium: on desktop OK, push `fix/tmm-medium-numba` (a37a621) to `perf/tmm-medium-refactor-copilot` and/or wire `numba_resonance_phase` into `tmm_acoustics.py` behind a fallback flag.
+3. Present `backend/spectral` design for user approval (metrics.py/target_frequencies.py reuse, synthetic-only tests). Include the spectral API research (librosa → OpenWInD → GNN surrogate) that was summarized in Done / #23 comment 17867767.
+4. Wire Gemini free Flash into `ai_assistant.py` as second provider (multimodal audio/image for spectral + STL verification).
+5. Update `docs/ARCHIVED_TOOLS.md` for genuinely forgotten packages (FORGOTTEN list in toolcheck) — informational only, no auto-uninstall.
+6. Keep tool registry current: re-run `python scripts/toolcheck.py` after any dependency change.
 
 ## Critical Context
 
 - **Sync**: `origin/main` = `ea6fe6a`; laptop `kalles-main-branch` ahead with Phase 2G `train_surrogate.py` (commit `e261691`) — laptop "nothing on main", working on kalles only.
 - **`origin/main` log**: `3ce892e` → `cc202b5` → `dd0ab01` → `2a4b263` → `60b5d25` → `3125d5b` (governance mid-session) → `b3e41a2` (WAV pipeline + tests) → `a9aa7c6` (analytical pipes) → `ea6fe6a` (tool registry).
 - **Laptop `kalles-main-branch` HEAD**: `b067afc` (tail-weight feature), ahead of `origin/main` with: speed-of-sound merge `3175b01`, Phase 2F AUDIT generation `5409846`, inverse-design merge `c2eb6aa`, tool-registry merge `9460e77`, mixed sampling `d5550db`, botorch-API fixes `77dd2d6`. Laptop test suite = **172 passed**. No laptop work on `main`; all on `kalles-main-branch`.
+- **TMM perf branches**: `perf/tmm-medium-refactor-copilot` (a6c5ace, laptop-tested, numba fix in local branch `fix/tmm-medium-numba` a37a621 NOT pushed), `perf/tmm-refactor-copilot` (3ba475b, desktop benchmarking). `origin/main` = `ae38527`.
 - Desktop worktree `..\instrument-designer-port` on `main`; original repo `C:\Users\Admin\Desktop\instrument-designer` on `benchmarking-experiments` (untouched).
 - Dask live cluster = `tcp://100.100.66.117:8786` (8 workers); `benchmark_dask.py` default scheduler `100.69.113.41:8786` is stale/empty — use `_run_benchmark_live.py`.
 - Background watcher running (toast+sound, `scripts/.team_watch.log`); `git fetch` stderr lines print as "RemoteException" on Windows but are non-fatal.
