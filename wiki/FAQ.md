@@ -12,7 +12,7 @@ Computational accuracy: sub-0.1 cents RMS on most instruments. Physical accuracy
 Yes. Define bore profile, fingering chart, and target frequencies in a JSON config file. The optimizer will find optimal hole positions and diameters.
 
 ### What's the difference between the branches?
-See [[Branch-Comparison]] for a detailed comparison. In short:
+See [[Internal-Branches]] for a detailed comparison. In short:
 - `laptop` — Active development, all features
 - `main` — Stable shared branch
 - `option-a-tauri` — Tauri desktop UI
@@ -39,10 +39,10 @@ Several factors:
 ## Optimization
 
 ### What cost function does the optimizer use?
-**Absolute RMS** of cent deviations from equal temperament targets. This measures pitch accuracy (how close to the right notes). See [[Optimization]] for details.
+**Absolute RMS** of cent deviations from equal temperament targets. This measures pitch accuracy (how close to the right notes). See [[Internal-Optimization]] for details.
 
 ### What is median correction and why was it removed?
-Median correction subtracted the median deviation before computing RMS. This measured scale evenness (relative spacing) instead of accuracy (absolute pitch). An instrument can be perfectly even but 15c sharp — median correction would report 0c error. See [[Optimization#Metric-Standardization]] for the full analysis.
+Median correction subtracted the median deviation before computing RMS. This measured scale evenness (relative spacing) instead of accuracy (absolute pitch). An instrument can be perfectly even but 15c sharp — median correction would report 0c error. See [[Internal-Optimization#Metric Standardization (2026-07-25)]] for the full analysis.
 
 ### How long does optimization take?
 Depends on instrument complexity:
@@ -51,7 +51,7 @@ Depends on instrument complexity:
 - Multi-register: 120-300 seconds
 
 ### Can I optimize for timbre as well as intonation?
-Not yet. Ernoult et al. (2020) proved these are inherently at odds — optimizing both requires a Pareto front approach. This is planned as a stretch goal. See [[Optimization#Timbre-Optimization]].
+Not yet. Ernoult et al. (2020) proved these are inherently at odds — optimizing both requires a Pareto front approach. This is planned as a stretch goal. See [[Internal-Optimization#Timbre Optimization (Planned)]].
 
 ## 3D Printing
 

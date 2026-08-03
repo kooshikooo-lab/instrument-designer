@@ -50,4 +50,4 @@ SLA printing tolerance is ±0.05-0.1mm. For acoustic accuracy:
 After printing, validate with impedance measurement:
 - Compare designed vs measured resonance frequencies
 - Typical deviation: 5-15 cents (manufacturing is the bottleneck, not computation)
-- See [[Research-References]] for measurement techniques
+- See [[Internal-Research-Measurement]] for measurement techniques
