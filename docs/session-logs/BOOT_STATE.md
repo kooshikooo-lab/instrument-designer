@@ -183,6 +183,16 @@
   Desktop can now run L2-vs-L1 parity sweep against ported `folded_bore_elements.py`
   / `metamaterial_elements.py` (laptop offers to port their code to `backend/experiments/`
   or adjust structure).
+- **Laptop's register-suppression + soprano demos** (04:20Z/04:34Z): two new
+  deliverables on `kalles-main-branch` (`478853c` → `b0a885d`):
+  1. **Register-2 squeak suppression** (bass clarinet): HR stopband over the
+     12th (~212 Hz) flattens phase margin at ~1.5 across 130–250 Hz; blind spot
+     at f0=squeak (zero margin); compliance tail drops f1 −300..−1700c.
+  2. **Soprano-clarinet demo** (600 mm × 15 mm): same physics at higher scale,
+     429 Hz squeak suppressed (L1 margin 0.428, L2 0.149); trade-off curve
+     f0/squeak 0.70–0.95 → margin ~0.43, f1 shift −1120..−1650c.
+  Total metamaterial test suite: **89 passed** (7 test files). L1/L2 machinery
+  generalizes across the full clarinet family (subcontrabass → soprano).
 - **Laptop implemented metamaterials** (`3d318dc` on `kalles-main-branch`,
   186 passed, 02:06:45Z post): L1 `MetamaterialSideBranch` (Helmholtz side
   branch via `junction3_reply_phase`), L2 `MetamaterialSegment` (Dell/Krynkin/
