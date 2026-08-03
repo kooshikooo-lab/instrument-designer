@@ -103,6 +103,15 @@
   `backend/experiments/brass_scaffold.py` imported bare by another experiment) —
   no longer misreported as PHANTOM. Guard PASS (29 imported, 0 phantom);
   `tests/test_tool_registry.py` passes.
+- **Laptop metamaterial integration merged to `main`** (this session): pulled
+  `kalles-main-branch` (`cc5b447`–`fbbd1b8`, `3d318dc`) into working tree;
+  merged numba fast path from `main` (`32d4c9f`) into laptop's `tmm_acoustics.py`
+  (adds `_NUMBA_ENABLED`, `_action_arrays`, numba fast path for lossless
+  instruments without metamaterials). **All 114 tests pass** (incl. 74 metamaterial
+  tests: `test_metamaterial.py` 13, `test_metamaterial_low_clarinets.py` 36,
+  `test_metamaterial_graded.py` 11, `test_metamaterial_intonation.py` 8;
+  `test_numba_resonance_phase_matches_python` passes). Toolcheck PASS (29
+  imported, 0 phantom).
 
 ### In Progress
 - None — this session's work is complete and pushed.
@@ -143,6 +152,11 @@
    parity sweep now that `main` has the ported experiment scripts.
 3. Optional user-verification: folded/low-clarinet notes wording in
    `docs/RESEARCH_acoustic_metamaterials.md` §7 / wiki §5.8.
+4. **ML optimization integration** (future): add ML-based optimization methods
+   (e.g., Bayesian optimization, neural surrogates, gradient-free methods) to
+   complement the existing two-phase optimizer (`backend/two_phase_optimizer.py`).
+   Timing TBD — consider whether to optimize the physics pipeline further first
+   (loss models, viscothermal accuracy) or proceed in parallel.
 
 ## Critical Context
 
