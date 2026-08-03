@@ -32,6 +32,7 @@ Usage:
 """
 
 import math
+import os
 import numpy as np
 from typing import List, Tuple, Optional, Union, Callable
 
@@ -39,6 +40,19 @@ from typing import List, Tuple, Optional, Union, Callable
 SPEED_OF_SOUND = 346100.0
 
 FOUR_PI = 4.0 * math.pi
+
+# Numba-accelerated resonance phase (opt-in via TMM_USE_NUMBA, default ON when
+# available). Falls back to the pure-Python path if numba is missing or disabled.
+_USE_NUMBA = os.environ.get("TMM_USE_NUMBA", "1") not in ("0", "false", "False")
+_NUMBA_ENABLED = False
+if _USE_NUMBA:
+    try:
+        import backend.tmm_numba as _tmm_numba_mod
+        build_action_arrays = _tmm_numba_mod.build_action_arrays
+        numba_resonance_phase = _tmm_numba_mod.numba_resonance_phase
+        _NUMBA_ENABLED = bool(getattr(_tmm_numba_mod, "_NUMBA_AVAILABLE", False))
+    except ImportError:
+        pass
 
 # ============================================================================
 # Loss model integration
@@ -291,6 +305,15 @@ class TMMInstrument:
         # Precompute action chain for phase-based resonance
         self._prepare_phase()
 
+        # Precompute compact action arrays for the numba fast path (lossless only).
+        if _NUMBA_ENABLED and self.loss_model is None:
+            try:
+                self._action_arrays = build_action_arrays(self.actions)
+            except Exception:
+                self._action_arrays = None
+        else:
+            self._action_arrays = None
+
     def _apply_whistle_clip(
         self,
         clip_fraction: float,
@@ -418,6 +441,15 @@ class TMMInstrument:
         Returns:
             Phase value (integer at resonance)
         """
+        if self._action_arrays is not None:
+            mask = np.array(
+                [1 if f == Hole.OPEN else 0 for f in fingerings],
+                dtype=np.int32,
+            )
+            return numba_resonance_phase(
+                *self._action_arrays, mask, wavelength, closed_top=self.closed_top
+            )
+
         phase = 0.5  # Open end
 
         for action in self.actions:
