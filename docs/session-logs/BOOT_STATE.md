@@ -140,6 +140,25 @@
   health fixes + question: restore numba wiring (`32d4c9f`, verified bit-identical
   + 6.4x) into `tmm_acoustics.py` or leave skipped until reconciliation.
   Awaiting desktop decision on both.
+- **Desktop adopted topk_polish as 5th family in PR #62** (commit `25e215f`),
+  byte-identical engine (blob `67e1208`); added `ai_methods_dask.py` (dask
+  deep-budget variants of the surrogate families), `tune_topk_polish.py`,
+  `verify_with_retries`; thread 1 (topk integration) RESOLVED on both sides.
+  Laptop cross-verified: 10 passed on desktop's PR #62 head in a temp worktree.
+- **Adopted REMINDERS.md coordination mechanism** (commit `c5ab7d2`):
+  `docs/REMINDERS.md` + AGENTS.md branch-naming, byte-identical to desktop's
+  `82bfeaa`. Standing threads 2 (numba restore via PR #62 merge) and 3 (PR #62
+  head mirror) still open.
+- **Dask-parallel comparison path for topk_polish** (commit `ebc2418`,
+  `opencode/main/laptop`): optional `workers` param in
+  `backend/optimization/topk_polish.py` (forwarded to scipy
+  `differential_evolution`; default `workers=1` = serial unchanged);
+  `tests/comparison/dask_topk.py` (`make_client` scheduler→local cluster→None
+  serial fallback, `dask_map`, `run_topk_polish_dask`); `tests/comparison/
+  test_dask_topk.py` (5 tests, comparison/slow markers: serial-fallback ==
+  engine, dask == serial-deferred DE exactly, dask determinism, graceful
+  dask-absent degradation). No name collision with desktop's `ai_methods_dask.py`.
+  Laptop: **123 passed / 1 skipped**, toolcheck PASS, ruff clean on new files.
 
 ### In Progress
 - None — this session's work is complete and pushed.
@@ -187,7 +206,8 @@
    as `backend/optimization/topk_polish.py` (DE + k-elite L-BFGS-B); surrogate
    warm-start tested and rejected on the shared contract. Desktop's comparison
    runners now take explicit budget args + `verify_with_retries` (PR #62), so
-   `topk_polish` slots straight in.
+   `topk_polish` slots straight in. Added a dask-parallel path for the 5th
+   family (`ebc2418`); PR #62 merged the 5-family suite + dask variants.
    Timing TBD — consider whether to optimize the physics pipeline further first
    (loss models, viscothermal accuracy) or proceed in parallel.
 
@@ -209,13 +229,15 @@
   ML surrogate port + intonation pass tiers + `verify_with_retries`, 11 commits /
   71 files / MERGEABLE). Comparison runners take budget args. Desktop corrected a
   mis-signature (a post was tagged "opencode" but was `TEAM_MACHINE=desktop`);
-  the Copilot agent that acked laptop's top-k tuning is **paused until
-  2026-09-01**, so desktop's opencode agent may pick up that work.
-- Env: Windows, Python 3.14.6, numpy 2.4.6, numba 0.66.0, pytest 9.1.1, dask
-  2026.7.1, jax 0.11.0; **conda NOT on PATH** — use system Python +
-  `PYTHONPATH=<repo root>`; `tmmbench` env unavailable on desktop.
+   the Copilot agent that acked laptop's top-k tuning is **paused until
+   2026-09-01**, so desktop's opencode agent may pick up that work.
+- **`origin/opencode/main/laptop` = `ebc2418`** (this session): adopted
+  REMINDERS.md coordination (`c5ab7d2`) + dask-parallel topk_polish path
+  (`ebc2418`: `backend/optimization/topk_polish.py` workers param,
+  `tests/comparison/dask_topk.py`, `tests/comparison/test_dask_topk.py`,
+  pyproject whitelist). **123 passed / 1 skipped** on laptop.
 - Untracked regenerable artifacts left uncommitted: `bench_main.txt`,
-  `bench_perf_tmm_medium.txt`, `bench_perf_tmm_refactor.txt`.
+  `bench_perf_tmm_medium.txt`, `bench_perf_tmm_refactor.txt`, `test_output/`.
 - #23 stream: laptop confirmation (01:41:04Z) + laptop's three `team_chat.py`
   bugfixes pushed to `kalles-main-branch` (`45ddcb2`, `591c384`, `827c051`).
 - **Laptop's low-clarinet metamaterial batch** — initially reported as "on main"
@@ -276,6 +298,11 @@
   `import math`, no circular `Hole` import.
 - `pyproject.toml` / `docs/TOOLS.md` — `perf = ["numba>=0.60"]` extra + declaration.
 - `tests/test_tmm.py` — `test_numba_resonance_phase_matches_python()` parity test.
+- `backend/optimization/topk_polish.py` — top-k polish engine (DE + k-elite
+  L-BFGS-B), now with optional `workers` param (dask/multiprocess DE).
+- `tests/comparison/dask_topk.py` — dask-parallel runner for topk_polish
+  (scheduler → local cluster → serial fallback); `tests/comparison/
+  test_dask_topk.py` — 5 tests (comparison/slow markers).
 - `docs/RESEARCH_acoustic_metamaterials.md` — Claude + Kimi + web research
   reference doc (committed); §7 = ported-artifact numerical findings, §8 =
   language/tooling.
