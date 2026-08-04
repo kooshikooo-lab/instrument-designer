@@ -11,7 +11,8 @@
 
 - **NEW working branch: `opencode-instrument-designer`** (user-designated Open
   Code branch). Based on `origin/main` (`d663a43`); pushed to origin; PR **#62**
-  open against `main` (import fixes + numba test guard). Open Code stays on this
+  open against `main` (import repair + numba restore + AI/ML-family port +
+  Step-3 reconciliation; 9 commits, MERGEABLE). Open Code stays on this
   branch from 2026-08-04 onward.
 - Consolidate the acoustic-metamaterials research (Claude + Kimi exports + web
   research) into `docs/RESEARCH_acoustic_metamaterials.md` (reference doc) and the
@@ -54,27 +55,36 @@
 ## Progress
 
 ### Done
-- **PR #62 = 6 commits, MERGEABLE** (2026-08-04): `d663a43` base + `56d0ec9`
-  (import repair) + `0b6e9ad` (numba test guard) + `9e58f39` (BOOT_STATE) +
-  `da8e8fc` (numba wiring restore) + `6870fde` (ML-surrogate port) + `6cbd47c`
-  (PR report docs). Full PR report: `docs/PR_REPORT.md` (all 4 open PRs #33/#58/#61/#62).
-  Audit: low + medium tiers PASS, `pytest tests/` **121 passed** (66.8s),
-  ML-surrogate 7 passed (5.5s), comparison 6 passed (47.7s; Bayesian 64.9c /
-  neural 34.7c / RL 26.2c / gradient-free 9.6c RMS). Posted to #23
-  (discussioncomment-17888679 + 17888921).
+- **PR #62 = 9 commits, MERGEABLE** (2026-08-04): `56d0ec9` (import repair) +
+  `0b6e9ad` (numba test guard) + `9e58f39` (BOOT_STATE) + `da8e8fc` (numba
+  wiring restore) + `6870fde` (ML-surrogate + AI-family comparison port) +
+  `6cbd47c` (PR report docs) + `2f275fe` (BOOT_STATE step-3) + `6a69c0d`
+  (Step-3 reconciliation scripts) + `ebfeaf1` (scrap inferior ML-optimizer
+  duplicates per compliance audit). Full PR report: `docs/PR_REPORT.md` (all 4
+  open PRs #33/#58/#61/#62). Audit: low + medium tiers PASS, `pytest tests/`
+  **114 passed** (64.6s, matches laptop canonical), comparison 6 passed (44.6s;
+  Bayesian 64.9c / neural 34.7c / RL 26.2c / gradient-free 9.6c RMS),
+  `scripts/toolcheck.py` PASS. Posted to #23 (discussioncomment-17888679 +
+  17888921 + 17889948).
 - **Numba wiring restored** (commit `da8e8fc`): `7cae468` dropped it from
   `32d4c9f`; re-applied in `_prepare_phase` (precompute moved out of `__init__`
   so post-construction meta wiring is caught), gated on `_NUMBA_ENABLED` +
   `loss_model is None` + no `pipe_meta`/`meta_branch`; int32 mask fast path;
   6.66x, parity 0.0, `TMM_USE_NUMBA=0` verified; new
   `test_meta_disables_numba_fast_path`. 79 TMM+metamaterial tests pass.
-- **ML-surrogate port** (commit `6870fde`): desktop's uncommitted pile now
-  versioned on this branch — `backend/ml_surrogate_optimizer.py`,
-  `backend/ml_optimizer_splitted.py` (fixed 2 latent desktop bugs: missing
-  `import time`, invalid dict key), `tests/comparison/*` (5 files),
-  `backend/experiments/{bore_builder,benchmark_and_optimize,jax_resonator_sketch}.py`;
-  `pyproject.toml` whitelist + `run_all_tests.py`/`TEST_MATRIX.md` new
-  `comparison` medium tier.
+- **AI-family comparison port** (commit `6870fde`): desktop's uncommitted pile
+  now versioned on this branch — `tests/comparison/*` (5 files:
+  `ai_methods_benchmark.py`, `ai_methods_dask.py`, `test_ai_methods_comparison.py`
+  + pre-existing byte-identical `comparison_framework.py`),
+  `backend/experiments/{bore_builder,benchmark_and_optimize}.py`;
+  `pyproject.toml` whitelist + `run_all_tests.py`/`TEST_MATRIX.md` `comparison`
+  medium tier. **Scrapped in `ebfeaf1`** (compliance audit, user directive):
+  `backend/ml_surrogate_optimizer.py` + `backend/ml_optimizer_splitted.py` were
+  an inferior duplicate of the canonical `two_phase_optimizer.py` (bare
+  `except:`, hardcoded `closed_top`/`n_bore_ctrl`; "splitted" was imported by
+  nothing); their test file went too; `jax_resonator_sketch.py` (untested dead
+  code) preserved in `docs/JAX_RESONATOR_SKETCH_IDEA.md`. Default `pytest tests/`
+  back to **114 passed** (matches laptop's canonical baseline).
 - **opencode-instrument-designer branch** (2026-08-04): pushed `d663a43` +
   `56d0ec9` (fix: repair broken `tmm_acoustics` imports across 45 files / 50 files)
   + `0b6e9ad` (fix: numba parity test skip-guard). PR **#62** → `main`. Audit:
@@ -149,7 +159,17 @@
   imported, 0 phantom).
 
 ### In Progress
-- None — Step 3 (desktop reconciliation) **focused port done** this session:
+- **Compliance audit (user directive 2026-08-04 — audit before porting; scrap
+  inferior solvers).** Done: `scripts/toolcheck.py` PASS; all 11 ported
+  ML/comparison/script files ≤ 442 lines (Law 8); scrapped
+  `backend/ml_surrogate_optimizer.py` + `backend/ml_optimizer_splitted.py` +
+  `tests/comparison/test_ml_surrogate_optimizer.py` (inferior duplicate of the
+  canonical `two_phase_optimizer.py`; "splitted" was imported by nothing) and
+  `backend/experiments/jax_resonator_sketch.py` (untested dead code; idea saved
+  to `docs/JAX_RESONATOR_SKETCH_IDEA.md`) in commit `ebfeaf1`. **Still to
+  audit**: `backend/experiments/{bore_builder,benchmark_and_optimize}.py` and
+  the remaining ~5 genuinely-new desktop candidates before any further port.
+- Step 3 (desktop reconciliation) **focused port done** this session:
   ported + cleaned `scripts/v2_validation_runner.py` and
   `scripts/benchmark_v1_inria.py` (moved from `backend/` to `scripts/` per
   CODING_STANDARDS); dropped `external_solvers.py` (unused on desktop, duplicates

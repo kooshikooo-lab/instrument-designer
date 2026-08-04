@@ -11,7 +11,7 @@ reviewer) can understand each PR without re-reading the full diff.
 
 | PR | Head branch | Title | State | Mergeable | Commits | ± |
 |----|-------------|-------|-------|-----------|---------|---|
-| [#62](https://github.com/kooshikooo-lab/instrument-designer/pull/62) | `opencode-instrument-designer` | fix: repair broken `tmm_acoustics` imports across 45 files + numba test guard + Step-3 desktop reconciliation | OPEN | MERGEABLE | 8 | +2700/−100 |
+| [#62](https://github.com/kooshikooo-lab/instrument-designer/pull/62) | `opencode-instrument-designer` | fix: repair broken `tmm_acoustics` imports across 45 files + numba test guard + Step-3 desktop reconciliation | OPEN | MERGEABLE | 9 | +2673/−78 |
 | [#61](https://github.com/kooshikooo-lab/instrument-designer/pull/61) | `mai-code-1-flash-test-branch` | refactor: shared optimization problem metrics | OPEN | MERGEABLE | 1 | +102/−29 |
 | [#58](https://github.com/kooshikooo-lab/instrument-designer/pull/58) | `feature/dask-jvm-chalumier-compliance` | feat: chalumier JVM heap cap + Dask distributed design scripts | OPEN | UNKNOWN* | 1 | +357/−4 |
 | [#33](https://github.com/kooshikooo-lab/instrument-designer/pull/33) | `experiment/unconventional-shapes` | fix: resolve 12 compliance violations per AI Constitution | OPEN | UNKNOWN* | 9 | +7954/−272 |
@@ -27,7 +27,7 @@ on the PR page / pending checks); the PRs are not known-conflicting.
 permanent working branch (user directive, 2026-08-04), based on this lineage's
 `origin/main` (`d663a43`). This PR lands the branch's fixes onto `main`:
 repair the import breakage left by prior merges, restore the dropped numba fast
-path, and port the ML-surrogate / AI-family comparison work so both machines
+path, and port the AI/ML optimization-family comparison work so both machines
 converge on one implementation.
 
 ### Commit 1 — `56d0ec9` fix: repair broken `tmm_acoustics` imports across 45 files
@@ -104,18 +104,8 @@ share one implementation.
 an uncommitted working tree. Porting to the opencode branch (the permanent
 working branch) puts it under version control and on `main` via this PR.
 
-**Code-map.**
-- `backend/ml_surrogate_optimizer.py` — two-phase bore optimizer. Phase 1:
-  `differential_evolution` global search on `inst.phase_cost_with_offset(...)`
-  (fast, register-agnostic). Phase 2: `L-BFGS-B` polish on
-  `peak_cost_nearest(...)` (register-aware). Builds on `backend.tmm_acoustics`
-  `tmm_instrument_from_radii` + `backend.two_phase_optimizer`
-  (`peak_cost_nearest`, `detect_registers`).
-- `backend/ml_optimizer_splitted.py` — alternate single-call harness
-  (`ml_surrogate_optimize`) around the same two-phase pattern. Fixed two latent
-  desktop bugs so the module actually imports: missing `import time` (used
-  `time.time()` at runtime) and an invalid dict-key literal
-  (`n_bore_ctrl=n_bore_ctrl` → `'n_bore_ctrl': n_bore_ctrl`).
+**Code-map (current tree; two ML-optimizer modules + one sketch were ported
+here, then scrapped in Commit 9 — see that section).**
 - `tests/comparison/` — shared framework + suite:
   - `comparison_framework.py` — already present on opencode and byte-identical
     to desktop's (verified); `AlgorithmResult` dataclass + `AlgorithmComparator`.
@@ -129,31 +119,33 @@ working branch) puts it under version control and on `main` via this PR.
     accepts a batch evaluator and falls back to serial when Dask is absent.
   - `test_ai_methods_comparison.py` — marked `comparison`/`slow`; each family
     must converge under `SANE_RMS_CENTS = 150.0`; prints the report table.
-  - `test_ml_surrogate_optimizer.py` — 7 tests for the two-phase optimizer
-    (build instrument, phase 1, phase 2, full run, low-clarinet + folded-bore
-    configs).
 - `backend/experiments/` — `bore_builder.py` (segment + insertion bore
   composer, tonehole shunt matrices), `benchmark_and_optimize.py` (intonation/
-  peak-quality metrics + scipy two-phase demo), `jax_resonator_sketch.py`
-  (JAX-autodiff Helmholtz shunt element, `UNTESTED`-flagged sketch). Ported
-  alongside the existing `brass_scaffold.py`/`metamaterial_elements.py`/
-  `folded_bore_elements.py` siblings (desktop's root-level `folded_bore_elements.py`
-  verified byte-identical to opencode's experiments copy).
+  peak-quality metrics + scipy two-phase demo). Ported alongside the existing
+  `brass_scaffold.py`/`metamaterial_elements.py`/`folded_bore_elements.py`
+  siblings (desktop's root-level `folded_bore_elements.py` verified
+  byte-identical to opencode's experiments copy).
 - `pyproject.toml` — added `test_ml_surrogate_optimizer.py` to the pytest
-  collection whitelist.
+  collection whitelist (reverted in Commit 9).
 - `scripts/run_all_tests.py` + `docs/TEST_MATRIX.md` — new `comparison` medium
-  tier category.
+  tier category (trimmed in Commit 9).
 
-**Verified.** 7 ML-surrogate tests pass (5.5 s). 6 comparison tests pass
-(47.7 s): Bayesian 64.9¢ / neural 34.7¢ / RL 26.2¢ / gradient-free 9.6¢ RMS on
-the shared Bb-clarinet task. Full default pytest collection: **121 passed**.
+**Also ported, then scrapped in Commit 9 (see Commit 9 / Step-3 audit):**
+`backend/ml_surrogate_optimizer.py`, `backend/ml_optimizer_splitted.py`,
+`tests/comparison/test_ml_surrogate_optimizer.py`,
+`backend/experiments/jax_resonator_sketch.py` (source preserved in
+`docs/JAX_RESONATOR_SKETCH_IDEA.md`).
+
+**Verified.** 6 comparison tests pass (44.6 s): Bayesian 64.9¢ / neural 34.7¢ /
+RL 26.2¢ / gradient-free 9.6¢ RMS on the shared Bb-clarinet task. Full default
+pytest collection: **114 passed** (matches the laptop's canonical baseline).
 
 ### PR-level audit (all 5 commits)
 
 - `python -m compileall backend scripts tests woodwind_designer` — OK
 - `scripts/run_all_tests.py --tier low --force` — all PASS
 - `scripts/run_all_tests.py --tier medium --force` — all PASS
-- Default `pytest tests/` — **121 passed** (66.8 s)
+- Default `pytest tests/` — **114 passed** (64.6 s)
 - Governance guard hooks active; no protected governance file touched
 - `test_output/testing/` left untracked (regenerable artifact)
 
@@ -161,6 +153,33 @@ the shared Bb-clarinet task. Full default pytest collection: **121 passed**.
 
 See the dedicated section below. Net effect: two scripts ported and cleaned to
 repo standards; no new duplicate solver classes; everything importable.
+
+### Commit 9 — `ebfeaf1` chore: scrap inferior ML-optimizer duplicates (compliance audit)
+
+Per the user directive (2026-08-04 — "if a solver is inferior, just scrap it";
+"do a thorough audit to ensure full compliance before porting anything"), the
+pre-port compliance audit concluded the two ported ML-optimizer modules were an
+inferior duplicate of the canonical `backend/two_phase_optimizer.py` and were
+removed:
+
+- `backend/ml_surrogate_optimizer.py` — re-implemented the canonical two-phase
+  pattern (`phase1_de_search`/`phase2_lbfgsb_refine`) with violations: bare
+  `except:` (x2), hardcoded `closed_top=False`/`n_bore_ctrl=6`/`outer_diameter_mm=22.0`
+  that ignored config, a `"  DE DE popsize="` typo, duplicate import. Only
+  consumer was its own test file.
+- `backend/ml_optimizer_splitted.py` — imported by nothing (dead duplicate).
+- `tests/comparison/test_ml_surrogate_optimizer.py` — 7 tests for the scrapped
+  module only; the AI-family comparison suite (`test_ai_methods_comparison.py`)
+  does not depend on it.
+- `backend/experiments/jax_resonator_sketch.py` — UNTESTED, imported by
+  nothing; source preserved in `docs/JAX_RESONATOR_SKETCH_IDEA.md`.
+
+Rewired: `scripts/run_all_tests.py` (comparison tier → AI/ML family suite
+only), `pyproject.toml` pytest whitelist, `docs/TEST_MATRIX.md` (baseline
+corrected to the laptop's canonical **114 passed**).
+
+**Verified.** `python -m compileall` OK; `scripts/toolcheck.py` PASS; default
+`pytest tests/` **114 passed** (64.6 s); comparison suite **6 passed** (44.6 s).
 
 ---
 
