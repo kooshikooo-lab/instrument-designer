@@ -1,9 +1,10 @@
 # PR Report — 2026-08-04
 
 Status of all open PRs on `kooshikooo-lab/instrument-designer`, with per-PR
-rationale, code-map, and verification. Written by the opencode agent
-(`opencode-instrument-designer` branch) so other agents (desktop, laptop,
-reviewer) can understand each PR without re-reading the full diff.
+rationale, code-map, and verification. Written by the desktop opencode agent
+on `opencode/main/desktop` (PR #62's head shows as `opencode-instrument-designer`
+— a mirror kept until merge, since GitHub CLI cannot retarget PR heads) so other
+agents (laptop, reviewer) can understand each PR without re-reading the full diff.
 
 ---
 
@@ -11,7 +12,7 @@ reviewer) can understand each PR without re-reading the full diff.
 
 | PR | Head branch | Title | State | Mergeable | Commits | ± |
 |----|-------------|-------|-------|-----------|---------|---|
-| [#62](https://github.com/kooshikooo-lab/instrument-designer/pull/62) | `opencode-instrument-designer` | fix: repair broken `tmm_acoustics` imports across 45 files + numba test guard + Step-3 desktop reconciliation | OPEN | MERGEABLE | 11 | +3188/−90 |
+| [#62](https://github.com/kooshikooo-lab/instrument-designer/pull/62) | `opencode/main/desktop`* | fix: repair broken `tmm_acoustics` imports across 45 files + numba test guard + Step-3 desktop reconciliation + top-k polish family | OPEN | MERGEABLE | 13 | +3478/−91 |
 | [#61](https://github.com/kooshikooo-lab/instrument-designer/pull/61) | `mai-code-1-flash-test-branch` | refactor: shared optimization problem metrics | OPEN | MERGEABLE | 1 | +102/−29 |
 | [#58](https://github.com/kooshikooo-lab/instrument-designer/pull/58) | `feature/dask-jvm-chalumier-compliance` | feat: chalumier JVM heap cap + Dask distributed design scripts | OPEN | UNKNOWN* | 1 | +357/−4 |
 | [#33](https://github.com/kooshikooo-lab/instrument-designer/pull/33) | `experiment/unconventional-shapes` | fix: resolve 12 compliance violations per AI Constitution | OPEN | UNKNOWN* | 9 | +7954/−272 |
@@ -19,13 +20,19 @@ reviewer) can understand each PR without re-reading the full diff.
 \* `UNKNOWN` = GitHub has not finished computing mergeability (needs a refresh
 on the PR page / pending checks); the PRs are not known-conflicting.
 
+\* PR #62's GitHub head branch is `opencode-instrument-designer` — a mirror of
+`opencode/main/desktop` kept until merge (GitHub CLI cannot retarget PR heads);
+the mirror is deleted after merge.
+
 ---
 
-## PR #62 — opencode-instrument-designer → main  (OWNED BY THIS AGENT)
+## PR #62 — opencode/main/desktop → main  (OWNED BY THIS AGENT)
 
-**Purpose.** The `opencode-instrument-designer` branch is the opencode agent's
-permanent working branch (user directive, 2026-08-04), based on this lineage's
-`origin/main` (`d663a43`). This PR lands the branch's fixes onto `main`:
+**Purpose.** `opencode/main/desktop` is the desktop agent's per-machine working
+branch (naming convention `opencode/<app>/<machine>`, user directive
+2026-08-04), based on this lineage's `origin/main` (`d663a43`). The
+`opencode-instrument-designer` ref remains as the PR #62 head mirror until
+merge. This PR lands the branch's fixes onto `main`:
 repair the import breakage left by prior merges, restore the dropped numba fast
 path, and port the AI/ML optimization-family comparison work so both machines
 converge on one implementation.
@@ -219,6 +226,28 @@ design. Consumers map the scale onto their own knobs.
 `pytest tests/` — **128 passed** (63.4 s); comparison suite — **6 passed**
 (44.7 s, unchanged family RMS: Bayesian 64.9¢ / neural 34.7¢ / RL 26.2¢ /
 gradient-free 9.6¢); toolcheck PASS; imports of all modified scripts OK.
+
+### Commit 11 — `6ff0da8` docs: PR_REPORT + BOOT_STATE — intonation pass tiers
+
+Updates the PR report and session state for the tiers commit: PR #62 now
+11 commits, +3188/−90, 128 passed; `docs/TEST_MATRIX.md` gains the `metrics`
+category and the corrected baseline.
+
+### Commit 12 — `25e215f` feat: adopt shared `topk_polish` engine as 5th comparison family
+
+**What.** Brings the laptop's generic DE + top-k L-BFGS-B polish optimizer
+(`backend/optimization/topk_polish.py`, plain file copy of its AUDIT commit
+`27ce1cb` on `opencode/main/laptop`) into the AI/ML comparison suite, replacing
+the desktop's inline duplicate (Law-3). `backend/optimization/__init__.py`
+exports it; the laptop's `tests/test_topk_polish.py` (3 tests) joins the pytest
+whitelist; `ai_methods_benchmark.py` gains `run_topk_polish()` (family
+`topk_polish`; the acceptance retry scales `maxiter`); `tests/comparison/
+tune_topk_polish.py` is the seed-robustness study script.
+
+**Verified.** Comparison suite 7 passed — Topk Polish **5.98¢ RMS / 11,076
+evals / 17.3 s** vs Gradient Free 9.64¢; 5-seed robustness **5.918–6.045¢**
+(mean 5.964¢) vs plain gradient-free 8.125–10.441¢ (mean 9.698¢); full
+`pytest tests/` — **131 passed** (111.3 s); toolcheck PASS.
 
 ---
 

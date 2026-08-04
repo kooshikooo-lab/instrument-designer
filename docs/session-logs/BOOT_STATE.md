@@ -9,11 +9,14 @@
 
 ## Goal
 
-- **NEW working branch: `opencode-instrument-designer`** (user-designated Open
-  Code branch). Based on `origin/main` (`d663a43`); pushed to origin; PR **#62**
-  open against `main` (import repair + numba restore + AI/ML-family port +
-  Step-3 reconciliation + intonation pass standards; 11 commits, MERGEABLE).
-  Open Code stays on this branch from 2026-08-04 onward.
+- **Working branch: `opencode/main/desktop`** (naming convention
+  `opencode/<app>/<machine>`, user directive 2026-08-04; renamed from
+  `opencode-instrument-designer`). Based on `origin/main` (`d663a43`); pushed
+  to origin; PR **#62** open against `main` (import repair + numba restore +
+  AI/ML-family port + Step-3 reconciliation + intonation pass standards + top-k
+  polish family; 13 commits, MERGEABLE). `opencode-instrument-designer` remains
+  as the PR #62 head mirror until merge (GitHub CLI cannot retarget PR heads).
+  Desktop stays on `opencode/main/desktop`.
 - Consolidate the acoustic-metamaterials research (Claude + Kimi exports + web
   research) into `docs/RESEARCH_acoustic_metamaterials.md` (reference doc) and the
   internal wiki, restructured into **one page per major topic** with the
@@ -27,7 +30,7 @@
   reproducing documented outputs exactly.
 - Standing items from prior sessions (not this session's work): `backend/spectral`
   design awaits user approval; laptop Phase 2G surrogate work lives on
-  `kalles-main-branch`.
+  `opencode/main/laptop` (renamed from `kalles-main-branch`, 2026-08-04).
 - Standing directive: tools must be **integrated into a pipeline**, never just
   installed and forgotten (tool registry guard is live).
 - User's fallback instruction: if no task is assigned, do something **safe** (no
@@ -66,6 +69,28 @@
   **128 passed** (63.4s; +`tests/test_metrics.py` 14 tests), comparison
   6 passed (44.7s; Bayesian 64.9c / neural 34.7c / RL 26.2c / gradient-free
   9.6c RMS), `scripts/toolcheck.py` PASS.
+- **Branch renames + naming convention** (2026-08-04): `opencode/<app>/<machine>`
+  per-machine integration branches — desktop `opencode/main/desktop`, laptop
+  `opencode/main/laptop` (was `kalles-main-branch` = `3ce2fe9`, renamed by
+  laptop); side branches `opencode/<idea>/<machine>` (test ideas, merge or
+  scrap). Desktop's old `opencode-instrument-designer` ref stays as the PR #62
+  head mirror until merge (GitHub CLI cannot retarget PR heads); delete after
+  merge. Both renames verified on origin; no open PR was lost (PR #62 reopened
+  after the ref swap).
+- **Topk polish family consolidated** (commit `25e215f`): adopted the laptop's
+  generic DE + top-k L-BFGS-B polish engine `backend/optimization/topk_polish.py`
+  (file copy of its AUDIT `27ce1cb`) as family `topk_polish` in
+  `tests/comparison/ai_methods_benchmark.py` (`run_topk_polish`; retry scales
+  `maxiter`); `__init__.py` export + laptop's `tests/test_topk_polish.py` (3
+  tests) whitelisted; `tests/comparison/tune_topk_polish.py` seed-robustness
+  script. Comparison suite **7 passed** — Topk Polish **5.98c / 11,076 evals /
+  17.3s** vs Gradient Free 9.64c; 5-seed robustness **5.918–6.045c** (mean
+  5.964c) vs plain 8.125–10.441c (mean 9.698c); `pytest tests/` **131 passed**
+  (111.3s).
+- **Reminders mechanism** (2026-08-04): new `docs/REMINDERS.md` (living file
+  both machines edit) — standing compliance checklist + pending cross-machine
+  threads + nudge rule; wired into AGENTS.md Step 0 (read after sync; nudge
+  #23 on stale threads) + branch-naming line in AGENTS.md Environment.
 - **Intonation pass standards** (commit `1fca1b2`): canonical cents tiers in
   `backend/metrics.py` (`INTONATION_TIERS`: sane 150c RMS; acceptable 10c/25c;
   professional 5c/15c; unconventional 20c/40c; fixture 5c; cross-software 10c)
@@ -206,6 +231,20 @@
   FAIL) so a short noisy run never scraps a design; unconventional shapes get a
   looser 20¢ RMS / 40¢ max tier. Literature + rationale in
   `docs/PHYSICS_PRINCIPLES.md` "Intonation pass standards".
+- Branch naming `opencode/<app>/<machine>` (per-machine integration branches
+  `opencode/main/desktop` / `opencode/main/laptop`; experiments on
+  `opencode/<idea>/<machine>`, merge or scrap; keep `main` divergence minimal) —
+  user directive 2026-08-04. PR heads GitHub CLI cannot retarget stay on a
+  mirror ref (`opencode-instrument-designer`) until merge.
+- Topk polish: adopt the laptop's shared `backend/optimization/topk_polish.py`
+  engine as the single implementation (Law-3; desktop's inline duplicate
+  removed). Family default maxiter=60 (≈5.98c / 11k evals) ≈ maxiter=250
+  (≈5.92c / 25k) on the contract.
+- Reminders: `docs/REMINDERS.md` is the living compliance + pending-thread file
+  both machines read at session start; stale threads get a #23 nudge.
+- Numba wiring: already restored on PR #62 (`da8e8fc` + guarded fallback);
+  `main` gets it via the PR #62 merge — laptop keeps the guarded skip, no
+  double-fix.
 - Wiki restructure: **one page per major topic** (hub + Acoustics/Optimization/
   Measurement/Perception/Resources/Metamaterials), user-selected over finer or
   coarser grouping; metamaterials page by instrument category with per-instrument
@@ -224,15 +263,16 @@
 
 ## Next Steps
 
-1. **Stay on `opencode-instrument-designer`** (user directive). PR #62 (11 commits)
-   is MERGEABLE and needs no external approval per user (properly audited +
-   governance docs + compliance). Merge when ready.
+1. **Stay on `opencode/main/desktop`**. PR #62 (13 commits) is MERGEABLE and
+   needs no external approval per user (properly audited + governance docs +
+   compliance). Merge when ready; after merge delete the
+   `opencode-instrument-designer` head mirror.
 2. **Step 3 reconciliation**: port desktop-only files (72 per audit) — CadQuery
    STL, Dask, routes split, STL library, archived optimizers, `.gitmodules`,
    external solvers, validation results — at file level onto this branch.
 3. Standing: present `backend/spectral` design (`docs/DESIGN_spectral.md`) for
    user approval when the user is available.
-4. Monitor `kalles-main-branch` for laptop's `team_chat.py` fixes landing on
+4. Monitor `opencode/main/laptop` for laptop's `team_chat.py` fixes landing on
    `main` (laptop's call) and for Phase 2G updates; laptop may want the L2-vs-L1
    parity sweep now that `main` has the ported experiment scripts.
 5. Optional user-verification: folded/low-clarinet notes wording in
@@ -246,10 +286,12 @@
 ## Critical Context
 
 - **`origin/main` = `d663a43`** (this lineage's main tip; BOOT_STATE — laptop
-  register-suppression + soprano demos). `opencode-instrument-designer` =
-  `1fca1b2` (`d663a43` + import fixes + numba restore + AI-family port + Step-3
-  + compliance scrap + intonation pass tiers), PR #62 open. Note: this lineage
-  is NOT the desktop's main lineage (desktop `main` = `ae38527`;
+  register-suppression + soprano demos). `opencode/main/desktop` = `25e215f`
+  (`d663a43` + import fixes + numba restore + AI-family port + Step-3 +
+  compliance scrap + intonation pass tiers + topk polish family); PR #62 head
+  mirrors to `opencode-instrument-designer` (delete after merge). Laptop
+  `opencode/main/laptop` = `3ce2fe9` (was `kalles-main-branch`). Note: this
+  lineage is NOT the desktop's main lineage (desktop `main` = `ae38527`;
   kalles-main-branch merged to `187b770`).
 - Env: Windows, Python 3.14.6, numpy 2.4.6, numba 0.66.0, pytest 9.1.1, dask
   2026.7.1, jax 0.11.0; **conda NOT on PATH** — use system Python +
@@ -306,7 +348,8 @@
 - Repo canonical constants unchanged: `SPEED_OF_SOUND = 346100.0` mm/s in
   `backend/tmm_acoustics.py` (Law 7 / chalumier parity).
 - Git identity `Admin <kooshikooo@gmail.com>`; `gh` authed as `kooshikooo-lab`.
-- Laptop identity `big-pickle`; desktop `TEAM_MACHINE=desktop`.
+- Desktop `TEAM_MACHINE=desktop`; laptop `TEAM_MACHINE=laptop` (Copilot Pro
+  agents on the desktop are paused until 2026-09-01 — no usage data).
 
 ## Relevant Files
 
@@ -319,6 +362,12 @@
   (`verify_with_retries`); `tests/test_metrics.py` (14 tests);
   `docs/PHYSICS_PRINCIPLES.md` "Intonation pass standards" (tier table +
   sources).
+- `backend/optimization/topk_polish.py` — shared DE + top-k L-BFGS-B polish
+  engine (from laptop, AUDIT `27ce1cb`); `tests/test_topk_polish.py` (3 tests);
+  `tests/comparison/ai_methods_benchmark.py` `run_topk_polish` family;
+  `tests/comparison/tune_topk_polish.py` seed-robustness study.
+- `docs/REMINDERS.md` — living compliance checklist + pending cross-machine
+  threads + nudge rule (read at session start after sync).
 - `pyproject.toml` / `docs/TOOLS.md` — `perf = ["numba>=0.60"]` extra + declaration.
 - `tests/test_tmm.py` — `test_numba_resonance_phase_matches_python()` parity test.
 - `docs/RESEARCH_acoustic_metamaterials.md` — Claude + Kimi + web research
