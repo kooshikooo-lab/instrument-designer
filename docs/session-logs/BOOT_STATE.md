@@ -52,7 +52,7 @@
 - Tool adoption rule: install + declare (`docs/TOOLS.md`) + import + whitelisted
   test; guard = `tests/test_tool_registry.py` + `scripts/toolcheck.py`.
 - Laptop's `team_chat.py` protocol fixes (cursor, watch-stale-save, sync-launch)
-  are on `kalles-main-branch`, **not yet on `main`** — landing them is the
+  are on `opencode/main/laptop`, **not yet on `main`** — landing them is the
   laptop's call, do not merge unilaterally.
 
 ## Progress
@@ -91,6 +91,13 @@
   both machines edit) — standing compliance checklist + pending cross-machine
   threads + nudge rule; wired into AGENTS.md Step 0 (read after sync; nudge
   #23 on stale threads) + branch-naming line in AGENTS.md Environment.
+- **Session close** (2026-08-04): commit `82bfeaa` (docs: reminders +
+  PR_REPORT/TEST_MATRIX/BOOT_STATE updates) pushed to `opencode/main/desktop`
+  + `opencode-instrument-designer` mirror — PR #62 = **14 commits,
+  +3,623/−93, MERGEABLE**. Integration table + 5-seed robustness posted to
+  #23 (comment 17891204); laptop verified the shared engine parity on its side
+  (5.902c / 28,001 evals @ maxiter=250) and has nothing pending. Topk thread
+  #1 RESOLVED.
 - **Intonation pass standards** (commit `1fca1b2`): canonical cents tiers in
   `backend/metrics.py` (`INTONATION_TIERS`: sane 150c RMS; acceptable 10c/25c;
   professional 5c/15c; unconventional 20c/40c; fixture 5c; cross-software 10c)

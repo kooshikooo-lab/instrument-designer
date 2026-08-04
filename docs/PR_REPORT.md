@@ -12,7 +12,7 @@ agents (laptop, reviewer) can understand each PR without re-reading the full dif
 
 | PR | Head branch | Title | State | Mergeable | Commits | ± |
 |----|-------------|-------|-------|-----------|---------|---|
-| [#62](https://github.com/kooshikooo-lab/instrument-designer/pull/62) | `opencode/main/desktop`* | fix: repair broken `tmm_acoustics` imports across 45 files + numba test guard + Step-3 desktop reconciliation + top-k polish family | OPEN | MERGEABLE | 13 | +3478/−91 |
+| [#62](https://github.com/kooshikooo-lab/instrument-designer/pull/62) | `opencode/main/desktop`* | fix: repair broken `tmm_acoustics` imports across 45 files + numba test guard + Step-3 desktop reconciliation + top-k polish family | OPEN | MERGEABLE | 14 | +3623/−93 |
 | [#61](https://github.com/kooshikooo-lab/instrument-designer/pull/61) | `mai-code-1-flash-test-branch` | refactor: shared optimization problem metrics | OPEN | MERGEABLE | 1 | +102/−29 |
 | [#58](https://github.com/kooshikooo-lab/instrument-designer/pull/58) | `feature/dask-jvm-chalumier-compliance` | feat: chalumier JVM heap cap + Dask distributed design scripts | OPEN | UNKNOWN* | 1 | +357/−4 |
 | [#33](https://github.com/kooshikooo-lab/instrument-designer/pull/33) | `experiment/unconventional-shapes` | fix: resolve 12 compliance violations per AI Constitution | OPEN | UNKNOWN* | 9 | +7954/−272 |
@@ -248,6 +248,21 @@ tune_topk_polish.py` is the seed-robustness study script.
 evals / 17.3 s** vs Gradient Free 9.64¢; 5-seed robustness **5.918–6.045¢**
 (mean 5.964¢) vs plain gradient-free 8.125–10.441¢ (mean 9.698¢); full
 `pytest tests/` — **131 passed** (111.3 s); toolcheck PASS.
+
+### Commit 13 — `82bfeaa` docs: reminders mechanism + PR #62 topk family + branch renames
+
+**What.** New `docs/REMINDERS.md` (living compliance checklist + pending
+cross-machine threads + nudge rule; AGENTS.md Step 0 now points at it),
+branch-naming line in AGENTS.md, TEST_MATRIX comparison category (5 families,
+7 passed, baseline 128→131), BOOT_STATE/PR_REPORT updates for the renames.
+
+### Commit 14 — (this commit) docs: PR #62 stats snapshot + thread resolution + session close
+
+**What.** PR #62 headline refreshed to a dated snapshot (**14 commits,
++3,623/−93 as of `82bfeaa`**, 2026-08-04); topk thread #1 marked RESOLVED in
+`docs/REMINDERS.md` (desktop posted the integration table to #23, comment
+17891204); BOOT_STATE close. Totals are a snapshot — later docs-only commits
+are listed here and not re-counted in the headline.
 
 ---
 
