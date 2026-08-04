@@ -7,6 +7,8 @@ Families covered (per the AI-methods plan):
   2. Neural Surrogate Models - MLP surrogate + offline optimization (PyTorch)
   3. Reinforcement Learning  - REINFORCE over sequential design decisions
   4. Gradient-free methods   - CMA-ES, PSO, DE
+  5. Top-k polish            - DE global search + L-BFGS-B refinement of the
+                               top-k DE elites (robust local polish)
 
 Assertions are intentionally loose (each family must converge sanely and
 finish within budget); the report test prints the head-to-head table. Run
@@ -54,6 +56,11 @@ _BUDGET_KWARGS = {
     "neural_surrogate": lambda scale: {"n_de_iter": max(25, int(25 * scale))},
     "reinforcement_learning": lambda scale: {"n_episodes": max(150, int(150 * scale))},
     "gradient_free": lambda scale: {"max_evals": max(600, int(600 * scale))},
+    "topk_polish": lambda scale: {
+        "maxiter": max(60, int(60 * scale)),
+        "popsize": 15,
+        "n_polish": 5,
+    },
 }
 
 
@@ -110,6 +117,7 @@ def test_benchmark_is_well_posed(shared_objective):
         ("neural_surrogate", "run_neural_surrogate", "torch"),
         ("reinforcement_learning", "run_reinforcement_learning", "torch"),
         ("gradient_free", "run_gradient_free", "cma"),
+        ("topk_polish", "run_topk_polish", ""),
     ],
 )
 def test_ai_method_family(family, runner_name, extra_dep, comparison_cache):
@@ -148,7 +156,7 @@ def test_ai_methods_report(comparison_cache):
     missing = [f for f in bench.FAMILIES if f not in comparison_cache]
     if missing:
         pytest.skip(
-            f"run the four 'test_ai_method_family' cases first "
+            f"run the five 'test_ai_method_family' cases first "
             f"(missing: {', '.join(missing)})"
         )
 

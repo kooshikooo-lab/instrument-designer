@@ -1,5 +1,5 @@
 """
-Shared benchmark and runners that compare four AI/ML optimization families
+Shared benchmark and runners that compare five AI/ML optimization families
 head-to-head on a Bb-clarinet-family tuning task.
 
 Families (from the AI-methods plan):
@@ -9,8 +9,10 @@ Families (from the AI-methods plan):
   2. Neural Surrogate Models  - MLP trained on TMM samples, then optimized offline
                                 (PyTorch) and re-evaluated on the real objective
   3. Reinforcement Learning   - REINFORCE policy-gradient over sequential
-                                per-section bore-radius decisions
+                                 per-section bore-radius decisions
   4. Gradient-free methods    - CMA-ES, PSO, DE (global, no gradients)
+  5. Top-k polish             - DE global search, then L-BFGS-B refinement of
+                                 the top-k DE elites (robust local polish)
 
 Common problem: a closed-top (clarinet-family) TMM instrument. The bore/hole
 skeleton is fixed to the canonical chalumeau_C benchmark layout
@@ -20,7 +22,7 @@ objective is the absolute RMS cents error over the six fingered chalumeau
 notes (the canonical accuracy metric, SPEED_OF_SOUND = 346100 mm/s).
 
 Every runner returns an AlgorithmResult (tests/comparison/comparison_framework.py)
-with metrics ``rms_cents``, ``objective_evals`` and ``wall_time`` so the four
+with metrics ``rms_cents``, ``objective_evals`` and ``wall_time`` so the five
 families can be compared on the same problem.
 
 Run standalone to print the comparison table::
@@ -343,6 +345,28 @@ def run_gradient_free(seed=42, max_evals=600):
 
 
 # ---------------------------------------------------------------------------
+# 5. Top-k polish: DE global search + L-BFGS-B refinement of top-k elites
+# ---------------------------------------------------------------------------
+
+def run_topk_polish(seed=42, popsize=15, maxiter=60, n_polish=5):
+    """DE global + L-BFGS-B polish of the n_polish best elite candidates.
+
+    Thin runner over the shared generic engine (backend/optimization/
+    topk_polish.py), which matches the comparison framework's metric keys.
+    Tuning evidence on this contract: top-k polish scored 5.9-7.7c RMS vs a
+    9.6c single-restart gradient-free baseline. ``maxiter`` is the dominant
+    budget knob the acceptance retry policy scales on a failed screen.
+    """
+    from backend.optimization.topk_polish import topk_polish
+
+    return topk_polish(
+        benchmark_objective,
+        [(RADIUS_MIN, RADIUS_MAX)] * N_BORE_CTRL,
+        popsize=popsize, maxiter=maxiter, n_polish=n_polish, seed=seed,
+    )
+
+
+# ---------------------------------------------------------------------------
 # Orchestration + report
 # ---------------------------------------------------------------------------
 
@@ -351,11 +375,12 @@ FAMILIES = {
     'neural_surrogate': run_neural_surrogate,
     'reinforcement_learning': run_reinforcement_learning,
     'gradient_free': run_gradient_free,
+    'topk_polish': run_topk_polish,
 }
 
 
 def run_all_families():
-    """Run all four families and return a list of AlgorithmResult."""
+    """Run all five families and return a list of AlgorithmResult."""
     return [(name, _wrap(fn)) for name, fn in FAMILIES.items()]
 
 
