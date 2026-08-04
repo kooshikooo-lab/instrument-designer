@@ -113,6 +113,26 @@
   `test_numba_resonance_phase_matches_python` passes). Toolcheck PASS (29
   imported, 0 phantom).
 
+- **Laptop optimizer/surrogate tuning on the shared benchmark contract**
+  (this session, commit `27ce1cb` on `kalles-main-branch`): per desktop's
+  delegation (laptop tunes optimizer/surrogate loop against the shared
+  Bb-clarinet contract from `tests/comparison/ai_methods_benchmark.py` — 6 bore
+  radii, closed-top, abs RMS cents over 6 chalumeau notes).
+  - Result: **DE + top-k L-BFGS-B polish wins**, 5.9–7.7c RMS vs the 9.6c
+    gradient-free baseline (~30% better); surrogate warm-start (neural MLP from
+    DE elites) scored 19–167c — a dead end on this contract (corroborates
+    desktop's neural 34.7c vs gradient-free 9.6c).
+  - Delivered `backend/optimization/topk_polish.py` (generic
+    `topk_polish(objective, bounds, popsize, maxiter, n_polish, seed)`; returns
+    comparison-framework metric keys), exported from
+    `backend/optimization/__init__.py`, `tests/test_topk_polish.py` (3 tests).
+    Pushed `3e64efc..27ce1cb` → `origin/kalles-main-branch`.
+  - Laptop test state: **117 passed / 2 pre-existing failures** (both persist
+    with changes stashed): `test_numba_resonance_phase_matches_python` (import
+    error — numba wiring), `test_tool_registry` (gmsh/librosa/meshio/skfem
+    undeclared — spectral-module imports). Desktop's branch already fixes these
+    in pyproject extras.
+
 ### In Progress
 - None — this session's work is complete and pushed.
 
@@ -155,6 +175,11 @@
 4. **ML optimization integration** (future): add ML-based optimization methods
    (e.g., Bayesian optimization, neural surrogates, gradient-free methods) to
    complement the existing two-phase optimizer (`backend/two_phase_optimizer.py`).
+   **Progress this session:** laptop delivered the reusable gradient-free winner
+   as `backend/optimization/topk_polish.py` (DE + k-elite L-BFGS-B); surrogate
+   warm-start tested and rejected on the shared contract. Desktop's comparison
+   runners now take explicit budget args + `verify_with_retries` (PR #62), so
+   `topk_polish` slots straight in.
    Timing TBD — consider whether to optimize the physics pipeline further first
    (loss models, viscothermal accuracy) or proceed in parallel.
 
@@ -164,7 +189,15 @@
   over `401e889` (BOOT_STATE) over `cf7e625` (Claude artifact ports + doc/wiki +
   toolcheck fix) over `91b0df8` (string port) over `80a4435`/`e8780d7` (BOOT_STATE)
   over `b42b5bf` (wiki cross-link fixes) over `32d4c9f` (numba wiring) over
-  `5c7529f` (wiki restructure); `origin/main` = `0c794fd`.
+  `5c7529f` (wiki restructure); `origin/main` = `d663a43` (desktop's BOOT_STATE
+  update after laptop metamaterial merge).
+- **`origin/kalles-main-branch` = `27ce1cb`** (top-k polish optimizer) over
+  `3e64efc` (spectral module) over `8bd5599` (merge-conflict resolution) over
+  `187b770` (merge origin/main) over `e8b02d3` (metamaterial optimizer + spectral
+  + FEM cross-check). Most advanced branch vs `main` (42 commits unique).
+- **`origin/opencode-instrument-designer` = `6a69c0d`** (desktop branch, PR #62:
+  ML surrogate port + intonation pass standards + `verify_with_retries`,
+  11 commits / 71 files / MERGEABLE). Comparison runners take budget args.
 - Env: Windows, Python 3.14.6, numpy 2.4.6, numba 0.66.0, pytest 9.1.1, dask
   2026.7.1, jax 0.11.0; **conda NOT on PATH** — use system Python +
   `PYTHONPATH=<repo root>`; `tmmbench` env unavailable on desktop.
