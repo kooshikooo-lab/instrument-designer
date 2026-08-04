@@ -25,6 +25,7 @@ export default function App() {
   const [tab, setTab] = useState<Tab>("library");
   const [selected, setSelected] = useState<Instrument | null>(null);
   const [designPreset, setDesignPreset] = useState<string>("");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const instruments = useMemo(() => mergeResources(INSTRUMENTS), []);
 
@@ -35,7 +36,12 @@ export default function App() {
 
   return (
     <div className="flex h-screen bg-neutral-950">
-      <Sidebar active={tab} onNavigate={(t) => setTab(t as Tab)} />
+      <Sidebar
+        active={tab}
+        onNavigate={(t) => setTab(t as Tab)}
+        collapsed={sidebarCollapsed}
+        onToggleCollapsed={() => setSidebarCollapsed((value) => !value)}
+      />
       <main className="flex-1 overflow-hidden flex flex-col">
         <header className="border-b border-neutral-800 px-6 py-3 flex items-center gap-4">
           <div className="flex items-center gap-2">

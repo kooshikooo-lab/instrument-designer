@@ -4,6 +4,8 @@ import { isTauri } from "../utils/tauri";
 interface SidebarProps {
   active: Tab;
   onNavigate: (tab: Tab) => void;
+  collapsed: boolean;
+  onToggleCollapsed: () => void;
 }
 
 const NAV: { id: Tab; label: string; icon: string }[] = [
@@ -16,15 +18,30 @@ const NAV: { id: Tab; label: string; icon: string }[] = [
 /**
  * Left navigation sidebar with Library, Design, and Resources tabs.
  */
-export function Sidebar({ active, onNavigate }: SidebarProps) {
+export function Sidebar({ active, onNavigate, collapsed, onToggleCollapsed }: SidebarProps) {
   const desktop = isTauri();
 
   return (
-    <aside className="w-56 bg-neutral-900 border-r border-neutral-800 flex flex-col">
+    <aside className={`${collapsed ? "w-16" : "w-56"} bg-neutral-900 border-r border-neutral-800 flex flex-col transition-[width] duration-200`}>
       <div className="p-4 border-b border-neutral-800">
-        <div className="text-brand-400 font-bold text-sm tracking-wider uppercase">Instrument Designer</div>
-        <div className="text-neutral-500 text-xs mt-0.5">
-          {desktop ? "Desktop App" : "Pure Web App"}
+        <div className="flex items-start justify-between gap-2">
+          <div className={collapsed ? "sr-only" : ""}>
+            <div className="text-brand-400 font-bold text-sm tracking-wider uppercase">Instrument Designer</div>
+            <div className="text-neutral-500 text-xs mt-0.5">
+              {desktop ? "Desktop App" : "Pure Web App"}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onToggleCollapsed}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200 transition-colors"
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            <svg className={`h-4 w-4 transition-transform ${collapsed ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
         </div>
       </div>
       <nav className="flex-1 p-2 space-y-0.5">
@@ -32,21 +49,23 @@ export function Sidebar({ active, onNavigate }: SidebarProps) {
           <button
             key={item.id}
             onClick={() => onNavigate(item.id)}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+            className={`w-full flex items-center ${collapsed ? "justify-center" : "gap-3"} px-3 py-2.5 rounded-lg text-sm transition-colors ${
               active === item.id
                 ? "bg-brand-600/20 text-brand-400"
                 : "text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800"
             }`}
+            aria-label={item.label}
+            title={item.label}
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d={item.icon} />
             </svg>
-            {item.label}
+            {!collapsed && item.label}
           </button>
         ))}
       </nav>
       <div className="p-3 border-t border-neutral-800">
-        <div className="text-xs text-neutral-600">
+        <div className={`text-xs text-neutral-600 ${collapsed ? "hidden" : ""}`}>
           {desktop ? "Tauri + React + Three.js" : "Built with React + Three.js + JSCAD"}
         </div>
       </div>
