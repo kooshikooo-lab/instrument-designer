@@ -176,12 +176,16 @@ def test_flute_with_holes():
 def test_numba_resonance_phase_matches_python():
     """Numba fast path must produce bit-identical phases to pure Python."""
     import random
-    from backend.tmm_acoustics import _NUMBA_ENABLED
     from backend.tmm_numba import build_action_arrays, numba_resonance_phase
+
+    try:
+        from backend.tmm_acoustics import _NUMBA_ENABLED
+    except ImportError:
+        _NUMBA_ENABLED = False
 
     if not _NUMBA_ENABLED:
         import pytest
-        pytest.skip("numba not available")
+        pytest.skip("numba not wired into tmm_acoustics")
 
     rng = random.Random(1234)
     max_diff = 0.0
