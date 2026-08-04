@@ -98,9 +98,8 @@ CATEGORIES = {
     },
     "comparison": {
         "tier": "medium",
-        "desc": "ML surrogate optimizer + AI/ML optimization family comparison.",
+        "desc": "AI/ML optimization family comparison (Bayesian, neural, RL, gradient-free).",
         "commands": [
-            _pyt("test_ml_surrogate_optimizer.py"),
             _pyt("test_ai_methods_comparison.py", extra=["-m", "comparison", "-s"]),
         ],
     },

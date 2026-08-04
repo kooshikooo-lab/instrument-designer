@@ -1,3 +1,33 @@
+# JAX Resonator Sketch — saved idea (code preserved for later testing)
+
+**Status: IDEA ONLY — code removed from `backend/experiments/` on 2026-08-04
+because it was UNTESTED and imported by nothing.** This file preserves the full
+source for a future session that wants to try JAX-autodiff differentiable
+Helmholtz shunt elements. Do NOT port it back into `backend/` without a plan to
+test and wire it (see `docs/AI_CONSTITUTION.md` Law 8 / `docs/CODING_STANDARDS.md`).
+
+## Original docstring (context)
+
+The original sketch (formerly `backend/experiments/jax_resonator_sketch.py`)
+was written for the project's JAX optimizer branch. Its stated motivation:
+
+- The JAX branch's known limitation is that it cannot differentiate with
+  respect to hole positions/diameters because they are baked into a static
+  action chain at trace time.
+- A resonator defined purely algebraically (no Python-level branching on the
+  frequency array, no scipy calls) traces cleanly and is differentiable
+  end-to-end with respect to every geometric parameter (`V`, `neck_length`,
+  `neck_radius` become ordinary JAX tracers).
+- Use `jax.grad` / `jax.value_and_grad` directly instead of finite
+  differences, which should sidestep the PAVA-plateau and slow-serial
+  finite-difference issues from the `two_phase_optimizer` work.
+
+It mirrored `metamaterial_elements.helmholtz_shunt_matrix` line-for-line
+(same formulas, same variable names), which HAS been tested.
+
+## Preserved source
+
+```python
 """
 JAX-autodiff version of the Helmholtz shunt element, for use in the
 project's existing JAX optimizer branch.
@@ -90,3 +120,21 @@ def reactance_at_target(V, neck_length, neck_radius, f_target):
 # jax.numpy (jnp.matmul / the @ operator both trace fine), and jax.grad
 # will differentiate through the ENTIRE chain automatically -- true
 # adjoint-equivalent gradients, no finite differences, no PAVA plateau.
+```
+
+## Why it was scrapped
+
+- UNTESTED (flagged in its own docstring); nothing imported it.
+- No call site in any solver, optimizer, test, or experiment runner.
+- It duplicated `metamaterial_elements.helmholtz_shunt_matrix` physics in a
+  second form (Law 3: never duplicate) without a consumer to justify it.
+
+## How to bring it back later
+
+1. Recreate `backend/experiments/jax_resonator_sketch.py` from the source above.
+2. Add a real consumer or test (e.g., wire into the JAX optimizer branch's
+   differentiation path, or a unit test asserting
+   `helmholtz_shunt_matrix_jax == metamaterial_elements.helmholtz_shunt_matrix`
+   numerically for the tested case).
+3. Add to `docs/TEST_MATRIX.md` and the pytest whitelist, then re-run the
+   compliance checks (`scripts/toolcheck.py`, `docs/COMPLIANCE_CHECK.md`).

@@ -63,7 +63,7 @@ Scheduled cadence (Task Scheduler): **daily 02:00 low tier**, **weekly Sunday 03
 - **Tier:** low · **Pass:** import OK, eval completes.
 
 ### comparison — AI/ML optimization families
-- **Medium (on-demand):** `pytest tests/comparison/test_ml_surrogate_optimizer.py` (two-phase ML surrogate optimizer) and `pytest tests/comparison/test_ai_methods_comparison.py -m comparison -s` (head-to-head: Bayesian, neural surrogate, RL, gradient-free).
+- **Medium (on-demand):** `pytest tests/comparison/test_ai_methods_comparison.py -m comparison -s` (head-to-head: Bayesian, neural surrogate, RL, gradient-free).
 - **Tier:** medium · **Pass:** all families converge within sanity bound; report table prints.
 
 ### unconventional — bore-shape benchmark
@@ -80,13 +80,14 @@ Scheduled cadence (Task Scheduler): **daily 02:00 low tier**, **weekly Sunday 03
 
 `tests/diagnose_*.py`, `debug_*.py`, `compare_*.py`, `refine_*.py` are manual debugging
 tools — they are **not** part of the matrix (many hang or need arguments). Use them
-interactively only. `pytest` collects only the 7 files listed above (26 tests).
+interactively only. `pytest` collects only the whitelisted files in `pyproject.toml`
+(`[tool.pytest.ini_options] python_files`, 11 files).
 
 ## Current baseline
 
 | Run | Result |
 |---|---|
-| `pytest tests/` | 26 passed (2026-08-01) |
+| `pytest tests/` | 114 passed (2026-08-04) |
 | `run_tests.py` (5 parts) | all return codes 0 (2026-08-01) |
 | Unconventional benchmark | ALL PASSED, 0.0–15.8¢ RMS (2026-08-01) |
 | chalumier design sweep | 5/6 timeout, 1/6 CLI parse fail (2026-08-01) — follow-up open |
