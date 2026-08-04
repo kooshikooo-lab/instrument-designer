@@ -173,6 +173,45 @@ def test_flute_with_holes():
     print("  PASS\n")
 
 
+def test_numba_resonance_phase_matches_python():
+    """Numba fast path must produce bit-identical phases to pure Python."""
+    import random
+    from backend.tmm_acoustics import _NUMBA_ENABLED
+    from backend.tmm_numba import build_action_arrays, numba_resonance_phase
+
+    if not _NUMBA_ENABLED:
+        import pytest
+        pytest.skip("numba not available")
+
+    rng = random.Random(1234)
+    max_diff = 0.0
+    for _ in range(8):
+        n_holes = rng.randint(3, 8)
+        radii = np.linspace(3.0, 7.5, rng.randint(30, 60))
+        hp = sorted(rng.sample(range(40, 290), n_holes))
+        inst = tmm_instrument_from_radii(
+            radii_mm=radii,
+            bore_length_mm=300.0,
+            hole_positions_mm=hp,
+            hole_diameters_mm=[rng.uniform(5, 9) for _ in hp],
+            hole_lengths_mm=[rng.uniform(3, 5) for _ in hp],
+            cone_step=rng.choice([0.3, 0.5, 1.0]),
+            closed_top=rng.choice([True, False]),
+        )
+        assert inst._action_arrays is not None, "numba arrays not built"
+        types, p1, p2, p3, p4, p5 = inst._action_arrays
+        for _ in range(6):
+            fg = [rng.choice([Hole.OPEN, Hole.CLOSED]) for _ in range(n_holes)]
+            mask = np.array([1 if f == Hole.OPEN else 0 for f in fg], dtype=np.int32)
+            for wl in (250.0, 320.0, 400.0, 500.0, 620.0):
+                py = inst.resonance_phase(wl, fg)
+                nb = numba_resonance_phase(
+                    types, p1, p2, p3, p4, p5, mask, wl, closed_top=inst.closed_top
+                )
+                max_diff = max(max_diff, abs(py - nb))
+    assert max_diff == 0.0, f"numba phase mismatch: max diff {max_diff}"
+
+
 def test_speed_benchmark():
     """Benchmark: TMM vs OpenWInD evaluation speed."""
     print("=" * 60)

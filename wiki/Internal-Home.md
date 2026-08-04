@@ -14,7 +14,7 @@
 ### Reference
 - [[Internal-Instruments]] — 91 instruments, naming conventions, benchmark results
 - [[Internal-Branches]] — Branch comparison, algorithms, merge status
-- [[Internal-Research]] — Papers, books, repos, databases (indexed by topic)
+- [[Internal-Research]] — Research hub (topic pages: Acoustics, Optimization, Measurement, Perception, Resources, Metamaterials, AI)
 - [[Internal-Conventions]] — Code style, testing, commit messages
 - [[Internal-Known-Issues]] — Bugs, design decisions, tech debt
 

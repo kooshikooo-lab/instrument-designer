@@ -9,131 +9,241 @@
 
 ## Goal
 
-- Converge both machines on `main`: settle laptop's reconciliation decisions (speed-of-sound 346100, 5-stage `sequential_refined`), then run research/spectral API work (librosa, OpenWInD, free compute, Gemini multimodal) and scope a `backend/spectral` validation module.
-- Overnight autonomous run (Dask benchmark, unconventional shapes, WAV inverse design, analytical cross-check) **completed**. Next: Phase 2G surrogate training (Kaggle) on the laptop, spectral module design, Gemini integration.
-- Tools must be **integrated into a pipeline**, never just installed and forgotten (recurring problem — see "Tool adoption rule" below). The tool registry guard is now built and live.
-- **Metamaterial low-clarinet optimization** (laptop, 2026-08-03): built `backend/optimization/metamaterial_optimizer.py` with DE global + L-BFGS-B refinement tuning 5 design knobs (f0, spacing, neck_r, neck_l, start_frac). Composite cost balances fundamental accuracy, 12th intonation, stopband coverage, and cavity volume. Results across 6 low clarinets: fundamental error <0.01 Hz, 12th deviation improved from +75 to +97 cents sharp to -4.1 to -8.0 cents (nearly perfect!), stopband coverage 3-5x wider, cavity volume reduced 30-50%. Key insight: metamaterials are much more effective with long bores (the long-bore low clarinets benefit most). Delivered: `scripts/benchmark_metamaterial_optimization.py`, results JSON in `test_output/`.
+- Consolidate the acoustic-metamaterials research (Claude + Kimi exports + web
+  research) into `docs/RESEARCH_acoustic_metamaterials.md` (reference doc) and the
+  internal wiki, restructured into **one page per major topic** with the
+  metamaterials page organized **by instrument category** and per specific
+  instrument (low clarinets the deepest dive). **DONE, on `main`.**
+- Land the numba-accelerated TMM resonance-phase fast path (laptop's
+  `np.floor/arctan/tan/pi` fix) on `main` behind a feature flag. **DONE, on `main`.**
+- Port the Claude metamaterial artifacts into `backend/experiments/` (user
+  authorized porting when present). **DONE, on `main`** — `string_metamaterial.py`,
+  `brass_scaffold.py`, `metamaterial_elements.py`, `folded_bore_elements.py`, all
+  reproducing documented outputs exactly.
+- Standing items from prior sessions (not this session's work): `backend/spectral`
+  design awaits user approval; laptop Phase 2G surrogate work lives on
+  `kalles-main-branch`.
+- Standing directive: tools must be **integrated into a pipeline**, never just
+  installed and forgotten (tool registry guard is live).
+- User's fallback instruction: if no task is assigned, do something **safe** (no
+  architecture changes, no law-breaking, no deletion, no merging).
 
 ## Constraints & Preferences
 
-- **Direct-to-main only**, no PRs/side branches (explicit user correction after `fix/speed-of-sound-346100` detour).
-- Coordination via `scripts/team_chat.py` on Discussion #23 (Step 0 protocol per AGENTS.md); never relay through the human.
-- User wants **phone-call immediacy**: messages read/responded to immediately — human "totally superior" at noticing notifications; "too much adhd to notice notifications" is why we built a watcher.
-- `AUDIT:` for provisional commits; `GOVERNANCE-UPDATE` for commits touching `docs/CONSTRAINTS_AND_PREFERENCES.md`.
-- Don't commit regenerable artifacts (`.lnk`, `*.json5`, `*_benchmark_results.json`, `validation_results/*.json`, `test_output/unconventional/*.json`, `.gitmodules`).
-- Branch cleanup desired: leftover branches "could lead to issues, confused agents before, especially if I switch models."
-- **Tool adoption rule**: installing a tool is NOT a step — integration is. A tool only leaves the registry as "adopted" when it has a real call site in a pipeline stage or a test. Anything abandoned goes to `docs/ARCHIVED_TOOLS.md` and gets uninstalled.
+- **Step 0 protocol**: `python scripts/team_chat.py sync` at session start AND
+  before stopping (Discussion #23); never relay through the human; channel is
+  canonical — decisions in #23 win. `TEAM_MACHINE` identifies the machine.
+- Constitution: Law 1 (no architecture damage), Law 3 (reuse existing bench
+  scripts), Law 7 (canonical `346100.0` mm/s speed of sound), Law 10 (stop/ask if
+  intent unclear — **don't speculate about what the user wants, just ask**).
+- `AUDIT:` for provisional commits; `GOVERNANCE-UPDATE` for commits touching
+  `docs/CONSTRAINTS_AND_PREFERENCES.md`; don't commit regenerable artifacts
+  (STLs, JSON dumps, benchmark logs, `bench_*.txt`).
+- Direct-to-main preference, but the numba landing used a landing branch + clean
+  port (laptop approved that plan explicitly).
+- Tool adoption rule: install + declare (`docs/TOOLS.md`) + import + whitelisted
+  test; guard = `tests/test_tool_registry.py` + `scripts/toolcheck.py`.
+- Laptop's `team_chat.py` protocol fixes (cursor, watch-stale-save, sync-launch)
+  are on `kalles-main-branch`, **not yet on `main`** — landing them is the
+  laptop's call, do not merge unilaterally.
 
 ## Progress
 
 ### Done
-- **Speed-of-sound fix on main**: committed `3ce892e` (`backend/physics/losses.py:96` → 346100.0; test constants lines 110/155/164); worktree `..\instrument-designer-port` on `main`.
-- **Decisions posted** (#23 comment 17867637): (1) 346100 everywhere; (2) decommission standalone 5-stage `sequential_refined` (`jax_optimizer.refine_sequential` canonical).
-- **Follow-up posted** (#23 comment 17867660): fix-on-main notice; `_followup_msg.md` removed.
-- **Branch cleanup**: deleted locally `port/benchmarking-clean`, `experiment/cadquery-stl`, `fix/team-chat-communication`; deleted on origin `experiment/cadquery-stl`, `fix/team-chat-communication`, `port/main-2026-08-01-v2`, `refactor/clean-architecture`. `git fetch --prune` removed 7 stale tracking refs. Kept (NOT merged): `benchmarking-experiments`, `kalles-main-branch`, `experiment/unconventional-shapes`, `experiment/ai-tier1-review`, `feature/dask-jvm-chalumier-compliance`, `port/main-2026-08-01`.
-- **Watcher built**: `scripts/team_watch.ps1` (background, polls 3s via `team_chat.py sync --json`, toast + exclamation sound on other-machine messages, writes `scripts/.team_inbox.md`, logs `scripts/.team_watch.log`); `team_chat.py watch` hardened with `--timeout`/`_print_new`/`is_other_machine`.
-- **Laptop status check posted** (#23 comment 17867701): explicit "fully unblocked — confirm and proceed" nudge.
-- **Laptop reply** (#23, 04:53Z): both decisions received/applied on `kalles-main-branch`; pushed `211f98b..3175b01` (includes kalles/main merge `0732868`, pyproject dedupe `dccb604`, speed-of-sound merge `3175b01`); full suite **84 passed**; resumes **Phase 2F laptop-only ~2K sample generation** via `scripts/generate_surrogate_data.py`.
-- **Laptop Phase 2F start** (04:55Z): plan = adapt `scripts/generate_surrogate_data.py`, restrict to laptop workers, reduce batch size, persist samples to disk, then Phase 2G surrogate training.
-- **Acknowledgment posted** (#23 comment 17867731): push verified (14 ahead / 0 behind), Phase 2F approved.
-- **Desktop `main` verified green**: `pytest tests/ -q` → **26 passed** in 25.69s (sympy Keefe-loss suite green).
-- **API/spectral search completed**: librosa (CQT/pyin; 0.11.0 installed), scipy.signal (Welch/find_peaks), sounddevice (0.5.5 installed), spectrum, OpenWInD (bore reconstruction), calcimpy, GNN surrogate paper (arXiv:2412.16817), torchlibrosa.
-- **Free compute + multimodal search completed**: Colab ~15-30 GPU-hr/wk, Kaggle ~30 GPU-hr/wk (best free fit for Phase 2G), HF ZeroGPU small, Lightning 80/hr-mo, GCP $300 credits, SageMaker Lab closing to new users Jul 30 2026; Gemini free tier strongest multimodal (audio/images/video/PDF, Flash ~10 RPM/250 RPD), Groq, OpenRouter multimodals, Qwen2.5-VL/LLaVA/InternVL open-weight. Repo already uses OpenRouter (`prompt_builder.py`/`ai_assistant.py`/`stl_verifier.py`) + Ollama; **Gemini NOT integrated** (only in chat-log).
-- **Compute research posted** (#23 comment 17867767): free-compute + Gemini multimodal findings.
-- **Boot-sequence fix committed**: `f5ae5ed` (BOOT_STATE.md + AGENTS.md pointer) and `ca67ce7` (watcher commit — previously uncommitted, at risk of loss).
-- **Mid-session context-loss protocol** (`3125d5b`, GOVERNANCE-UPDATE): AGENTS.md now says stop-and-re-read after compaction; boot FINAL CHECK requires BOOT_STATE.md update before session ends.
-- **Overnight run (user asleep) — all complete**:
-  - Dask cluster verified live (8 workers, `tcp://100.100.66.117:8786`); `benchmark_dask.py` defaulted to stale `100.69.113.41:8786` (0 workers) — patched via `scripts/_run_benchmark_live.py`.
-  - **Main Dask benchmark: 12/12 pass <3c RMS, 4.09× speedup** (298.8s → 73.0s, 8 workers).
-  - **Unconventional shapes: ALL PASSED** (10/10 bore types → STL; optimizations: exponential 0.0c, spiral 0.04c, parabolic 1.2c, stepped 1.9c, ridged 5.4c, bessel 7.0c, cylindrical 15.8c).
-  - **WAV inverse design**: `backend/inverse_design.py` extracted from kalles-main-branch; **fixed `1.0/round_trip` amplification bug** (used `round_trip` directly); Tier 1 f0 recovery +3.9c/−4.5c, Tier 3 cost 0.064; Tier 2 blocked (generative_agent not on main).
-  - **botorch installed + declared** (was phantom — imported by `bi_objective_bo.py`, never in pyproject). gpytorch dep added.
-  - **Analytical cross-check**: constant 0.66r end correction, worst error 0.04c / 72 cases; new test `tests/test_analytical_pipes.py` (73 tests).
-  - **Tool registry built**: `scripts/toolcheck.py` + `tests/test_tool_registry.py` guard + `docs/TOOLS.md`; new extras `cad` (cadquery/build123d/vtk/trimesh) and `bench` (dask[distributed]/psutil/cma); **PHANTOM deps now empty**.
-  - **Desktop suite: 26 → 113 passed** (added inverse_design 9, surrogate 4, analytical pipes 73, tool registry 1). OpenWind standalone cross-check: 3 passed.
-  - Commits pushed: `b3e41a2` (WAV + tests) → `a9aa7c6` (analytical pipes) → `ea6fe6a` (tool registry). Full results posted to #23 (comment 17867933).
-  - **Phase 2G decisions posted** (#23 comment 17867858): target contract APPROVED; direction = **Kaggle** (`train_surrogate.py --epochs 200 --batch 256`, upload samples_2000_seed42.csv).
-  - **Metamaterial low-clarinet family (laptop, 2026-08-03)**:
-    - New shared module `backend/metamaterial_low_clarinets.py` — `LOW_CLARINETS` (5 members: bass 1211.3×25, contra_alto Eb 1600×32, contra_bass Bb 1900×38, octocontra_alto EEb 2200×42, octocontrabass BBB 2600×48; `extension_target_hz` = Bb1 58.27 for bass, 0.8×c/(4L) for the plain family), plus helpers: `make_low_clarinet`, `all_closed_fingers`, `analytic_f1`, `cavity_volume_for_f0`, `hr_f0`, `make_hr_segment`, `fundamental`, `registers`, `stopband_bounds`, `tune_f0_to_fundamental` (L2), `explicit_hr_array`, `tune_f0_to_fundamental_l1` (L1).
-    - **Physics verified**: HR array near the closed end acts as distributed compliance → lengthens the tube → all-closed note drops at fixed physical length; f0 tuned *above* the kept register notes. **Key finding**: Level 2 (homogenized) **under-estimates** extension vs Level 1 (explicit array) under strong loading (43–47% rel. error at f0/base=4; 1.4–4% at f0/base=12–20) → L2 is fast-conservative, final designs must be L1-refined.
-    - **Test batch** `tests/test_metamaterial_low_clarinets.py` — 37 passed (parity, conservative guarantee f1_L1 < f1_L2, all-family target tuning, stopband hygiene between reg2 and reg3, monotonic extension). CAD smoke tests `tests/test_metamaterial_stl_export.py` — 3 passed (importorskip cadquery).
-    - **Benchmark** `scripts/benchmark_metamaterial_low_clarinets.py` — all 5 family members hit targets within ~±3 cents via L1 refinement: bass f0=572/30/4 → 58.24 Hz (Bb1; +75.0c 12th; stopband 572–1038, reg2/reg3 182.4/316.7), contra_alto 366/40/3 → 43.24, contra_bass 316/40/4 → 36.42, octocontra_alto 293/40/5 → 31.51, octocontrabass 252/40/6 → 26.59. 12th ratio distorted ~3.13–3.17 (+75…+96c) — documented trade-off. JSON to `test_output/metamaterial_low_clarinet_benchmark_results.json` (uncommitted).
-    - **STL exports** `scripts/export_metamaterial_low_clarinets_stl.py` → `designs/metamaterial_low_clarinets/` (regenerable, uncommitted): folded paperclip body + metamaterial resonator section per member; new `generate_metamaterial_section` in `backend/cadquery_export.py` (HR neck+cavity bulbs on a bore section, `closed_end` cap). Folded bodies compact ~2× (bass 1211 mm bore → 602 mm body).
-    - **Lint cleanup**: removed duplicate `contra_alto_clarinet_Eb`/`contra_bass_clarinet_Bb` INSTRUMENTS keys in `cadquery_export.py` (redundant pre-paperclip defs; last-wins already favored the paperclip versions) and dead `bend_start`; new files clean on `ruff --select E4,E7,E9,F`.
-  - **Graded / broadband HR arrays (laptop, 2026-08-03)**: `graded_hr_array` + `graded_f0_schedule` (linear/geometric f0 sweeps), `resonator_f0`, `array_resonance_band` in `backend/metamaterial_low_clarinets.py` (L1-only; L2 holds a single f0). Tests `tests/test_metamaterial_graded.py` — 11 passed (schedule/special-case/round-trip, monotonic ramp, low-register extension, broadband knob). Benchmark `scripts/benchmark_metamaterial_graded_arrays.py`: **graded array tuned to the same target (f1=58.25 Hz) achieves 931 Hz stopband coverage vs 466 Hz uniform — exactly 2.0× (rainbow trapping)**. Finding: coverage grows monotonically with f0_hi but f1 is NOT monotonic — extension depends on the resonance distribution, not just band width. JSON to `test_output/metamaterial_graded_array_results.json` (uncommitted).
-  - **12th-intonation trade-off (laptop, 2026-08-03)**: characterized the extension-depth vs register-2 distortion curve. Added `twelfth_deviation` helper; tests `tests/test_metamaterial_intonation.py` — 7 passed (plain 12th ~0c, monotonic in depth, family targets within +83..+96c band, shallow 0.9x keeps 12th <30c, extra low-f0 resonator breaks register 2). Benchmark `scripts/benchmark_metamaterial_intonation.py`: **remarkably self-similar family curve** — 12th = +2..7c @0.95x, +17..24c @0.90x, +44..53c @0.85x, +83..96c @0.80x, +143..159c @0.75x of plain f1. Placement/spacing don't fix it (intrinsic to near-closed-end compliance arrays); the curve is the design tool. JSON to `test_output/metamaterial_intonation_results.json` (uncommitted).
-  - **Register-2 squeak suppression demo (laptop, 2026-08-03)**: built a register-filter characterization around the bass clarinet's all-closed 12th (the register-2 squeak at ~212 Hz). An HR array whose stopband covers the squeak eliminates the resonance AT the squeak frequency: phase drops from 2.000 (plain) to <2.0 (arrayed) — the squeak no longer rings. L2 (homogenized) gives a fixed ~0.15 margin; L1 (explicit) reaches ~0.43 margin when f0 is tuned 0.7–0.9× the squeak (squeak inside the band). Design warning: tuning f0 exactly at the squeak gives ~zero suppression (blind spot). Trade-off: the compliance tail below f0 retunes the low register — f1 drops by −300..−600c (L2) or −1000..−1700c (L1). Tests `tests/test_metamaterial_register_suppression.py` — 6 passed. Benchmark `scripts/benchmark_metamaterial_register_suppression.py`: phase sweep shows L1 flattening at ~1.5 across the band; design sweep & trade-off curve quantified. JSON to `test_output/metamaterial_register_suppression_results.json` (uncommitted).
-  - **Soprano-clarinet metamaterial demo (laptop, 2026-08-03)**: demonstrated family generality on a Bb soprano clarinet (600 mm × 15 mm bore). Register-2 squeak at 429 Hz suppressed by the same stopband physics: L2 margin ~0.15, L1 margin ~0.43 (f0=0.85× squeak), blind spot at f0=1.0×. Phase sweep shows L1 flattening at ~1.6 across the band (430 Hz). Trade-off curve: suppression margin ~0.43 with f1 shift −1120..−1650c. Benchmark `scripts/benchmark_metamaterial_soprano.py`. JSON to `test_output/metamaterial_soprano_demo_results.json` (uncommitted).
+- **Laptop confirmation on #23** (2026-08-03T01:41:04Z): verified desktop's
+  `593e149` already contains the numba fix; laptop's holding branch
+  `fix/tmm-medium-numba` obsolete and dropped; **114 passed** on laptop too;
+  approved the landing plan (keep main's numba-free fallback, land feature-flagged
+  wiring non-AUDIT, don't merge either copilot branch's pure-Python refactor).
+- **TMM numba landing on `main`** (commit `32d4c9f`): new `backend/tmm_numba.py`
+  (pure `np.*` inside `@njit`, no `import math`, no circular `Hole` import);
+  3 hunks into `backend/tmm_acoustics.py` (`TMM_USE_NUMBA` env flag, lossless-only
+  `_action_arrays` precompute in `__init__`, int32-mask fast path in
+  `resonance_phase`); `perf = ["numba>=0.60"]` extra in `pyproject.toml`;
+  `docs/TOOLS.md` declaration (toolcheck PASS); parity test
+  `test_numba_resonance_phase_matches_python()` in `tests/test_tmm.py`.
+  Verified on `32d4c9f`: 540 wired cases max diff **0.0**; `find_resonance`
+  ~6.4x, standalone `resonance_phase` ~9.8x; full whitelisted suite **114 passed**
+  (126.9s); `TMM_USE_NUMBA=0` fallback identical (2.355755).
+- **Wiki restructure** (commit `5c7529f`): `wiki/Internal-Research.md` rewritten
+  as a hub index; new topic pages `Internal-Research-Acoustics.md`,
+  `Internal-Research-Optimization.md`, `Internal-Research-Measurement.md`,
+  `Internal-Research-Perception.md`, `Internal-Research-Resources.md`,
+  `Internal-Research-Metamaterials.md` (organized by instrument category:
+  percussion §4, low-clarinet deep dive §5 contrabass Bb/contra-alto Eb/straight
+  bass/bass-in-A/folded, guitar §6, low sax §7, bowed/piano §8, standard
+  woodwinds §9, brass §10, lamellophones §11, TMM integration §12, references
+  §13). Renamed `wiki/Internal-Metamaterials.md` → `wiki/Internal-Research-Metamaterials.md`;
+  updated `wiki/Internal-Home.md` and `docs/WIKI-INDEX.md`.
+- **Metamaterials reference doc committed** (in `5c7529f`):
+  `docs/RESEARCH_acoustic_metamaterials.md` — Claude + Kimi exports merged
+  (Kimi §2.4: cross-category ranking, folded-geometry advantage, within-family
+  low-woodwind ranking, bore verdict, bass-clarinet-in-A timbre-revival idea)
+  + web-verified references.
+- **Wiki cross-link fixes** (commit `b42b5bf`, this session's safe task): 7 broken
+  `[[...]]` links fixed in `Home.md`/`FAQ.md`/`Getting-Started.md`/
+  `3D-Printing-Guide.md` (targets `Internal-Home`, `Internal-Branches`,
+  `Internal-Optimization`, `Internal-Research-Measurement`, incl. anchor fix
+   `#Metric Standardization (2026-07-25)`). Validation script: **77 links, 0 broken**
+   (code-span content excluded). Pushed `32d4c9f..b42b5bf` → `main`.
+- **Claude artifact ports** (this session): `string_metamaterial.py` (commit
+  `91b0df8`), then `brass_scaffold.py` + `metamaterial_elements.py` +
+  `folded_bore_elements.py` + doc/wiki updates + toolcheck fix (commit `cf7e625`),
+  all pushed. Verified exact reproductions: string band gaps (rigid
+  `(1580.0,4183.3),(4768.6,8000.0)`; local `(921.1,2925.6),(4183.8,5918.5)`);
+  brass open peaks 684.5/715.6/846.2, 1-3 combo 705.5/736.1/838.3/888.4
+  (838.3 Hz = −16.2c), 4cm³/24.9mm resonator → 852.2 Hz (+12.2c); folded
+  low-clarinet −12.8c bass / −22.9c contra-alto / −27.8c contrabass + rigid-HR
+  feasibility table (contrabass fundamental unreachable below V=100). Design
+  finding: rigid HRs suit upper partials/formants; `effective_density_locally_resonant`
+  liner for fundamentals. Captured in `docs/RESEARCH_acoustic_metamaterials.md`
+  §7 (new) + Appendix A/B + `wiki/Internal-Research-Metamaterials.md` §5.8/§10/§12.2/§12.3.
+- **toolcheck guard fix** (commit `cf7e625`): `scripts/toolcheck.py` `_is_local`
+  now resolves sibling modules nested under local roots (e.g.
+  `backend/experiments/brass_scaffold.py` imported bare by another experiment) —
+  no longer misreported as PHANTOM. Guard PASS (29 imported, 0 phantom);
+  `tests/test_tool_registry.py` passes.
+- **Laptop metamaterial integration merged to `main`** (this session): pulled
+  `kalles-main-branch` (`cc5b447`–`fbbd1b8`, `3d318dc`) into working tree;
+  merged numba fast path from `main` (`32d4c9f`) into laptop's `tmm_acoustics.py`
+  (adds `_NUMBA_ENABLED`, `_action_arrays`, numba fast path for lossless
+  instruments without metamaterials). **All 114 tests pass** (incl. 74 metamaterial
+  tests: `test_metamaterial.py` 13, `test_metamaterial_low_clarinets.py` 36,
+  `test_metamaterial_graded.py` 11, `test_metamaterial_intonation.py` 8;
+  `test_numba_resonance_phase_matches_python` passes). Toolcheck PASS (29
+  imported, 0 phantom).
 
 ### In Progress
-- **Metamaterial implementation (laptop, 2026-08-03)**: research + Level-1/Level-2 implementation landed in `backend/tmm_acoustics.py`. Added `MetamaterialSideBranch` (HR side branch, Level 1 — branch phase from shunt admittance, junction3-reuse) and `MetamaterialSegment` (homogenized effective-medium segment, Level 2 — distributed-shunt stopband model, Dell/Krynkin/Horoshenkov Applied Acoustics 2021). Wired into `TMMInstrument` via optional `meta_slots`/`metamaterial_segments` constructor args + `pipe_meta`/`meta_branch` actions in the phase walk; **defaults keep behavior bit-identical** (verified). `tmm_instrument_from_radii` forwards the new args. Tests: `tests/test_metamaterial.py` (**13 passed**). Full suite: **186 passed** (incl. metamaterial), pre-existing `test_loss_integration.py` failure reproduced on baseline (unrelated). Research doc: `chat-logs/2026-08-03-metamaterial-implementation-research.md`. Plan + results posted to #23 (comment 17875181 + follow-up). **DONE** — followed by the low-clarinet family work (see Done). Level 3 (membrane liner) deferred. Numba fast path unaffected (lossless-only; metamaterial segments are Python-walk only for now).
-- **FEM cross-check (laptop, 2026-08-03)**: built 3D duct+HR Helmholtz transmission model with gmsh + scikit-fem. Found transmission dip at ~1145 Hz vs TMM L1 f0=1318 Hz (~13% error). TMM's default end correction (1.45r) overestimates resonance for this geometry. Infrastructure delivered: `scripts/benchmark_metamaterial_fem_crosscheck.py`, `tests/test_metamaterial_fem_crosscheck.py`, `fem` extra in pyproject, toolcheck clean. **DONE**.
-- **Phase 2G/2H (laptop)**: surrogate trained on mixed 10K (best val 0.685; tail-weighted 0.660). Phase 2H CLOSED — standalone surrogate-BO not viable (0/20 top-20 elite overlap, unconstrained search → invalid geometry); **hybrid warm-start validated** (surrogate ranks → `refine_sequential` finishes: 8/10 reach 0¢ vs 5/10 random). Awaiting desktop direction on Kaggle GPU run vs warm-start-only.
-- **TMM medium branch testing (laptop)**: `perf/tmm-medium-refactor-copilot` cross-check posted to #23 (comment 17874801). Confirmed: pure-Python medium ~+19% slower than main (matches desktop); numba `import math`-in-njit crash on py3.14/numba 0.66 CONFIRMED + FIXED (np.floor/arctan/tan replace math.*; numba now bit-identical to Python, 480 cases max diff 0.0e+00); **corrected finding: wiring numba into `find_resonance` = ~5.5-6.3x speedup** (my earlier 0.94x was a perf_counter instrumentation artifact). Medium suite **114 passed**. **RESOLVED**: desktop independently wired the numba fast path into `tmm_acoustics.py` (`TMM_USE_NUMBA` flag, lossless-only, bit-identical) on `perf/tmm-medium-refactor-copilot` as AUDIT `593e149` + `84bd566`; laptop verified locally (114 passed) and confirmed their commit already contains the np.* fix — no redundant push made; desktop to land feature-flagged numba wiring onto `main` (non-AUDIT), copilot branch refactors NOT to be merged.
-- **Team-channel protocol debug (user-reported: reply sat unread while laptop "waited")**: root cause = background watcher was dead (no `.team_watch.log`/`.team_inbox.md`) + stopped without final `sync`. Fixed 3 real bugs in `scripts/team_chat.py`: (1) `post_comment` silently advanced read cursor past in-flight other-machine replies — now advances only to own comment (URL-id match) and never past unread others, prints NOTE to sync; (2) `cmd_watch` stale-save (local cursor advanced, old state saved); (3) `cmd_sync` mislabeled own posts + `team_watch.ps1` fragile body-regex filter (now uses JSON `other` flag). Commits `45ddcb2`, `591c384`. **Watcher restarted detached with toast+sound (PID 11152).**
-- **Spectral research post**: the draft `scripts/_research_msg.md` (librosa/OpenWInD/scipy/GNN) is gone (never committed). The spectral API findings live in BOOT_STATE Done + #23 comment 17867767; fold into the next spectral update instead of re-staging.
+- None — this session's work is complete and pushed.
 
 ### Blocked
-- **Spectral module design** (laptop, 2026-08-03): implemented `backend/spectral/` with five modules — `loader.py` (WAV loading via scipy.io.wavfile), `spectrum.py` (librosa CQT + scipy.signal.welch), `f0.py` (librosa pYIN + autocorrelation fallback), `metrics.py` (reuses `backend.metrics` for cents/RMS), `targets.py` (reuses `backend.target_frequencies`). Synthetic-only tests: 19 passed. Dependencies declared in `pyproject.toml` `spectral` extra (`librosa>=0.11`, `sounddevice>=0.5`). `toolcheck` PASS. Awaiting user approval before integration.
-- Inverse-design Tier 2 (`design_from_sound` full pipeline): `generative_agent`, `instrument_knowledge`, `spline_bore` not on `main` (ADR: PLANNED).
+- Standing (not this session): `backend/spectral` implementation awaits user
+  approval of `docs/DESIGN_spectral.md` (3 open questions). Inverse-design Tier 2
+  blocked on `generative_agent`/`instrument_knowledge`/`spline_bore` not on `main`.
 
 ## Key Decisions
 
-- Speed-of-sound **346100 mm/s canonical** everywhere; 5-stage `sequential_refined` **decommissioned** — `jax_optimizer.refine_sequential` authoritative; standalone copy survives only on `kalles-main-branch` as A/B reference.
-- Branch cleanup: delete only branches fully merged into `origin/main`; leave unmerged (potential work loss).
-- Messaging model: OS-level toast watcher handles notification (human is better at noticing) + bounded foreground `watch` prints into chat when I listen; background daemon never decides/responds unattended.
-- Spectral module: synthetic-only tests for now, no mic/recording integration; reuse `metrics.py`/`target_frequencies.py` (import, never modify — single source of truth).
-- Restart session after powershell command in compacted laptop message (nudged; laptop ack'd coordination is on-channel).
-- **Tool registry solution** (BUILT — commit `ea6fe6a`, guard live): `docs/TOOLS.md` manifest + `scripts/toolcheck.py` (installed vs declared vs imported across live pipeline) + `tests/test_tool_registry.py` pytest guard that fails on undeclared third-party imports. Adoption rule now enforced: install + declare + import + whitelisted test. New pyproject extras: `cad`, `bench`, `surrogate` (+gpytorch). PHANTOM = empty.
-- **Boot-state persistence** (user: "boot sequence is gone. Again." — fixed): `docs/session-logs/BOOT_STATE.md` is the versioned, reloadable session snapshot; AGENTS.md Step 0 points at it. Update at end of every session.
+- Land wired numba onto `main` as a clean **port** (landing branch from
+  `origin/main`, two commits), **not** a merge of the copilot branches; the
+  pure-Python path stays the authoritative fallback (Law 1); laptop confirmed the
+  pure-Python refactors were ~+15–20% slower and agreed not to merge them.
+- Wiki restructure: **one page per major topic** (hub + Acoustics/Optimization/
+  Measurement/Perception/Resources/Metamaterials), user-selected over finer or
+  coarser grouping; metamaterials page by instrument category with per-instrument
+  subsections, low clarinets deepest dive (user-requested).
+- Research scope: reference doc + TMM-integration evaluation, **not** code
+  porting; all metamaterial implementation ideas marked future-work. Repo
+  integration mapping: Helmholtz side branch via `backend/core/network.py`
+  `Port`/`NodeType` (new `HELMHOLTZ` node) feeding `junction2_reply_phase`/
+  `junction3_reply_phase`; band-gap metrics from `backend/tone_hole_corrections.py`
+  geometry; Piva/Gower/Abrahams formulas for resonator-distribution design; numba
+  fast path is lossless-only so lossy resonator elements stay pure-Python or
+  extend the njit function.
+- This session: user asked for a task suggestion or, if none given, a **safe**
+  fallback action — chose docs-only wiki cross-link repair (no architecture
+  change, no law risk, no deletion, no merge).
 
 ## Next Steps
 
-1. **Metamaterial follow-ups** (low-clarinet family + graded arrays + 12th trade-off + register-suppression demo + soprano demo done 2026-08-03): (a) ~~L2-vs-L1 quantitative parity sweep~~ DONE; (b) ~~FEM cross-check~~ DONE (~13% error, documented); (c) ~~expose HR design knobs to optimizer/surrogate~~ DONE — `backend/optimization/metamaterial_optimizer.py` with DE+L-BFGS-B, 5 knobs tuned across 6 instruments; (d) optional L3 membrane liner. ~~Graded/broadband HR arrays~~ DONE (931 Hz vs 466 Hz coverage, 2.0×). ~~12th-ratio intonation~~ DONE as quantified family design curve. ~~Register-suppression demo~~ DONE. ~~Soprano-clarinet metamaterial demo~~ DONE. FEM cross-check infrastructure delivered. **Optimization results**: fundamental error <0.01 Hz across all 6 instruments, 12th deviation improved from +75..+97c sharp to -4.1..-8.0c (nearly perfect!), stopband coverage 3-5× wider, cavity volume reduced 30-50%. Key insight: metamaterials much more effective with long bores.
-2. Monitor #23 for desktop's response on Phase 2H close-out: Kaggle GPU surrogate run vs treat surrogate as warm-start-only. Verify laptop push `b067afc` credibility.
-3. TMM numba wiring: on desktop's reconcile, verify feature-flagged wiring lands on `main` (non-AUDIT); keep `main`'s `tmm_acoustics.py` as numba-free fallback. Copilot branch refactors stay unmerged.
-4. Present `backend/spectral` design for user approval — IMPLEMENTED (19 tests pass), awaiting approval.
-5. Wire Gemini free Flash into `ai_assistant.py` as second provider (multimodal audio/image for spectral + STL verification).
-6. Update `docs/ARCHIVED_TOOLS.md` for genuinely forgotten packages (FORGOTTEN list in toolcheck) — informational only, no auto-uninstall.
-7. Keep tool registry current: re-run `python scripts/toolcheck.py` after any dependency change.
+1. Standing: present `backend/spectral` design (`docs/DESIGN_spectral.md`) for
+   user approval when the user is available.
+2. Monitor `kalles-main-branch` for laptop's `team_chat.py` fixes landing on
+   `main` (laptop's call) and for Phase 2G updates; laptop may want the L2-vs-L1
+   parity sweep now that `main` has the ported experiment scripts.
+3. Optional user-verification: folded/low-clarinet notes wording in
+   `docs/RESEARCH_acoustic_metamaterials.md` §7 / wiki §5.8.
+4. **ML optimization integration** (future): add ML-based optimization methods
+   (e.g., Bayesian optimization, neural surrogates, gradient-free methods) to
+   complement the existing two-phase optimizer (`backend/two_phase_optimizer.py`).
+   Timing TBD — consider whether to optimize the physics pipeline further first
+   (loss models, viscothermal accuracy) or proceed in parallel.
 
 ## Critical Context
 
-- **Sync**: `origin/main` = `404f123` (desktop advanced it with parallel metamaterial ports: `string_metamaterial.py` `91b0df8`, brass/metamaterial_elements/folded_bore `cf7e625`, laptop-metamaterial tracking note `80a4435`). **This session's laptop metamaterial low-clarinet work is on `kalles-main-branch`** (4 commits, HEAD `fbbd1b8`, pushed 3d318dc..fbbd1b8) — the established laptop working branch the desktop tracks and merges; desktop's 80a4435 documents that it is tracking laptop metamaterial on kalles-main-branch.
-- **`origin/main` log (this clone after fetch)**: … → `b42b5bf` (wiki cross-links) → `e8780d7` (BOOT_STATE snapshot) → `80a4435` (note laptop metamaterial 3d318dc on kalles) → `91b0df8` (string_metamaterial port) → `cf7e625` (brass/metamaterial_elements/folded_bore port) → `404f123` (BOOT_STATE + toolcheck fix). NOTE: laptop's metamaterial work (3d318dc + low-clarinet family) will need merge/conflict review against desktop's parallel `string_metamaterial.py` / `folded_bore` ports on main (per AGENTS.md merge-conflict protocol: prefer main's structure where main intentionally refactored).
-- **Laptop `kalles-main-branch` HEAD**: `e8b02d3` (AUDIT: metamaterial optimizer + spectral module + FEM cross-check) on top of `f5bcbb3`; pushed to origin. Earlier laptop-only work also ahead: speed-of-sound merge `3175b01`, Phase 2F AUDIT generation `5409846`, inverse-design merge `c2eb6aa`, tool-registry merge `9460e77`, mixed sampling `d5550db`, botorch-API fixes `77dd2d6`. Laptop metamaterial test suite = **89 passed** (metamaterial + low-clarinets + graded + intonation + subcontrabass + STL + register-suppression).
-- **TMM perf branches**: `perf/tmm-medium-refactor-copilot` (a6c5ace, laptop-tested, numba fix in local branch `fix/tmm-medium-numba` a37a621 NOT pushed), `perf/tmm-refactor-copilot` (3ba475b, desktop benchmarking). `origin/main` = `ae38527`.
-- Desktop worktree `..\instrument-designer-port` on `main`; original repo `C:\Users\Admin\Desktop\instrument-designer` on `benchmarking-experiments` (untouched).
-- Dask live cluster = `tcp://100.100.66.117:8786` (8 workers); `benchmark_dask.py` default scheduler `100.69.113.41:8786` is stale/empty — use `_run_benchmark_live.py`.
-- Background watcher running (toast+sound, `scripts/.team_watch.log`); `git fetch` stderr lines print as "RemoteException" on Windows but are non-fatal.
-- Desktop test suite = **113 passed**; laptop = **172 passed**.
-- Python 3.14; pip warns of invalid distributions (`~emakein`, `~nstrument-designer`, `~yside6-addons`) — harmless.
-- ADR-010 (folded geometry) appended to `docs/ARCHITECTURE_DECISIONS.md`; ADR numbering 001–009 pre-existing.
-- Laptop uses identity `big-pickle`; laptop branch-local calls still import 5-stage `sequential_refined` (`generative_agent.py`, `benchmark_unconventional_shapes.py:98`).
-- Regenerable artifacts deliberately uncommitted: `test_output/inverse_design/`, `test_output/unconventional/`, `backend/benchmark_results.json`, all benchmark logs, `test_output/metamaterial_*_results.json`.
+- **`main` HEAD = `0c794fd`** (BOOT_STATE update) over `5d5c5a0` (Appendix B)
+  over `401e889` (BOOT_STATE) over `cf7e625` (Claude artifact ports + doc/wiki +
+  toolcheck fix) over `91b0df8` (string port) over `80a4435`/`e8780d7` (BOOT_STATE)
+  over `b42b5bf` (wiki cross-link fixes) over `32d4c9f` (numba wiring) over
+  `5c7529f` (wiki restructure); `origin/main` = `0c794fd`.
+- Env: Windows, Python 3.14.6, numpy 2.4.6, numba 0.66.0, pytest 9.1.1, dask
+  2026.7.1, jax 0.11.0; **conda NOT on PATH** — use system Python +
+  `PYTHONPATH=<repo root>`; `tmmbench` env unavailable on desktop.
+- Untracked regenerable artifacts left uncommitted: `bench_main.txt`,
+  `bench_perf_tmm_medium.txt`, `bench_perf_tmm_refactor.txt`.
+- #23 stream: laptop confirmation (01:41:04Z) + laptop's three `team_chat.py`
+  bugfixes pushed to `kalles-main-branch` (`45ddcb2`, `591c384`, `827c051`).
+- **Laptop's low-clarinet metamaterial batch** — initially reported as "on main"
+  but actually on `kalles-main-branch` (laptop corrected 02:48Z): commits
+  `cc5b447` (family + STLs), `6a260d6` (graded arrays), `a4aed67` (12th-intonation
+  curve), `fbbd1b8` (subcontrabass) = 83 tests passed, now at
+  `origin/kalles-main-branch` = `fbbd1b8`. Physics: L2 homogenized under-estimates
+  vs L1 explicit array (43–47% rel. err. at f0/base=4, 1.4–4% at f0/base=12–20;
+  tests enforce f1_L1 < f1_L2); graded arrays give 2.0x stopband vs uniform at
+  same target; depth-vs-12th curve 0.95x→+2..7c … 0.80x→+83..96c … 0.75x→+143..159c.
+  Desktop can now run L2-vs-L1 parity sweep against ported `folded_bore_elements.py`
+  / `metamaterial_elements.py` (laptop offers to port their code to `backend/experiments/`
+  or adjust structure).
+- **Laptop's register-suppression + soprano demos** (04:20Z/04:34Z): two new
+  deliverables on `kalles-main-branch` (`478853c` → `b0a885d`):
+  1. **Register-2 squeak suppression** (bass clarinet): HR stopband over the
+     12th (~212 Hz) flattens phase margin at ~1.5 across 130–250 Hz; blind spot
+     at f0=squeak (zero margin); compliance tail drops f1 −300..−1700c.
+  2. **Soprano-clarinet demo** (600 mm × 15 mm): same physics at higher scale,
+     429 Hz squeak suppressed (L1 margin 0.428, L2 0.149); trade-off curve
+     f0/squeak 0.70–0.95 → margin ~0.43, f1 shift −1120..−1650c.
+  Total metamaterial test suite: **89 passed** (7 test files). L1/L2 machinery
+  generalizes across the full clarinet family (subcontrabass → soprano).
+- **Laptop implemented metamaterials** (`3d318dc` on `kalles-main-branch`,
+  186 passed, 02:06:45Z post): L1 `MetamaterialSideBranch` (Helmholtz side
+  branch via `junction3_reply_phase`), L2 `MetamaterialSegment` (Dell/Krynkin/
+  Horoshenkov effective-medium stopband), `TMMInstrument` `meta_slots`/
+  `metamaterial_segments` args, `tests/test_metamaterial.py` (13 tests), doc
+   `chat-logs/2026-08-03-metamaterial-implementation-research.md`. Desktop acked
+   (discussioncomment-17875306) and offered to run the L2-vs-L1 parity sweep.
+   **Not yet on `main`** — wiki §12 implementation items marked DONE on desktop's
+   port side; laptop's own implementation is on `kalles-main-branch`.
+- Research anchors (web-verified): Piva/Gower/Abrahams npj Acoustics 2:10 (2026)
+  random Helmholtz-resonator band gaps w/ effective-properties formulas;
+  Petersen/Kergomard et al. Acta Acustica 4:13 (2020) conical tonehole-lattice
+  cutoff; Bader et al. JASA 145:3086 (2019) neodymium-magnet ring drum
+  (~300–800 Hz); Bader Springer https://doi.org/10.1007/978-3-031-57892-2_16;
+  Lercari et al. MDPI Appl. Sci. 12:8619 (2022) guitar top-plate cavities;
+  Fischer et al. JASA 155(3_Suppl):A59 (2024) magnet-loaded guitar;
+  Khodabakhsh 2025 spiral-neck HR; Lucklum DAS|DAGA 2025 interconnected HR
+  lattice; Meier 2025 Materials & Design tunable phononic band gaps.
+- Bass-clarinet family facts (used in doc/wiki): ~150 cm bore, written Eb3 ≈
+  78 Hz, contrabass Bb ≈ 3 m tube doubled twice (hybrid cylindrical/conical,
+  sub-wavelength features ~10–30 cm), contra-alto Eb >1.7 m straightened (least
+  standardized), low-A bari-sax bell-length compromise, subcontrabass sax ≈
+  2.74 m / 28.6 kg / lowest G#0 ≈ 25.95 Hz, bass clarinet in A from Wagner's
+  *Lohengrin* (1848).
+- Repo canonical constants unchanged: `SPEED_OF_SOUND = 346100.0` mm/s in
+  `backend/tmm_acoustics.py` (Law 7 / chalumier parity).
+- Git identity `Admin <kooshikooo@gmail.com>`; `gh` authed as `kooshikooo-lab`.
+- Laptop identity `big-pickle`; desktop `TEAM_MACHINE=desktop`.
 
 ## Relevant Files
 
-- `scripts/team_watch.ps1` — background toast watcher (3s, no-toast/no-sound/log/inbox hooks); log `scripts/.team_watch.log`.
-- `scripts/team_chat.py` — sync/post/`--file`/`watch --timeout`/`sync --json`; state `scripts/.team_state.json`.
-- `scripts/.team_inbox.md` — inbox for landed messages.
-- `scripts/toolcheck.py` — tool registry checker (installed/declared/imported; use `importlib.metadata`).
-- `tests/test_tool_registry.py` — whitelisted guard; fails on undeclared third-party imports.
-- `docs/TOOLS.md` — tool registry manifest + adoption steps + current declarations.
-- `docs/ARCHIVED_TOOLS.md` — target for genuinely forgotten packages (informational).
-- `scripts/_overnight_results.md` — posted to #23 (comment 17867933), file can be removed.
-- `backend/inverse_design.py` — WAV→instrument pipeline (Tier 1 + Tier 3 work; Tier 2 blocked). `backend/benchmark_inverse_design.py` — WAV benchmark.
-- `tests/test_analytical_pipes.py` — TMM vs closed-form pipes (73 cases, 0.66r end correction).
-- `scripts/_run_benchmark_live.py` — patches `benchmark_dask.py` to the live scheduler address.
-- `backend/physics/losses.py:96` — `f = 346100.0 / lam_m` (was 343200).
-- `tests/test_sympy_validation.py` lines 110/155/164 — `C_BOUNDARY_MM_S = 346100.0`; 18 tests pass.
-- `tests/unit/test_basic.py` — unit test conventions (SPEED_OF_SOUND == 346100.0; fixture registry).
-- `backend/prompt_builder.py` + `ai_assistant.py` + `ai_advisor.py` — OpenRouter/Ollama LLM layer (Gemini wiring target).
-- `backend/stl_verifier.py` — OpenRouter vision call for STL verification (multimodal extension point).
-- `backend/metrics.py`, `backend/target_frequencies.py` — canonical metrics/targets the spectral module will reuse.
-- `scripts/generate_surrogate_data.py` — laptop's Phase 2F ~2K sample generation entry point (consume results for Phase 2G).
-- `backend/metamaterial_low_clarinets.py` — low-clarinet family specs + L1/L2 tuners/helpers (single source for tests, benchmark, STLs).
-- `tests/test_metamaterial_low_clarinets.py` (37), `tests/test_metamaterial_stl_export.py` (3, cadquery skip-guard).
-- `scripts/benchmark_metamaterial_low_clarinets.py` — baseline/knob-sweep/family-tuning/promising-model benchmark (writes `test_output/metamaterial_low_clarinet_benchmark_results.json`, uncommitted).
-- `scripts/export_metamaterial_low_clarinets_stl.py` — folded body + metamaterial-section STLs to `designs/metamaterial_low_clarinets/` (regenerable, uncommitted).
-- `backend/cadquery_export.py` — `generate_metamaterial_section` (HR neck+cavity bulb array on a bore section); `INSTRUMENTS` contra-alto/contra-bass duplicates removed.
+- `backend/tmm_acoustics.py` — numba wiring on `main` (env-flag block,
+  lossless-only `_action_arrays`, int32-mask fast path in `resonance_phase`).
+- `backend/tmm_numba.py` — **new on `main`** — `np.*` inside `@njit`, no
+  `import math`, no circular `Hole` import.
+- `pyproject.toml` / `docs/TOOLS.md` — `perf = ["numba>=0.60"]` extra + declaration.
+- `tests/test_tmm.py` — `test_numba_resonance_phase_matches_python()` parity test.
+- `docs/RESEARCH_acoustic_metamaterials.md` — Claude + Kimi + web research
+  reference doc (committed); §7 = ported-artifact numerical findings, §8 =
+  language/tooling.
+- `wiki/Internal-Research.md` — hub index; `wiki/Internal-Research-{Acoustics,
+  Optimization, Measurement, Perception, Resources, Metamaterials}.md` — topic
+  pages; `wiki/Internal-Home.md`, `docs/WIKI-INDEX.md` — updated.
+- `backend/experiments/` — ported Claude artifacts: `string_metamaterial.py`,
+  `brass_scaffold.py`, `metamaterial_elements.py`, `folded_bore_elements.py`
+  (all on `main`, exact reproductions verified; standalone `__main__` demos).
+- `scripts/toolcheck.py` — `_is_local` resolves nested sibling modules (guard fix).
+- `scripts/team_chat.py` + `scripts/.team_state.json` — Discussion #23 sync;
+  laptop's 3 bugfixes on `kalles-main-branch`.
+- `backend/core/network.py`, `backend/tone_hole_corrections.py`,
+  `backend/mouthpiece_models.py`, `backend/trumpet_acoustics.py` — metamaterial
+  integration points mapped in the research doc/wiki (future-work).
+- Standing: `docs/DESIGN_spectral.md` (awaiting approval), `docs/TOOLS.md`
+  (tool registry), `scripts/toolcheck.py`, `scripts/team_watch.ps1`.

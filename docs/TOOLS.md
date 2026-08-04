@@ -74,18 +74,10 @@ The registry is enforced automatically:
 | psutil | psutil | run_all_tests.py (guarded import) |
 | cma | cma | backend/experiments/ |
 
-### Extra: `spectral`
+### Extra: `perf`
 | pip package | import root | where used |
 |---|---|---|
-| librosa | librosa | CQT/pyin spectral analysis (`backend/spectral/`) |
-| sounddevice | sounddevice | live audio input (guarded import) |
-
-### Extra: `fem`
-| pip package | import root | where used |
-|---|---|---|
-| scikit-fem | skfem | FEM Helmholtz cross-check (`scripts/benchmark_metamaterial_fem_crosscheck.py`) |
-| gmsh | gmsh | 3D mesh generation for FEM cross-check |
-| meshio | meshio | mesh I/O bridge (gmsh → scikit-fem) |
+| numba | numba | backend/tmm_numba.py (guarded, TMM resonance fast path) |
 
 ### Extra: `freecad`
 | pip package | import root | where used |
