@@ -12,8 +12,8 @@
 - **NEW working branch: `opencode-instrument-designer`** (user-designated Open
   Code branch). Based on `origin/main` (`d663a43`); pushed to origin; PR **#62**
   open against `main` (import repair + numba restore + AI/ML-family port +
-  Step-3 reconciliation; 9 commits, MERGEABLE). Open Code stays on this
-  branch from 2026-08-04 onward.
+  Step-3 reconciliation + intonation pass standards; 11 commits, MERGEABLE).
+  Open Code stays on this branch from 2026-08-04 onward.
 - Consolidate the acoustic-metamaterials research (Claude + Kimi exports + web
   research) into `docs/RESEARCH_acoustic_metamaterials.md` (reference doc) and the
   internal wiki, restructured into **one page per major topic** with the
@@ -55,17 +55,27 @@
 ## Progress
 
 ### Done
-- **PR #62 = 9 commits, MERGEABLE** (2026-08-04): `56d0ec9` (import repair) +
+- **PR #62 = 11 commits, MERGEABLE** (2026-08-04): `56d0ec9` (import repair) +
   `0b6e9ad` (numba test guard) + `9e58f39` (BOOT_STATE) + `da8e8fc` (numba
   wiring restore) + `6870fde` (ML-surrogate + AI-family comparison port) +
   `6cbd47c` (PR report docs) + `2f275fe` (BOOT_STATE step-3) + `6a69c0d`
   (Step-3 reconciliation scripts) + `ebfeaf1` (scrap inferior ML-optimizer
-  duplicates per compliance audit). Full PR report: `docs/PR_REPORT.md` (all 4
-  open PRs #33/#58/#61/#62). Audit: low + medium tiers PASS, `pytest tests/`
-  **114 passed** (64.6s, matches laptop canonical), comparison 6 passed (44.6s;
-  Bayesian 64.9c / neural 34.7c / RL 26.2c / gradient-free 9.6c RMS),
-  `scripts/toolcheck.py` PASS. Posted to #23 (discussioncomment-17888679 +
-  17888921 + 17889948).
+  duplicates per compliance audit) + `9d98643` (PR docs update) + `1fca1b2`
+  (intonation pass tiers). Full PR report: `docs/PR_REPORT.md` (all 4 open
+  PRs #33/#58/#61/#62). Audit: low + medium tiers PASS, `pytest tests/`
+  **128 passed** (63.4s; +`tests/test_metrics.py` 14 tests), comparison
+  6 passed (44.7s; Bayesian 64.9c / neural 34.7c / RL 26.2c / gradient-free
+  9.6c RMS), `scripts/toolcheck.py` PASS.
+- **Intonation pass standards** (commit `1fca1b2`): canonical cents tiers in
+  `backend/metrics.py` (`INTONATION_TIERS`: sane 150c RMS; acceptable 10c/25c;
+  professional 5c/15c; unconventional 20c/40c; fixture 5c; cross-software 10c)
+  + two-stage acceptance `backend/verification.py` `verify_with_retries`
+  (screen at budget 1.0, doubled-budget retry before FAIL). Wired into the
+  AI/ML comparison suite, `backend/benchmark_unconventional_shapes.py`
+  (unconventional tier + intonation gate), `scripts/v2_validation_runner.py`,
+  `scripts/benchmark_v1_inria.py`. Rationale + sources:
+  `docs/PHYSICS_PRINCIPLES.md` "Intonation pass standards"; `tests/test_metrics.py`
+  (14 tests).
 - **Numba wiring restored** (commit `da8e8fc`): `7cae468` dropped it from
   `32d4c9f`; re-applied in `_prepare_phase` (precompute moved out of `__init__`
   so post-construction meta wiring is caught), gated on `_NUMBA_ENABLED` +
@@ -191,6 +201,11 @@
   `origin/main`, two commits), **not** a merge of the copilot branches; the
   pure-Python path stays the authoritative fallback (Law 1); laptop confirmed the
   pure-Python refactors were ~+15–20% slower and agreed not to merge them.
+- Intonation pass criteria: canonical tiers in `backend/metrics.py` +
+  `verify_with_retries` two-stage acceptance (screen → doubled-budget retry →
+  FAIL) so a short noisy run never scraps a design; unconventional shapes get a
+  looser 20¢ RMS / 40¢ max tier. Literature + rationale in
+  `docs/PHYSICS_PRINCIPLES.md` "Intonation pass standards".
 - Wiki restructure: **one page per major topic** (hub + Acoustics/Optimization/
   Measurement/Perception/Resources/Metamaterials), user-selected over finer or
   coarser grouping; metamaterials page by instrument category with per-instrument
@@ -209,7 +224,7 @@
 
 ## Next Steps
 
-1. **Stay on `opencode-instrument-designer`** (user directive). PR #62 (6 commits)
+1. **Stay on `opencode-instrument-designer`** (user directive). PR #62 (11 commits)
    is MERGEABLE and needs no external approval per user (properly audited +
    governance docs + compliance). Merge when ready.
 2. **Step 3 reconciliation**: port desktop-only files (72 per audit) — CadQuery
@@ -232,9 +247,10 @@
 
 - **`origin/main` = `d663a43`** (this lineage's main tip; BOOT_STATE — laptop
   register-suppression + soprano demos). `opencode-instrument-designer` =
-  `0b6e9ad` (`d663a43` + `56d0ec9` import fixes + `0b6e9ad` numba test guard),
-  PR #62 open. Note: this lineage is NOT the desktop's main lineage
-  (desktop `main` = `ae38527`; kalles-main-branch merged to `187b770`).
+  `1fca1b2` (`d663a43` + import fixes + numba restore + AI-family port + Step-3
+  + compliance scrap + intonation pass tiers), PR #62 open. Note: this lineage
+  is NOT the desktop's main lineage (desktop `main` = `ae38527`;
+  kalles-main-branch merged to `187b770`).
 - Env: Windows, Python 3.14.6, numpy 2.4.6, numba 0.66.0, pytest 9.1.1, dask
   2026.7.1, jax 0.11.0; **conda NOT on PATH** — use system Python +
   `PYTHONPATH=<repo root>`; `tmmbench` env unavailable on desktop.
@@ -298,6 +314,11 @@
   lossless-only `_action_arrays`, int32-mask fast path in `resonance_phase`).
 - `backend/tmm_numba.py` — **new on `main`** — `np.*` inside `@njit`, no
   `import math`, no circular `Hole` import.
+- `backend/metrics.py`, `backend/verification.py` — canonical intonation tiers
+  (`INTONATION_TIERS`, `intonation_passes`) + two-stage retry acceptance
+  (`verify_with_retries`); `tests/test_metrics.py` (14 tests);
+  `docs/PHYSICS_PRINCIPLES.md` "Intonation pass standards" (tier table +
+  sources).
 - `pyproject.toml` / `docs/TOOLS.md` — `perf = ["numba>=0.60"]` extra + declaration.
 - `tests/test_tmm.py` — `test_numba_resonance_phase_matches_python()` parity test.
 - `docs/RESEARCH_acoustic_metamaterials.md` — Claude + Kimi + web research

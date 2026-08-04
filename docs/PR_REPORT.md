@@ -11,7 +11,7 @@ reviewer) can understand each PR without re-reading the full diff.
 
 | PR | Head branch | Title | State | Mergeable | Commits | ± |
 |----|-------------|-------|-------|-----------|---------|---|
-| [#62](https://github.com/kooshikooo-lab/instrument-designer/pull/62) | `opencode-instrument-designer` | fix: repair broken `tmm_acoustics` imports across 45 files + numba test guard + Step-3 desktop reconciliation | OPEN | MERGEABLE | 9 | +2673/−78 |
+| [#62](https://github.com/kooshikooo-lab/instrument-designer/pull/62) | `opencode-instrument-designer` | fix: repair broken `tmm_acoustics` imports across 45 files + numba test guard + Step-3 desktop reconciliation | OPEN | MERGEABLE | 11 | +3188/−90 |
 | [#61](https://github.com/kooshikooo-lab/instrument-designer/pull/61) | `mai-code-1-flash-test-branch` | refactor: shared optimization problem metrics | OPEN | MERGEABLE | 1 | +102/−29 |
 | [#58](https://github.com/kooshikooo-lab/instrument-designer/pull/58) | `feature/dask-jvm-chalumier-compliance` | feat: chalumier JVM heap cap + Dask distributed design scripts | OPEN | UNKNOWN* | 1 | +357/−4 |
 | [#33](https://github.com/kooshikooo-lab/instrument-designer/pull/33) | `experiment/unconventional-shapes` | fix: resolve 12 compliance violations per AI Constitution | OPEN | UNKNOWN* | 9 | +7954/−272 |
@@ -140,12 +140,14 @@ here, then scrapped in Commit 9 — see that section).**
 RL 26.2¢ / gradient-free 9.6¢ RMS on the shared Bb-clarinet task. Full default
 pytest collection: **114 passed** (matches the laptop's canonical baseline).
 
-### PR-level audit (all 5 commits)
+### PR-level audit
 
 - `python -m compileall backend scripts tests woodwind_designer` — OK
 - `scripts/run_all_tests.py --tier low --force` — all PASS
 - `scripts/run_all_tests.py --tier medium --force` — all PASS
-- Default `pytest tests/` — **114 passed** (64.6 s)
+- Default `pytest tests/` — **128 passed** (63.4 s) — includes new
+  `tests/test_metrics.py` (14 tests)
+- Comparison suite — **6 passed** (44.7 s)
 - Governance guard hooks active; no protected governance file touched
 - `test_output/testing/` left untracked (regenerable artifact)
 
@@ -180,6 +182,43 @@ corrected to the laptop's canonical **114 passed**).
 
 **Verified.** `python -m compileall` OK; `scripts/toolcheck.py` PASS; default
 `pytest tests/` **114 passed** (64.6 s); comparison suite **6 passed** (44.6 s).
+
+### Commit 10 — `1fca1b2` feat: canonical intonation pass tiers + two-stage retry acceptance
+
+Per the user's directive that the testing criteria must not scrap a design on a
+short, noisy run, this commit codifies the audit's intonation standards into one
+canonical source and adds a screen-then-extended-budget acceptance policy.
+
+**Canonical constants** (`backend/metrics.py`): literature-grounded
+`INTONATION_TIERS` + `intonation_passes()` —
+`sane` 150¢ RMS (screening), `acceptable` 10¢ RMS / 25¢ max, `professional`
+5¢ RMS / 15¢ max, `unconventional` 20¢ RMS / 40¢ max (novel/folded/metamaterial
+shapes), plus `FIXTURE_TOLERANCE_CENTS` 5¢ (v1 Inria fixtures) and
+`CROSS_SOFTWARE_MEAN_ABS_CENTS` 10¢ (v2 TMM-vs-chalumier). Rationale + sources
+in `docs/PHYSICS_PRINCIPLES.md` ("Intonation pass standards"). RMS is the
+primary gate; the per-note max catches register-break outliers.
+
+**Two-stage acceptance** (`backend/verification.py`, new): `verify_with_retries()`
+runs at budget scale 1.0; a miss retries with a doubled budget (2.0×, up to
+`attempts`) before FAIL — so optimizer noise on a short run no longer scraps a
+design. Consumers map the scale onto their own knobs.
+
+**Wired consumers:**
+- `tests/comparison/test_ai_methods_comparison.py` — canonical `sane` tier +
+  `verify_with_retries` per family (failing screen → doubled budget once);
+  `ai_methods_benchmark.py` exposes `max_evals` on `run_gradient_free`.
+- `backend/benchmark_unconventional_shapes.py` — `unconventional` tier on both
+  the pipeline (scale-fit gate) and Part-2 optimizations (doubled-budget retry,
+  `pop_size`/`n_generations` scaled); overall = pipeline AND intonation.
+- `scripts/v2_validation_runner.py` — per-fixture `intonation_ok`/`passed`
+  (acceptable tier), PASS/FAIL output with the 10¢ limit.
+- `scripts/benchmark_v1_inria.py` — per-geometry `passed` at `FIXTURE_TOLERANCE_CENTS`
+  (5¢ mean), PASS/FAIL in the summary.
+
+**Verified.** `pytest tests/test_metrics.py` — 14 passed; full default
+`pytest tests/` — **128 passed** (63.4 s); comparison suite — **6 passed**
+(44.7 s, unchanged family RMS: Bayesian 64.9¢ / neural 34.7¢ / RL 26.2¢ /
+gradient-free 9.6¢); toolcheck PASS; imports of all modified scripts OK.
 
 ---
 
