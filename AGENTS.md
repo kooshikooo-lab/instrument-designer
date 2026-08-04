@@ -19,6 +19,12 @@ Also reload the live session state from
 goal, progress, next steps, decisions, and sync context. It survives context
 drops; update it at the end of every session.
 
+Also read `docs/REMINDERS.md` — the standing compliance checklist plus the list
+of pending cross-machine threads. It is a living file both machines edit; check
+it at session start right after `team_chat.py sync`. If any pending thread is
+waiting on the other machine and has gone stale (no reply for a while), post a
+brief nudge to #23 so requests never silently drop.
+
 **Mid-session context loss:** if your context has been compacted, summarized,
 or you notice you can no longer recall this session's earlier details, STOP and
 RE-READ this file plus `docs/session-logs/BOOT_STATE.md` before doing anything
@@ -61,6 +67,10 @@ sequence without authorization — re-read the file instead of editing it.
 ## Environment
 
 - Repo: `kooshikooo-lab/instrument-designer` (remote: `origin`)
+- Branch naming: `opencode/<app>/<machine>` — per-machine integration branches
+  are `opencode/main/desktop` and `opencode/main/laptop` (keep divergence from
+  `main` minimal); test ideas on side branches `opencode/<idea>/<machine>`, then
+  merge or scrap.
 - Channel: Discussion #23 (GraphQL id `D_kwDOTOg0Rs4AoFZO`)
 - Git identity: `Admin <kooshikooo@gmail.com>`; `gh` authed as `kooshikooo-lab`.
 - Set `TEAM_MACHINE` to your machine name so sync output is self-identifying.
