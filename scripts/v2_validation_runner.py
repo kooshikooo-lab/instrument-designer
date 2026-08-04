@@ -21,6 +21,7 @@ from typing import Any, Dict, List, Optional
 import numpy as np
 
 from backend.fixtures import FIXTURE_REGISTRY, FixtureInstrument, load_all_fixtures
+from backend.metrics import CROSS_SOFTWARE_MEAN_ABS_CENTS, intonation_passes
 from backend.tmm_acoustics import SPEED_OF_SOUND, tmm_instrument_from_radii
 from scripts.compare_chalumier import (
     build_inst_from_chalumier,
@@ -79,13 +80,16 @@ class V2ValidationRunner:
                 return {"success": False, "error": "No valid resonances found"}
 
             median = float(np.median(cents))
+            mean_abs = float(np.mean(np.abs(cents)))
+            max_abs = float(np.max(np.abs(cents)))
             return {
                 "success": True,
-                "mean_abs_cents": float(np.mean(np.abs(cents))),
+                "mean_abs_cents": mean_abs,
                 "median_cents": median,
                 "evenness_cents": float(np.sqrt(np.mean((cents - median) ** 2))),
                 "offset_cents": median,
-                "max_abs_cents": float(np.max(np.abs(cents))),
+                "max_abs_cents": max_abs,
+                "intonation_ok": intonation_passes(mean_abs, max_abs, "acceptable"),
                 "n_notes": int(cents.size),
                 "n_total": len(fingerings),
             }
@@ -135,12 +139,15 @@ class V2ValidationRunner:
                 return {"success": False, "error": "No resonances computed"}
 
             errors_arr = np.array(errors)
+            mean_abs = float(np.mean(errors_arr))
+            max_abs = float(np.max(errors_arr))
             return {
                 "success": True,
-                "mean_abs_cents": float(np.mean(errors_arr)),
+                "mean_abs_cents": mean_abs,
                 "median_cents": float(np.median(errors_arr)),
                 "evenness_cents": float(np.std(errors_arr)),
-                "max_abs_cents": float(np.max(errors_arr)),
+                "max_abs_cents": max_abs,
+                "intonation_ok": intonation_passes(mean_abs, max_abs, "acceptable"),
                 "runtime_seconds": time.time() - t0,
             }
         except Exception as e:
@@ -165,9 +172,9 @@ class V2ValidationRunner:
                 "fixture_source": fixture.source,
             })
             self.results.append(result)
-            ok = "OK" if result["success"] else "FAIL"
+            ok = "PASS" if (result["success"] and result.get("intonation_ok")) else "FAIL"
             err = result.get("mean_abs_cents", 0)
-            print(f"  TMM: {ok} mean_error={err:.2f}c")
+            print(f"  TMM: {ok} mean_error={err:.2f}c (limit {CROSS_SOFTWARE_MEAN_ABS_CENTS:.0f}c)")
         return results
 
     def generate_report(self) -> str:
@@ -186,13 +193,13 @@ class V2ValidationRunner:
             "DETAILED RESULTS:",
         ]
         for r in self.results:
-            if r.get("success"):
+            if r.get("success") and r.get("intonation_ok"):
                 err = f"{r.get('mean_abs_cents', 0):.2f}c"
                 lines.append(f"  OK   {r['instrument']} ({r.get('mode', 'N/A')}): {err}")
             else:
                 lines.append(
                     f"  FAIL {r['instrument']} ({r.get('mode', 'N/A')}): "
-                    f"{r.get('error', 'Unknown')}"
+                    f"{r.get('error', 'intonation outside acceptable tier')}"
                 )
         return "\n".join(lines)
 

@@ -321,10 +321,14 @@ def _run_de(maxiter=15, popsize=8, seed=42):
     return float(res.fun), int(res.nfev)
 
 
-def run_gradient_free(seed=42):
-    """Run CMA-ES, PSO and DE; report the family best with per-method detail."""
+def run_gradient_free(seed=42, max_evals=600):
+    """Run CMA-ES, PSO and DE; report the family best with per-method detail.
+
+    ``max_evals`` scales the CMA-ES budget (the family-best driver) so the
+    acceptance retry policy can run this family longer on a failed screen.
+    """
     t0 = time.time()
-    cma_rms, cma_evals = _run_cma_es(seed=seed)
+    cma_rms, cma_evals = _run_cma_es(max_evals=max_evals, seed=seed)
     pso_rms, pso_evals = _run_pso(seed=seed)
     de_rms, de_evals = _run_de(seed=seed)
     best = min(cma_rms, pso_rms, de_rms)

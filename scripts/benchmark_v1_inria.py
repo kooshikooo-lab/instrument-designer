@@ -27,6 +27,7 @@ import numpy as np
 from distributed import Client, LocalCluster
 
 from backend.cadquery_export import export_stl, generate_variable_bore_instrument
+from backend.metrics import FIXTURE_TOLERANCE_CENTS
 from backend.tmm_acoustics import SPEED_OF_SOUND, tmm_instrument_from_radii
 
 # Benchmark geometries from the Inria 2026 paper.
@@ -192,6 +193,7 @@ def run_single_benchmark(args: Tuple[str, Dict[str, Any]]) -> Dict[str, Any]:
         except Exception as e:
             stl_error = str(e)
 
+        mean_error_cents = float(np.mean(errors)) if errors else None
         return {
             "geometry": geometry["instrument_name"],
             "description": geometry["description"],
@@ -202,9 +204,13 @@ def run_single_benchmark(args: Tuple[str, Dict[str, Any]]) -> Dict[str, Any]:
             "theoretical_frequencies": theo_freqs.tolist(),
             "tmm_frequencies": tmm_freqs.tolist(),
             "errors_cents": [float(e) for e in errors],
-            "mean_error_cents": float(np.mean(errors)) if errors else None,
+            "mean_error_cents": mean_error_cents,
             "max_error_cents": float(np.max(errors)) if errors else None,
             "n_modes_found": len(tmm_freqs),
+            "passed": (
+                mean_error_cents is not None
+                and mean_error_cents <= FIXTURE_TOLERANCE_CENTS
+            ),
             "time_s": round(time.time() - t0, 3),
             "stl_file": f"benchmarks/{geom_name}.stl" if stl_created else None,
             "stl_error": stl_error if not stl_created else None,
@@ -307,6 +313,8 @@ def main() -> None:
                     "total_geometries": len(BENCHMARK_GEOMETRIES),
                     "total_time_s": total_time,
                     "successful": sum(1 for r in results if r.get("status") == "ok"),
+                    "passed": sum(1 for r in results if r.get("passed")),
+                    "fixture_tolerance_cents": FIXTURE_TOLERANCE_CENTS,
                 },
             }, f, indent=2)
         print(f"\nResults saved to: {out_path}")
@@ -329,8 +337,9 @@ def main() -> None:
         print(f"  Successful: {ok_count}/{len(results)}")
         for r in results:
             if r.get("status") == "ok":
+                tag = "PASS" if r.get("passed") else "FAIL"
                 print(
-                    f"  {r['geometry']:50s} mean={r.get('mean_error_cents') or 0.0:7.2f}c "
+                    f"  {r['geometry']:50s} {tag} mean={r.get('mean_error_cents') or 0.0:7.2f}c "
                     f"max={r.get('max_error_cents') or 0.0:7.2f}c modes={r.get('n_modes_found')} "
                     f"stl={r.get('stl_file')}"
                 )

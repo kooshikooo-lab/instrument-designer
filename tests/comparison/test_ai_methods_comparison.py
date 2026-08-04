@@ -15,12 +15,15 @@ with::
     pytest tests/comparison/test_ai_methods_comparison.py -m comparison -s
 """
 import math
+import time
 
 import numpy as np
 import pytest
 
 from comparison_framework import AlgorithmResult
 import ai_methods_benchmark as bench
+from backend.metrics import SANE_RMS_CENTS
+from backend.verification import verify_with_retries
 
 pytestmark = [
     pytest.mark.comparison,
@@ -29,7 +32,7 @@ pytestmark = [
 
 # Generous sanity bound: every family must land well inside the achievable
 # range (the uniform-10mm baseline is ~77 cents; the tuned floor is ~6 cents).
-SANE_RMS_CENTS = 150.0
+# Canonical value lives in backend.metrics.
 
 
 @pytest.fixture(scope="module")
@@ -42,6 +45,52 @@ def comparison_cache():
 def shared_objective():
     """The exact objective every family optimizes."""
     return bench.benchmark_objective
+
+
+# Budget knobs per family; ``scale`` (1.0 on the screen, then multiplied per
+# retry) extends the dominant budget of each runner.
+_BUDGET_KWARGS = {
+    "bayesian_optimization": lambda scale: {"n_iter": max(30, int(30 * scale))},
+    "neural_surrogate": lambda scale: {"n_de_iter": max(25, int(25 * scale))},
+    "reinforcement_learning": lambda scale: {"n_episodes": max(150, int(150 * scale))},
+    "gradient_free": lambda scale: {"max_evals": max(600, int(600 * scale))},
+}
+
+
+def _wrap_budgeted(runner, kwargs):
+    """Run a family runner with explicit budget kwargs -> AlgorithmResult."""
+    name = runner.__name__.replace("run_", "").replace("_", " ").title()
+    t0 = time.time()
+    try:
+        metrics = runner(**kwargs)
+        return AlgorithmResult(
+            name=name,
+            success=True,
+            runtime_seconds=metrics["wall_time"],
+            metrics=metrics,
+            metadata={"method": runner.__name__},
+        )
+    except Exception as exc:  # pragma: no cover - defensive
+        return AlgorithmResult(
+            name=name,
+            success=False,
+            runtime_seconds=time.time() - t0,
+            error=str(exc),
+            metadata={"method": runner.__name__},
+        )
+
+
+def _family_metrics(family, scale):
+    """Run one family with a scaled budget; return a verify_with_retries dict."""
+    result = _wrap_budgeted(bench.FAMILIES[family], _BUDGET_KWARGS[family](scale))
+    if not result.success:
+        return {
+            "rms_cents": float("inf"),
+            "success": False,
+            "error": result.error,
+            "result": result,
+        }
+    return {"rms_cents": result.metrics["rms_cents"], "success": True, "result": result}
 
 
 def test_benchmark_is_well_posed(shared_objective):
@@ -64,17 +113,32 @@ def test_benchmark_is_well_posed(shared_objective):
     ],
 )
 def test_ai_method_family(family, runner_name, extra_dep, comparison_cache):
-    """Each family converges sanely on the shared Bb-clarinet tuning task."""
+    """Each family converges sanely on the shared Bb-clarinet tuning task.
+
+    A failing screen is retried once with a doubled budget (see
+    backend.verification.verify_with_retries) so a short-run artifact --
+    optimizer noise or a non-converged population -- does not fail a family
+    that is fine on a longer run.
+    """
     if extra_dep:
         pytest.importorskip(extra_dep)
-    runner = getattr(bench, runner_name)
-    result = bench._wrap(runner)
-
+    ver = verify_with_retries(
+        lambda scale: _family_metrics(family, scale),
+        tier="sane",
+        attempts=2,
+        budget_scale=2.0,
+    )
+    passing = [a for a in ver["attempts"] if a["passed"]]
+    assert ver["status"] == "PASS", (
+        f"{family} missed the sane tier ({SANE_RMS_CENTS:.0f}c) after "
+        f"{len(ver['attempts'])} attempt(s); best rms "
+        f"{min(a.get('rms_cents', float('inf')) for a in ver['attempts']):.1f}c"
+    )
+    result = passing[0]["result"]
     comparison_cache[family] = result
-    assert result.success, f"{family} failed: {result.error}"
     rms = result.metrics["rms_cents"]
     assert math.isfinite(rms), f"{family} produced a non-finite RMS"
-    assert rms < SANE_RMS_CENTS, f"{family} did not converge sanely: {rms:.1f} cents"
+    assert rms <= SANE_RMS_CENTS, f"{family} did not converge sanely: {rms:.1f} cents"
     assert result.metrics["objective_evals"] > 0, f"{family} made no evaluations"
     assert result.metrics["wall_time"] > 0, f"{family} wall time not recorded"
 

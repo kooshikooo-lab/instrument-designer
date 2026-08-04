@@ -37,6 +37,10 @@ Scheduled cadence (Task Scheduler): **daily 02:00 low tier**, **weekly Sunday 03
 - **Smoke (optional, slow):** `tests/test_two_phase_quick.py` (known slow — capped timeout).
 - **Tier:** medium · **Pass:** phase-2 tests pass; quick smoke completes or times out cleanly.
 
+### metrics — canonical tuning-error metrics + intonation tiers
+- **Tests:** `tests/test_metrics.py` (14 tests) — `compute_metrics`/`rms_cents`/`cents_from_frequencies`, tier ordering, `intonation_passes` boundaries, and the screen-then-extended-budget acceptance policy (`verify_with_retries`).
+- **Tier:** low · **Pass:** all metric/tier tests pass.
+
 ### openwind — OpenWind FEM vs TMM validation
 - **Tests:** `tests/test_openwind_solver.py` (3 tests) — open-pipe register+1 convention, reed-pipe agreement, register vent.
 - **Tier:** medium · **Pass:** all agreement checks within tolerance.
@@ -64,10 +68,11 @@ Scheduled cadence (Task Scheduler): **daily 02:00 low tier**, **weekly Sunday 03
 
 ### comparison — AI/ML optimization families
 - **Medium (on-demand):** `pytest tests/comparison/test_ai_methods_comparison.py -m comparison -s` (head-to-head: Bayesian, neural surrogate, RL, gradient-free).
-- **Tier:** medium · **Pass:** all families converge within sanity bound; report table prints.
+- **Tier:** medium · **Pass:** every family meets the canonical `sane` intonation tier (150¢, `backend.metrics`); a failing screen is retried once with a doubled budget (`backend.verification.verify_with_retries`) before FAIL; report table prints.
 
 ### unconventional — bore-shape benchmark
 - **Heavy (on-demand):** `python backend/benchmark_unconventional_shapes.py` (serial) or `--dask` (remote cluster).
+- **Pass:** pipeline + all optimizations meet the `unconventional` tier (20¢ RMS, canonical in `backend.metrics`); optimization screens get a doubled-budget retry before FAIL.
 - **Status 2026-08-01:** ALL PASSED — 10/10 pipeline, 7/7 optimizations (0.0–15.8¢ RMS), serial + distributed (2 workers).
 
 ### pareto / full instrument suite — heavy sweeps
@@ -81,13 +86,13 @@ Scheduled cadence (Task Scheduler): **daily 02:00 low tier**, **weekly Sunday 03
 `tests/diagnose_*.py`, `debug_*.py`, `compare_*.py`, `refine_*.py` are manual debugging
 tools — they are **not** part of the matrix (many hang or need arguments). Use them
 interactively only. `pytest` collects only the whitelisted files in `pyproject.toml`
-(`[tool.pytest.ini_options] python_files`, 11 files).
+(`[tool.pytest.ini_options] python_files`, 12 files).
 
 ## Current baseline
 
 | Run | Result |
 |---|---|
-| `pytest tests/` | 114 passed (2026-08-04) |
+| `pytest tests/` | 128 passed (2026-08-04) |
 | `run_tests.py` (5 parts) | all return codes 0 (2026-08-01) |
 | Unconventional benchmark | ALL PASSED, 0.0–15.8¢ RMS (2026-08-01) |
 | chalumier design sweep | 5/6 timeout, 1/6 CLI parse fail (2026-08-01) — follow-up open |

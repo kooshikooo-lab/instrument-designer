@@ -66,6 +66,55 @@ The core TMM constant `346100.0` mm/s (346.1 m/s) corresponds to ≈ 24.4 °C, n
 - Fletcher & Rossing, "The Physics of Musical Instruments"
 - Campallotto et al., "Physical modeling of wind instruments" (OpenWInD)
 
+## Intonation Pass Standards
+
+Canonical cents thresholds live in `backend/metrics.py` (`INTONATION_TIERS`,
+`intonation_passes`); the two-stage acceptance policy lives in
+`backend/verification.py` (`verify_with_retries`). Consumers: the AI/ML
+comparison suite, `scripts/v2_validation_runner.py`,
+`scripts/benchmark_v1_inria.py`, `backend/benchmark_unconventional_shapes.py`.
+
+| Tier | RMS limit | Max per-note | Applies to |
+|---|---|---|---|
+| `sane` | 150¢ | — | screening only (uniform-10mm baseline ~77¢; tuned floor ~6¢) |
+| `acceptable` | 10¢ | 25¢ | conventional design acceptance |
+| `professional` | 5¢ | 15¢ | flagship quality |
+| `unconventional` | 20¢ | 40¢ | novel / folded / metamaterial shapes |
+| fixture | 5¢ (mean) | — | single-resonance physics fixtures (v1 Inria benchmark) |
+| cross-software | 10¢ (mean abs) | 25¢ | TMM vs chalumier agreement (v2 validation runner) |
+
+RMS is the primary gate; the per-note max catches register-break outliers that
+RMS alone masks (e.g. one bad register hole buried in an otherwise even scale).
+
+### Two-stage acceptance: screen, then extended budget
+
+`verify_with_retries` runs the optimization at budget scale 1.0 (the screen).
+If the result misses its tier, the check retries with a multiplied budget
+(default 2.0×, up to `attempts` runs) before declaring FAIL. Consumers map the
+budget scale onto their own knobs (DE generations, BO iterations, RL episodes,
+CMA evaluations). Rationale: optimizer results are noisy — a too-short run can
+look worse than the design actually is, and a design must not be scrapped on
+that artifact.
+
+### Unconventional shapes (looser tier)
+
+- Even conventional simulation-vs-measurement tops out near ~15¢ (2025
+  recorder impedance modeling, Bastien et al.); a 20¢ RMS bar still requires
+  better than that.
+- Free-form 3D-printed instruments accept deviations up to ~36¢ as fixable by
+  tuning (Printone); historical unconventional bores (serpent, ophicleide)
+  were accepted with notoriously loose intonation.
+- Real clarinet register twelfths run 20–30¢ wide (Dalmont et al.); our folded
+  low-clarinets land −12.8/−22.9/−27.8¢. The 20¢ RMS / 40¢ max bar keeps
+  results inside the band where notes still sound acceptably in tune.
+- Demonstrated: `benchmark_unconventional_shapes.py` passes 7/7 geometries at
+  0.0–15.8¢ RMS (2026-08-01).
+
+Sources: Selmer Paris R&D (accepts 10–20¢ peaks); woodwind practice (±20¢
+normal, >20–40¢ a problem); perception floors for trained listeners (1.7–5¢);
+general-population median discrimination ~14.5¢; Dalmont et al. clarinet
+twelfths; Bastien et al. 2025 recorder modeling; Printone papers.
+
 ## When Code Results Conflict with Physics
 1. Check the TMM walk direction matches chalumier
 2. Check the coordinate system (position 0 = bell)
