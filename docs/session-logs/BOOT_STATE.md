@@ -54,6 +54,27 @@
 ## Progress
 
 ### Done
+- **PR #62 = 6 commits, MERGEABLE** (2026-08-04): `d663a43` base + `56d0ec9`
+  (import repair) + `0b6e9ad` (numba test guard) + `9e58f39` (BOOT_STATE) +
+  `da8e8fc` (numba wiring restore) + `6870fde` (ML-surrogate port) + `6cbd47c`
+  (PR report docs). Full PR report: `docs/PR_REPORT.md` (all 4 open PRs #33/#58/#61/#62).
+  Audit: low + medium tiers PASS, `pytest tests/` **121 passed** (66.8s),
+  ML-surrogate 7 passed (5.5s), comparison 6 passed (47.7s; Bayesian 64.9c /
+  neural 34.7c / RL 26.2c / gradient-free 9.6c RMS). Posted to #23
+  (discussioncomment-17888679 + 17888921).
+- **Numba wiring restored** (commit `da8e8fc`): `7cae468` dropped it from
+  `32d4c9f`; re-applied in `_prepare_phase` (precompute moved out of `__init__`
+  so post-construction meta wiring is caught), gated on `_NUMBA_ENABLED` +
+  `loss_model is None` + no `pipe_meta`/`meta_branch`; int32 mask fast path;
+  6.66x, parity 0.0, `TMM_USE_NUMBA=0` verified; new
+  `test_meta_disables_numba_fast_path`. 79 TMM+metamaterial tests pass.
+- **ML-surrogate port** (commit `6870fde`): desktop's uncommitted pile now
+  versioned on this branch — `backend/ml_surrogate_optimizer.py`,
+  `backend/ml_optimizer_splitted.py` (fixed 2 latent desktop bugs: missing
+  `import time`, invalid dict key), `tests/comparison/*` (5 files),
+  `backend/experiments/{bore_builder,benchmark_and_optimize,jax_resonator_sketch}.py`;
+  `pyproject.toml` whitelist + `run_all_tests.py`/`TEST_MATRIX.md` new
+  `comparison` medium tier.
 - **opencode-instrument-designer branch** (2026-08-04): pushed `d663a43` +
   `56d0ec9` (fix: repair broken `tmm_acoustics` imports across 45 files / 50 files)
   + `0b6e9ad` (fix: numba parity test skip-guard). PR **#62** → `main`. Audit:
@@ -128,7 +149,10 @@
   imported, 0 phantom).
 
 ### In Progress
-- None — this session's work is complete and pushed.
+- Step 3 (reconciliation with desktop main/kalles): port desktop-only deltas
+  (CadQuery STL, Dask, `engine/routes/*` 8-file split, `UnconventionalBoreDesigner.tsx`,
+  `stl_library/*.lnk`, `archived_optimizers`, `.gitmodules`, `external_solvers.py`,
+  `validation_results`). 72 desktop-only files vs 59 opencode-only per audit.
 
 ### Blocked
 - Standing (not this session): `backend/spectral` implementation awaits user
@@ -159,12 +183,12 @@
 
 ## Next Steps
 
-1. **Stay on `opencode-instrument-designer`** (user directive). Get PR #62
-   reviewed/merged; track the other AI's review.
-2. **Restore the numba wiring** into `backend/tmm_acoustics.py` (dropped by
-   `7cae468`): re-apply `32d4c9f` fast path (`_NUMBA_ENABLED`, `_action_arrays`,
-   int32-mask `resonance_phase`) compatible with the metamaterial additions;
-   un-skip `test_numba_resonance_phase_matches_python`.
+1. **Stay on `opencode-instrument-designer`** (user directive). PR #62 (6 commits)
+   is MERGEABLE and needs no external approval per user (properly audited +
+   governance docs + compliance). Merge when ready.
+2. **Step 3 reconciliation**: port desktop-only files (72 per audit) — CadQuery
+   STL, Dask, routes split, STL library, archived optimizers, `.gitmodules`,
+   external solvers, validation results — at file level onto this branch.
 3. Standing: present `backend/spectral` design (`docs/DESIGN_spectral.md`) for
    user approval when the user is available.
 4. Monitor `kalles-main-branch` for laptop's `team_chat.py` fixes landing on
