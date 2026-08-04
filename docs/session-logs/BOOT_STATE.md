@@ -149,10 +149,16 @@
   imported, 0 phantom).
 
 ### In Progress
-- Step 3 (reconciliation with desktop main/kalles): port desktop-only deltas
-  (CadQuery STL, Dask, `engine/routes/*` 8-file split, `UnconventionalBoreDesigner.tsx`,
-  `stl_library/*.lnk`, `archived_optimizers`, `.gitmodules`, `external_solvers.py`,
-  `validation_results`). 72 desktop-only files vs 59 opencode-only per audit.
+- None — Step 3 (desktop reconciliation) **focused port done** this session:
+  ported + cleaned `scripts/v2_validation_runner.py` and
+  `scripts/benchmark_v1_inria.py` (moved from `backend/` to `scripts/` per
+  CODING_STANDARDS); dropped `external_solvers.py` (unused on desktop, duplicates
+  `backend/solvers/openwind_solver.py`/`impedance_solver.py`); skipped
+  `routes/*` package + `shared_state.py` (mutually-exclusive server architecture),
+  `UnconventionalBoreDesigner.tsx` (imports api.ts symbols absent here),
+  `.gitmodules`, `stl_library/*.lnk`, `validation_results/*`, `output-*`,
+  `archived_optimizers` (deleted per docs/ARCHIVED_OPTIMIZERS.md). Full
+  72-file categorization: `docs/PR_REPORT.md` §"Step 3".
 
 ### Blocked
 - Standing (not this session): `backend/spectral` implementation awaits user

@@ -11,7 +11,7 @@ reviewer) can understand each PR without re-reading the full diff.
 
 | PR | Head branch | Title | State | Mergeable | Commits | ± |
 |----|-------------|-------|-------|-----------|---------|---|
-| [#62](https://github.com/kooshikooo-lab/instrument-designer/pull/62) | `opencode-instrument-designer` | fix: repair broken `tmm_acoustics` imports across 45 files + numba test guard | OPEN | MERGEABLE | 5 | +2609/−75 |
+| [#62](https://github.com/kooshikooo-lab/instrument-designer/pull/62) | `opencode-instrument-designer` | fix: repair broken `tmm_acoustics` imports across 45 files + numba test guard + Step-3 desktop reconciliation | OPEN | MERGEABLE | 8 | +2700/−100 |
 | [#61](https://github.com/kooshikooo-lab/instrument-designer/pull/61) | `mai-code-1-flash-test-branch` | refactor: shared optimization problem metrics | OPEN | MERGEABLE | 1 | +102/−29 |
 | [#58](https://github.com/kooshikooo-lab/instrument-designer/pull/58) | `feature/dask-jvm-chalumier-compliance` | feat: chalumier JVM heap cap + Dask distributed design scripts | OPEN | UNKNOWN* | 1 | +357/−4 |
 | [#33](https://github.com/kooshikooo-lab/instrument-designer/pull/33) | `experiment/unconventional-shapes` | fix: resolve 12 compliance violations per AI Constitution | OPEN | UNKNOWN* | 9 | +7954/−272 |
@@ -156,6 +156,106 @@ the shared Bb-clarinet task. Full default pytest collection: **121 passed**.
 - Default `pytest tests/` — **121 passed** (66.8 s)
 - Governance guard hooks active; no protected governance file touched
 - `test_output/testing/` left untracked (regenerable artifact)
+
+### Commit 8 — Step 3: desktop reconciliation (focused port, architecture-clean)
+
+See the dedicated section below. Net effect: two scripts ported and cleaned to
+repo standards; no new duplicate solver classes; everything importable.
+
+---
+
+## Step 3 — Desktop reconciliation (focused port)
+
+**Decision (user, 2026-08-04).** Of the 72 desktop-only files, port only the
+genuinely-new useful work, then clean it to the opencode branch's strict
+architecture (CODING_STANDARDS.md + AI Constitution Laws 3/4/5). Everything
+else is deliberately skipped and logged below.
+
+### Ported + cleaned
+
+**`scripts/v2_validation_runner.py`** (V2 cross-software validation harness —
+compares our TMM against chalumier output on the shared fixtures in
+`backend/fixtures.py`).
+- Reuses the canonical `scripts/compare_chalumier.py` (`parse_json5`,
+  `parse_chal_fingerings`, `build_inst_from_chalumier`, `evaluate_inst`) and
+  `backend.tmm_acoustics` — no duplication.
+- Fixed desktop latent bugs: `raw`/`spec_path` NameErrors, `self.inst`/
+  `fixture.inst` AttributeErrors (undefined at runtime), a bare `except:`.
+- Cleaned: hand-rolled JSON5 regex parser → canonical `parse_json5`; removed
+  unused `sys`/`subprocess` imports, unused `HAVE_CHALUMIER/HAVE_DEMAKEIN/
+  HAVE_JAX` flags and dead `ValidationResult`/`ValidationReport` dataclasses
+  (results were plain dicts); type hints + NumPy docstrings; dead CLI modes
+  (`chalumier`/`demakein`/`jax`/`compare`, `--challenge`, `--instrument`) that
+  were stubs dropped from `--mode`; `--list` and `--output` kept.
+- Verified: imports; `run_our_tmm` runs on fixtures; `--list` works.
+
+**`scripts/benchmark_v1_inria.py`** (V1 INRIA 2026 pipe-impedance benchmark,
+Dask + TMM + optional STL export).
+- **Placement fixed**: was `backend/benchmark_v1_inria.py` on desktop → moved
+  to `scripts/` per CODING_STANDARDS ("`scripts/`: ALL utility/debug/benchmark
+  scripts"; `backend/` root is core source modules only).
+- Cleaned: removed `sys.path.insert` bootstrap; imports at top (was a mid-file
+  `import re`); one import per line; type hints + NumPy docstrings; removed
+  unused locals (`L`, `n_register`, `dt`, `c`); `add_to_instrument_library`
+  now streams the file and only reports (never edits `instruments.ts`).
+- **Physics fix (Law 4/5, PHYSICS_PRINCIPLES units)**: desktop formula used
+  `SPEED_OF_SOUND = 346100.0` (mm/s) against a bore length converted to cm,
+  an internal 10× unit mismatch that made every cents error ≈ 3986¢. Now both
+  the theoretical formulas and the `find_resonance` wavelength targets use mm
+  consistently. Sanity check: 180 mm closed-open cylinder f1 = 480.7 Hz,
+  matching the fixture's 480 Hz target exactly.
+- Verified: imports; `theoretical_frequencies` spot-check above.
+
+### Dropped after porting, and why
+
+- **`backend/solvers/external_solvers.py`** — *removed again*. It is unused on
+  the desktop (only self-references + one wiki line; no imports anywhere) and
+  duplicates the canonical solver layer that already exists here:
+  `backend/solvers/openwind_solver.py` (same class name `OpenWindSolver`,
+  typed, physics-correct, wired into `backend/solvers/__init__.py`),
+  `backend/solvers/tmm_solver.py`, and the `ImpedanceSolver` abstraction in
+  `backend/solvers/impedance_solver.py`. Importing it would put a duplicate,
+  cruder `OpenWindSolver` in the same package — a direct Law-3/Law-4 violation.
+  The chalumier integration it sketched is already covered by
+  `woodwind_designer/engine/chalumier_wrapper.py` + `scripts/benchmark_chalumier_dask.py`.
+- **`web/src/components/UnconventionalBoreDesigner.tsx`** — skipped. It imports
+  `getBoreTypes`/`generateBoreProfile`/`optimizeBoreShape`/`exportVariableBoreStl`/
+  `BoreTypeMeta`/`BoreProfilePointMM` from `web/src/utils/api.ts`, none of which
+  exist on this branch (and its endpoints live in the desktop's non-ported
+  `routes/` package). Porting it would commit uncompilable code.
+
+### Routes divergence (not ported, documented)
+
+Desktop splits the FastAPI server into `woodwind_designer/engine/routes/` (8
+files) + `shared_state.py` (`set_app`, 996-line `design_server.py` with a richer
+`OptimizerSettings` — strategy/enable_timbre/target_accuracy_cents/n_workers).
+This branch consolidated everything into the 728-line
+`woodwind_designer/engine/design_server.py` (demakein wrapper). The two are
+mutually exclusive architectures for the same routes; per the focused-port
+decision the desktop's split was not merged. If the richer `OptimizerSettings`
+surface is wanted later, that is a deliberate server refactor, not a port.
+
+### Skipped inventory (full 72-file categorization)
+
+- **13 deliberately removed / path-colliding** — do NOT resurrect: the
+  `backend/archived_optimizers/*` package (11 files, deleted 2026-07-31 per
+  `docs/ARCHIVED_OPTIMIZERS.md`; bore_optimizer NSGA-II survives as
+  `backend/optimizer.py`), desktop's `backend/optimizer/__init__.py` (a package
+  that would shadow/collide with the `backend/optimizer.py` module on
+  case-insensitive filesystems), `tests/test_compare_optimizers.py` (tests the
+  archived package).
+- **39 local junk / regenerable artifacts** — 34 `stl_library/*.lnk` Windows
+  shortcuts, 2 timestamped `validation_results/validation_report_*.json`,
+  `output-bbclarinet/` + `output-dwhistle/` JSON5 outputs, `backend/v1_benchmark_results.json`
+  (the runner in `scripts/benchmark_v1_inria.py` regenerates this).
+- **10 structural conflict** — the 8-file `routes/` package +
+  `woodwind_designer/engine/shared_state.py` (see above) and `.gitmodules`
+  (chalumier submodule; this repo integrates chalumier via the wrapper instead).
+- **~5 machine-specific root scripts** — `check_3dfagottino.py`,
+  `explore_fagottino.py` (one-off fhnw.ch/zenodo web-scraping), `check_workers.py`
+  (hardcoded `tcp://127.0.0.1:8786`), `clean_instrument_library.py`
+  (hardcoded `C:\Users\Admin\Desktop\...` path), `test_routes.py` (hardcoded
+  desktop path + exercises the non-ported routes).
 
 ---
 
