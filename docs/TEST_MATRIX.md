@@ -62,6 +62,10 @@ Scheduled cadence (Task Scheduler): **daily 02:00 low tier**, **weekly Sunday 03
 - **Smoke:** import + tiny evaluation.
 - **Tier:** low · **Pass:** import OK, eval completes.
 
+### comparison — AI/ML optimization families
+- **Medium (on-demand):** `pytest tests/comparison/test_ml_surrogate_optimizer.py` (two-phase ML surrogate optimizer) and `pytest tests/comparison/test_ai_methods_comparison.py -m comparison -s` (head-to-head: Bayesian, neural surrogate, RL, gradient-free).
+- **Tier:** medium · **Pass:** all families converge within sanity bound; report table prints.
+
 ### unconventional — bore-shape benchmark
 - **Heavy (on-demand):** `python backend/benchmark_unconventional_shapes.py` (serial) or `--dask` (remote cluster).
 - **Status 2026-08-01:** ALL PASSED — 10/10 pipeline, 7/7 optimizations (0.0–15.8¢ RMS), serial + distributed (2 workers).
