@@ -79,6 +79,18 @@ The registry is enforced automatically:
 |---|---|---|
 | numba | numba | backend/tmm_numba.py (guarded, TMM resonance fast path) |
 
+### Extra: `spectral`
+| pip package | import root | where used |
+|---|---|---|
+| librosa | librosa | backend/spectral/f0.py, backend/spectral/spectrum.py |
+
+### Extra: `fem`
+| pip package | import root | where used |
+|---|---|---|
+| gmsh | gmsh | scripts/benchmark_metamaterial_fem_crosscheck.py |
+| meshio | meshio | scripts/benchmark_metamaterial_fem_crosscheck.py |
+| scikit-fem | skfem | scripts/benchmark_metamaterial_fem_crosscheck.py (alias in toolcheck.py) |
+
 ### Extra: `freecad`
 | pip package | import root | where used |
 |---|---|---|
