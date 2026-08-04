@@ -127,11 +127,19 @@
     comparison-framework metric keys), exported from
     `backend/optimization/__init__.py`, `tests/test_topk_polish.py` (3 tests).
     Pushed `3e64efc..27ce1cb` → `origin/kalles-main-branch`.
-  - Laptop test state: **117 passed / 2 pre-existing failures** (both persist
-    with changes stashed): `test_numba_resonance_phase_matches_python` (import
-    error — numba wiring), `test_tool_registry` (gmsh/librosa/meshio/skfem
-    undeclared — spectral-module imports). Desktop's branch already fixes these
-    in pyproject extras.
+  - Laptop test state: **118 passed / 1 skipped** (numba parity skipped — wiring
+    was clobbered from `tmm_acoustics.py` by the `7cae468` main merge; guarded
+    import fix applied matching desktop's branch). Toolcheck PASS.
+- **Branch health fixes** (commit `b198c4c` on `kalles-main-branch`): declared
+  `spectral` (`librosa`) + `fem` (`gmsh`/`meshio`/`scikit-fem`) extras in
+  `pyproject.toml` + `docs/TOOLS.md` (fixes tool-registry guard); guarded the
+  numba parity test import (skip when wiring absent); whitelisted
+  `test_topk_polish.py` in `python_files`. Pushed `012f18a..b198c4c`.
+- **Posted to #23**: (a) drop-in integration recipe for `topk_polish` as a 5th
+  comparison-suite family (runner + registry + budget + test case); (b) branch
+  health fixes + question: restore numba wiring (`32d4c9f`, verified bit-identical
+  + 6.4x) into `tmm_acoustics.py` or leave skipped until reconciliation.
+  Awaiting desktop decision on both.
 
 ### In Progress
 - None — this session's work is complete and pushed.
@@ -191,13 +199,18 @@
   over `b42b5bf` (wiki cross-link fixes) over `32d4c9f` (numba wiring) over
   `5c7529f` (wiki restructure); `origin/main` = `d663a43` (desktop's BOOT_STATE
   update after laptop metamaterial merge).
-- **`origin/kalles-main-branch` = `27ce1cb`** (top-k polish optimizer) over
-  `3e64efc` (spectral module) over `8bd5599` (merge-conflict resolution) over
-  `187b770` (merge origin/main) over `e8b02d3` (metamaterial optimizer + spectral
-  + FEM cross-check). Most advanced branch vs `main` (42 commits unique).
-- **`origin/opencode-instrument-designer` = `6a69c0d`** (desktop branch, PR #62:
-  ML surrogate port + intonation pass standards + `verify_with_retries`,
-  11 commits / 71 files / MERGEABLE). Comparison runners take budget args.
+- **`origin/kalles-main-branch` = `b198c4c`** (branch health fixes: spectral/fem
+  extras, topk whitelist, numba test guard) over `012f18a` (BOOT_STATE) over
+  `27ce1cb` (topk polish optimizer) over `3e64efc` (spectral module) over
+  `8bd5599` (merge-conflict resolution) over `187b770` (merge origin/main) over
+  `e8b02d3` (metamaterial optimizer + spectral + FEM cross-check). Most advanced
+  branch vs `main` (42 commits unique).
+- **`origin/opencode-instrument-designer` = `6ff0da8`** (desktop branch, PR #62:
+  ML surrogate port + intonation pass tiers + `verify_with_retries`, 11 commits /
+  71 files / MERGEABLE). Comparison runners take budget args. Desktop corrected a
+  mis-signature (a post was tagged "opencode" but was `TEAM_MACHINE=desktop`);
+  the Copilot agent that acked laptop's top-k tuning is **paused until
+  2026-09-01**, so desktop's opencode agent may pick up that work.
 - Env: Windows, Python 3.14.6, numpy 2.4.6, numba 0.66.0, pytest 9.1.1, dask
   2026.7.1, jax 0.11.0; **conda NOT on PATH** — use system Python +
   `PYTHONPATH=<repo root>`; `tmmbench` env unavailable on desktop.
