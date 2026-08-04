@@ -9,6 +9,10 @@
 
 ## Goal
 
+- **NEW working branch: `opencode-instrument-designer`** (user-designated Open
+  Code branch). Based on `origin/main` (`d663a43`); pushed to origin; PR **#62**
+  open against `main` (import fixes + numba test guard). Open Code stays on this
+  branch from 2026-08-04 onward.
 - Consolidate the acoustic-metamaterials research (Claude + Kimi exports + web
   research) into `docs/RESEARCH_acoustic_metamaterials.md` (reference doc) and the
   internal wiki, restructured into **one page per major topic** with the
@@ -50,6 +54,16 @@
 ## Progress
 
 ### Done
+- **opencode-instrument-designer branch** (2026-08-04): pushed `d663a43` +
+  `56d0ec9` (fix: repair broken `tmm_acoustics` imports across 45 files / 50 files)
+  + `0b6e9ad` (fix: numba parity test skip-guard). PR **#62** → `main`. Audit:
+  low + medium test tiers PASS, TMM + metamaterial suites 78 passed / 1 skipped,
+  whole tree compiles, governance hooks active. Posted to #23
+  (discussioncomment-17888679).
+- **Pre-existing test failure noted**: `7cae468` (metamaterial merge) overwrote
+  `backend/tmm_acoustics.py` and **dropped the numba wiring** from `32d4c9f`
+  (`_NUMBA_ENABLED`/`TMM_USE_NUMBA`/`_action_arrays` gone). Parity test now
+  skips; **restore the wiring is a tracked follow-up** (tmm_numba.py is intact).
 - **Laptop confirmation on #23** (2026-08-03T01:41:04Z): verified desktop's
   `593e149` already contains the numba fix; laptop's holding branch
   `fix/tmm-medium-numba` obsolete and dropped; **114 passed** on laptop too;
@@ -145,14 +159,20 @@
 
 ## Next Steps
 
-1. Standing: present `backend/spectral` design (`docs/DESIGN_spectral.md`) for
+1. **Stay on `opencode-instrument-designer`** (user directive). Get PR #62
+   reviewed/merged; track the other AI's review.
+2. **Restore the numba wiring** into `backend/tmm_acoustics.py` (dropped by
+   `7cae468`): re-apply `32d4c9f` fast path (`_NUMBA_ENABLED`, `_action_arrays`,
+   int32-mask `resonance_phase`) compatible with the metamaterial additions;
+   un-skip `test_numba_resonance_phase_matches_python`.
+3. Standing: present `backend/spectral` design (`docs/DESIGN_spectral.md`) for
    user approval when the user is available.
-2. Monitor `kalles-main-branch` for laptop's `team_chat.py` fixes landing on
+4. Monitor `kalles-main-branch` for laptop's `team_chat.py` fixes landing on
    `main` (laptop's call) and for Phase 2G updates; laptop may want the L2-vs-L1
    parity sweep now that `main` has the ported experiment scripts.
-3. Optional user-verification: folded/low-clarinet notes wording in
+5. Optional user-verification: folded/low-clarinet notes wording in
    `docs/RESEARCH_acoustic_metamaterials.md` §7 / wiki §5.8.
-4. **ML optimization integration** (future): add ML-based optimization methods
+6. **ML optimization integration** (future): add ML-based optimization methods
    (e.g., Bayesian optimization, neural surrogates, gradient-free methods) to
    complement the existing two-phase optimizer (`backend/two_phase_optimizer.py`).
    Timing TBD — consider whether to optimize the physics pipeline further first
@@ -160,11 +180,11 @@
 
 ## Critical Context
 
-- **`main` HEAD = `0c794fd`** (BOOT_STATE update) over `5d5c5a0` (Appendix B)
-  over `401e889` (BOOT_STATE) over `cf7e625` (Claude artifact ports + doc/wiki +
-  toolcheck fix) over `91b0df8` (string port) over `80a4435`/`e8780d7` (BOOT_STATE)
-  over `b42b5bf` (wiki cross-link fixes) over `32d4c9f` (numba wiring) over
-  `5c7529f` (wiki restructure); `origin/main` = `0c794fd`.
+- **`origin/main` = `d663a43`** (this lineage's main tip; BOOT_STATE — laptop
+  register-suppression + soprano demos). `opencode-instrument-designer` =
+  `0b6e9ad` (`d663a43` + `56d0ec9` import fixes + `0b6e9ad` numba test guard),
+  PR #62 open. Note: this lineage is NOT the desktop's main lineage
+  (desktop `main` = `ae38527`; kalles-main-branch merged to `187b770`).
 - Env: Windows, Python 3.14.6, numpy 2.4.6, numba 0.66.0, pytest 9.1.1, dask
   2026.7.1, jax 0.11.0; **conda NOT on PATH** — use system Python +
   `PYTHONPATH=<repo root>`; `tmmbench` env unavailable on desktop.
