@@ -6,6 +6,7 @@ from .base import Optimizer, OptimizationResult
 from .bore_optimizer import BoreOptimizer
 from .fingering_optimizer import FingeringOptimizer
 from .metamaterial_optimizer import MetamaterialOptimizer, optimize_family
+from .topk_polish import topk_polish
 
 __all__ = [
     "Optimizer",
@@ -14,4 +15,5 @@ __all__ = [
     "FingeringOptimizer",
     "MetamaterialOptimizer",
     "optimize_family",
+    "topk_polish",
 ]
