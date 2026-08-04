@@ -59,6 +59,7 @@ python_files = [
     "test_tmm.py",
     "test_tool_registry.py",
     "test_topk_polish.py",
+    "test_dask_topk.py",
 ]
 
 [tool.ruff]
