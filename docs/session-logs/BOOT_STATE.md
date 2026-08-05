@@ -11,26 +11,30 @@
 
 - **Working branch: `opencode/main/desktop`** (naming convention
   `opencode/<app>/<machine>`, user directive 2026-08-04; renamed from
-  `opencode-instrument-designer`). Based on `origin/main` (`d663a43`); pushed
-  to origin; PR **#62** open against `main` (import repair + numba restore +
-  AI/ML-family port + Step-3 reconciliation + intonation pass standards + top-k
-  polish family; 13 commits, MERGEABLE). `opencode-instrument-designer` remains
-  as the PR #62 head mirror until merge (GitHub CLI cannot retarget PR heads).
-  Desktop stays on `opencode/main/desktop`.
-- Consolidate the acoustic-metamaterials research (Claude + Kimi exports + web
-  research) into `docs/RESEARCH_acoustic_metamaterials.md` (reference doc) and the
-  internal wiki, restructured into **one page per major topic** with the
-  metamaterials page organized **by instrument category** and per specific
-  instrument (low clarinets the deepest dive). **DONE, on `main`.**
-- Land the numba-accelerated TMM resonance-phase fast path (laptop's
-  `np.floor/arctan/tan/pi` fix) on `main` behind a feature flag. **DONE, on `main`.**
-- Port the Claude metamaterial artifacts into `backend/experiments/` (user
-  authorized porting when present). **DONE, on `main`** — `string_metamaterial.py`,
-  `brass_scaffold.py`, `metamaterial_elements.py`, `folded_bore_elements.py`, all
-  reproducing documented outputs exactly.
-- Standing items from prior sessions (not this session's work): `backend/spectral`
-  design awaits user approval; laptop Phase 2G surrogate work lives on
-  `opencode/main/laptop` (renamed from `kalles-main-branch`, 2026-08-04).
+  `opencode-instrument-designer`). `opencode-instrument-designer` remains as the
+  PR #62 head mirror until merge (GitHub CLI cannot retarget PR heads). Based on
+  `origin/main` (now `c8b9fd2` after laptop's docs-only cherry-pick of the CAD
+  research). PR **#62** open against `main` (import repair + numba restore +
+  AI/ML-family port + Step-3 reconciliation + intonation pass standards + topk
+  polish family; MERGEABLE).
+- **CAD / design-tool track (current focus, 2026-08-05)**: retired the old
+  `woodwind-design-automation` and `instrument-designer-backup` repos (deleted
+  via web UI by the user; only `instrument-designer` + `chalumier` remain).
+  Built one-click view workflows for the human's preference (no GUI hunting, no
+  fullscreen):
+  - **Blender**: 5.2 LTS installed (winget); `blender_addon/` (View3D Sidebar
+    panel, std-lib only) + `scripts/view_instrument.py` + `scripts/blender_view.py`
+    + `launchers/view_instrument.bat` (committed `84b393e`, pushed). One-click
+    `View Instrument.bat` on Desktop. Blender always launched
+    `--window-geometry 60 60 1280 800` (never fullscreen).
+  - **three.js web preview (track B)**: `web/preview.html` (three 0.160 via CDN
+    importmap, STLLoader, OrbitControls, preset dropdown) served by a new
+    `/preview` route in `design_server`; `scripts/view_browser.py` starts the
+    server if down and opens the browser; `launchers/view_browser.bat`; `View in
+    Browser.bat` on Desktop.
+- Standing items (not this session's work): `backend/spectral` design awaits user
+  approval; laptop Phase 2G surrogate work + build123d spike live on laptop
+  branches.
 - Standing directive: tools must be **integrated into a pipeline**, never just
   installed and forgotten (tool registry guard is live).
 - User's fallback instruction: if no task is assigned, do something **safe** (no
@@ -44,353 +48,147 @@
 - Constitution: Law 1 (no architecture damage), Law 3 (reuse existing bench
   scripts), Law 7 (canonical `346100.0` mm/s speed of sound), Law 10 (stop/ask if
   intent unclear — **don't speculate about what the user wants, just ask**).
+- **ORDER OF OPERATIONS (user directive 2026-08-05)**: "add to to-do list" = do
+  NOT start the task; explain + ask before reordering work; **ASK, do not
+  speculate** — when uncertain, ask rather than guess.
+- User is very uncomfortable with visual/GUI interfaces and gets lost in
+  maximized/fullscreen windows. Solutions must be one-click / keyboard-driven and
+  never open fullscreen. (opencode window-state fixed to `isFullScreen:false`,
+  2026-08-05.)
 - `AUDIT:` for provisional commits; `GOVERNANCE-UPDATE` for commits touching
   `docs/CONSTRAINTS_AND_PREFERENCES.md`; don't commit regenerable artifacts
-  (STLs, JSON dumps, benchmark logs, `bench_*.txt`).
-- Direct-to-main preference, but the numba landing used a landing branch + clean
-  port (laptop approved that plan explicitly).
+  (STLs, JSON dumps, logs, `bench_*.txt`).
 - Tool adoption rule: install + declare (`docs/TOOLS.md`) + import + whitelisted
   test; guard = `tests/test_tool_registry.py` + `scripts/toolcheck.py`.
-- Laptop's `team_chat.py` protocol fixes (cursor, watch-stale-save, sync-launch)
-  are on `opencode/main/laptop`, **not yet on `main`** — landing them is the
-  laptop's call, do not merge unilaterally.
 
 ## Progress
 
-### Done
-- **PR #62 = 11 commits, MERGEABLE** (2026-08-04): `56d0ec9` (import repair) +
-  `0b6e9ad` (numba test guard) + `9e58f39` (BOOT_STATE) + `da8e8fc` (numba
-  wiring restore) + `6870fde` (ML-surrogate + AI-family comparison port) +
-  `6cbd47c` (PR report docs) + `2f275fe` (BOOT_STATE step-3) + `6a69c0d`
-  (Step-3 reconciliation scripts) + `ebfeaf1` (scrap inferior ML-optimizer
-  duplicates per compliance audit) + `9d98643` (PR docs update) + `1fca1b2`
-  (intonation pass tiers). Full PR report: `docs/PR_REPORT.md` (all 4 open
-  PRs #33/#58/#61/#62). Audit: low + medium tiers PASS, `pytest tests/`
-  **128 passed** (63.4s; +`tests/test_metrics.py` 14 tests), comparison
-  6 passed (44.7s; Bayesian 64.9c / neural 34.7c / RL 26.2c / gradient-free
-  9.6c RMS), `scripts/toolcheck.py` PASS.
-- **Branch renames + naming convention** (2026-08-04): `opencode/<app>/<machine>`
-  per-machine integration branches — desktop `opencode/main/desktop`, laptop
-  `opencode/main/laptop` (was `kalles-main-branch` = `3ce2fe9`, renamed by
-  laptop); side branches `opencode/<idea>/<machine>` (test ideas, merge or
-  scrap). Desktop's old `opencode-instrument-designer` ref stays as the PR #62
-  head mirror until merge (GitHub CLI cannot retarget PR heads); delete after
-  merge. Both renames verified on origin; no open PR was lost (PR #62 reopened
-  after the ref swap).
-- **Topk polish family consolidated** (commit `25e215f`): adopted the laptop's
-  generic DE + top-k L-BFGS-B polish engine `backend/optimization/topk_polish.py`
-  (file copy of its AUDIT `27ce1cb`) as family `topk_polish` in
-  `tests/comparison/ai_methods_benchmark.py` (`run_topk_polish`; retry scales
-  `maxiter`); `__init__.py` export + laptop's `tests/test_topk_polish.py` (3
-  tests) whitelisted; `tests/comparison/tune_topk_polish.py` seed-robustness
-  script. Comparison suite **7 passed** — Topk Polish **5.98c / 11,076 evals /
-  17.3s** vs Gradient Free 9.64c; 5-seed robustness **5.918–6.045c** (mean
-  5.964c) vs plain 8.125–10.441c (mean 9.698c); `pytest tests/` **131 passed**
-  (111.3s).
-- **Reminders mechanism** (2026-08-04): new `docs/REMINDERS.md` (living file
-  both machines edit) — standing compliance checklist + pending cross-machine
-  threads + nudge rule; wired into AGENTS.md Step 0 (read after sync; nudge
-  #23 on stale threads) + branch-naming line in AGENTS.md Environment.
-- **Session close** (2026-08-04): commit `82bfeaa` (docs: reminders +
-  PR_REPORT/TEST_MATRIX/BOOT_STATE updates) pushed to `opencode/main/desktop`
-  + `opencode-instrument-designer` mirror — PR #62 = **14 commits,
-  +3,623/−93, MERGEABLE**. Integration table + 5-seed robustness posted to
-  #23 (comment 17891204); laptop verified the shared engine parity on its side
-  (5.902c / 28,001 evals @ maxiter=250) and has nothing pending. Topk thread
-  #1 RESOLVED.
-- **Intonation pass standards** (commit `1fca1b2`): canonical cents tiers in
-  `backend/metrics.py` (`INTONATION_TIERS`: sane 150c RMS; acceptable 10c/25c;
-  professional 5c/15c; unconventional 20c/40c; fixture 5c; cross-software 10c)
-  + two-stage acceptance `backend/verification.py` `verify_with_retries`
-  (screen at budget 1.0, doubled-budget retry before FAIL). Wired into the
-  AI/ML comparison suite, `backend/benchmark_unconventional_shapes.py`
-  (unconventional tier + intonation gate), `scripts/v2_validation_runner.py`,
-  `scripts/benchmark_v1_inria.py`. Rationale + sources:
-  `docs/PHYSICS_PRINCIPLES.md` "Intonation pass standards"; `tests/test_metrics.py`
-  (14 tests).
-- **Numba wiring restored** (commit `da8e8fc`): `7cae468` dropped it from
-  `32d4c9f`; re-applied in `_prepare_phase` (precompute moved out of `__init__`
-  so post-construction meta wiring is caught), gated on `_NUMBA_ENABLED` +
-  `loss_model is None` + no `pipe_meta`/`meta_branch`; int32 mask fast path;
-  6.66x, parity 0.0, `TMM_USE_NUMBA=0` verified; new
-  `test_meta_disables_numba_fast_path`. 79 TMM+metamaterial tests pass.
-- **AI-family comparison port** (commit `6870fde`): desktop's uncommitted pile
-  now versioned on this branch — `tests/comparison/*` (5 files:
-  `ai_methods_benchmark.py`, `ai_methods_dask.py`, `test_ai_methods_comparison.py`
-  + pre-existing byte-identical `comparison_framework.py`),
-  `backend/experiments/{bore_builder,benchmark_and_optimize}.py`;
-  `pyproject.toml` whitelist + `run_all_tests.py`/`TEST_MATRIX.md` `comparison`
-  medium tier. **Scrapped in `ebfeaf1`** (compliance audit, user directive):
-  `backend/ml_surrogate_optimizer.py` + `backend/ml_optimizer_splitted.py` were
-  an inferior duplicate of the canonical `two_phase_optimizer.py` (bare
-  `except:`, hardcoded `closed_top`/`n_bore_ctrl`; "splitted" was imported by
-  nothing); their test file went too; `jax_resonator_sketch.py` (untested dead
-  code) preserved in `docs/JAX_RESONATOR_SKETCH_IDEA.md`. Default `pytest tests/`
-  back to **114 passed** (matches laptop's canonical baseline).
-- **opencode-instrument-designer branch** (2026-08-04): pushed `d663a43` +
-  `56d0ec9` (fix: repair broken `tmm_acoustics` imports across 45 files / 50 files)
-  + `0b6e9ad` (fix: numba parity test skip-guard). PR **#62** → `main`. Audit:
-  low + medium test tiers PASS, TMM + metamaterial suites 78 passed / 1 skipped,
-  whole tree compiles, governance hooks active. Posted to #23
-  (discussioncomment-17888679).
-- **Pre-existing test failure noted**: `7cae468` (metamaterial merge) overwrote
-  `backend/tmm_acoustics.py` and **dropped the numba wiring** from `32d4c9f`
-  (`_NUMBA_ENABLED`/`TMM_USE_NUMBA`/`_action_arrays` gone). Parity test now
-  skips; **restore the wiring is a tracked follow-up** (tmm_numba.py is intact).
-- **Laptop confirmation on #23** (2026-08-03T01:41:04Z): verified desktop's
-  `593e149` already contains the numba fix; laptop's holding branch
-  `fix/tmm-medium-numba` obsolete and dropped; **114 passed** on laptop too;
-  approved the landing plan (keep main's numba-free fallback, land feature-flagged
-  wiring non-AUDIT, don't merge either copilot branch's pure-Python refactor).
-- **TMM numba landing on `main`** (commit `32d4c9f`): new `backend/tmm_numba.py`
-  (pure `np.*` inside `@njit`, no `import math`, no circular `Hole` import);
-  3 hunks into `backend/tmm_acoustics.py` (`TMM_USE_NUMBA` env flag, lossless-only
-  `_action_arrays` precompute in `__init__`, int32-mask fast path in
-  `resonance_phase`); `perf = ["numba>=0.60"]` extra in `pyproject.toml`;
-  `docs/TOOLS.md` declaration (toolcheck PASS); parity test
-  `test_numba_resonance_phase_matches_python()` in `tests/test_tmm.py`.
-  Verified on `32d4c9f`: 540 wired cases max diff **0.0**; `find_resonance`
-  ~6.4x, standalone `resonance_phase` ~9.8x; full whitelisted suite **114 passed**
-  (126.9s); `TMM_USE_NUMBA=0` fallback identical (2.355755).
-- **Wiki restructure** (commit `5c7529f`): `wiki/Internal-Research.md` rewritten
-  as a hub index; new topic pages `Internal-Research-Acoustics.md`,
-  `Internal-Research-Optimization.md`, `Internal-Research-Measurement.md`,
-  `Internal-Research-Perception.md`, `Internal-Research-Resources.md`,
-  `Internal-Research-Metamaterials.md` (organized by instrument category:
-  percussion §4, low-clarinet deep dive §5 contrabass Bb/contra-alto Eb/straight
-  bass/bass-in-A/folded, guitar §6, low sax §7, bowed/piano §8, standard
-  woodwinds §9, brass §10, lamellophones §11, TMM integration §12, references
-  §13). Renamed `wiki/Internal-Metamaterials.md` → `wiki/Internal-Research-Metamaterials.md`;
-  updated `wiki/Internal-Home.md` and `docs/WIKI-INDEX.md`.
-- **Metamaterials reference doc committed** (in `5c7529f`):
-  `docs/RESEARCH_acoustic_metamaterials.md` — Claude + Kimi exports merged
-  (Kimi §2.4: cross-category ranking, folded-geometry advantage, within-family
-  low-woodwind ranking, bore verdict, bass-clarinet-in-A timbre-revival idea)
-  + web-verified references.
-- **Wiki cross-link fixes** (commit `b42b5bf`, this session's safe task): 7 broken
-  `[[...]]` links fixed in `Home.md`/`FAQ.md`/`Getting-Started.md`/
-  `3D-Printing-Guide.md` (targets `Internal-Home`, `Internal-Branches`,
-  `Internal-Optimization`, `Internal-Research-Measurement`, incl. anchor fix
-   `#Metric Standardization (2026-07-25)`). Validation script: **77 links, 0 broken**
-   (code-span content excluded). Pushed `32d4c9f..b42b5bf` → `main`.
-- **Claude artifact ports** (this session): `string_metamaterial.py` (commit
-  `91b0df8`), then `brass_scaffold.py` + `metamaterial_elements.py` +
-  `folded_bore_elements.py` + doc/wiki updates + toolcheck fix (commit `cf7e625`),
-  all pushed. Verified exact reproductions: string band gaps (rigid
-  `(1580.0,4183.3),(4768.6,8000.0)`; local `(921.1,2925.6),(4183.8,5918.5)`);
-  brass open peaks 684.5/715.6/846.2, 1-3 combo 705.5/736.1/838.3/888.4
-  (838.3 Hz = −16.2c), 4cm³/24.9mm resonator → 852.2 Hz (+12.2c); folded
-  low-clarinet −12.8c bass / −22.9c contra-alto / −27.8c contrabass + rigid-HR
-  feasibility table (contrabass fundamental unreachable below V=100). Design
-  finding: rigid HRs suit upper partials/formants; `effective_density_locally_resonant`
-  liner for fundamentals. Captured in `docs/RESEARCH_acoustic_metamaterials.md`
-  §7 (new) + Appendix A/B + `wiki/Internal-Research-Metamaterials.md` §5.8/§10/§12.2/§12.3.
-- **toolcheck guard fix** (commit `cf7e625`): `scripts/toolcheck.py` `_is_local`
-  now resolves sibling modules nested under local roots (e.g.
-  `backend/experiments/brass_scaffold.py` imported bare by another experiment) —
-  no longer misreported as PHANTOM. Guard PASS (29 imported, 0 phantom);
-  `tests/test_tool_registry.py` passes.
-- **Laptop metamaterial integration merged to `main`** (this session): pulled
-  `kalles-main-branch` (`cc5b447`–`fbbd1b8`, `3d318dc`) into working tree;
-  merged numba fast path from `main` (`32d4c9f`) into laptop's `tmm_acoustics.py`
-  (adds `_NUMBA_ENABLED`, `_action_arrays`, numba fast path for lossless
-  instruments without metamaterials). **All 114 tests pass** (incl. 74 metamaterial
-  tests: `test_metamaterial.py` 13, `test_metamaterial_low_clarinets.py` 36,
-  `test_metamaterial_graded.py` 11, `test_metamaterial_intonation.py` 8;
-  `test_numba_resonance_phase_matches_python` passes). Toolcheck PASS (29
-  imported, 0 phantom).
+### Done (this session / CAD track)
+- **Governance**: ORDER OF OPERATIONS + "ASK, do not speculate" written into
+  `docs/CONSTRAINTS_AND_PREFERENCES.md` (committed with `GOVERNANCE-UPDATE` in
+  `a1807bd`).
+- **Path-rewrite cleanup** (in `a1807bd`): all 15 active scripts/tests use
+  repo-relative resolution (`os.path.dirname(os.path.dirname(os.path.abspath(__file__)))`
+  / `Split-Path $PSScriptRoot -Parent`), no hardcoded paths.
+- **Cluster tooling** (in `a1807bd`): `scripts/start-cluster.ps1`,
+  `spawn_worker.py`, `cluster_health.py`, `start_scheduler.py`, `start_worker.py`,
+  upgraded `sync.ps1`. Scheduler running on desktop (PID 6468, since 12:51);
+  `cluster_health` reports reachable, currently **1 worker** (laptop
+  `tcp://100.100.66.117:52274`). Known cross-machine mismatch: laptop
+  Python 3.14.6 / numpy 2.4.6 vs desktop 3.12.10 / numpy 2.5.1 (functions ship
+  from client, so OK unless a worker imports local-only modules); pickled
+  objectives need self-contained imports.
+- **Repos retired**: old `woodwind-design-automation` + `instrument-designer-backup`
+  deleted (user, web UI). Verified `gh repo list` = only `instrument-designer` +
+  `chalumier`. Pruned stale `origin/kalles-main-branch` remote-tracking ref
+  (branch is gone from origin; laptop confirmed tip `b198c4c` is an ancestor of
+  `opencode/main/laptop`; **not** deleted intentionally by desktop).
+- **Blender track delivered** (`84b393e`, pushed): `blender_addon/` (panel: Check
+  Server / Refresh Presets / Import Instrument; urllib only), `scripts/view_instrument.py`
+  (Blender auto-discovered via `BLENDER_EXE` env → PATH → glob of
+  `C:\Program Files\Blender Foundation\Blender*\blender.exe`; STL via design_server
+  with local cadquery fallback), `scripts/blender_view.py` (imports STL, smooth
+  shade, frames model, prints `VIEW READY`), `launchers/view_instrument.bat`.
+  E2E verified: server → 50,484-byte STL → 504-vertex mesh in Blender.
+- **design_server**: running on desktop port 8000 (`python -m uvicorn
+  woodwind_designer.engine.design_server:app --host 0.0.0.0 --port 8000`).
+  Restarted this session (now PID 21480) to add `/preview`. Endpoints:
+  `/health`, `/presets`, `/design...`, `/optimize...`, `/export/cadquery` (POST
+  STL), `/export/cadquery/instruments` (90 presets), `/export/svg`, `/preview`.
+- **three.js web preview (track B)** shipped: `web/preview.html` (three 0.160
+  importmap from unpkg — verified reachable; STLLoader, OrbitControls, preset
+  dropdown populated from `/export/cadquery/instruments`, auto-fit camera),
+  `/preview` route in `design_server.py`, `scripts/view_browser.py` (starts server
+  if down, opens browser at `/preview?preset=...`), `launchers/view_browser.bat`.
+  Desktop shortcuts: `View Instrument.bat` + `View in Browser.bat`.
+- **Mesh-repair gate DECISION** (posted to #23, 17906945): **build123d-first +
+  pymeshlab/pymeshfix repair fallback** for legacy CadQuery paths; `cadquery-ocp`
+  pinned in the `cad` extra (`2903873`) to stop pip pulling `cadquery-ocp-novtk`
+  (which clobbers the OCP namespace and breaks cadquery).
+- **Track C approved**: laptop's build123d spike `8ddfc7a` + mesh-gate protocol
+  `e8d6254` + BOOT_STATE `7bc624e` approved for merge to `opencode/main/laptop`
+  (posted 17906945). Laptop's key finding: build123d produces watertight meshes
+  where CadQuery does not (xaphoon_C: CadQuery 2624/5264 non-watertight vs
+  build123d 1000/2012 watertight).
+- **Research doc on `main`**: laptop docs-only cherry-pick `8603240` → `c8b9fd2`
+  (`docs/RESEARCH_design_to_finished_instrument.md`, WIKI §11, WIKI-INDEX; 123
+  tests passed). Full laptop-branch merge deferred until after PR #62 merges
+  (laptop is 55 commits ahead, carries the metamaterial stack).
 
 ### In Progress
-- **Compliance audit (user directive 2026-08-04 — audit before porting; scrap
-  inferior solvers).** Done: `scripts/toolcheck.py` PASS; all 11 ported
-  ML/comparison/script files ≤ 442 lines (Law 8); scrapped
-  `backend/ml_surrogate_optimizer.py` + `backend/ml_optimizer_splitted.py` +
-  `tests/comparison/test_ml_surrogate_optimizer.py` (inferior duplicate of the
-  canonical `two_phase_optimizer.py`; "splitted" was imported by nothing) and
-  `backend/experiments/jax_resonator_sketch.py` (untested dead code; idea saved
-  to `docs/JAX_RESONATOR_SKETCH_IDEA.md`) in commit `ebfeaf1`. **Still to
-  audit**: `backend/experiments/{bore_builder,benchmark_and_optimize}.py` and
-  the remaining ~5 genuinely-new desktop candidates before any further port.
-- Step 3 (desktop reconciliation) **focused port done** this session:
-  ported + cleaned `scripts/v2_validation_runner.py` and
-  `scripts/benchmark_v1_inria.py` (moved from `backend/` to `scripts/` per
-  CODING_STANDARDS); dropped `external_solvers.py` (unused on desktop, duplicates
-  `backend/solvers/openwind_solver.py`/`impedance_solver.py`); skipped
-  `routes/*` package + `shared_state.py` (mutually-exclusive server architecture),
-  `UnconventionalBoreDesigner.tsx` (imports api.ts symbols absent here),
-  `.gitmodules`, `stl_library/*.lnk`, `validation_results/*`, `output-*`,
-  `archived_optimizers` (deleted per docs/ARCHIVED_OPTIMIZERS.md). Full
-  72-file categorization: `docs/PR_REPORT.md` §"Step 3".
+- **Track B (three.js preview)** delivered this session (see Done); awaiting user
+  verification of the browser preview.
+- `scripts/dask_scheduler.log` left unstaged (live log, tracked pre-existing).
 
 ### Blocked
 - Standing (not this session): `backend/spectral` implementation awaits user
-  approval of `docs/DESIGN_spectral.md` (3 open questions). Inverse-design Tier 2
-  blocked on `generative_agent`/`instrument_knowledge`/`spline_bore` not on `main`.
+  approval of `docs/DESIGN_spectral.md` (3 open questions). FreeCAD workbench
+  (track A) deferred — user chose three.js first.
 
 ## Key Decisions
 
-- Land wired numba onto `main` as a clean **port** (landing branch from
-  `origin/main`, two commits), **not** a merge of the copilot branches; the
-  pure-Python path stays the authoritative fallback (Law 1); laptop confirmed the
-  pure-Python refactors were ~+15–20% slower and agreed not to merge them.
-- Intonation pass criteria: canonical tiers in `backend/metrics.py` +
-  `verify_with_retries` two-stage acceptance (screen → doubled-budget retry →
-  FAIL) so a short noisy run never scraps a design; unconventional shapes get a
-  looser 20¢ RMS / 40¢ max tier. Literature + rationale in
-  `docs/PHYSICS_PRINCIPLES.md` "Intonation pass standards".
-- Branch naming `opencode/<app>/<machine>` (per-machine integration branches
-  `opencode/main/desktop` / `opencode/main/laptop`; experiments on
-  `opencode/<idea>/<machine>`, merge or scrap; keep `main` divergence minimal) —
-  user directive 2026-08-04. PR heads GitHub CLI cannot retarget stay on a
-  mirror ref (`opencode-instrument-designer`) until merge.
-- Topk polish: adopt the laptop's shared `backend/optimization/topk_polish.py`
-  engine as the single implementation (Law-3; desktop's inline duplicate
-  removed). Family default maxiter=60 (≈5.98c / 11k evals) ≈ maxiter=250
-  (≈5.92c / 25k) on the contract.
-- Reminders: `docs/REMINDERS.md` is the living compliance + pending-thread file
-  both machines read at session start; stale threads get a #23 nudge.
-- Numba wiring: already restored on PR #62 (`da8e8fc` + guarded fallback);
-  `main` gets it via the PR #62 merge — laptop keeps the guarded skip, no
-  double-fix.
-- Wiki restructure: **one page per major topic** (hub + Acoustics/Optimization/
-  Measurement/Perception/Resources/Metamaterials), user-selected over finer or
-  coarser grouping; metamaterials page by instrument category with per-instrument
-  subsections, low clarinets deepest dive (user-requested).
-- Research scope: reference doc + TMM-integration evaluation, **not** code
-  porting; all metamaterial implementation ideas marked future-work. Repo
-  integration mapping: Helmholtz side branch via `backend/core/network.py`
-  `Port`/`NodeType` (new `HELMHOLTZ` node) feeding `junction2_reply_phase`/
-  `junction3_reply_phase`; band-gap metrics from `backend/tone_hole_corrections.py`
-  geometry; Piva/Gower/Abrahams formulas for resonator-distribution design; numba
-  fast path is lossless-only so lossy resonator elements stay pure-Python or
-  extend the njit function.
-- This session: user asked for a task suggestion or, if none given, a **safe**
-  fallback action — chose docs-only wiki cross-link repair (no architecture
-  change, no law risk, no deletion, no merge).
+- **Mesh-repair gate**: build123d-first for new geometry + pymeshlab/pymeshfix
+  repair step as fallback in the STL pipeline (2026-08-05).
+- **Track C spike approved** for laptop merge (`8ddfc7a`/`e8d6254`/`7bc624e`).
+- **`kalles-main-branch`**: not intentionally deleted; `opencode/main/laptop` is
+  the carrier toward `main`; full branch merge waits for PR #62.
+- `cadquery-ocp` explicitly pinned in the `cad` extra.
+- opencode window fix: edit `window-state-*.json` `isFullScreen:false` + mark
+  read-only so the app can't overwrite on close (then unlock once relaunched OK).
+- Order of operations + ASK-don't-speculate are now binding governance.
 
 ## Next Steps
 
-1. **Stay on `opencode/main/desktop`**. PR #62 (13 commits) is MERGEABLE and
-   needs no external approval per user (properly audited + governance docs +
-   compliance). Merge when ready; after merge delete the
-   `opencode-instrument-designer` head mirror.
-2. **Step 3 reconciliation**: port desktop-only files (72 per audit) — CadQuery
-   STL, Dask, routes split, STL library, archived optimizers, `.gitmodules`,
-   external solvers, validation results — at file level onto this branch.
-3. Standing: present `backend/spectral` design (`docs/DESIGN_spectral.md`) for
-   user approval when the user is available.
-4. Monitor `opencode/main/laptop` for laptop's `team_chat.py` fixes landing on
-   `main` (laptop's call) and for Phase 2G updates; laptop may want the L2-vs-L1
-   parity sweep now that `main` has the ported experiment scripts.
-5. Optional user-verification: folded/low-clarinet notes wording in
-   `docs/RESEARCH_acoustic_metamaterials.md` §7 / wiki §5.8.
-6. **ML optimization integration** (future): add ML-based optimization methods
-   (e.g., Bayesian optimization, neural surrogates, gradient-free methods) to
-   complement the existing two-phase optimizer (`backend/two_phase_optimizer.py`).
-   Timing TBD — consider whether to optimize the physics pipeline further first
-   (loss models, viscothermal accuracy) or proceed in parallel.
+1. Stay on `opencode/main/desktop`; PR #62 (MERGEABLE) still needs no external
+   approval per user; laptop is deferring its branch merge until PR #62 merges.
+2. Have the user verify the three.js preview (`View in Browser.bat`) and the
+   Blender viewer; then continue or pivot.
+3. Monitor #23 for: laptop's mesh-repair gate protocol draft for `docs/TOOLS.md`,
+   laptop's merge of track C, cluster worker re-attach, PR #62 status.
+4. Optional later: track A (FreeCAD workbench); `tests/test_stl_export.py` has a
+   duplicate `test_stl_export` (l.8–47 dead code shadowed by l.50–83) to clean up.
+5. Standing: present `backend/spectral` for approval when the user is available.
 
 ## Critical Context
 
-- **`origin/main` = `d663a43`** (this lineage's main tip; BOOT_STATE — laptop
-  register-suppression + soprano demos). `opencode/main/desktop` = `25e215f`
-  (`d663a43` + import fixes + numba restore + AI-family port + Step-3 +
-  compliance scrap + intonation pass tiers + topk polish family); PR #62 head
-  mirrors to `opencode-instrument-designer` (delete after merge). Laptop
-  `opencode/main/laptop` = `3ce2fe9` (was `kalles-main-branch`). Note: this
-  lineage is NOT the desktop's main lineage (desktop `main` = `ae38527`;
-  kalles-main-branch merged to `187b770`).
-- Env: Windows, Python 3.14.6, numpy 2.4.6, numba 0.66.0, pytest 9.1.1, dask
-  2026.7.1, jax 0.11.0; **conda NOT on PATH** — use system Python +
-  `PYTHONPATH=<repo root>`; `tmmbench` env unavailable on desktop.
-- Untracked regenerable artifacts left uncommitted: `bench_main.txt`,
-  `bench_perf_tmm_medium.txt`, `bench_perf_tmm_refactor.txt`.
-- #23 stream: laptop confirmation (01:41:04Z) + laptop's three `team_chat.py`
-  bugfixes pushed to `kalles-main-branch` (`45ddcb2`, `591c384`, `827c051`).
-- **Laptop's low-clarinet metamaterial batch** — initially reported as "on main"
-  but actually on `kalles-main-branch` (laptop corrected 02:48Z): commits
-  `cc5b447` (family + STLs), `6a260d6` (graded arrays), `a4aed67` (12th-intonation
-  curve), `fbbd1b8` (subcontrabass) = 83 tests passed, now at
-  `origin/kalles-main-branch` = `fbbd1b8`. Physics: L2 homogenized under-estimates
-  vs L1 explicit array (43–47% rel. err. at f0/base=4, 1.4–4% at f0/base=12–20;
-  tests enforce f1_L1 < f1_L2); graded arrays give 2.0x stopband vs uniform at
-  same target; depth-vs-12th curve 0.95x→+2..7c … 0.80x→+83..96c … 0.75x→+143..159c.
-  Desktop can now run L2-vs-L1 parity sweep against ported `folded_bore_elements.py`
-  / `metamaterial_elements.py` (laptop offers to port their code to `backend/experiments/`
-  or adjust structure).
-- **Laptop's register-suppression + soprano demos** (04:20Z/04:34Z): two new
-  deliverables on `kalles-main-branch` (`478853c` → `b0a885d`):
-  1. **Register-2 squeak suppression** (bass clarinet): HR stopband over the
-     12th (~212 Hz) flattens phase margin at ~1.5 across 130–250 Hz; blind spot
-     at f0=squeak (zero margin); compliance tail drops f1 −300..−1700c.
-  2. **Soprano-clarinet demo** (600 mm × 15 mm): same physics at higher scale,
-     429 Hz squeak suppressed (L1 margin 0.428, L2 0.149); trade-off curve
-     f0/squeak 0.70–0.95 → margin ~0.43, f1 shift −1120..−1650c.
-  Total metamaterial test suite: **89 passed** (7 test files). L1/L2 machinery
-  generalizes across the full clarinet family (subcontrabass → soprano).
-- **Laptop implemented metamaterials** (`3d318dc` on `kalles-main-branch`,
-  186 passed, 02:06:45Z post): L1 `MetamaterialSideBranch` (Helmholtz side
-  branch via `junction3_reply_phase`), L2 `MetamaterialSegment` (Dell/Krynkin/
-  Horoshenkov effective-medium stopband), `TMMInstrument` `meta_slots`/
-  `metamaterial_segments` args, `tests/test_metamaterial.py` (13 tests), doc
-   `chat-logs/2026-08-03-metamaterial-implementation-research.md`. Desktop acked
-   (discussioncomment-17875306) and offered to run the L2-vs-L1 parity sweep.
-   **Not yet on `main`** — wiki §12 implementation items marked DONE on desktop's
-   port side; laptop's own implementation is on `kalles-main-branch`.
-- Research anchors (web-verified): Piva/Gower/Abrahams npj Acoustics 2:10 (2026)
-  random Helmholtz-resonator band gaps w/ effective-properties formulas;
-  Petersen/Kergomard et al. Acta Acustica 4:13 (2020) conical tonehole-lattice
-  cutoff; Bader et al. JASA 145:3086 (2019) neodymium-magnet ring frame drum
-  (~300–800 Hz); Bader Springer https://doi.org/10.1007/978-3-031-57892-2_16;
-  Lercari et al. MDPI Appl. Sci. 12:8619 (2022) guitar top-plate cavities;
-  Fischer et al. JASA 155(3_Suppl):A59 (2024) magnet-loaded guitar;
-  Khodabakhsh 2025 spiral-neck HR; Lucklum DAS|DAGA 2025 interconnected HR
-  lattice; Meier 2025 Materials & Design tunable phononic band gaps.
-- Bass-clarinet family facts (used in doc/wiki): ~150 cm bore, written Eb3 ≈
-  78 Hz, contrabass Bb ≈ 3 m tube doubled twice (hybrid cylindrical/conical,
-  sub-wavelength features ~10–30 cm), contra-alto Eb >1.7 m straightened (least
-  standardized), low-A bari-sax bell-length compromise, subcontrabass sax ≈
-  2.74 m / 28.6 kg / lowest G#0 ≈ 25.95 Hz, bass clarinet in A from Wagner's
-  *Lohengrin* (1848).
-- Repo canonical constants unchanged: `SPEED_OF_SOUND = 346100.0` mm/s in
-  `backend/tmm_acoustics.py` (Law 7 / chalumier parity).
+- **`origin/main` = `c8b9fd2`** (laptop's docs-only research cherry-pick).
+  `opencode/main/desktop` = latest desktop work (HEAD incl. `2903873`). Laptop
+  `opencode/main/laptop` is ahead (55 commits, metamaterial stack). Track C on
+  `opencode/build123d/laptop`. PR #62 head mirrors to
+  `opencode-instrument-designer` (delete after merge).
+- **design_server** running on desktop (PID 21480, port 8000, restarted this
+  session to add `/preview`). Blender 5.2 at
+  `C:\Program Files\Blender Foundation\Blender 5.2\blender.exe` (auto-discovered).
+- **Cluster**: scheduler PID 6468 (up since 12:51); 1 worker currently (laptop
+  `tcp://100.100.66.117:52274`). Laptop worker has been dropped 3x on desktop
+  scheduler restarts; laptop re-attaches via `scripts/start_worker.py` and will
+  keep detached if the scheduler keeps bouncing. Cross-machine import issue:
+  pickled objectives with module-level `from backend...` imports fail on workers
+  — keep imports inside the function.
+- Env (desktop): Windows, Python 3.12.10, numpy 2.5.1, cadquery 2.8.0, fastapi +
+  uvicorn running. (Laptop: Python 3.14.6, numpy 2.4.6.) conda NOT on PATH — use
+  system Python + `PYTHONPATH=<repo root>`.
+- Repo canonical constants unchanged: `SPEED_OF_SOUND = 346100.0` mm/s (Law 7).
 - Git identity `Admin <kooshikooo@gmail.com>`; `gh` authed as `kooshikooo-lab`.
-- Desktop `TEAM_MACHINE=desktop`; laptop `TEAM_MACHINE=laptop` (Copilot Pro
-  agents on the desktop are paused until 2026-09-01 — no usage data).
+  Desktop `TEAM_MACHINE=desktop`; laptop `TEAM_MACHINE=laptop` (Copilot Pro
+  agents on the desktop paused until 2026-09-01).
 
 ## Relevant Files
 
-- `backend/tmm_acoustics.py` — numba wiring on `main` (env-flag block,
-  lossless-only `_action_arrays`, int32-mask fast path in `resonance_phase`).
-- `backend/tmm_numba.py` — **new on `main`** — `np.*` inside `@njit`, no
-  `import math`, no circular `Hole` import.
-- `backend/metrics.py`, `backend/verification.py` — canonical intonation tiers
-  (`INTONATION_TIERS`, `intonation_passes`) + two-stage retry acceptance
-  (`verify_with_retries`); `tests/test_metrics.py` (14 tests);
-  `docs/PHYSICS_PRINCIPLES.md` "Intonation pass standards" (tier table +
-  sources).
-- `backend/optimization/topk_polish.py` — shared DE + top-k L-BFGS-B polish
-  engine (from laptop, AUDIT `27ce1cb`); `tests/test_topk_polish.py` (3 tests);
-  `tests/comparison/ai_methods_benchmark.py` `run_topk_polish` family;
-  `tests/comparison/tune_topk_polish.py` seed-robustness study.
-- `docs/REMINDERS.md` — living compliance checklist + pending cross-machine
-  threads + nudge rule (read at session start after sync).
-- `pyproject.toml` / `docs/TOOLS.md` — `perf = ["numba>=0.60"]` extra + declaration.
-- `tests/test_tmm.py` — `test_numba_resonance_phase_matches_python()` parity test.
-- `docs/RESEARCH_acoustic_metamaterials.md` — Claude + Kimi + web research
-  reference doc (committed); §7 = ported-artifact numerical findings, §8 =
-  language/tooling.
-- `wiki/Internal-Research.md` — hub index; `wiki/Internal-Research-{Acoustics,
-  Optimization, Measurement, Perception, Resources, Metamaterials}.md` — topic
-  pages; `wiki/Internal-Home.md`, `docs/WIKI-INDEX.md` — updated.
-- `backend/experiments/` — ported Claude artifacts: `string_metamaterial.py`,
-  `brass_scaffold.py`, `metamaterial_elements.py`, `folded_bore_elements.py`
-  (all on `main`, exact reproductions verified; standalone `__main__` demos).
-- `scripts/toolcheck.py` — `_is_local` resolves nested sibling modules (guard fix).
-- `scripts/team_chat.py` + `scripts/.team_state.json` — Discussion #23 sync;
-  laptop's 3 bugfixes on `kalles-main-branch`.
-- `backend/core/network.py`, `backend/tone_hole_corrections.py`,
-  `backend/mouthpiece_models.py`, `backend/trumpet_acoustics.py` — metamaterial
-  integration points mapped in the research doc/wiki (future-work).
-- Standing: `docs/DESIGN_spectral.md` (awaiting approval), `docs/TOOLS.md`
-  (tool registry), `scripts/toolcheck.py`, `scripts/team_watch.ps1`.
+- `web/preview.html` — three.js preview page (track B).
+- `woodwind_designer/engine/design_server.py` — FastAPI server incl. `/preview`,
+  `/export/cadquery` (90 presets), `/export/cadquery/instruments`.
+- `scripts/view_browser.py` — one-click browser launcher (starts server if down).
+- `scripts/view_instrument.py` + `scripts/blender_view.py` + `blender_addon/` —
+  Blender one-click viewer + addon.
+- `launchers/view_instrument.bat`, `launchers/view_browser.bat` — repo launchers.
+- `scripts/team_chat.py` — Discussion #23 sync/post (use `post --file`).
+- `scripts/start-cluster.ps1`, `spawn_worker.py`, `cluster_health.py`,
+  `start_scheduler.py`, `start_worker.py`, `sync.ps1` — cluster tooling.
+- `backend/cadquery_export.py` — 90 presets; `docs/RESEARCH_design_to_finished_instrument.md`
+  (on `main` via `c8b9fd2`).
+- `docs/CONSTRAINTS_AND_PREFERENCES.md` — governance (protected;
+  `GOVERNANCE-UPDATE` required). `docs/REMINDERS.md` — pending threads table
+  (currently rows 1–5).
+- `tests/test_stl_export.py` — duplicate `test_stl_export` (dead code, fix later).
+- `C:\Users\Admin\AppData\Roaming\ai.opencode.desktop\window-state-00d27f9b-60df-4cdf-b8de-500ef732713f.json` — opencode window state (fixed, unlocked).
