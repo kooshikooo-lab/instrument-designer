@@ -26,8 +26,11 @@ The registry is enforced automatically:
 
 ## Mesh-repair gate (decision 2026-08-05)
 
-**Decision:** STL export must be followed by a watertight/manifold check, and a
-repair step when it fails, before a mesh is considered printable.
+**Decision (desktop, #23 comment 13:29:40Z):** **build123d-first + repair
+fallback.** New geometry generation goes build123d (the spike's xaphoon_C
+evidence — CadQuery holed STL non-watertight vs build123d watertight — is
+decisive). Keep a pymeshlab/pymeshfix repair step in the STL pipeline for
+legacy CadQuery paths and arbitrary inputs.
 
 - **Check:** `backend/stl_verifier.py` already computes mesh metrics with
   `trimesh` — add a hard `watertight AND manifold` gate on exported STLs.
@@ -40,14 +43,13 @@ repair step when it fails, before a mesh is considered printable.
 - **Evidence (build123d spike, `backend/experiments/build123d_koncovka.py`,
   2026-08-05):** the CadQuery boolean path for holed instruments
   (xaphoon_C) produces a **non-watertight** STL (2624 verts / 5264 faces)
-  while the equivalent build123d build is watertight (1000 / 2012). So the gate
-  either (a) adds a repair tool, or (b) prefers build123d geometry generation to
-  reduce repair load. Both are compatible — the gate stays regardless.
-- **Status:** protocol documented here; **tool NOT adopted yet.** Adopting
-  `pymeshlab`/`pymeshfix`/`admesh` requires the full adopt-a-tool protocol above
-  (declare in `pyproject.toml`, import in `backend/`, whitelisted test, toolcheck
-  PASS). Until then the check-only gate (fail on non-watertight) can be wired
-  without a new dependency.
+  while the equivalent build123d build is watertight (1000 / 2012).
+- **Status:** protocol documented here; **repair tool NOT adopted yet.**
+  Adopting `pymeshlab`/`pymeshfix`/`admesh` requires the full adopt-a-tool
+  protocol above (declare in `pyproject.toml`, import in `backend/`,
+  whitelisted test, toolcheck PASS). Until then the check-only gate (fail on
+  non-watertight) can be wired without a new dependency, and new geometry
+  paths default to build123d.
 
 ## Current declarations
 
