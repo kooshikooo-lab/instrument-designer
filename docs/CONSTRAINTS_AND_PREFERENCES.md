@@ -163,6 +163,22 @@ Write code. Follow `docs/CODING_STANDARDS.md`. Run `docs/ARCHITECTURE_CHECKLIST.
 - After every test run
 - Whenever you feel stuck or uncertain
 
+## ORDER OF OPERATIONS
+
+**If you want to change the order of operations the human specified: explain why
+and ask first.** The human is often coordinating other machines (e.g. the laptop)
+around the current order, so a silent reorder delays the whole team.
+
+If the human does not reply, you may change the order when there is a logical
+reason to do so — say that you are doing this and why.
+
+If the human says "put this on the to-do list", do not start it. Keep it listed,
+pending, until the human tells you to proceed.
+
+**If you are unsure how to interpret the human's statements — their intent,
+next steps, or anything else — ASK. Do not speculate.** Guessing at meaning
+wastes more time than asking.
+
 ---
 
 ## GOVERNANCE DOCUMENTS

@@ -42,3 +42,7 @@ scripts/github_updates_check_state.json
 scripts/.team_state.json
 # GitHub monitor runtime log
 scripts/github_updates.log
+
+# Dask cluster runtime artifacts
+scripts/*.log
+scripts/*.pid

@@ -1,7 +1,8 @@
 # Test the pyinstaller-built backend binary
 
 # Start the backend
-$process = Start-Process -FilePath "C:\instrument-designer\dist\instrument-backend.exe" -WindowStyle Hidden -PassThru
+$repo = Split-Path $PSScriptRoot -Parent
+$process = Start-Process -FilePath "$repo\dist\instrument-backend.exe" -WindowStyle Hidden -PassThru
 Start-Sleep -Seconds 5
 
 # Test POST export with proper JSON

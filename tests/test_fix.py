@@ -1,4 +1,9 @@
-with open(r'C:\instrument-designer\backend\tmm_acoustics.py', 'r', encoding='utf-8') as f:
+import os
+
+_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_path = os.path.join(_root, "backend", "tmm_acoustics.py")
+
+with open(_path, 'r', encoding='utf-8') as f:
     content = f.read()
 
 lines = content.split('\n')
@@ -30,7 +35,7 @@ else:
 
 new_content = '\n'.join(fixed_lines)
 
-with open(r'C:\instrument-designer\backend\tmm_acoustics.py', 'w', encoding='utf-8') as f:
+with open(_path, 'w', encoding='utf-8') as f:
     f.write(new_content)
 
 print("Fixed indentation")

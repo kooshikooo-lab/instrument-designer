@@ -151,14 +151,14 @@ instrument-designer/
 
 ### Option B — Web App
 ```powershell
-cd C:\instrument-designer\web
+cd C:\Users\Admin\Desktop\instrument-designer\web
 npm install
 npm run dev        # → http://localhost:5173
 ```
 
 ### Option A — Tauri Desktop
 ```powershell
-cd C:\instrument-designer\web
+cd C:\Users\Admin\Desktop\instrument-designer\web
 npm install
 npx tauri dev      # Launches desktop app
 ```
@@ -166,7 +166,7 @@ npx tauri dev      # Launches desktop app
 
 ### Option C — Original Python
 ```powershell
-cd C:\instrument-designer
+cd C:\Users\Admin\Desktop\instrument-designer
 pip install -e .
 python -m woodwind_designer
 ```

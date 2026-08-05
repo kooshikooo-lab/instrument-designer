@@ -186,8 +186,9 @@ def run_single_benchmark(
     """
     import sys
     # Ensure project root is in path BEFORE any backend imports
-    if r"C:\instrument-designer" not in sys.path:
-        sys.path.insert(0, r"C:\instrument-designer")
+    _root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if _root not in sys.path:
+        sys.path.insert(0, _root)
     
     start_time = time.time()
     
