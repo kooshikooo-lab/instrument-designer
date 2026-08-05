@@ -1,8 +1,10 @@
 # 3D Printing Guide
 
+> Research-backed additions from `docs/RESEARCH_design_to_finished_instrument.md` (2026-08-05): the pipeline below matches published practice (MIT 3D-printed flute, Diegel SLS saxophone, Ernoult one-day design→print→feedback loop).
+
 ## Recommended Process
 
-**SLA (resin) printing** is strongly recommended for acoustic instruments. FDM layer lines create turbulence that degrades tone quality.
+**SLA (resin) printing** is strongly recommended for acoustic instruments. FDM layer lines create turbulence that degrades tone quality. For instruments with **moving mechanisms** (keys, springs, pivots), consider **SLS nylon** instead — it is tougher than resin and is how the Diegel 3D-printed alto saxophone (41 components, printed + assembled) was made.
 
 ## Material
 
@@ -51,3 +53,13 @@ After printing, validate with impedance measurement:
 - Compare designed vs measured resonance frequencies
 - Typical deviation: 5-15 cents (manufacturing is the bottleneck, not computation)
 - See [[Internal-Research-Measurement]] for measurement techniques
+
+## Pipeline Research Notes (2026-08-05)
+
+Full detail: `docs/RESEARCH_design_to_finished_instrument.md`.
+
+- **Mesh repair before slicing:** export STL, then run a repair/heal gate (candidates: pymeshlab, pymeshfix, admesh) so the slicer and `stl_verifier.py` always see a watertight, manifold mesh. Not yet adopted — any adoption requires the `docs/TOOLS.md` registry protocol.
+- **Tonehole chamfers/undercuts** are an acoustic decision, not cosmetic — published flute/recorder reprints tune hole edges deliberately.
+- **Bore reaming with a tapered reamer + gauge** is the single highest-leverage finishing step: the measured bore radius vs. the design radius is what the acoustics assumes.
+- **Acoustic pulse reflectometry (APR):** reconstruct the printed bore from a pressure measurement to verify it matches the design after reaming — the strongest QA step for "finished" instruments.
+- **Clear UV coating / epoxy bore seal** on SLA bores closes micro-porosity and improves moisture resistance (flutes get wet).
