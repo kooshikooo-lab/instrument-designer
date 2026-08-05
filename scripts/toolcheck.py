@@ -50,8 +50,15 @@ PACKAGE_ALIASES = {
 # install (their pip package is `freecad`). We still require `freecad` declared.
 FREECAD_MODULES = {"FreeCAD", "Part", "Mesh", "Import"}
 
+# Import roots provided by an external application's bundled Python, with no
+# pip package in the host env. Mirrors the FreeCAD case above, but there is no
+# pip package to declare (Blender's `bpy` is not the PyPI `bpy`). Declared in
+# TOOLS.md under "External applications" instead of pyproject.
+EXTERNAL_APP_MODULES = {"bpy"}
+
 # Local top-level package dirs — their whole subtree is never a pip package.
-LOCAL_ROOTS = {"backend", "woodwind_designer", "tests", "scripts", "conftest"}
+LOCAL_ROOTS = {"backend", "woodwind_designer", "tests", "scripts", "conftest",
+               "blender_addon"}
 
 # Third-party roots we knowingly exclude (stdlib / noisy).
 STDLIBISH = {
@@ -203,6 +210,17 @@ def _resolve_pkg(import_root: str) -> str:
     return PACKAGE_ALIASES.get(import_root, import_root).lower()
 
 
+def phantom_deps(declared_all: set[str], imported_pkgs: set[str]) -> list[str]:
+    """Imported-but-undeclared pip packages (excluding external-app roots)."""
+    freecad_declared = "freecad" in declared_all
+    return sorted(
+        p for p in imported_pkgs
+        if p not in declared_all
+        and p not in EXTERNAL_APP_MODULES
+        and (p != "freecad" or not freecad_declared)
+    )
+
+
 def main() -> int:
     installed = _installed()
     declared = _declared()
@@ -212,14 +230,7 @@ def main() -> int:
     # Map import roots to pip package names
     imported_pkgs = {_resolve_pkg(r) for r in imported}
 
-    # FreeCAD ships submodules Part/Mesh/Import/FreeCAD; they are satisfied by
-    # the `freecad` package which is declared as an extra — not phantom.
-    freecad_declared = "freecad" in declared_all
-    phantom = sorted(
-        p for p in imported_pkgs
-        if p not in declared_all
-        and (p != "freecad" or not freecad_declared)
-    )
+    phantom = phantom_deps(declared_all, imported_pkgs)
     orphan = sorted(p for p in declared_all if p not in installed)
     forgotten = sorted(
         p for p in installed

@@ -46,3 +46,4 @@ scripts/github_updates.log
 # Dask cluster runtime artifacts
 scripts/*.log
 scripts/*.pid
+scripts/*.err
