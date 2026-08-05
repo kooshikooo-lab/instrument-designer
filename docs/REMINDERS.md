@@ -34,9 +34,11 @@ thread starts, moves, or resolves.
 
 | # | Thread | Owner | Awaiting | Status | Last update |
 |---|--------|-------|----------|--------|-------------|
-| 1 | Topk integration table | desktop | laptop | **RESOLVED** — desktop posted the 5-family table + robustness to #23 (comment 17891204, 2026-08-04); laptop verified shared engine parity (5.902c @ maxiter=250) | 2026-08-04 |
-| 2 | Numba wiring restore on `main` | both | merge of PR #62 | laptop keeps guarded skip; restore lands via PR #62 merge, then laptop merges `main` | 2026-08-04 |
-| 3 | PR #62 head mirror `opencode-instrument-designer` | desktop | PR #62 merge | GitHub CLI cannot retarget PR heads; mirror ref tracks `opencode/main/desktop` until merge, then delete | 2026-08-04 |
+| 1 | Numba wiring restore on `main` | both | merge of PR #62 | laptop keeps guarded skip; restore lands via PR #62 merge, then laptop merges `main` | 2026-08-04 |
+| 2 | PR #62 head mirror `opencode-instrument-designer` | desktop | PR #62 merge | GitHub CLI cannot retarget PR heads; mirror ref tracks `opencode/main/desktop` until merge, then delete | 2026-08-04 |
+| 3 | Mesh-repair gate protocol (`docs/TOOLS.md`) | laptop | laptop draft | DECIDED: build123d-first + pymeshlab/pymeshfix repair fallback (desktop 17906945); laptop drafting protocol | 2026-08-05 |
+| 4 | build123d spike merge `8ddfc7a`+`e8d6254`+`7bc624e` → `opencode/main/laptop` | laptop | laptop merge | Approved by desktop (17906945); awaiting laptop merge | 2026-08-05 |
+| 5 | `cadquery-ocp` pin in `cad` extra | desktop | desktop commit | Desktop added pin (avoid `cadquery-ocp-novtk` OCP namespace clobber) | 2026-08-05 |
 
 ## Nudge rule
 
