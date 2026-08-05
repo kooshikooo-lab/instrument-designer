@@ -1,6 +1,6 @@
 param([int]$Interval = 0)
 
-$repo = "C:\instrument-designer"
+$repo = "C:\Users\Admin\Desktop\instrument-designer"
 $chatPort = 9999
 $desktopIP = "100.69.113.41"
 $laptopIP = "100.100.66.117"
