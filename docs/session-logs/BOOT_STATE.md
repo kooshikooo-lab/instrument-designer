@@ -14,6 +14,11 @@
   finishing, QA/tuning) → commit to GitHub docs + wiki. **DONE, `8603240` on
   `opencode/main/laptop`.** Also **attach a laptop Dask worker to desktop's live
   cluster** (desktop request 2026-08-05T10:53Z). **DONE — 2 workers confirmed.**
+- **Track C (desktop allocation #23, 2026-08-05): laptop = build123d spike
+  (koncovka_C) + mesh-repair gate decision.** **DONE** — spike on
+  `opencode/build123d/laptop` (`8ddfc7a`), parity confirmed vs CadQuery; mesh
+  repair gate protocol landed in `docs/TOOLS.md` (`e8d6254`). Both awaiting
+  desktop review before merge decision.
 - Consolidate the acoustic-metamaterials research (Claude + Kimi exports + web
   research) into `docs/RESEARCH_acoustic_metamaterials.md` (reference doc) and the
   internal wiki, restructured into **one page per major topic** with the
@@ -186,12 +191,36 @@
   `tcp://100.69.113.41:60461` desktop). dask[distributed] 2026.7.1 already
   installed. Version mismatch expected (numpy 2.4.6/2.5.1, py 3.14.6/3.12.10) —
   see AI_FAILURE_PATTERNS; workers run fine, functions shipped from client.
+- **Build123d spike (track C, 2026-08-05, commit `8ddfc7a` on
+  `opencode/build123d/laptop`)**: `backend/experiments/build123d_koncovka.py`
+  ports `cadquery_export.generate_instrument`'s cylindrical path to build123d
+  0.11.1. Parity results: koncovka_C (no holes) **0.000%** volume err, identical
+  mesh (504 verts/1008 faces, watertight), bbox z[0,651.5] exact after `+bore_length/2`
+  translate fix; fujara_G (closed top) 0.000%, both watertight; **xaphoon_C
+  (7 holes): CadQuery STL NOT watertight (2624/5264) vs build123d watertight
+  (1000/2012)** — corroborates the mesh-repair-gate finding. Note: build123d
+  0.11 uses `Pos(...) * part` (NOT `part @ Pos(...)`). Env fix: build123d's dep
+  pulled `cadquery-ocp-novtk` which clobbered shared OCP namespace and broke
+  cadquery imports — uninstalled novtk, force-reinstalled `cadquery-ocp`; both
+  import cleanly now. Tests **123 passed / 1 skipped**, toolcheck PASS. Posted to
+  #23 (comment-17906678).
+- **Mesh-repair gate decision landed in `docs/TOOLS.md`** (commit `e8d6254` on
+  `opencode/build123d/laptop`): protocol section documents the gate
+  (watertight AND manifold check via `backend/stl_verifier.py`/trimesh),
+  repair candidates pymeshlab (primary) / pymeshfix / admesh — **declared, NOT
+  adopted** (adoption requires the full adopt-a-tool protocol); check-only gate
+  (fail on non-watertight) wireable with zero new deps. Posted to #23
+  (comment-17906678).
 
 ### In Progress
 - Laptop Dask worker `laptop-worker` running, attached to desktop scheduler
   `tcp://100.69.113.41:8786` (logs: `scripts/laptop_worker_stdout.log` /
   `_stderr.log`, gitignored). Leave running while benchmarks use both machines;
   desktop's `cluster_health.py` will confirm once their commits land.
+- Build123d spike + mesh-repair gate protocol on `opencode/build123d/laptop`
+  (`8ddfc7a`, `e8d6254`) posted to #23 (comment-17906678), **awaiting desktop
+  review** — merge into `opencode/main/laptop` (and possibly docs-only cherry-pick
+  to `main`) is the desktop's call per branch-naming convention.
 
 ### Blocked
 - Standing (not this session): `backend/spectral` implementation awaits user
@@ -224,6 +253,13 @@
 
 1. Standing: present `backend/spectral` design (`docs/DESIGN_spectral.md`) for
    user approval when the user is available.
+2. **Build123d spike review** (posted #23 comment-17906678): decide merge of
+   `opencode/build123d/laptop` (`8ddfc7a` spike + `e8d6254` mesh-repair protocol)
+   into `opencode/main/laptop`, then docs-only cherry-pick to `main` as done for
+   the research doc — desktop's call per branch-naming convention.
+3. **Reconcile `kalles-main-branch` deletion** with desktop: confirm which branch
+   now carries the metamaterial/topk/spectral work toward `main` (history safe on
+   `opencode/main/laptop`; desktop branch lacks `3d318dc`).
 2. Monitor `kalles-main-branch` for laptop's `team_chat.py` fixes landing on
    `main` (laptop's call) and for Phase 2G updates; laptop may want the L2-vs-L1
    parity sweep now that `main` has the ported experiment scripts.
@@ -243,30 +279,32 @@
 
 ## Critical Context
 
-- **`main` HEAD = `0c794fd`** (BOOT_STATE update) over `5d5c5a0` (Appendix B)
-  over `401e889` (BOOT_STATE) over `cf7e625` (Claude artifact ports + doc/wiki +
-  toolcheck fix) over `91b0df8` (string port) over `80a4435`/`e8780d7` (BOOT_STATE)
-  over `b42b5bf` (wiki cross-link fixes) over `32d4c9f` (numba wiring) over
-  `5c7529f` (wiki restructure); `origin/main` = `d663a43` (desktop's BOOT_STATE
-  update after laptop metamaterial merge).
-- **`origin/kalles-main-branch` = `b198c4c`** (branch health fixes: spectral/fem
-  extras, topk whitelist, numba test guard) over `012f18a` (BOOT_STATE) over
-  `27ce1cb` (topk polish optimizer) over `3e64efc` (spectral module) over
-  `8bd5599` (merge-conflict resolution) over `187b770` (merge origin/main) over
-  `e8b02d3` (metamaterial optimizer + spectral + FEM cross-check). Most advanced
-  branch vs `main` (42 commits unique).
-- **`origin/opencode-instrument-designer` = `6ff0da8`** (desktop branch, PR #62:
-  ML surrogate port + intonation pass tiers + `verify_with_retries`, 11 commits /
-  71 files / MERGEABLE). Comparison runners take budget args. Desktop corrected a
-  mis-signature (a post was tagged "opencode" but was `TEAM_MACHINE=desktop`);
-   the Copilot agent that acked laptop's top-k tuning is **paused until
-   2026-09-01**, so desktop's opencode agent may pick up that work.
-- **`origin/opencode/main/laptop` = `8603240`** (this session): adopted
+- **`main` HEAD = `c8b9fd2`** (docs-only cherry-pick of laptop's research doc
+  `8603240` onto `main`, per #23 plan to avoid pulling the 55-commit laptop branch
+  into main) over `d663a43` (desktop's BOOT_STATE) over `7cae468` (BOOT_STATE) …
+  over `32d4c9f` (numba wiring) over `5c7529f` (wiki restructure).
+  **`origin/main` = `c8b9fd2`**.
+- **`origin/kalles-main-branch` = DELETED** (no longer on origin as of
+  2026-08-05). Full history preserved: `b198c4c` (its tip) is an ancestor of
+  `origin/opencode/main/laptop`, so no commits lost. Local refs `kalles-rebased`,
+  `test/kalles-into-main` also exist. Reconcile with desktop which branch now
+  carries the metamaterial/topk/spectral work for `main` — desktop's
+  `opencode/main/desktop` does NOT contain `3d318dc` (metamaterial impl).
+- **`origin/opencode-instrument-designer` = `7f97975`** (desktop branch, PR #62:
+  ML surrogate port + intonation pass tiers + `verify_with_retries` + PR stats
+  snapshot / topk-thread-resolved BOOT_STATE). Comparison runners take budget
+  args. The Copilot agent that acked laptop's top-k tuning is **paused until
+  2026-09-01**, so desktop's opencode agent may pick up that work.
+- **`origin/opencode/main/laptop` = `1e70d01`** (BOOT_STATE update): adopted
   REMINDERS.md coordination (`c5ab7d2`) + dask-parallel topk_polish path
   (`ebc2418`) + research docs (`8603240`: `docs/RESEARCH_design_to_finished_instrument.md`,
   `docs/WIKI.md` §11, `docs/WIKI-INDEX.md`, `wiki/Internal-Research-CAD-Pipeline.md`,
-  `wiki/Internal-Research.md`, `wiki/3D-Printing-Guide.md`). **123 passed /
-  1 skipped** on laptop.
+  `wiki/Internal-Research.md`, `wiki/3D-Printing-Guide.md`) + BOOT_STATE (`1e70d01`).
+  **123 passed / 1 skipped** on laptop.
+- **`origin/opencode/build123d/laptop` = `e8d6254`** (new side branch off
+  `opencode/main/laptop`): build123d spike (`8ddfc7a`) + mesh-repair gate protocol
+  in `docs/TOOLS.md` (`e8d6254`). Not merged to laptop branch yet — awaiting
+  desktop review (see #23 comment-17906678).
 - Untracked regenerable artifacts left uncommitted: `bench_main.txt`,
   `bench_perf_tmm_medium.txt`, `bench_perf_tmm_refactor.txt`, `test_output/`.
 - #23 stream: laptop confirmation (01:41:04Z) + laptop's three `team_chat.py`
@@ -345,7 +383,14 @@
   (all on `main`, exact reproductions verified; standalone `__main__` demos).
 - `scripts/toolcheck.py` — `_is_local` resolves nested sibling modules (guard fix).
 - `scripts/team_chat.py` + `scripts/.team_state.json` — Discussion #23 sync;
-  laptop's 3 bugfixes on `kalles-main-branch`.
+  laptop's 3 bugfixes were on `kalles-main-branch` (now deleted; history on
+  `opencode/main/laptop`).
+- `backend/experiments/build123d_koncovka.py` — **new on
+  `opencode/build123d/laptop`** — build123d parity spike (koncovka_C / fujara_G /
+  xaphoon_C); finding: CadQuery holed STL not watertight, build123d is.
+- `docs/TOOLS.md` — **mesh-repair gate decision (2026-08-05)** on
+  `opencode/build123d/laptop`: check-only gate wireable now; pymeshlab/pymeshfix/
+  admesh declared but not adopted (awaiting desktop review).
 - `backend/core/network.py`, `backend/tone_hole_corrections.py`,
   `backend/mouthpiece_models.py`, `backend/trumpet_acoustics.py` — metamaterial
   integration points mapped in the research doc/wiki (future-work).
