@@ -15,10 +15,11 @@
   `opencode/main/laptop`.** Also **attach a laptop Dask worker to desktop's live
   cluster** (desktop request 2026-08-05T10:53Z). **DONE — 2 workers confirmed.**
 - **Track C (desktop allocation #23, 2026-08-05): laptop = build123d spike
-  (koncovka_C) + mesh-repair gate decision.** **DONE** — spike on
-  `opencode/build123d/laptop` (`8ddfc7a`), parity confirmed vs CadQuery; mesh
-  repair gate protocol landed in `docs/TOOLS.md` (`e8d6254`). Both awaiting
-  desktop review before merge decision.
+  (koncovka_C) + mesh-repair gate decision.** **DONE + MERGED** — spike on
+  `backend/experiments/build123d_koncovka.py` (`8ddfc7a`), mesh-repair gate
+  protocol in `docs/TOOLS.md` (`e8d6254`, refined to desktop's **build123d-first
+  + repair fallback** decision in `ea3af93`). Desktop approved the merge; all
+  track C commits merged onto `opencode/main/laptop` at `da4f4ba`.
 - Consolidate the acoustic-metamaterials research (Claude + Kimi exports + web
   research) into `docs/RESEARCH_acoustic_metamaterials.md` (reference doc) and the
   internal wiki, restructured into **one page per major topic** with the
@@ -217,10 +218,8 @@
   `tcp://100.69.113.41:8786` (logs: `scripts/laptop_worker_stdout.log` /
   `_stderr.log`, gitignored). Leave running while benchmarks use both machines;
   desktop's `cluster_health.py` will confirm once their commits land.
-- Build123d spike + mesh-repair gate protocol on `opencode/build123d/laptop`
-  (`8ddfc7a`, `e8d6254`) posted to #23 (comment-17906678), **awaiting desktop
-  review** — merge into `opencode/main/laptop` (and possibly docs-only cherry-pick
-  to `main`) is the desktop's call per branch-naming convention.
+- Track C fully merged into `opencode/main/laptop` (`da4f4ba`); desktop approved
+  merge + decided build123d-first + repair fallback (see #23 comment 13:29:40Z).
 
 ### Blocked
 - Standing (not this session): `backend/spectral` implementation awaits user
@@ -253,13 +252,14 @@
 
 1. Standing: present `backend/spectral` design (`docs/DESIGN_spectral.md`) for
    user approval when the user is available.
-2. **Build123d spike review** (posted #23 comment-17906678): decide merge of
-   `opencode/build123d/laptop` (`8ddfc7a` spike + `e8d6254` mesh-repair protocol)
-   into `opencode/main/laptop`, then docs-only cherry-pick to `main` as done for
-   the research doc — desktop's call per branch-naming convention.
-3. **Reconcile `kalles-main-branch` deletion** with desktop: confirm which branch
-   now carries the metamaterial/topk/spectral work toward `main` (history safe on
-   `opencode/main/laptop`; desktop branch lacks `3d318dc`).
+2. **Build123d spike merged** (posted #23 comment-17906678; desktop approved
+   comment 13:29:40Z, decision = build123d-first + repair fallback). Laptop merged
+   track C onto `opencode/main/laptop` (`da4f4ba`). Desktop side owns the
+   `cadquery-ocp` pin in the `cad` extra (claimed by desktop); laptop watches for
+   it in `opencode/main/desktop`.
+3. **`kalles-main-branch` reconcile** — RESOLVED: desktop confirmed deletion not
+   intentional; agreed `opencode/main/laptop` is the carrier toward `main`.
+   Desktop pruning its stale refs; laptop refs already pruned.
 2. Monitor `kalles-main-branch` for laptop's `team_chat.py` fixes landing on
    `main` (laptop's call) and for Phase 2G updates; laptop may want the L2-vs-L1
    parity sweep now that `main` has the ported experiment scripts.
@@ -295,16 +295,16 @@
   snapshot / topk-thread-resolved BOOT_STATE). Comparison runners take budget
   args. The Copilot agent that acked laptop's top-k tuning is **paused until
   2026-09-01**, so desktop's opencode agent may pick up that work.
-- **`origin/opencode/main/laptop` = `1e70d01`** (BOOT_STATE update): adopted
+- **`origin/opencode/main/laptop` = `da4f4ba`** (track C merged): adopted
   REMINDERS.md coordination (`c5ab7d2`) + dask-parallel topk_polish path
   (`ebc2418`) + research docs (`8603240`: `docs/RESEARCH_design_to_finished_instrument.md`,
   `docs/WIKI.md` §11, `docs/WIKI-INDEX.md`, `wiki/Internal-Research-CAD-Pipeline.md`,
-  `wiki/Internal-Research.md`, `wiki/3D-Printing-Guide.md`) + BOOT_STATE (`1e70d01`).
-  **123 passed / 1 skipped** on laptop.
-- **`origin/opencode/build123d/laptop` = `e8d6254`** (new side branch off
-  `opencode/main/laptop`): build123d spike (`8ddfc7a`) + mesh-repair gate protocol
-  in `docs/TOOLS.md` (`e8d6254`). Not merged to laptop branch yet — awaiting
-  desktop review (see #23 comment-17906678).
+  `wiki/Internal-Research.md`, `wiki/3D-Printing-Guide.md`) + BOOT_STATE (`1e70d01`)
+  + track C merge (`da4f4ba`: `8ddfc7a` build123d spike, `e8d6254` mesh-repair
+  protocol, `7bc624e` BOOT_STATE, `2a3374e` REMINDERS, `ea3af93` build123d-first
+  refinement). **123 passed / 1 skipped** on laptop.
+- **`origin/opencode/build123d/laptop` = `ea3af93`** (track C side branch, fully
+  merged into `opencode/main/laptop` at `da4f4ba`; kept for history/reference).
 - Untracked regenerable artifacts left uncommitted: `bench_main.txt`,
   `bench_perf_tmm_medium.txt`, `bench_perf_tmm_refactor.txt`, `test_output/`.
 - #23 stream: laptop confirmation (01:41:04Z) + laptop's three `team_chat.py`
@@ -385,12 +385,13 @@
 - `scripts/team_chat.py` + `scripts/.team_state.json` — Discussion #23 sync;
   laptop's 3 bugfixes were on `kalles-main-branch` (now deleted; history on
   `opencode/main/laptop`).
-- `backend/experiments/build123d_koncovka.py` — **new on
-  `opencode/build123d/laptop`** — build123d parity spike (koncovka_C / fujara_G /
+- `backend/experiments/build123d_koncovka.py` — **new on `opencode/main/laptop`**
+  (via track C merge) — build123d parity spike (koncovka_C / fujara_G /
   xaphoon_C); finding: CadQuery holed STL not watertight, build123d is.
 - `docs/TOOLS.md` — **mesh-repair gate decision (2026-08-05)** on
-  `opencode/build123d/laptop`: check-only gate wireable now; pymeshlab/pymeshfix/
-  admesh declared but not adopted (awaiting desktop review).
+  `opencode/main/laptop`: build123d-first + repair fallback (desktop decision);
+  check-only gate wireable now; pymeshlab/pymeshfix/admesh declared but not
+  adopted. Desktop owns `cadquery-ocp` pin in `cad` extra.
 - `backend/core/network.py`, `backend/tone_hole_corrections.py`,
   `backend/mouthpiece_models.py`, `backend/trumpet_acoustics.py` — metamaterial
   integration points mapped in the research doc/wiki (future-work).
