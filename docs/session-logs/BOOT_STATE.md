@@ -9,6 +9,11 @@
 
 ## Goal
 
+- Deliver the laptop's research task: deep research on **3D modeling/CAD software,
+  AI tools, and the design-to-finished-instrument pipeline** (fabrication,
+  finishing, QA/tuning) → commit to GitHub docs + wiki. **DONE, `8603240` on
+  `opencode/main/laptop`.** Also **attach a laptop Dask worker to desktop's live
+  cluster** (desktop request 2026-08-05T10:53Z). **DONE — 2 workers confirmed.**
 - Consolidate the acoustic-metamaterials research (Claude + Kimi exports + web
   research) into `docs/RESEARCH_acoustic_metamaterials.md` (reference doc) and the
   internal wiki, restructured into **one page per major topic** with the
@@ -159,9 +164,34 @@
   engine, dask == serial-deferred DE exactly, dask determinism, graceful
   dask-absent degradation). No name collision with desktop's `ai_methods_dask.py`.
   Laptop: **123 passed / 1 skipped**, toolcheck PASS, ruff clean on new files.
+- **Research: 3D modeling/CAD + AI tools + design-to-finished-instrument pipeline**
+  (commit `8603240`, `opencode/main/laptop`, pushed): `docs/
+  RESEARCH_design_to_finished_instrument.md` (REFERENCE, no code changes);
+  `docs/WIKI.md` §11; `docs/WIKI-INDEX.md` entry; `wiki/Internal-Research-CAD-
+  Pipeline.md` (new topic page); `wiki/Internal-Research.md` hub row;
+  `wiki/3D-Printing-Guide.md` pipeline-research section. Findings: CadQuery/
+  OpenCASCADE parametric CAD is correct (Build123d the only serious alternative);
+  mesh gap = no pre-slicing repair gate (pymeshlab/pymeshfix, needs docs/TOOLS.md
+  protocol); ML surrogates already evaluated+rejected (topk_polish+dask won, do
+  not re-open w/o changed contract); gradient-based geometry optimization
+  (Szwarcberg 2025) = most promising new lever; APR bore reconstruction = strongest
+  QA addition. Tests **123 passed / 1 skipped**, toolcheck PASS. Posted to #23
+  (comment-17905161).
+- **Laptop Dask worker attached to desktop cluster** (2026-08-05): desktop
+  scheduler `tcp://100.69.113.41:8786` (Tailscale), started laptop worker via
+  local `scripts/start_worker.py` (`laptop-worker`, 4 threads) since desktop's
+  `start-cluster.ps1`/`cluster_health.py` are not yet on
+  `origin/opencode/main/desktop` (branch still at `7f97975`, only sync.ps1).
+  Verified **2 workers** (`tcp://100.100.66.117:56372` laptop +
+  `tcp://100.69.113.41:60461` desktop). dask[distributed] 2026.7.1 already
+  installed. Version mismatch expected (numpy 2.4.6/2.5.1, py 3.14.6/3.12.10) —
+  see AI_FAILURE_PATTERNS; workers run fine, functions shipped from client.
 
 ### In Progress
-- None — this session's work is complete and pushed.
+- Laptop Dask worker `laptop-worker` running, attached to desktop scheduler
+  `tcp://100.69.113.41:8786` (logs: `scripts/laptop_worker_stdout.log` /
+  `_stderr.log`, gitignored). Leave running while benchmarks use both machines;
+  desktop's `cluster_health.py` will confirm once their commits land.
 
 ### Blocked
 - Standing (not this session): `backend/spectral` implementation awaits user
@@ -231,11 +261,12 @@
   mis-signature (a post was tagged "opencode" but was `TEAM_MACHINE=desktop`);
    the Copilot agent that acked laptop's top-k tuning is **paused until
    2026-09-01**, so desktop's opencode agent may pick up that work.
-- **`origin/opencode/main/laptop` = `ebc2418`** (this session): adopted
+- **`origin/opencode/main/laptop` = `8603240`** (this session): adopted
   REMINDERS.md coordination (`c5ab7d2`) + dask-parallel topk_polish path
-  (`ebc2418`: `backend/optimization/topk_polish.py` workers param,
-  `tests/comparison/dask_topk.py`, `tests/comparison/test_dask_topk.py`,
-  pyproject whitelist). **123 passed / 1 skipped** on laptop.
+  (`ebc2418`) + research docs (`8603240`: `docs/RESEARCH_design_to_finished_instrument.md`,
+  `docs/WIKI.md` §11, `docs/WIKI-INDEX.md`, `wiki/Internal-Research-CAD-Pipeline.md`,
+  `wiki/Internal-Research.md`, `wiki/3D-Printing-Guide.md`). **123 passed /
+  1 skipped** on laptop.
 - Untracked regenerable artifacts left uncommitted: `bench_main.txt`,
   `bench_perf_tmm_medium.txt`, `bench_perf_tmm_refactor.txt`, `test_output/`.
 - #23 stream: laptop confirmation (01:41:04Z) + laptop's three `team_chat.py`
