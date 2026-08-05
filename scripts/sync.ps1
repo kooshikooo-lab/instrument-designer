@@ -4,6 +4,9 @@ $repo = "C:\Users\Admin\Desktop\instrument-designer"
 $chatPort = 9999
 $desktopIP = "100.69.113.41"
 $laptopIP = "100.100.66.117"
+$machine = $env:TEAM_MACHINE
+if (-not $machine) { $machine = (hostname).ToLower() }
+$otherIP = if ($machine -match "laptop") { $desktopIP } else { $laptopIP }
 Set-Location $repo
 
 $lastGitHub = [datetime]::MinValue
@@ -34,11 +37,11 @@ function Do-GitHub {
 
 function Do-Tailscale {
     Write-Host "`n=== TAILSCALE $(Get-Date -Format 'HH:mm:ss') ===" -ForegroundColor Cyan
-    Write-Host "--- Ping desktop ---"
-    $result = tailscale ping -c 2 $desktopIP 2>&1
+    Write-Host "--- Ping other machine ($otherIP) ---"
+    $result = tailscale ping -c 2 $otherIP 2>&1
     Write-Host $result
 
-    Write-Host "`n--- Listening ports ---"
+    Write-Host "`n--- Listening ports (local) ---"
     netstat -ano | Select-String "LISTENING" | Select-String $chatPort
 
     Write-Host "`n--- Established connections ---"
