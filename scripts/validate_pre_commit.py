@@ -203,6 +203,17 @@ def main():
             if size_msg:
                 warnings.append(size_msg)
 
+    # 5. Schema validation for instrument configs
+    if any(rel.startswith("config/") and rel.endswith(".json") for rel in files):
+        result = subprocess.run(
+            [sys.executable, str(repo_root / "scripts" / "validate_instrument_configs.py")],
+            capture_output=True, text=True, encoding="utf-8", errors="replace"
+        )
+        if result.returncode != 0:
+            errors.append("config/*.json schema validation failed")
+            for line in result.stdout.splitlines() + result.stderr.splitlines():
+                errors.append(f"  {line}")
+
     if warnings:
         print("WARNINGS (non-blocking):")
         for w in warnings:

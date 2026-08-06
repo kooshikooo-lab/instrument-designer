@@ -32,7 +32,7 @@ cad = ["cadquery>=2.4", "cadquery-ocp", "build123d>=0.7", "vtk>=9.0", "trimesh>=
 bench = ["dask[distributed]>=2024.1", "psutil>=5.9", "cma>=3.0"]
 perf = ["numba>=0.60"]
 freecad = ["freecad"]
-dev = ["pytest>=7.0", "ruff>=0.1"]
+dev = ["pytest>=7.0", "ruff>=0.1", "jsonschema>=4.0"]
 
 [project.scripts]
 instrument-designer = "woodwind_designer.main:main"

@@ -1,0 +1,150 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/kooshikooo-lab/instrument-designer/schemas/instrument_config.schema.json",
+  "title": "Instrument Designer — Instrument Config",
+  "description": "Schema for instrument configuration JSON files in config/*.json. This is a migration schema: it accepts the existing variants while we unify them toward the canonical format.",
+  "type": "object",
+  "required": ["name", "description"],
+  "anyOf": [
+    { "$ref": "#/definitions/legacyBaroqueClarinet" },
+    { "$ref": "#/definitions/legacyBassClarinet" },
+    { "$ref": "#/definitions/legacyChalumeau" },
+    { "$ref": "#/definitions/canonical" }
+  ],
+  "definitions": {
+    "hole": {
+      "type": "object",
+      "required": ["position_mm", "diameter_mm"],
+      "properties": {
+        "index": { "type": "integer", "minimum": 0 },
+        "name": { "type": "string" },
+        "position_mm": { "type": "number", "minimum": 0 },
+        "diameter_mm": { "type": "number", "exclusiveMinimum": 0 },
+        "length_mm": { "type": "number", "minimum": 0 },
+        "chimney_mm": { "type": "number", "minimum": 0 },
+        "finger": { "type": "string" },
+        "key": { "type": "boolean" },
+        "default_closed": { "type": "boolean" },
+        "source": { "type": "string" }
+      }
+    },
+    "key": {
+      "type": "object",
+      "required": ["name", "position_mm", "diameter_mm"],
+      "properties": {
+        "name": { "type": "string" },
+        "hole_index": { "type": "integer", "minimum": 0 },
+        "position_mm": { "type": "number", "minimum": 0 },
+        "diameter_mm": { "type": "number", "exclusiveMinimum": 0 },
+        "length_mm": { "type": "number", "minimum": 0 },
+        "chimney_mm": { "type": "number", "minimum": 0 },
+        "default_closed": { "type": "boolean" },
+        "finger": { "type": "string" }
+      }
+    },
+    "bore": {
+      "type": "object",
+      "anyOf": [
+        { "required": ["length_mm", "radius_mm"] },
+        { "required": ["total_length_mm", "radius_mm"] }
+      ],
+      "properties": {
+        "length_mm": { "type": "number", "exclusiveMinimum": 0 },
+        "radius_mm": { "type": "number", "exclusiveMinimum": 0 },
+        "outer_diameter_mm": { "type": "number", "exclusiveMinimum": 0 },
+        "profile": { "type": "string" },
+        "closed_top": { "type": "boolean" },
+        "cylinder_length_mm": { "type": "number", "minimum": 0 },
+        "bell_length_mm": { "type": "number", "minimum": 0 },
+        "bell_end_radius_mm": { "type": "number", "exclusiveMinimum": 0 },
+        "total_length_mm": { "type": "number", "exclusiveMinimum": 0 },
+        "bell_profile": { "type": "string" },
+        "bell_flare": { "type": "object" }
+      }
+    },
+    "fingeringChart": {
+      "type": "object",
+      "patternProperties": {
+        "^[A-G][#b]?[0-9]$": {
+          "type": "array",
+          "items": { "type": "integer", "enum": [0, 1] }
+        }
+      },
+      "additionalProperties": false
+    },
+    "legacyBaroqueClarinet": {
+      "type": "object",
+      "required": ["bore_length_mm", "bore_radius_mm", "finger_holes", "fingering_chart"],
+      "properties": {
+        "bore_length_mm": { "type": "number", "exclusiveMinimum": 0 },
+        "bore_radius_mm": { "type": "number", "exclusiveMinimum": 0 },
+        "outer_diameter_mm": { "type": "number", "exclusiveMinimum": 0 },
+        "wall_thickness_mm": { "type": "number", "exclusiveMinimum": 0 },
+        "register_hole": { "$ref": "#/definitions/hole" },
+        "finger_holes": { "type": "array", "items": { "$ref": "#/definitions/hole" } },
+        "keys": { "type": "array", "items": { "$ref": "#/definitions/key" } },
+        "fingering_chart": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/definitions/fingeringChart" }
+        },
+        "targets_hz": {
+          "type": "object",
+          "additionalProperties": { "type": "array", "items": { "type": "number", "exclusiveMinimum": 0 } }
+        }
+      }
+    },
+    "legacyBassClarinet": {
+      "type": "object",
+      "required": ["bore", "toneholes", "target_notes"],
+      "properties": {
+        "status": { "type": "string" },
+        "bore": { "$ref": "#/definitions/bore" },
+        "register_hole": { "$ref": "#/definitions/hole" },
+        "toneholes": { "type": "array", "items": { "$ref": "#/definitions/hole" } },
+        "target_notes": { "type": "array", "items": { "type": "string" } },
+        "target_frequencies_hz": { "type": "array", "items": { "type": "number", "exclusiveMinimum": 0 } },
+        "performance": { "type": "object" }
+      }
+    },
+    "legacyChalumeau": {
+      "type": "object",
+      "required": ["instrument_type", "bore", "toneholes", "fingering_chart_chalumeau"],
+      "properties": {
+        "instrument_type": { "type": "string" },
+        "pitch": { "type": "string" },
+        "bore": { "$ref": "#/definitions/bore" },
+        "toneholes": { "type": "array", "items": { "$ref": "#/definitions/hole" } },
+        "keys": { "type": "array", "items": { "$ref": "#/definitions/key" } },
+        "fingering_chart_chalumeau": { "$ref": "#/definitions/fingeringChart" },
+        "targets_hz_chalumeau": {
+          "type": "object",
+          "patternProperties": {
+            "^[A-G][#b]?[0-9]$": { "type": "number", "exclusiveMinimum": 0 }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    "canonical": {
+      "type": "object",
+      "required": ["instrument_type", "pitch", "bore", "toneholes"],
+      "properties": {
+        "instrument_type": { "type": "string" },
+        "pitch": { "type": "string" },
+        "bore": { "$ref": "#/definitions/bore" },
+        "register_hole": { "$ref": "#/definitions/hole" },
+        "toneholes": { "type": "array", "items": { "$ref": "#/definitions/hole" } },
+        "keys": { "type": "array", "items": { "$ref": "#/definitions/key" } },
+        "fingering_chart": { "$ref": "#/definitions/fingeringChart" },
+        "targets_hz": {
+          "type": "object",
+          "patternProperties": {
+            "^[A-G][#b]?[0-9]$": { "type": "number", "exclusiveMinimum": 0 }
+          },
+          "additionalProperties": false
+        },
+        "notes": { "type": "string" }
+      }
+    }
+  }
+}

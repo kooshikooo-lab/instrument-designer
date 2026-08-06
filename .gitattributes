@@ -6,3 +6,6 @@ scripts/git-hooks/* text eol=lf
 
 # Python files use native line endings.
 *.py text
+
+# JSON files use LF for portability.
+*.json text eol=lf
