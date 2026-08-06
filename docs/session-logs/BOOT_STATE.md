@@ -142,8 +142,13 @@
   - `docs/AI_PLANNING_PROMPT.md` and `docs/AI_DEBUG_PROMPT.md` — reusable
     prompt templates.
   - `docs/AI_REVIEW_NEMOTRON_3_SUPER_120B_OPENROUTER.md` — first automated
-    review output.
+    review output (truncated at max_tokens).
   - `docs/PLAN_2026-08-06_TEST.md` — first automated planning output.
+  - `docs/AI_REVIEW_FACT_CHECK.md` — fact-check of the Nemotron review:
+    CONFIRMED: impossible outer diameters in `benchmark_all.py`, missing holes in
+    `build_bass_chalumeau_Bb()`, hardcoded `outer_diameter_mm=22.0` and
+    `closed_top=False` in `jax_optimizer.py` and `two_phase_optimizer.py`. False
+    alarm: positional `outer_diameter` argument in `sequential_placement` is correct.
 - **Path-rewrite cleanup** (in `a1807bd`): all 15 active scripts/tests use
   repo-relative resolution (`os.path.dirname(os.path.dirname(os.path.abspath(__file__)))`
   / `Split-Path $PSScriptRoot -Parent`), no hardcoded paths.
