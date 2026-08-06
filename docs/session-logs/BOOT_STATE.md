@@ -76,6 +76,15 @@
     requires `GOVERNANCE-UPDATE` for governance files and `AUDIT:` for
     provisional keywords.
   - CI workflow updated to use `validate_commit_msg.py`.
+- **Schema enforcement layer started** (`fd010fc` + `6ad42db`, pushed):
+  - `schemas/instrument_config.schema.json` documents existing config variants
+    (baroque clarinet, bass clarinet, bass chalumeau) and a canonical target.
+  - `scripts/validate_instrument_configs.py` validates all `config/*.json`
+    files and cross-checks fingering chart bit lengths against tonehole counts.
+  - Pre-commit hook now runs the config validator on any staged `config/*.json`.
+  - `tests/test_instrument_config_schema.py` added (5 tests passing).
+  - `jsonschema` added to `dev` extras.
+  - Draft schema posted to Discussion #23 for laptop review.
 - **Path-rewrite cleanup** (in `a1807bd`): all 15 active scripts/tests use
   repo-relative resolution (`os.path.dirname(os.path.dirname(os.path.abspath(__file__)))`
   / `Split-Path $PSScriptRoot -Parent`), no hardcoded paths.
@@ -150,17 +159,20 @@
 
 1. Stay on `opencode/main/desktop`; PR #62 (MERGEABLE) still needs no external
    approval per user; laptop is deferring its branch merge until PR #62 merges.
-2. Continue governance / agent-coordination improvements: schema enforcement for
-   instrument configs (fingering charts, JSON configs) and/or pre-commit
-   import-consistency checks (per the other model's analysis).
-3. Have the user verify the three.js preview (`View in Browser.bat`) and the
+2. Await laptop feedback on `schemas/instrument_config.schema.json` (posted to #23).
+   If approved, continue with unified canonical config format + migration of the 4
+   existing configs. If laptop has additional config keys, revise schema first.
+3. Continue governance / agent-coordination improvements: pre-commit
+   import-consistency checks (per the other model's analysis) and/or design-output
+   JSON schema.
+4. Have the user verify the three.js preview (`View in Browser.bat`) and the
    Blender viewer; then continue or pivot.
-4. Monitor #23 for: laptop's mesh-repair gate protocol draft for `docs/TOOLS.md`,
+5. Monitor #23 for: laptop's mesh-repair gate protocol draft for `docs/TOOLS.md`,
    laptop's merge of track C, cluster worker re-attach, PR #62 status.
-5. Optional later: track A (FreeCAD workbench); `tests/test_stl_export.py` has a
+6. Optional later: track A (FreeCAD workbench); `tests/test_stl_export.py` has a
    duplicate `test_stl_export` (l.8–47 dead code shadowed by l.50–83) to clean up.
-6. Standing: present `backend/spectral` for approval when the user is available.
-7. Acoustic improvements held pending user priority: Ernoult phase-based cost
+7. Standing: present `backend/spectral` for approval when the user is available.
+8. Acoustic improvements held pending user priority: Ernoult phase-based cost
    (already partially implemented in `tmm_acoustics.py` and `tmm_acoustics_jax.py`)
    and cross-fingerings for 12-hole chromatic clarinet.
 
