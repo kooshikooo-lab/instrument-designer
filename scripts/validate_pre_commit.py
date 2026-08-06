@@ -99,8 +99,10 @@ def check_regenerable(path: str) -> str | None:
             for prefix in REGENERABLE_PATHS:
                 if path.startswith(prefix):
                     return f"{path}: regenerable artifact in {prefix} (do not commit)"
-            # JSON config files in config/ are allowed.
+            # JSON config files in config/ or specific machine-config files are allowed.
             if path.startswith("config/") and suffix == ".json":
+                return None
+            if path == "scripts/.tailscale_config.json":
                 return None
             if suffix in {".log", ".txt", ".jsonl"}:
                 return f"{path}: log/dump file should not be committed"

@@ -82,7 +82,7 @@ def _monitor_processes():
 
 
 def _ensure_monitor_running():
-    """Start the tailscale monitor in the background if it is not running."""
+    """Start the tailscale monitor (server + heartbeat) in the background if it is not running."""
     procs = _monitor_processes()
     if procs:
         return True, [p.get("ProcessId") for p in procs]
@@ -91,14 +91,14 @@ def _ensure_monitor_running():
         return False, f"pythonw not found at {pythonw}"
     try:
         subprocess.Popen(
-            [pythonw, "scripts/tailscale_monitor.py", "heartbeat"],
+            [pythonw, "scripts/tailscale_monitor.py", "monitor"],
             cwd=REPO_ROOT,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             stdin=subprocess.DEVNULL,
             creationflags=subprocess.CREATE_NO_WINDOW,
         )
-        time.sleep(1.0)
+        time.sleep(1.5)
         procs = _monitor_processes()
         return bool(procs), [p.get("ProcessId") for p in procs] if procs else "started but not detected"
     except Exception as e:
