@@ -82,6 +82,11 @@ def generate_instrument(
     """
     import cadquery as cq
 
+    if wall_thickness <= 0:
+        raise ValueError(
+            f"wall_thickness ({wall_thickness}) must be > 0; "
+            f"outer diameter would not exceed the bore"
+        )
     if holes is None:
         holes = []
     if hole_depth is None:

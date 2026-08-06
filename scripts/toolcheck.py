@@ -80,6 +80,7 @@ STDLIBISH = {
     "calendar", "locale", "gettext", "getpass", "pty", "pwd", "grp", "spwd",
     "resource", "mmap", "msvcrt", "winreg", "winsound", "venv", "ensurepip",
     "this", "antigravity", "turtle", "tkinter", "webbrowser", "zipimport",
+    "filecmp", "difflib", "fileinput", "secrets", "stat", "marshal", "token",
 }
 
 
