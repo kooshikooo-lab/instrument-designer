@@ -36,10 +36,21 @@ class TestCoordinateTransform(unittest.TestCase):
         self.assertAlmostEqual(reed_internal, L, places=10)
 
     def test_openwind_internal_inverse(self):
+        L = 1200.0
         for x in [0.0, 500.0, 1200.0]:
-            x_internal = CoordinateTransform.openwind_to_internal(x)
-            x_back = CoordinateTransform.internal_to_openwind(x_internal)
+            x_internal = CoordinateTransform.openwind_to_internal(x, L)
+            x_back = CoordinateTransform.internal_to_openwind(x_internal, L)
             self.assertAlmostEqual(x, x_back, places=10)
+
+    def test_bounds_validation(self):
+        L = 1200.0
+        for call in (
+            lambda: CoordinateTransform.openwind_to_internal(1500.0, L),
+            lambda: CoordinateTransform.internal_to_openwind(-1.0, L),
+            lambda: CoordinateTransform.chalumier_to_internal(1201.0, L),
+        ):
+            with self.assertRaises(ValueError):
+                call()
 
 
 class TestTMMPhysics(unittest.TestCase):
