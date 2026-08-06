@@ -22,6 +22,19 @@ _ACT_JUNCTION2 = 1
 _ACT_HOLE = 2
 
 
+def _validate_fingering_sets(fingering_sets):
+    """Fail loudly instead of silently truncating hole states.
+
+    ``fs_padded`` is sized ``MAX_HOLES + 1``; a fingering longer than that
+    would drop trailing hole states and produce bogus intonation.
+    """
+    for fs in fingering_sets:
+        if len(fs) > MAX_HOLES:
+            raise ValueError(
+                f"fingering has {len(fs)} holes, exceeding MAX_HOLES={MAX_HOLES}"
+            )
+
+
 def _tanner(x):
     return jnp.tan(x * jnp.pi)
 
@@ -252,6 +265,7 @@ def make_phase_cost(chain, target_freqs, fingering_sets, target_wavelengths, n_r
     This gives a smooth, differentiable cost function with accurate gradients.
     """
     n = len(fingering_sets)
+    _validate_fingering_sets(fingering_sets)
     resonance_phase = _build_phase_function(chain)
 
     fs_padded = jnp.zeros((n, MAX_HOLES + 1))
@@ -284,6 +298,7 @@ def make_rms_cost(chain, target_freqs, fingering_sets, target_wavelengths):
     forward evaluation with root-finding (for verification, not optimization).
     """
     n = len(fingering_sets)
+    _validate_fingering_sets(fingering_sets)
     resonance_phase = _build_phase_function(chain)
 
     fs_padded = jnp.zeros((n, MAX_HOLES + 1))
@@ -300,8 +315,7 @@ def make_rms_cost(chain, target_freqs, fingering_sets, target_wavelengths):
             return phase - jnp.round(phase)
 
         phase_errs = jax.vmap(_phase_err)((tw, fs_padded))
-        corrected = phase_errs - jnp.mean(phase_errs)
-        return jnp.sqrt(jnp.mean(corrected ** 2))
+        return jnp.sqrt(jnp.mean(phase_errs ** 2))
 
     return cost_fn
 
@@ -312,6 +326,7 @@ def make_rms_cost_with_search(chain, target_freqs, fingering_sets, target_wavele
     Kept for backward compatibility and post-optimization verification.
     """
     n = len(fingering_sets)
+    _validate_fingering_sets(fingering_sets)
     resonance_phase = _build_phase_function(chain)
 
     fs_padded = jnp.zeros((n, MAX_HOLES + 1))
@@ -329,8 +344,7 @@ def make_rms_cost_with_search(chain, target_freqs, fingering_sets, target_wavele
         resonant_wls = jax.vmap(_cost_single)((tw, fs_padded))
         actual_freqs = SPEED_OF_SOUND / resonant_wls
         cents = 1200.0 * jnp.log2(actual_freqs / tf)
-        corrected = cents - jnp.mean(cents)
-        return jnp.sqrt(jnp.mean(corrected ** 2))
+        return jnp.sqrt(jnp.mean(cents ** 2))
 
     return cost_fn
 
@@ -338,6 +352,7 @@ def make_rms_cost_with_search(chain, target_freqs, fingering_sets, target_wavele
 def make_intonation_profile_cost(chain, target_freqs, fingering_sets, target_wavelengths):
     """Build intonation profile cost function using direct phase evaluation."""
     n = len(fingering_sets)
+    _validate_fingering_sets(fingering_sets)
     resonance_phase = _build_phase_function(chain)
 
     fs_padded = jnp.zeros((n, MAX_HOLES + 1))
@@ -369,10 +384,11 @@ def intonation_profile_cost_v2(bore_radii, chain, target_freqs, fingering_sets, 
     return cost_fn(bore_radii)
 
 def multi_objective_cost_v2(bore_radii, chain, target_freqs, fingering_sets, target_wavelengths,
-                            n_register=1, intonation_weight=1.0, playability_weight=0.3):
+                            n_register=1, intonation_weight=1.0, playability_weight=0.3,
+                            target_radius=7.25):
     intonation = rms_cost_v2(bore_radii, chain, target_freqs, fingering_sets, target_wavelengths)
     radii_diff = bore_radii[1:] - bore_radii[:-1]
-    return intonation_weight * intonation + playability_weight * (jnp.mean(radii_diff**2) + 0.1*jnp.mean((bore_radii-7.25)**2))
+    return intonation_weight * intonation + playability_weight * (jnp.mean(radii_diff**2) + 0.1*jnp.mean((bore_radii-target_radius)**2))
 
 build_action_chain = build_action_chain_v2
 rms_cost_jax = rms_cost_v2
