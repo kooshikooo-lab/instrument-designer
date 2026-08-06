@@ -29,9 +29,9 @@ def generate_instrument_build123d(
     bore_length: float,
     bore_diameter: float | tuple[float, float],
     wall_thickness: float,
-    holes: list[tuple[float, float]] = None,
+    holes: list[tuple[float, float]] | None = None,
     closed_top: bool = False,
-    hole_depth: float = None,
+    hole_depth: float | None = None,
 ):
     """Generate an instrument solid with build123d (cylindrical bore path).
 
@@ -146,20 +146,20 @@ def instrument_info_build123d(solid) -> dict:
 # ── Parity self-check (writes STLs to test_output/, gitignored) ─────────────
 
 CASES = {
-    "koncovka_C": dict(
-        bore_length=651.5, bore_diameter=16.0, wall_thickness=2.0,
-        closed_top=False, holes=[],
-    ),
-    "fujara_G": dict(
-        bore_length=1746.2, bore_diameter=20.0, wall_thickness=3.0,
-        closed_top=True, holes=[],
-    ),
-    "xaphoon_C": dict(
-        bore_length=300.0, bore_diameter=14.0, wall_thickness=3.0,
-        closed_top=False,
-        holes=[(40, 6.5), (80, 6.5), (120, 6.5), (160, 6.5),
-               (200, 6.5), (240, 6.5), (280, 6.5)],
-    ),
+    "koncovka_C": {
+        "bore_length": 651.5, "bore_diameter": 16.0, "wall_thickness": 2.0,
+        "closed_top": False, "holes": [],
+    },
+    "fujara_G": {
+        "bore_length": 1746.2, "bore_diameter": 20.0, "wall_thickness": 3.0,
+        "closed_top": True, "holes": [],
+    },
+    "xaphoon_C": {
+        "bore_length": 300.0, "bore_diameter": 14.0, "wall_thickness": 3.0,
+        "closed_top": False,
+        "holes": [(40, 6.5), (80, 6.5), (120, 6.5), (160, 6.5),
+                  (200, 6.5), (240, 6.5), (280, 6.5)],
+    },
 }
 
 
@@ -173,8 +173,8 @@ def _stl_stats(path):
 
 def _cli():
     """Parity self-check: CadQuery vs build123d STL volume/watertightness."""
-    from backend.cadquery_export import generate_instrument as cq_gen
     from backend.cadquery_export import export_stl as cq_export_stl
+    from backend.cadquery_export import generate_instrument as cq_gen
 
     out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "test_output")
     os.makedirs(out, exist_ok=True)
@@ -184,8 +184,8 @@ def _cli():
         b123_path = os.path.join(out, f"parity_{name}_build123d.stl")
         cq_export_stl(cq_gen(**kw), cq_path)
         export_stl_build123d(generate_instrument_build123d(**kw), b123_path)
-        nv1, nf1, v1, s1 = _stl_stats(cq_path)
-        nv2, nf2, v2, s2 = _stl_stats(b123_path)
+        _, _, v1, s1 = _stl_stats(cq_path)
+        _, _, v2, s2 = _stl_stats(b123_path)
         vol_err = abs(v1 - v2) / v1 * 100 if v1 else float("nan")
         print(f"{name:<12} {vol_err:<9.3f} {s1:<13} {s2}")
 
