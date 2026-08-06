@@ -407,7 +407,31 @@ def export_stl(
     solid.val().exportStl(
         path, tolerance=tolerance, angularTolerance=angular_tolerance
     )
+    _check_mesh_repair_gate(path)
     return time.time() - t0
+
+
+def _check_mesh_repair_gate(path: str) -> None:
+    """Check-only mesh-repair gate (docs/TOOLS.md: build123d-first + repair fallback).
+
+    Logs a warning when the exported mesh is not watertight+manifold so the
+    pipeline can regenerate with build123d or repair (e.g. in Fusion 360) before
+    printing. Advisory: the export itself never fails.
+    """
+    import logging
+
+    try:
+        from backend.stl_verifier import check_mesh_repair_gate as _gate
+
+        result = _gate(path)
+        if not result.get("passed"):
+            logging.getLogger(__name__).warning(
+                "mesh-repair gate FAILED for %s: watertight=%s manifold=%s "
+                "(regenerate with build123d or repair before printing)",
+                result.get("stl"), result.get("watertight"), result.get("manifold"),
+            )
+    except Exception as e:  # noqa: BLE001 — gate is advisory
+        logging.getLogger(__name__).warning("mesh-repair gate check skipped: %s", e)
 
 
 def export_step(solid, path: str) -> float:
