@@ -106,6 +106,17 @@ def generate_instrument(
             .loft()
         )
         solid = outer.cut(bore)
+
+        if closed_top:
+            # Cap the z=bore_length end with the outer radius there (the cone's
+            # wide end), exactly like the cylindrical branch.
+            cap = (
+                cq.Workplane("XY")
+                .workplane(offset=bore_length)
+                .circle(large_outer / 2)
+                .extrude(wall_thickness)
+            )
+            solid = solid.union(cap)
     else:
         outer_diam = bore_diameter + 2 * wall_thickness
         solid = (
