@@ -104,6 +104,9 @@ def check_regenerable(path: str) -> str | None:
                 return None
             if path == "scripts/.tailscale_config.json":
                 return None
+            # Pinned pip-tools lock files are required to be committed.
+            if suffix == ".txt" and re.match(r"^requirements(-\w+)?\.txt$", path):
+                return None
             if suffix in {".log", ".txt", ".jsonl"}:
                 return f"{path}: log/dump file should not be committed"
     return None
@@ -242,6 +245,19 @@ def main():
         )
         if result.returncode != 0:
             errors.append("Python import consistency check failed")
+            for line in result.stdout.splitlines() + result.stderr.splitlines():
+                errors.append(f"  {line}")
+
+    # 7. PowerShell 5.1 compatibility for staged PowerShell files
+    ps1_files = [rel for rel in files if rel.endswith(".ps1")]
+    if ps1_files:
+        result = subprocess.run(
+            [sys.executable, str(repo_root / "scripts" / "check_powershell_51_compat.py")]
+            + [str(repo_root / rel) for rel in ps1_files],
+            capture_output=True, text=True, encoding="utf-8", errors="replace"
+        )
+        if result.returncode != 0:
+            errors.append("PowerShell 5.1 compatibility check failed")
             for line in result.stdout.splitlines() + result.stderr.splitlines():
                 errors.append(f"  {line}")
 

@@ -33,6 +33,7 @@ bench = ["dask[distributed]>=2024.1", "psutil>=5.9", "cma>=3.0"]
 perf = ["numba>=0.60"]
 freecad = ["freecad"]
 chess = ["chess>=1.10"]
+test = ["pytest>=7.0", "jsonschema>=4.0"]
 dev = ["pytest>=7.0", "ruff>=0.1", "jsonschema>=4.0"]
 
 [project.scripts]
