@@ -46,11 +46,11 @@ thread starts, moves, or resolves.
 | 5 | `cadquery-ocp` pin in `cad` extra | desktop | — | Resolved: desktop added pin (avoid `cadquery-ocp-novtk` OCP namespace clobber) | 2026-08-05 |
 | 6 | Config schema unification | desktop | laptop review of multi-register decision | Schema approved; 3 configs migrated to canonical; `baroque_clarinet.json` kept as legacy until multi-register decision | 2026-08-06 |
 | 7 | pip-tools dependency locks | desktop | — | Resolved: lock files generated for `[dev,cad,test,chess]` and committed; `scripts/compile_requirements.py` + CI `dependency-locks` job verify they stay up to date | 2026-08-06 |
-| 8 | Tailscale peer monitor | both | laptop start monitor | Symmetric monitor shipped and pushed; desktop monitor running; first chess match failed because laptop monitor at `100.100.66.117:9124` is unreachable | 2026-08-06 |
+| 8 | Tailscale peer monitor | both | — | Resolved: symmetric monitor works; one test chess game played 2026-08-06T13:06Z and ended in a draw. Desktop monitor running (PID 4496). Laptop currently not responding but was reachable earlier | 2026-08-06 |
 | 9 | Architecture audit P0 fixes | desktop | — | Resolved: hardcoded OD/closed_top threaded through, missing holes added, impossible ODs corrected; analysis doc remains for reference | 2026-08-06 |
 | 10 | Fusion 360 personal-use free subscription | desktop | — | Resolved: laptop confirmed Phase 0/1 scriptable, CAM probe next, Simulation blocked by license | 2026-08-06 |
 | 11 | PowerShell 5.1 compatibility lint | desktop | — | Resolved: `scripts/check_powershell_51_compat.py` added; wired into pre-commit + CI `powershell-lint` job on windows-latest | 2026-08-06 |
-| 13 | Chess match rematch | laptop | laptop start monitor + `chess_game.py accept` | Match #1 aborted (no games played); commit `6517b19` pushed; both-fail rule applies until laptop is reachable | 2026-08-06 |
+| 13 | Chess match rematch | both | laptop reachable again | One test game drawn; full 10-game bullet rematch pending when both monitors are online | 2026-08-06 |
 
 ## Nudge rule
 

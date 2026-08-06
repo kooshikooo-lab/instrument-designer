@@ -234,10 +234,10 @@
   `monitor` (server + heartbeat) instead of only the heartbeat client.
 - **Bullet-chess match over Tailscale** (`f952122`): `scripts/chess_game.py` with
   `python-chess` validation, UCI move notation, one challenge per game, sequential
-  10-game match, 60+0 time control, 20-second challenge acceptance window.
-- **Chess match #1 result**: laptop did not accept the challenge; desktop won by
-  forfeit. Analysis posted to Discussion #23 (17921022). Laptop is the losing side
-  and must improve Tailscale monitor availability before the rematch.
+  match, per-game time control, 20-second challenge acceptance window.
+- **Chess test game result**: one game was played over Tailscale at 2026-08-06T13:06Z
+  and ended in a **draw (1/2-1/2)**. The channel works; laptop was reachable at the
+  time. A 10-game bullet rematch is still pending when both sides are ready.
 - **Laptop Fusion 360 measurements received**: all 6 desktop STL presets
   measured in Fusion; volumes within ~0.04% of desktop solids; all re-exported
   STLs watertight/manifold. Phase 2 CAM scriptable, Simulation blocked by license.
@@ -292,11 +292,10 @@
 
 ## Next Steps
 
-1. **Laptop must start Tailscale monitor and accept chess rematch**:
-   - Pull latest `opencode/main/desktop` (now `6517b19`).
-   - Run `python scripts/tailscale_monitor.py configure`.
-   - Start monitor via `launchers/start_tailscale_monitor.bat`.
-   - Run `python scripts/chess_game.py accept` and wait for desktop challenge.
+1. **Chess rematch**: one test game already worked and ended in a draw. Run a
+   full 10-game bullet match when laptop is reachable again:
+   - Desktop: `python scripts/chess_game.py challenge`
+   - Laptop: `python scripts/chess_game.py accept`
 2. **Laptop merge order**: step 1 approved — merge `origin/opencode/main/desktop`
    → `opencode/build123d/laptop`, run dependency check + tests, then open PR to
    `opencode/main/desktop`.
