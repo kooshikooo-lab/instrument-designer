@@ -227,6 +227,28 @@
   (`docs/RESEARCH_design_to_finished_instrument.md`, WIKI §11, WIKI-INDEX; 123
   tests passed). Full laptop-branch merge deferred until after PR #62 merges
   (laptop is 55 commits ahead, carries the metamaterial stack).
+- **Tailscale monitor made symmetric** (`f952122`): `scripts/.tailscale_config.json`
+  holds peer IPs for both machines; `MACHINE_NAME` auto-detected or set by env;
+  server is multi-threaded; `notify` command added; launcher defaults to
+  `desktop` when hostname is ambiguous. `check_team_chat.py` starts the full
+  `monitor` (server + heartbeat) instead of only the heartbeat client.
+- **Bullet-chess match over Tailscale** (`f952122`): `scripts/chess_game.py` with
+  `python-chess` validation, UCI move notation, one challenge per game, sequential
+  10-game match, 60+0 time control, 20-second challenge acceptance window.
+- **Chess match #1 result**: laptop did not accept the challenge; desktop won by
+  forfeit. Analysis posted to Discussion #23 (17921022). Laptop is the losing side
+  and must improve Tailscale monitor availability before the rematch.
+- **Laptop Fusion 360 measurements received**: all 6 desktop STL presets
+  measured in Fusion; volumes within ~0.04% of desktop solids; all re-exported
+  STLs watertight/manifold. Phase 2 CAM scriptable, Simulation blocked by license.
+- **Cross-machine decisions settled in Discussion #23**:
+  - Merge order: laptop merges `origin/opencode/main/desktop` →
+    `opencode/build123d/laptop`, then opens PR to `opencode/main/desktop`.
+  - Lock files: pip-tools from desktop Python 3.12, lock `[dev,cad,test]`, use
+    `pip install -r` on dev machines, `pip-sync` only in CI/fresh venvs.
+  - PowerShell: stay on Windows PowerShell 5.1; add CI lint for PS 7-only syntax.
+  - No exact-dimension manufacturing STEP found; fallback is academic bore profile
+    → CAD export → TMM compare.
 
 ### In Progress
 - P0 geometry fixes committed and pushed (`e3492ed`).
@@ -257,30 +279,34 @@
 
 ## Next Steps
 
-1. **Awaiting laptop**: Fusion 360 measurements for the 6 desktop STL presets
-   (`koncovka_C`, `xaphoon_C`, `fujara_G`, `soprano_recorder_C`,
-   `bass_chalumeau_C`, `pvc_flute_D`) and a decision on how to reconcile
-   `opencode/build123d/laptop` with `opencode/main/desktop`.
-2. **Reboot desktop** to complete WSL + Ubuntu activation (user postponed until
+1. **Laptop must start Tailscale monitor and accept chess rematch**:
+   - Pull latest `opencode/main/desktop`.
+   - Run `python scripts/tailscale_monitor.py configure`.
+   - Start monitor via `launchers/start_tailscale_monitor.bat`.
+   - Run `python scripts/chess_game.py accept` and wait for desktop challenge.
+2. **Laptop merge order**: step 1 approved — merge `origin/opencode/main/desktop`
+   → `opencode/build123d/laptop`, run dependency check + tests, then open PR to
+   `opencode/main/desktop`.
+3. **Reboot desktop** to complete WSL + Ubuntu activation (user postponed until
    BIOS virtualization enabled).
-3. **Desktop (STL pipeline + Blender):**
+4. **Desktop (STL pipeline + Blender):**
    - Re-run full test suite with hooks active after reboot.
    - Verify STL export pipeline for one preset from `backend/cadquery_export.py`.
    - Confirm Blender viewer opens the STL correctly via `launchers/view_instrument.bat`.
-4. **Laptop (Fusion 360):**
-   - Continue Fusion 360 Phase 0+ automation.
+5. **Laptop (Fusion 360):**
+   - Continue Phase 2 CAM activation probe.
    - Apply audit fixes B1/C1/C2/S2 as separate AUDIT commits.
-5. **Remaining cleanup (post-reboot):**
+6. **Remaining cleanup (post-reboot):**
    - Fix deleted-module references if any remain (modules now appear to exist;
      failures were due to missing optional deps `pymoo`, `PySide6`, `openwind`).
    - Clean bare excepts in production code (`backend/`, `scripts/`).
    - Remove or ignore tracked regenerable artifacts / misplaced files.
-6. **Coordinate with laptop**: confirm Tailscale monitor is running latest, pull
-   latest `opencode/main/desktop`, and close resolved #23 threads.
-7. **Decisions pending in Discussion #23**:
-   - Dependency lock strategy (pip-tools vs uv, per-platform locks, which extras).
-   - PowerShell/terminal standardization (stay on PS 5.1 or adopt PS 7 + Windows
-     Terminal).
+7. **Coordinate with laptop**: confirm Tailscale monitor is running latest and
+   close resolved #23 threads.
+8. **Decisions resolved in Discussion #23** (action: implement):
+   - Dependency locks: pip-tools, desktop Python 3.12, `[dev,cad,test]`,
+     `pip install -r` on dev machines.
+   - PowerShell: stay on Windows PowerShell 5.1; add CI lint for PS 7-only syntax.
 
 ## Standing / Longer Term
 
