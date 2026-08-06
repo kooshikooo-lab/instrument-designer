@@ -47,6 +47,8 @@ thread starts, moves, or resolves.
 | 8 | Tailscale peer monitor | desktop | laptop pull latest | Monitor simplified to connection-per-message protocol; desktop running; laptop should pull latest `opencode/main/desktop` and restart | 2026-08-06 |
 | 9 | Architecture audit P0 fixes | desktop | user answers (4 questions) | Audit + fact-check ready (`docs/ARCHITECTURE_AUDIT.md`, `docs/AI_REVIEW_FACT_CHECK.md`); fix impossible ODs, missing holes, hardcoded OD/closed_top after answers | 2026-08-06 |
 | 10 | Fusion 360 personal-use free subscription | desktop | desktop research | User clarified meaning; research API/scripting limitations for Fusion 360 personal/free tier before continuing Fusion integration | 2026-08-06 |
+| 11 | Dependency lock strategy (pip-tools / uv / per-platform) | desktop | user + laptop | Research posted to #23; need decision on tool, extras to lock, and whether to generate from Windows 3.12 or wait for WSL/Linux | 2026-08-06 |
+| 12 | PowerShell / terminal standardization | desktop | user + laptop | Research posted to #23; desktop is PS 5.1 without PS 7 / Windows Terminal; decide whether to stay compatible or standardize on PS 7 + Windows Terminal | 2026-08-06 |
 
 ## Nudge rule
 

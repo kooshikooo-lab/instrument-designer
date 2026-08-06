@@ -167,6 +167,19 @@
   enter BIOS and enable it.
 - **Work separation decided**: desktop owns STL pipeline → Blender; laptop owns
   Fusion 360 Phase 0+ automation.
+- **Dependency guard added** (`7899593`): `scripts/check_local_dependencies.py`
+  checks that declared+imported packages are installed before merging across
+  machines. Wired into CI (`governance-guard.yml`) and `scan_all_precommit.py`.
+- **Dependency-management best-practice research** posted to Discussion #23
+  (2026-08-06): pip-tools/uv lock files, per-platform lock files, extras
+  isolation (`[cad]`, `[ml]`, `[dev]`, `[gui]`), and CI verification. Decision
+  pending on whether to generate Windows locks from desktop Python 3.12 or wait
+  for WSL/Linux environment.
+- **PowerShell/terminal standardization research** posted to Discussion #23
+  (2026-08-06): desktop runs Windows PowerShell 5.1 (build 19041.6456);
+  PowerShell 7 and Windows Terminal are not installed. Recommendation: stay on
+  PS 5.1-compatible scripts for now, add CI lint for PS 7-only syntax, and
+  revisit PowerShell 7 + Windows Terminal after WSL/Fusion reconciliation.
 - **Path-rewrite cleanup** (in `a1807bd`): all 15 active scripts/tests use
   repo-relative resolution (`os.path.dirname(os.path.dirname(os.path.abspath(__file__)))`
   / `Split-Path $PSScriptRoot -Parent`), no hardcoded paths.
@@ -244,21 +257,30 @@
 
 ## Next Steps
 
-1. **Reboot desktop** to complete WSL + Ubuntu activation.
-2. **Desktop (STL pipeline + Blender):**
+1. **Awaiting laptop**: Fusion 360 measurements for the 6 desktop STL presets
+   (`koncovka_C`, `xaphoon_C`, `fujara_G`, `soprano_recorder_C`,
+   `bass_chalumeau_C`, `pvc_flute_D`) and a decision on how to reconcile
+   `opencode/build123d/laptop` with `opencode/main/desktop`.
+2. **Reboot desktop** to complete WSL + Ubuntu activation (user postponed until
+   BIOS virtualization enabled).
+3. **Desktop (STL pipeline + Blender):**
    - Re-run full test suite with hooks active after reboot.
    - Verify STL export pipeline for one preset from `backend/cadquery_export.py`.
    - Confirm Blender viewer opens the STL correctly via `launchers/view_instrument.bat`.
-3. **Laptop (Fusion 360):**
+4. **Laptop (Fusion 360):**
    - Continue Fusion 360 Phase 0+ automation.
    - Apply audit fixes B1/C1/C2/S2 as separate AUDIT commits.
-4. **Remaining cleanup (post-reboot):**
+5. **Remaining cleanup (post-reboot):**
    - Fix deleted-module references if any remain (modules now appear to exist;
      failures were due to missing optional deps `pymoo`, `PySide6`, `openwind`).
    - Clean bare excepts in production code (`backend/`, `scripts/`).
    - Remove or ignore tracked regenerable artifacts / misplaced files.
-5. **Coordinate with laptop**: confirm Tailscale monitor is running latest, pull
+6. **Coordinate with laptop**: confirm Tailscale monitor is running latest, pull
    latest `opencode/main/desktop`, and close resolved #23 threads.
+7. **Decisions pending in Discussion #23**:
+   - Dependency lock strategy (pip-tools vs uv, per-platform locks, which extras).
+   - PowerShell/terminal standardization (stay on PS 5.1 or adopt PS 7 + Windows
+     Terminal).
 
 ## Standing / Longer Term
 
