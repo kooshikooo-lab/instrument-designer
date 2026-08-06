@@ -22,570 +22,241 @@
 
 ---
 
-## Phase 1: Intonation-Only Optimization (CURRENT FOCUS)
+## Phase 0: Critical Bug Fixes (CURRENT — 2026-08-07)
 
-> **Scope:** This phase optimizes **only intonation** (RMS cents deviation from
-> target frequencies). No timbre, ergonomics, printability, or multi-objective
-> optimization. The cost function is purely `phase_cost()` — measuring how close
-> the instrument's resonances are to target wavelengths.
+> **Blocking issues identified 2026-08-07 audit. Must complete before any feature work.**
 
-> **Before starting work here:** Check the "Periodic Research Review" section
-> below for new papers or tool updates that may change the approach.
+### 0.1 Speed-of-Sound Literal Cleanup (Law 7)
+- [ ] Fix 46 non-canonical SoS literals across 10 files (by layer):
+  - Layer 1 (Physics): `backend/physics/losses.py:96` → import canonical
+  - Layer 2 (Optimizers): `bore_optimizer_lbfgs.py:188`, `optimizer.py:358`, `flute_calculator.py:44` → use temp formula
+  - Layer 3 (Core): `modular_components.py:334`, `core/network.py:146` → import canonical
+  - Layer 4 (Tone-hole): `tone_hole_corrections.py:190,262,263,270` → import canonical
+  - Layer 5 (Tests): Update expectations to 346100 mm/s in `test_bore_design.py`, `test_architecture.py`, `test_bore_check.py`, `test_sympy_validation.py`, `validate_flutomat.py`, `compare_optimizers.py`
+- [ ] Pre-commit `validate_pre_commit.py` passes (has `SPEED_OF_SOUND_LITERAL_RE`)
 
-Everything here is software-only — no printing required. The goal is a fast,
-accurate optimizer that matches or exceeds demakein/chalumier on reference instruments.
+### 0.2 Two-Phase Optimizer Fixes (Default ACCURATE Strategy)
+- [ ] Extract `detect_registers()` to shared `backend/physics/register_detection.py`
+- [ ] Wire into `backend/optimization/selector.py` (`TwoPhaseOptimizer.optimize()`)
+- [ ] Wire into `backend/two_phase_optimizer.py` (import shared)
+- [ ] Add `bore_length_bounds` enforcement for bass instruments (>1m)
+- [ ] Remove hardcoded `outer_diameter=22.0`, `closed_top=False` → read from config
+- [ ] Bass chalumeau converges to correct register (not 108¢ error)
 
-**Target: <3 cents intonation error, <60 seconds per design.**
+### 0.3 Bass Chalumeau Merge Conflict Resolution
+- [ ] Desktop has tone-hole fix in `build_bass_chalumeau_Bb()`; laptop doesn't
+- [ ] Before laptop→desktop merge: manually diff `backend/modular_components.py` to preserve tone holes
+- [ ] Preferred: laptop merges `origin/opencode/main/desktop` → `opencode/main/laptop`, then PR to desktop
 
-**Future phases will add:**
-- Phase 1b: Timbre-aware optimization (spectral centroid, harmonic balance)
-- Phase 1c: Ergonomic constraints (hole spacing, reach, thumb position)
-- Phase 1d: Printability constraints (wall thickness, support structure, overhang)
-- Phase 1e: Multi-objective Pareto optimization (intonation vs timbre vs ergonomics)
+### 0.4 Merged PRs (2026-08-07)
+- [x] PR #63: Remove phantom `openwind` gitlink (shadowed pip package)
+- [x] PR #62: 45-file import repair (tmm_acoustics imports moved to archived_optimizers)
 
-### 1a. TMM Optimizer — DONE
-Phase-based TMM optimizer is working and validated:
+---
 
-- [x] Phase-based TMM engine (`backend/tmm_acoustics.py`) — ported from chalumier/demakein
-- [x] Cumulative fingering evaluator (`core/engine.py`) — evaluates all fingerings at once
-- [x] L-BFGS-B optimization — gradient-based, fast convergence
-- [x] Sequential refinement engine (`SequentialRefinementEngine` in `core/engine.py`)
-- [x] Cylindrical bore: **0.0 cents evenness** (perfect relative intonation)
-- [x] Conical bore: **23.9 cents evenness** with L-BFGS-B (54% hole sizing)
-- [x] Phase cost functions: `phase_cost()`, `phase_cost_with_offset()`
-- [x] API integration: `/optimize/tmm` endpoint in design server
+## Phase 1: Architecture Completion (Next Session)
 
-**Performance:** 0.01-0.03s per evaluation, <2 seconds per design.
+### 1.1 WoodwindOpenWind FEM Integration
+- [ ] Create `backend/woodwind_openwind.py` mirroring `TrumpetOpenWind`:
+  - Bore + hole conversion (mm→m) from `OpenWindSolver._network_to_openwind()`
+  - Register vent logic (open for reg≥2) from `compute_frequencies():178-190`
+  - Woodwind fingering chart from `_build_fingering_chart()`
+  - Resonance/antiresonance selection (BoundaryType.REED vs OPEN)
+  - Impedance + frequency methods mirroring `TrumpetOpenWind`
+- [ ] Register `REFINED` strategy for woodwinds in selector:
+  - Route CLARINET, SAXOPHONE, FLUTE, CHALUMEAU → OpenWind FEM
+- [ ] Add TMM vs FEM comparison to `run_optimizer_comparison`
 
-### 1b. closedTop Convention — VERIFIED
-**Critical finding:** For conical bores (saxophone, oboe, etc.), always use `closedTop=False`.
+### 1.2 Surrogate Audit
+- [ ] Audit `backend/surrogate/mlp_surrogate.py` + `bi_objective_bo.py`
+- [ ] Document scope and prevent duplicate `BoreSection` vs `Joint` pattern
 
-- [x] Verified analytically: closed cone resonates at f=nc/(2L) — same as open-open pipe
-- [x] Verified TMM: `closedTop=False` reproduces all cone harmonics correctly
-- [x] Verified TMM: `closedTop=True` gives wrong results for cones (models cylinder, not cone)
-- [x] Phase verification: at expected cone resonance wavelengths, phase = n+1 (integer)
-- [x] Search algorithm is correct — no bugs found
-- [x] coneStep has no effect on accuracy (0.125mm to 2.0mm all give same result)
-- [x] Systematic offset: -8.4c from end flange correction (known, correctable)
+---
 
-**Theory:** A cone with closed small end resonates at ALL harmonics (f=nc/(2L)) —
-identical to open-open pipe. The stepped-cylinder TMM captures this with `closedTop=False`
-because area steps approximate the cone's acoustic behavior. With `closedTop=True`,
-it incorrectly models a closed-open cylinder (odd harmonics only).
+## Phase 2: High-Value Features (This Week)
 
-**For saxophone design:** Always pass `closed_top=False` to TMMInstrument.
+### 2.1 CT-Scan Benchmarking (Issue #47)
+- [ ] Download bassoon FT40/FT44 STL from Zenodo (10.5281/zenodo.3246324)
+- [ ] Extract bore profiles from CT scan data
+- [ ] Run two-phase optimizer on bassoons
+- [ ] Run sequential optimizer on contra clarinets (Contra-Alto, Contra-Bass)
+- [ ] Run sequential optimizer on Baroque Clarinet
+- [ ] Compare optimized vs CT-measured bore profiles
+- [ ] Document RMS cents error vs CT ground truth
+- [ ] Export STL for 3D printing validation
 
-### 1c. Speed — Parallelize Optimizer
-The optimizer timed out at pop=20/gen=10 on a single instrument. This is the
-#1 blocker — we can't even validate accuracy if we can't run it.
+### 2.2 Demakein Replacement (Issue #48)
+- [ ] Extract 11 preset bore profiles via TMM optimizer
+- [ ] Replace `woodwind_designer/engine/demakein_wrapper.py` internals:
+  - Lookup pre-optimized bore profile from registry
+  - Apply transpose (frequency shift)
+  - Run CadQuery export with profile
+  - Return DesignResult with STL, YAML, log
+- [ ] Remove demakein import, `_patch_optimize()`, `HAVE_DEMAKEIN` flag
+- [ ] Keep public API: `design()`, `list_families()`, `list_subcategories()`, `list_presets()`, `get_description()`
+- [ ] Test all 11 presets generate valid STLs
 
-- [ ] Add `StarmapParallelization` to BoreOptimizationProblem
-  - pymoo supports `elementwise_runner=StarmapParallelization(pool.starmap)`
-  - Each evaluation is independent (40 calls/gen, each runs OpenWInD)
-  - Pool size = CPU core count (typically 4-8)
-  - Expected speedup: 4-8x (core-count bound, not quality-limited)
-  - Cache won't be shared across workers — acceptable tradeoff for now
-- [ ] Profile single evaluation time to understand bottleneck
-- [ ] Verify accuracy is preserved after parallelization (same seed = same result)
+### 2.3 Monte Carlo Tolerance Budget (Tier 1 — Claude)
+- [ ] Sample geometry perturbations from actual printer tolerance distribution
+- [ ] Per-note cents-deviation histogram output for existing bass chalumeau design
+- [ ] Acceptance artifact: histogram file saved
 
-### 1d. Accuracy — Bore Quality Constraints
-- [ ] Add monotonicity constraint (docstring promises it, code doesn't implement it)
-  - `n_ieq_constr=0` in current code — bore can go backwards
-  - Must land BEFORE increasing control points — extra DOF without constraints = jaggier bores
-  - Implementation: inequality constraint `bore[i+1] >= bore[i]` for all i
-- [ ] Add smoothness constraint (penalize large radius jumps between adjacent points)
-- [ ] Add global pitch offset correction (shift all peaks by constant cents offset)
-- [ ] Improve scale evenness objective (currently std of diffs, consider musical intervals)
-- [ ] Add support for clarinet odd-harmonic tuning (every other peak)
+### 2.4 Surrogate Integration
+- [ ] Wire `mlp_surrogate.py` into DE global search phase
+- [ ] Fallback to real TMM for L-BFGS-B local refinement
+- [ ] Benchmark speedup vs pure TMM
 
-### 1e. Validation — Benchmark Against Other Software
-Our optimizer should match or exceed demakein/chalumier accuracy on the same
-reference instruments. This is the "match or exceed" requirement.
+---
 
-- [x] Clarinet benchmark: 4.46 cents evenness achieved
-- [x] Cylindrical bore: 0.0 cents evenness (perfect)
-- [x] Conical bore: 23.9 cents evenness with proper hole sizing
-- [x] **Phase 2b DE breakthrough** — ALL 5 instruments sub-0.3c RMS:
-  - Chalumeau C: 0.01c (5.2s)
-  - Bass Chalumeau Bb: 0.17c (15.2s)
-  - Soprano Sax Bb: 0.32c (10.2s)
-  - Xaphoon C: 0.00c (10.7s)
-  - Alto Sax Eb: 0.02c (8.2s)
-- [x] Chalumier benchmark: TMM matches chalumier when given same bore profile
-- [x] L-BFGS-B refinement from chalumier's bore achieves 3.5c (5x better than chalumier's 29c)
-- [ ] Test recorder with chalumier fingering chart (28 fingerings, cross-fingerings)
-- [ ] Test dwhistle with chalumier fingering chart (14 fingerings, 2 registers)
-- [ ] Document accuracy comparison: ours vs chalumier
+## Phase 3: Tier 2 — Human Checkpoint First
 
-**Phase 2b key insight:** Sequential greedy hole placement creates large gaps (288mm for xaphoon)
-where TMM can't find resonances. DE with overlapping bounds (`lo=i*L/(n_h*1.5+1)`,
-`hi=(i+2)*L/(n_h*1.5+1)`) re-optimizes ALL hole positions simultaneously, closing gaps.
+| Work | Dependency | Notes |
+|------|------------|-------|
+| Reaming Allowance / Post-print Adjustability | Schema decision | New field in `design_output.schema.json` |
+| JND-Weighted Intonation Objective | Literature summary | Kergomard/Laloë psychoacoustics first |
+| Printer Calibration Layer | Measurement data | Blocked on ream-and-remeasure |
+| Audio-Embedding Sound Matching | Isolate in `backend/experiments/` | Heavy deps (torch, CLAP/VGGish) |
 
-### 1f. Bore Representation
-Sequencing: smoothness constraint first, then more control points.
-- [ ] Test with more control points (12 → 20-30 for complex profiles)
-  - Only after monotonicity constraint is in place
+---
 
-### 1g. Metric Standardization & Timbre Optimization
+## Phase 4: Ongoing (from existing roadmap)
 
-**Critical finding (2026-07-25):** Median correction in cost functions measures **scale evenness**, not **pitch accuracy**. These are fundamentally different things with different timbre implications. Ernoult et al. (2020) proved intonation and timbre are inherently at odds — optimizing both requires a Pareto front approach.
-
-**The problem:**
-- Desktop's `optimizer_global.py` and `phase_cost_with_offset` use median-corrected RMS → measures evenness
-- Laptop's `benchmark_all.py` uses absolute RMS → measures accuracy
-- These numbers are NOT comparable (0.01c evenness ≠ 0.01c accuracy)
-- Median correction hides systematic errors that affect ensemble playing
-
-**The physics:** Impedance peak positions (intonation) and peak heights (timbre) are determined by the same physical parameters. You cannot independently optimize one without affecting the other.
-
-- [ ] Remove median correction from ALL optimizers
+### 4.1 Intonation-Only Optimization (Phase 1)
+- [x] TMM Optimizer — Phase-based engine, L-BFGS-B, sequential refinement
+- [x] closedTop Convention — Verified for cones (always `closedTop=False`)
+- [ ] Speed — Parallelize optimizer (StarmapParallelization, pymoo)
+- [ ] Accuracy — Bore quality constraints (monotonicity, smoothness, global pitch offset)
+- [ ] Validation — Benchmark against chalumier/demakein (recorder, dwhistle)
+- [ ] Bore Representation — More control points (12 → 20-30) after constraints
+- [ ] **Metric Standardization** — Remove median correction from ALL optimizers:
   - `optimizer_global.py:_evaluate()` — remove `np.median(c1)` offset
   - `tmm_acoustics.py:phase_cost_with_offset()` — remove median subtraction
-  - `two_phase_optimizer.py` — remove median correction at line 62
-- [ ] Report both metrics separately in benchmark:
-  - **Absolute RMS (c):** `sqrt(mean(cent_deviations²))` — accuracy
-  - **MAD (c):** `mean(|cent_deviations|)` — robust accuracy
-  - **SD (c):** `std(cent_deviations)` — evenness
-  - **Max deviation (c):** worst note
-  - **Per-note table:** full profile for debugging
-- [ ] Add timbre proxy to optimizer: impedance peak amplitude ratios (a₂/a₁)
-  - a₂/a₁ determines register stability and brightness
-  - Target: varies linearly from ~2 (low register) to ~1 (high register)
-- [ ] Update benchmark_all.py to report full metric suite
-- [ ] Bi-objective optimization (stretch goal): intonation + timbre Pareto front
-  - Reference: Petiot et al. (2025) trumpet bi-objective optimization
-  - Reference: Tournemenne et al. (2019) brass instrument optimization
+  - `two_phase_optimizer.py` — remove median correction
+  - Report Absolute RMS, MAD, SD, Max deviation, per-note table
+- [ ] Timbre Optimization — Impedance peak amplitude ratios (a₂/a₁)
+- [ ] Bi-objective Pareto (intonation + timbre) — NSGA-II (needs pymoo)
 
-**Why this matters:**
-- An instrument can be perfectly even but 15c sharp (median-corrected: 0c, absolute: 15c)
-- An instrument can be accurate but uneven (median-corrected: 5c, absolute: 2c)
-- Professional makers explicitly trade intonation for timbre (Buffet R-13 vs RC)
-- Brighter timbre is perceived as sharper (perception coupling)
-- Noreland et al. (2013) optimized only intonation and admitted including timbre would produce different designs
+### 4.2 Optimization Methods Research
+- [ ] Ernoult phase-based cost (unwrapped phase of reflection function)
+- [ ] Noreland two-phase validation (Phase 1: first register only)
+- [ ] Pareto front (intonation + timbre) — bore smoothness + hole radiation proxy
+- [ ] WIDesigner validation (Java open-source)
+- [ ] Manufacturing tolerance sensitivity (±0.1mm noise → re-evaluate)
 
-**Key references:**
-- Ernoult et al. (2020) JASA — intonation + timbre tradeoff: https://doi.org/10.1121/10.0002449
-- Noreland et al. (2013) — "Logical Clarinet": https://arxiv.org/abs/1209.3637
-- Bastien et al. (2025) JASA — intonation profile: https://doi.org/10.1121/2.0002181
-- Petiot et al. (2025) — trumpet Pareto front: https://doi.org/10.1121/2.0002163
-- Tournemenne et al. (2019) — brass optimization: https://hal.science/hal-01504179v1
-- Wolfe (UNSW) — cutoff frequency and timbre: https://www.phys.unsw.edu.au/jw/cutoff.html
-- Keefe (1982) — tone hole theory: https://doi.org/10.1121/1.388248
+### 4.3 JAX Autodiff Stage 2
+- [x] JAX autodiff for bore-radii refinement (exact gradients)
+- [ ] Extend to hole positions/diameters (currently blocked by static action chain)
 
-### 1h. Optimization Methods Research (2026-07-27)
-
-Research into four published optimization methods to identify best practices and implementation opportunities. Full comparison document: `C:\Users\koosh\Documents\woodwind_optimization_methods_comparison.md`
-
-**Methods researched:**
-
-| Method | Algorithm | Key Innovation | Our Status |
-|--------|-----------|----------------|------------|
-| Noreland 2012 | SQP + finite differences | Two-phase (simple→complex) | Sequential optimizer validates this |
-| WIDesigner (Patkau 2017) | DIRECT-C + BOBYQA | User-facing tool with constraints | Open-source Java tool available |
-| Ernoult 2020 | SQP + phase-based tracking | Unwrapped phase resonance ID | **To implement** — best accuracy |
-| Petiot 2025 | Random Forest + NSGA-II | ML surrogate + Pareto front | **To implement** — multi-objective |
-
-**Key insights from research:**
-- **Two-phase optimization is essential** (Noreland): Phase 1 tunes first register, Phase 2 refines both. Our sequential optimizer does this.
-- **Phase-based resonance tracking > peak-tracking** (Ernoult): Unwrapped phase of reflection function is smooth and differentiable. Our peak-based cost is non-smooth.
-- **Sequential greedy placement needs global re-optim** (Noreland): Our DE re-optim (Phase 2b) validates this.
-- **Smart initialization > better global search** (All methods): CMA-ES from random init fails. Sequential placement succeeds.
-- **Amplitude ratios matter for playability** (Ernoult, Petiot): Frequency-only optimization produces incomplete instruments.
-- **Professional intonation is 5–10 cents** (Bertsch 1998, forum consensus): Our <3c target exceeds most professional standards.
-
-**Implementation/testing plan:**
-
-- [ ] **Phase 1h-a: Implement Ernoult phase-based cost function**
-  - Replace peak-tracking with unwrapped phase of reflection function
-  - Test on 12-instrument benchmark
-  - Expected: smoother optimization landscape, faster convergence
-  - Reference: Ernoult et al. 2020, doi:10.1121/10.0002449
-
-- [ ] **Phase 1h-b: Test Noreland two-phase approach**
-  - Phase 1: optimize first register only (10 fingerings)
-  - Phase 2: refine both registers (all fingerings)
-  - Compare convergence vs current all-at-once approach
-  - Reference: Noreland et al. 2013, arXiv:1209.3637
-
-- [x] **Phase 1h-c: Implement Pareto front (intonation + timbre)**
-  - Bore-geometry timbre proxy: bore smoothness + hole radiation consistency
-  - Weighted-sum sweep: sequential init → L-BFGS-B with varying w_int/w_tim
-  - NSGA-II blocked by missing pymoo (install: `pip install pymoo`)
-  - Tested on 3 instruments: stronger tradeoff on conical (soprano sax) vs cylindrical
-
-**Phase 1h-c results (2026-07-28):**
-- Bore-geometry proxy shows measurable tradeoff on conical instruments
-- Soprano sax: w_int=0.0 → 5.2c intonation / 0.028 timbre vs w_int=1.0 → 0.0c / 0.146
-- Chalumeau: weak tradeoff (constant bore → no conflict between intonation and timbre)
-- Key finding: timbre proxy conflicts more with tapered bores (real instruments) than constant bores
-- To improve: install pymoo for NSGA-II, or compute actual a₂/a₁ via impedance peaks
-
-- [ ] **Phase 1h-d: Validate against WIDesigner**
-  - Install WIDesigner (Java, open-source)
-  - Run same instruments through both optimizers
-  - Compare accuracy and speed
-  - Reference: https://github.com/edwardkort/WWIDesigner
-
-- [ ] **Phase 1h-e: Test manufacturing tolerance sensitivity**
-  - Add ±0.1mm noise to optimal bore profiles
-  - Re-evaluate intonation
-  - Document which instruments are most sensitive
-  - Critical for Phase 2 (3D print accuracy)
-
-### 1i. JAX Autodiff Stage 2 (2026-07-28)
-
-Implemented JAX automatic differentiation for bore-radii refinement (Stage 2 of the
-4-stage L-BFGS-B pipeline). Uses `jax.grad` for exact gradients instead of finite
-differences.
-
-**Implementation:**
-- `build_chain_for_optimizer()` in `tmm_acoustics_jax.py` — builds JAX action chain
-- `jax_stage2_refine()` in `jax_optimizer.py` — L-BFGS-B with `jax.grad`
-- `make_phase_cost()` updated to accept `n_register` parameter (was using `round(phase)`)
-- `use_jax_bore` flag on `refine_sequential()` and `jax_two_phase_optimize()`
-
-**Results (11 instruments, A/B test):**
-
-| Instrument | Type | Python TMM | JAX autodiff | Δ |
-|-----------|------|-----------|-------------|---|
-| chalumeau_C ✓ | closed-open | 0.53c | 0.00c | **+0.53c** |
-| diatonic_D ✓ | closed-open | 0.62c | 0.00c | **+0.62c** |
-| bass_chalumeau_Bb | closed-open | 0.00c | 0.67c | -0.67c* |
-| soprano_sax ✓ | open-open | 0.00c | 0.00c | 0.00c |
-| xaphoon ✓ | open-open | 0.00c | 0.00c | 0.00c |
-| alto_sax ✓ | open-open | 0.00c | 0.00c | 0.00c |
-| concert_flute ✓ | open-open | 0.00c | 0.00c | 0.00c |
-| tin_whistle ✓ | open-open | 0.00c | 0.00c | 0.00c |
-| alto_flute ✓ | open-open | 0.00c | 0.00c | 0.00c |
-| pvc_flute ✓ | open-open | 0.00c | 0.00c | 0.00c |
-| recorder_C ✓ | open-open | 1.04c | 1.04c | 0.00c |
-
-*Bass chalumeau Bb uses unverified dimensions — regression not meaningful.
-
-**Key findings:**
-- JAX improves closed-open instruments that need help (chalumeau, diatonic)
-- No regressions on verified instruments
-- Speed equivalent (1.00x ratio) — JAX compilation offset by fewer iterations
-- JAX phase cost only reliable for n_reg=1 (closed-open); n_reg=2 falls back to Python TMM
-- Phase cost landscape differs from peak-finding landscape — can trap on unverified instruments
+### 4.4 Computational Accuracy Targets
+| Phase | Target | Status |
+|-------|--------|--------|
+| C1 | <20 cents | **ACHIEVED** (23.9c cone) |
+| C2 | <10 cents | **ACHIEVED** (Phase 2b DE) |
+| C3 | <5 cents | **ACHIEVED** (0.01-0.32c RMS) |
+| C4 | <3 cents | **ACHIEVED** (0.00c xaphoon) |
 
 ---
 
-### Computational Accuracy Targets
-| Phase | Target | Requirements | Status |
-|-------|--------|--------------|--------|
-| C1 | <20 cents | L-BFGS-B + correct hole sizing | **ACHIEVED** (23.9c cone) |
-| C2 | <10 cents | Multi-param optimization | **ACHIEVED** (Phase 2b DE) |
-| C3 | <5 cents | Noreland-level (0.49 cents RMS) | **ACHIEVED** (0.01-0.32c) |
-| C4 | <3 cents | Best-case everything | **ACHIEVED** (0.00c xaphoon) |
+## Phase 5: 3D Print Accuracy (Phase 2)
 
-**Benchmark:** Noreland clarinet (2013) achieved 0.49 cents RMS fundamental,
-<5 cents after removing global offset. We now achieve 0.01-0.32c on all instruments.
+### 5.1 Print Tolerance Research
+- [ ] SLA dimensional accuracy for bore geometries (10-25mm cylinders)
+- [ ] Material shrinkage (engineering vs standard resin)
+- [ ] Bore surface roughness impact (layer heights 25/50/100µm)
+- [ ] Warp/distortion over length (500mm bores, multi-part joins)
 
----
+### 5.2 Shrinkage Compensation
+- [ ] Per-resin shrinkage factor in STL export
+- [ ] Non-uniform shrinkage (axial vs radial)
 
-## Phase 2: 3D Print Accuracy (AFTER PHASE 1)
-
-Research-first approach: measure what matters, then compensate.
-All items here require physical printing and measurement.
-
-### 2a. Print Tolerance Research
-- [ ] Quantify SLA dimensional accuracy for bore geometries
-  - Print test cylinders at various diameters (10-25 mm)
-  - Measure with calipers/micrometer
-  - Document actual tolerance vs manufacturer spec
-- [ ] Quantify material shrinkage (engineering resin vs standard resin)
-  - Print known-length specimens
-  - Measure before/after post-cure
-  - Build shrinkage lookup table per resin
-- [ ] Quantify bore surface roughness impact
-  - Print bores at different layer heights (25/50/100 µm)
-  - Measure impedance spectra of each
-  - Determine minimum layer height for <1 cent acoustic effect
-- [ ] Quantify warp/dimensional distortion over length
-  - Print 500mm bore in sections
-  - Measure straightness and diameter consistency
-  - Document join accuracy for multi-part prints
-
-### 2b. Shrinkage Compensation
-- [ ] Add per-resin shrinkage factor to STL export
-- [ ] Validate compensation with test prints
-- [ ] Support non-uniform shrinkage (axial vs radial)
-
-### 2c. Measurement Loop
-- [ ] Import measured impedance data from real instruments
+### 5.3 Measurement Loop
+- [ ] Import measured impedance from real instruments
 - [ ] Compare designed vs measured bore profiles
 - [ ] Iterative correction: measure → optimize → print → measure
 
 ### Physical Accuracy Targets
-| Phase | Target | Requirements | Status |
-|-------|--------|--------------|--------|
-| P1 | <20 cents | SLA print + basic compensation | After C1 |
-| P2 | <10 cents | Calibrated SLA + shrinkage comp | After P1 |
-| P3 | <5 cents | Excellent SLA + measurement loop | After P2 |
-| P4 | <3 cents | Best-case everything | Stretch goal |
-
-**Key insight from research:** Manufacturing is the bottleneck, not computation.
-A 0.1mm bore error → ~1-3 cents intonation error. SLA tolerance is ±0.05-0.1mm.
-So even perfect computation gets diluted by printing. Phase 2 closes this gap.
+| Phase | Target | Status |
+|-------|--------|--------|
+| P1 | <20 cents | After C1 |
+| P2 | <10 cents | After P1 |
+| P3 | <5 cents | After P2 |
+| P4 | <3 cents | Stretch goal |
 
 ---
 
-## Phase 3: Integration & Polish
+## Phase 6: Integration & Polish
 
-### Chalumier Integration
-Branch `experiment-chalumier-integration` has the wrapper and web UI integration.
-Chalumier JAR not yet built (requires JDK 17+).
-
+### 6.1 Chalumier Integration
 - [x] `chalumier_wrapper.py` created (branch: `experiment-chalumier-integration`)
-- [x] Web UI integration: BoreProfileView SVG renderer, build trigger button
+- [x] Web UI integration: BoreProfileView SVG, build trigger
 - [x] Backend endpoints: `/chalumier/design`, `/chalumier/build`
-- [ ] Install JDK 17+ (required to build/run chalumier)
-- [ ] Build chalumier JAR (`gradlew.bat shadowJar` in chalumier/ dir)
-- [ ] Compare chalumier vs our TMM optimizer output quality and speed
+- [ ] Install JDK 17+ (build chalumier JAR)
+- [ ] Compare chalumier vs our TMM optimizer output quality/speed
 - [ ] Add chalumier instrument types to preset list
-- [ ] Support `.chal` specification files in the web UI
 
-**Note:** Chalumier is Kotlin-based, DESIGN-ONLY (JSON + SVG output, not STL).
-For 3D model generation, combine with demakein's make phase or our own STL export.
-
-### GUI Enhancements
+### 6.2 GUI Enhancements
 - [ ] Real-time bore profile visualization during optimization
-- [ ] Impedance peak display with target frequencies overlay
+- [ ] Impedance peak display with target overlay
 - [ ] Export optimization history (convergence plots)
 - [ ] Bore profile editor (drag control points)
 
 ---
 
-## Phase 4: Linux Deployment & Server Hosting
+## Phase 7: Linux Deployment & Server Hosting
 
-Linux is the target platform for both development and deployment. The optimizer's
-parallelization is significantly faster on Linux due to `fork` (copy-on-write) vs
-Windows `spawn` (fresh interpreter + pickle overhead). The web app will be hosted
-on a Linux server for remote access.
-
-### 4a. Local Linux Testing (WSL2)
-Quick validation of parallel speedup before committing to full Linux install.
-
-- [x] WSL2 + Virtual Machine Platform installed (Windows features)
-- [ ] **BLOCKED: Enable virtualization in BIOS (Intel VT-x / AMD-V)** — deferred
-- [ ] Install Ubuntu distribution: `wsl --install -d Ubuntu`
-  - Alternative: use `concurrent.futures.ProcessPoolExecutor` to avoid fork/spawn issue entirely
-- [ ] Install Python 3.12+ and project dependencies
+### 7.1 Local Linux Testing (WSL2)
+- [ ] Enable virtualization in BIOS (Intel VT-x / AMD-V)
+- [ ] Install Ubuntu: `wsl --install -d Ubuntu`
 - [ ] Benchmark optimizer: serial vs parallel (fork context)
-  - Expected: 3-5x speedup over current Windows parallel (1.67x)
-  - Target: full 6-8x speedup matching core count
-- [ ] Verify chalumier builds and runs on Linux (JDK 17+)
-- [ ] Test demakein STL generation on Linux
-- [ ] Document any Windows-specific code that needs fixing
+  - Expected: 3-5x speedup over Windows 1.67x
+  - Target: 6-8x matching core count
 
-### 4b. Native Linux Install (Optional)
-For maximum performance or if WSL2 has issues.
-
-- [ ] Install Ubuntu LTS (dual-boot or primary)
-- [ ] Set up Python virtual environment with all deps
-- [ ] Verify fork-based parallelization works as expected
-- [ ] Profile optimizer with real instruments (target: <60s per design)
-
-### 4c. Server Deployment
-Host the web app on a remote Linux server for team access.
-
-- [ ] Choose server: cheap VPS (4-8 cores, $5-10/mo) or existing machine
-- [ ] Set up Docker container with Python + all dependencies
-- [ ] Deploy FastAPI backend (port 8000)
-- [ ] Deploy frontend (static files or Tauri web build)
-- [ ] Configure reverse proxy (nginx) for HTTPS
-- [ ] Set up process manager (systemd or supervisor) for auto-restart
-- [ ] Document server access and deployment workflow
-
-### 4d. Python 3.14 Migration (When Stable)
-Python 3.14 changes the default start method on Linux from `fork` to `forkserver`.
-This is safer (avoids fork's thread-safety issues) while maintaining fast startup.
-
-- [ ] Test with Python 3.14 beta/rc when available
-- [ ] Verify `forkserver` context works with pymoo
-- [ ] Update deployment to use Python 3.14 when stable
-- [ ] Remove any fork-specific workarounds if no longer needed
-
-### Linux Parallelization Advantages
-| Aspect | Windows (spawn) | Linux (fork) | Linux (forkserver) |
-|--------|-----------------|--------------|-------------------|
-| Process startup | ~40ms (fresh interpreter) | ~2ms (copy-on-write) | ~5ms (pre-forked) |
-| Pickle overhead | Yes (serialize entire problem) | No (memory copy) | No |
-| `if __name__` guard | Required | Optional | Optional |
-| Thread safety | Safe | Unsafe with threads | Safe |
-| Python version | All | All | 3.14+ |
-
-**Current Windows parallel benchmark:** 1.67x speedup (pop=20, gen=5, 6 workers)
-**Expected Linux fork benchmark:** 3-5x speedup (same parameters)
+### 7.2 Server Deployment
+- [ ] Choose VPS (4-8 cores, $5-10/mo)
+- [ ] Docker container with Python + deps
+- [ ] Deploy FastAPI (port 8000) + frontend
+- [ ] nginx reverse proxy + HTTPS
+- [ ] systemd/supervisor auto-restart
 
 ---
 
-## Phase 5: Desktop App (AFTER CORE STABLE)
+## Phase 8: Desktop App (Tauri)
 
-### Tauri Desktop App — Architecture
-- **Current approach (chosen):** Tauri + HTTP backend. Tauri spawns the Python FastAPI
-  server as a managed process. Frontend talks to it via localhost:8000. We get native
-  features (file dialogs, tray, auto-update) while keeping the proven Python backend.
-- **BLOCKED:** Missing Tauri capabilities in `default.json`:
-  - `core:event:allow-listen`
-  - `core:event:allow-emit`
-  - `process:allow-spawn`
-- **Alternative worth exploring later:** Pure Rust with PyO3 bindings. Embed demakein's
-  optimizer directly in the Rust binary via PyO3/maturin. Eliminates the Python
-  dependency entirely, gives single-binary distribution, and could be significantly
-  faster (no process boundary, no GIL contention). The demakein optimizer is mostly
-  numpy/scipy under the hood — rewriting the hot path in Rust with ndarray could be
-  a 10-50x speedup. This is a bigger effort but could be transformative for the
-  project. Consider after the HTTP-based Tauri version is stable and shipping.
+- [ ] Tauri capabilities: `core:event:allow-listen`, `core:event:allow-emit`, `process:allow-spawn`
+- [ ] HTTP backend (Tauri spawns Python FastAPI as managed process)
+- [ ] Native features: file dialogs, tray, auto-update
+- [ ] Future: Pure Rust + PyO3 (embed demakein optimizer, 10-50x speedup)
 
 ---
 
-## Ongoing: Periodic Research Review
+## Ongoing: Periodic Research Review (Every 2-4 Weeks)
 
-New research in instrument acoustics, computational modeling, and 3D printing
-appears constantly. New papers, tools, and techniques may emerge that directly
-impact our design pipeline, cost functions, or accuracy targets. Schedule a
-research review every 2–4 weeks, or before starting a new phase.
-
-**What to check:**
-- New papers on bore optimization, tone hole modeling, mouthpiece acoustics
-- Updates to existing tools (OpenWInD, WIDesigner, Flutomat NG, chalumier)
-- New 3D printing materials or post-processing techniques for acoustic parts
-- Maker community breakthroughs (new successfully printed instruments)
-- Changes to accuracy benchmarks in the literature
-
-### Primary Journals & Proceedings
-| Source | URL | Why It Matters |
-|--------|-----|----------------|
-| **JASA** (Journal of the Acoustical Society of America) | https://asa.scitation.org/journal/jas | Premier journal, wind instrument acoustics |
-| **JASA Express Letters** | Same domain | Rapid communications, early results |
-| **Acta Acustica** | https://acta-acustica.edpsciences.org/ | European, Diamond Open Access since 2025 |
-| **POMA** (Proceedings of Meetings on Acoustics) | https://asa.scitation.org/journal/pom | ASA conference proceedings |
-| **Archives of Acoustics** | http://acoustics.ippt.gov.pl/index.php/aa | Open access, includes music acoustics section |
-| **Acoustics (MDPI)** | https://www.mdpi.com/journal/acoustics | Open access, IF 1.2 |
-| **Music & Science** | https://journals.sagepub.com/home/msc | Interdisciplinary, publishes 3D-printed instrument studies |
-| **Frontiers in Acoustics** | https://www.frontiersin.org/journals/acoustics | Newer (est. 2024), Volume 4 in 2026 |
-
-### Preprint Servers (Check Weekly)
-| Server | URL | Focus |
-|--------|-----|-------|
-| **arXiv cs.SD** | https://arxiv.org/list/cs.SD/recent | Computational acoustics, physical modeling |
-| **arXiv eess.AS** | https://arxiv.org/list/eess.AS/recent | Audio and speech processing |
-| **HAL** | https://hal.science/ | French archive, IRCAM/INRIA/CNRS heavy, OpenWind papers |
-
-### Active Research Labs (Follow Their Publications)
-| Lab | URL | Focus |
-|-----|-----|-------|
-| **CAML — McGill** | https://caml.music.mcgill.ca/ | Physical modeling, instrument measurement, FDTD |
-| **CCRMA — Stanford** | https://ccrma.stanford.edu/ | Digital waveguides, JUCE |
-| **IRCAM / INRIA** | https://www.ircam.fr/ / https://www.inria.fr/ | OpenWind, heritage instrument digitization |
-| **NESS — Edinburgh** | https://www.ness.music.ed.ac.uk/ | Next Gen Sound Synthesis (ERC-funded), C++/CUDA |
-| **Chalmers SMC** | https://research.chalmers.se/en/groups/sound-and-music-computing/ | Neuralacoustics framework, deep learning for acoustics |
-| **Aalto Acoustics Lab** | https://www.aalto.fi/en/aalto-acoustics-lab | DAFx best papers 2023–2025 |
-| **Stuttgart ITM** | https://www.itm.uni-stuttgart.de/en/research/analysis-of-musical-instruments/ | FEM/BEM for instruments, very active 2021–2025 |
-| **Politecnico di Milano ISPG** | https://www.deib.polimi.it/ | Audio signal processing, violin acoustics |
-
-### Conferences (Submit / Attend Annually)
-| Conference | Cycle | Notes |
-|------------|-------|-------|
-| **ISMA** (International Symposium on Musical Acoustics) | ~2 years | ISMA 2026: Helsinki, Jun 15–17 |
-| **ISMRA** (International Symposium on Musical and Room Acoustics) | Annual | ISMRA 2025 was May 25–27 New Orleans |
-| **ASA Meetings** | Biannual | Major venue, POMA proceedings |
-| **Forum Acusticum** | ~3 years | European Acoustics Association |
-| **SMAC** (Stockholm Music Acoustics Conference) | ~4 years | Prestigious, focused |
-| **DAFx** (Digital Audio Effects) | Annual | Physical modeling, sound synthesis |
-| **NIME** (New Interfaces for Musical Expression) | Annual | Novel instruments, 3D-printed |
-
-### Expert Forums & Communities (Browse Monthly)
-| Community | URL | Focus |
-|-----------|-----|-------|
-| **Chiff & Fipple** | https://www.chiffandfipple.com/ | Flutes, whistles, world winds, 25+ years of archived knowledge |
-| **MIMF** (Musical Instrument Makers Forum) | https://www.mimf.com/ | All types, 10,000+ archived discussions |
-| **Reddit r/clarinet** | https://www.reddit.com/r/Clarinet/ | Reed instrument acoustics |
-| **Reddit r/Luthier** | https://www.reddit.com/r/Luthier/ | Instrument builders |
-| **ASA Forums** | https://acousticalsociety.org/ | Professional society discussions |
-
-### Active GitHub Repos (Monitor for Updates)
-| Repo | URL | Description |
-|------|-----|-------------|
-| **Neuralacoustics** | https://github.com/ktatar/neuralacoustics | Deep learning for musical acoustics (Chalmers) |
-| **NESS** | https://github.com/Edinburgh-Acoustics-and-Audio-Group/ness | C++/CUDA physical modeling |
-| **Resonarium** | https://github.com/gabrielsoule/resonarium | MPE physical modeling waveguide synth (341 stars) |
-| **RipplerX** | https://github.com/tiagolr/ripplerx | Physical modeling synth, 9 resonator models (569 stars) |
-| **VIBRA** | https://github.com/MOPT-UFSC/VIBRA | Open-source FEM vibroacoustic analysis (Python) |
-| **ParallelFDTD** | https://github.com/AaltoRSE/ParallelFDTD/ | CUDA-accelerated FDTD room acoustics (Aalto) |
-| **torch-fdtd-string** | https://github.com/jin-woo-lee/torch-fdtd-string | PyTorch FDTD + differentiable modal synthesis |
-| **WIDesigner** | https://github.com/edwardkort/WWIDesigner | TMM wind instrument optimizer (Java) |
-| **OpenWind** | https://inria.hal.science/ | Python wind instrument acoustics (Inria) |
-
-### Blogs & Channels (Occasional)
-| Source | URL | Description |
-|--------|-----|-------------|
-| **Martin Schleske Research** | https://www.schleske.de/en/research.html | Extraordinary violin acoustics resource |
-| **Kemp Strings** | https://www.youtube.com/@kempstrings | String inharmonicity research demos |
-
-### Key Observation
-There is no dedicated acoustics preprint server. Researchers use **arXiv** (cs.SD, eess.AS) and **HAL** (dominated by IRCAM/INRIA/CNRS). For 3D-printed instruments specifically, *Music & Science*, *Acta Acustica*, *Polymers (MDPI)*, and *Rapid Prototyping Journal* are the most active venues.
-
----
-
-## Low Priority — Future
-
-### Trumpet Design (Branches Available)
-- [ ] **OpenWind FEM approach** (`experiment/trumpet-openwind`)
-  - Uses OpenWind's 1D FEM with visco-thermal losses
-  - Models valves as deviation pipes with proper junction physics
-  - Ready for leadpipe optimization (6 variables)
-  - See `ROADMAP-Trumpet.md` for details
-- [ ] **Custom TMM approach** (`experiment/trumpet-custom-tmm`)
-  - Phase-based TMM (same engine as woodwinds)
-  - Deprecated for trumpets due to accuracy limitations
-  - Bell flare not handled correctly by TMM
-- [ ] **Yamaha/ML approach** (future, needs compute resources)
-  - Physics-based sound simulation (harmonic balance)
-  - ML model training on impedance parameters
-  - NSGA-II multi-objective optimization
-  - Reference: Petiot et al. (2024-2025), Yamaha Corporation
-
-### Advanced Acoustics
-- [x] Thermoviscous losses (Keefe 1984) — adds frequency-dependent attenuation
-- [x] JAX differentiable TMM for gradient-based optimization (2.7M evals/sec, 52x faster)
-- [x] JAX autodiff Stage 2 bore-radii refinement (exact gradients, intonation-only)
-- [ ] TMMI external tonehole interactions (Lefebvre et al. 2013)
-- [ ] Lefebvre revised tonehole formulas (better chimney height model)
-- [ ] Temperature sensitivity analysis (±X cents per °C)
-- [ ] Vocal tract coupling simulation
-- [ ] Reed/mouthpiece impedance modeling
-- [ ] Multi-register optimization (clarinet twelfths)
-- [ ] Implement chalumier's `reedVirtualLength`/`reedVirtualTop` for reed instruments
-- [ ] Finer coneStep (0.125mm) for conical bore optimization
-
-### Manufacturing
-- [ ] Hybrid approach: 3D print mold → cast final instrument
-- [ ] CNC reamer profile export
-- [ ] Bore straightness verification (warping detection)
-
-### Research
-- [ ] Compare FDM vs SLA acoustic performance
-- [ ] Document optimal print settings for musical instruments
-- [ ] Publish accuracy benchmarks
+- New papers: JASA, Acta Acustica, POMA, Music & Science, arXiv cs.SD/eess.AS, HAL
+- Labs: CAML (McGill), CCRMA (Stanford), IRCAM/INRIA, NESS (Edinburgh), Chalmers, Aalto, Stuttgart, Politecnico Milano
+- Conferences: ISMA 2026 Helsinki, ISMRA 2025, ASA, Forum Acusticum, DAFx, NIME
+- GitHub: Neuralacoustics, NESS, Resonarium, VIBRA, OpenWind, WIDesigner
 
 ---
 
 ## AI Governance System — COMPLETE
 
-- [x] `docs/CONSTRAINTS_AND_PREFERENCES.md` — AI Boot Sequence (6-step init every session)
+- [x] `docs/CONSTRAINTS_AND_PREFERENCES.md` — AI Boot Sequence (6-step init)
 - [x] `docs/AI_CONSTITUTION.md` — 10 non-negotiable project laws
-- [x] `docs/ARCHITECTURE_DECISIONS.md` — 6 seeded ADR records (geometry layer, thin orchestrators, etc.)
-- [x] `docs/ARCHITECTURE_CHECKLIST.md` — Pre-flight/pre-commit 20-item checklist
-- [x] `docs/COMPLIANCE_CHECK.md` — Trigger-based compliance script (15min, before code, after tests)
-- [x] `docs/AI_FAILURE_PATTERNS.md` — Failure pattern log (5 seeded patterns)
-- [x] `docs/WIKI.md` — Section 10: AI Governance System
-- [x] `docs/WIKI-INDEX.md` — Governance page links
+- [x] `docs/ARCHITECTURE_DECISIONS.md` — 6 seeded ADR records
+- [x] `docs/ARCHITECTURE_CHECKLIST.md` — 20-item pre-flight checklist
+- [x] `docs/COMPLIANCE_CHECK.md` — Trigger-based compliance (15min, before code, after tests)
+- [x] `docs/AI_FAILURE_PATTERNS.md` — Failure pattern log (5 seeded)
 - [x] Governance pages pushed to GitHub wiki
-- [x] Architecture redesign packaged for ChatGPT review (zip + prompt)
 
 ---
 
-*Last updated: 2026-07-29*
+## P0 Questions Blocking Phase 0 (Posted to Discussion #23)
+
+1. **Impossible outer diameters** in `benchmark_all.py` — correct wall thickness?
+2. **Missing tone holes** in `build_bass_chalumeau_Bb()` — add 7-8 holes or remove benchmark target?
+3. **Two-phase optimizer scope** — P0 bugs only, or include P1 import fixes?
+4. **Bass chalumeau merge conflict** — laptop merges desktop first?
+
+---
+
+*Last updated: 2026-08-07*
