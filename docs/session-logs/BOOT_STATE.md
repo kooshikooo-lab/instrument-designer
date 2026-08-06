@@ -198,6 +198,10 @@
   (laptop is 55 commits ahead, carries the metamaterial stack).
 
 ### In Progress
+- Session ended 2026-08-06. Next work deferred to tomorrow after user reviews
+  `docs/ARCHITECTURE_AUDIT.md` + `docs/AI_REVIEW_FACT_CHECK.md` and answers 4
+  detailed questions (correct wall thickness, `bass_chalumeau_Bb` builder fate,
+  `two_phase_optimizer.py` fate, P0-only vs P0+P1 scope).
 - Governance/schema coordination with laptop via Discussion #23 (cursor bug fixed,
   reply posted at 2026-08-06, awaiting laptop confirmation).
 - `scripts/dask_scheduler.log` left unstaged (live log, tracked pre-existing).
@@ -219,28 +223,37 @@
   read-only so the app can't overwrite on close (then unlock once relaunched OK).
 - Order of operations + ASK-don't-speculate are now binding governance.
 
-## Next Steps
+## Next Steps (Tomorrow)
 
-1. Stay on `opencode/main/desktop`; PR #62 (MERGEABLE) still needs no external
-   approval per user; laptop is deferring its branch merge until PR #62 merges.
-2. Laptop approved the instrument-config schema (Discussion #23, 01:07Z).
-   Migrated 3 configs (`bass_clarinet_7hole`, `bass_clarinet_7hole_bell`,
-   `bass_chalumeau`) to canonical format. `baroque_clarinet.json` remains
-   `legacyBaroqueClarinet` pending a decision on multi-register support (posted to
-   #23). All 4 configs validate; 13 tests pass.
-3. Continue governance / agent-coordination improvements: pre-commit
-   import-consistency checks (per the other model's analysis) and/or design-output
-   JSON schema.
-4. Have the user verify the three.js preview (`View in Browser.bat`) and the
-   Blender viewer; then continue or pivot.
-5. Monitor #23 for: laptop's mesh-repair gate protocol draft for `docs/TOOLS.md`,
-   laptop's merge of track C, cluster worker re-attach, PR #62 status.
-6. Optional later: track A (FreeCAD workbench); `tests/test_stl_export.py` has a
-   duplicate `test_stl_export` (l.8–47 dead code shadowed by l.50–83) to clean up.
-7. Standing: present `backend/spectral` for approval when the user is available.
-8. Acoustic improvements held pending user priority: Ernoult phase-based cost
-   (already partially implemented in `tmm_acoustics.py` and `tmm_acoustics_jax.py`)
-   and cross-fingerings for 12-hole chromatic clarinet.
+1. **User review**: walk through `docs/ARCHITECTURE_AUDIT.md` and
+   `docs/AI_REVIEW_FACT_CHECK.md` and answer 4 detail questions:
+   - Correct wall thickness / outer diameter for `pvc_flute_D` and `diatonic_D_chalumeau`.
+   - Add holes to `build_bass_chalumeau_Bb()` or remove the benchmark target?
+   - Delete `two_phase_optimizer.py` (if dead) or fix it?
+   - P0 bugs only tomorrow, or P0 + P1 import fixes together?
+2. **Fix P0 critical bugs** after answers:
+   - Impossible outer diameters in `backend/benchmark_all.py`.
+   - Missing tone holes in `backend/modular_components.build_bass_chalumeau_Bb()`.
+   - Hardcoded `outer_diameter_mm=22.0` in `backend/jax_optimizer.py::eval_all`.
+   - Hardcoded `outer_diameter_mm=22.0` and `closed_top=False` in
+     `backend/two_phase_optimizer.py` (or delete it).
+3. **Fix deleted-module references** in `backend/benchmark_unconventional_shapes.py`,
+   `backend/main.py`, `run.py`, `scripts/benchmark_chalumier_dask.py`,
+   `tests/test_measure.py`, `tests/test_server_routes.py`.
+4. **Clean up bare excepts** in production code (`backend/`, `scripts/`).
+5. **Remove or ignore** tracked regenerable artifacts / misplaced files.
+6. **Coordinate with laptop**: confirm Tailscale monitor is running latest, pull
+   latest `opencode/main/desktop`, and close resolved #23 threads.
+7. **Research**: Fusion 360 personal-use free-subscription limitations for API/scripting.
+
+## Standing / Longer Term
+
+- PR #62 merge waiting for user approval; laptop deferring full branch merge.
+- `backend/spectral` awaits user approval of `docs/DESIGN_spectral.md`.
+- FreeCAD workbench (track A) deferred; user chose three.js first.
+- `tests/test_stl_export.py` duplicate `test_stl_export` still to clean up.
+- Ernoult phase-based cost and 12-hole chromatic clarinet cross-fingerings held
+  pending user priority.
 
 ## Critical Context
 

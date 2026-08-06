@@ -45,6 +45,8 @@ thread starts, moves, or resolves.
 | 5 | `cadquery-ocp` pin in `cad` extra | desktop | desktop commit | Desktop added pin (avoid `cadquery-ocp-novtk` OCP namespace clobber) | 2026-08-05 |
 | 6 | Config schema unification | desktop | laptop review of multi-register decision | Schema approved; 3 configs migrated to canonical; `baroque_clarinet.json` kept as legacy until multi-register decision | 2026-08-06 |
 | 8 | Tailscale peer monitor | desktop | laptop pull latest | Monitor simplified to connection-per-message protocol; desktop running; laptop should pull latest `opencode/main/desktop` and restart | 2026-08-06 |
+| 9 | Architecture audit P0 fixes | desktop | user answers (4 questions) | Audit + fact-check ready (`docs/ARCHITECTURE_AUDIT.md`, `docs/AI_REVIEW_FACT_CHECK.md`); fix impossible ODs, missing holes, hardcoded OD/closed_top after answers | 2026-08-06 |
+| 10 | Fusion 360 personal-use free subscription | desktop | desktop research | User clarified meaning; research API/scripting limitations for Fusion 360 personal/free tier before continuing Fusion integration | 2026-08-06 |
 
 ## Nudge rule
 
