@@ -37,8 +37,9 @@ thread starts, moves, or resolves.
 | 1 | Topk integration table | desktop | laptop | **RESOLVED** — desktop posted the 5-family table + robustness to #23 (comment 17891204, 2026-08-04); laptop verified shared engine parity (5.902c @ maxiter=250) | 2026-08-04 |
 | 2 | Numba wiring restore on `main` | both | merge of PR #62 | laptop keeps guarded skip; restore lands via PR #62 merge, then laptop merges `main` | 2026-08-04 |
 | 3 | PR #62 head mirror `opencode-instrument-designer` | desktop | PR #62 merge | GitHub CLI cannot retarget PR heads; mirror ref tracks `opencode/main/desktop` until merge, then delete | 2026-08-04 |
-| 4 | Track C build123d spike + mesh-repair gate protocol | desktop | laptop | **WAITING on desktop** — `opencode/build123d/laptop` (`8ddfc7a` spike, `e8d6254` protocol, `7bc624e` BOOT_STATE) posted #23 comment-17906678; merge decision is desktop's call | 2026-08-05 |
+| 4 | Track C build123d spike + mesh-repair gate protocol | desktop | laptop | **WAITING on desktop** — `opencode/build123d/laptop` (`8ddfc7a` spike, `e8d6254` protocol, `7bc624e` BOOT_STATE) posted #23 comment-17906678; merge decision is desktop's call. Branch now also carries K3 doc fixes B1/B2/C-phase (comment-17914586) | 2026-08-06 |
 | 5 | `kalles-main-branch` deleted from origin | desktop | laptop | **WAITING on desktop** — flagged #23 comment-17906728; no commits lost (tip `b198c4c` ancestor of `opencode/main/laptop`); confirm rename/deletion intent | 2026-08-05 |
+| 6 | Kimi K3 doc fixes + `baroque_clarinet.json` decision | desktop | laptop | **WAITING on desktop** — laptop applied + posted confirmed K3 fixes (comment-17914586); desktop to decide `baroque_clarinet.json` option-1/2 (laptop recommended option 2 in `discussioncomment-17914412`); Fusion 360 contract change also unapproved | 2026-08-06 |
 
 ## Nudge rule
 

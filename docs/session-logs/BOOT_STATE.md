@@ -211,16 +211,41 @@
   adopted** (adoption requires the full adopt-a-tool protocol); check-only gate
   (fail on non-watertight) wireable with zero new deps. Posted to #23
   (comment-17906678).
+- **Kimi K3 doc fixes — B1/B2/C-phase DONE on `opencode/build123d/laptop`**
+  (this session; B1 `47e1b9a`, B2 `6d67f8d`, then C1–C6 + bore_optimizer fix).
+  - B1: benchmark_all impossible ODs fixed + fingering charts aligned to
+    canonical build + `_validate_instruments()` guard.
+  - B2: outer_diameter/closed_top/n_bore_ctrl threaded through jax and
+    two_phase optimizers (`n_bore_ctrl=4` now yields 4 control points);
+    dead `note_to_freq`/`SEMITONE_MAP` removed; bare excepts replaced.
+  - C1 coordinates `2ea8806` (bore_length required + bounds-checked on all 6
+    transforms); C2 tmm_acoustics_jax `7d9ea95` (fingering-set validation,
+    raw RMS, target_radius param); C3 chromatic_flute `3737885` (import
+    fallback, 3c/2f register-3 guess, hole geometry in config); C4 pareto
+    `ecff35f`/`c47ff9a`/`830fb61` (per-hole local-radii interpolation,
+    explicit `[L,radii,hp,hd]` design vectors, generative_agent decode);
+    C5 tmm_solver `c00d48a` (compute_frequencies fixed, from_network
+    rewritten); C6 instrument_library `99e36cf` (verified flag, dup record
+    removed, case-insensitive filters). bore_optimizer `439537e` (final
+    metrics use optimized radii; bore_radii recorded).
+  - bore_optimizer/stage1 fate: multi-segment radii interpolation DEFERRED
+    (Kimi-rated P1, needs shared network.py geometry work); stage1_optimizer
+    reviewed, no action. Full `pytest tests/` **158 passed / 2 skipped**;
+    toolcheck PASS; build123d parity at parity (xaphoon_C known non-watertight
+    in BOTH paths per `test_xaphoon_export_fails_gate`). Posted to #23
+    (comment-17914586).
 
 ### In Progress
 - Laptop Dask worker `laptop-worker` running, attached to desktop scheduler
   `tcp://100.69.113.41:8786` (logs: `scripts/laptop_worker_stdout.log` /
   `_stderr.log`, gitignored). Leave running while benchmarks use both machines;
   desktop's `cluster_health.py` will confirm once their commits land.
-- Build123d spike + mesh-repair gate protocol on `opencode/build123d/laptop`
-  (`8ddfc7a`, `e8d6254`) posted to #23 (comment-17906678), **awaiting desktop
-  review** — merge into `opencode/main/laptop` (and possibly docs-only cherry-pick
-  to `main`) is the desktop's call per branch-naming convention.
+- **Kimi K3 doc fixes B3 = final wrap of `opencode/build123d/laptop`**
+  (this session): all C-phase files committed; D-phase verification done
+  (build123d parity at parity, toolcheck PASS, 158 passed / 2 skipped);
+  remaining: final BOOT_STATE/REMINDERS commit + push branch. Desktop's
+  `baroque_clarinet.json` option-1/2 answer (my option-2 recommendation in
+  `discussioncomment-17914412`) and Fusion 360 contract approval still pending.
 
 ### Blocked
 - Standing (not this session): `backend/spectral` implementation awaits user
@@ -251,24 +276,27 @@
 
 ## Next Steps
 
-1. Standing: present `backend/spectral` design (`docs/DESIGN_spectral.md`) for
+1. **Finish B3 push of `opencode/build123d/laptop`**: commit BOOT_STATE/REMINDERS
+   update (this session), then push the K3-fix branch (`47e1b9a`..`HEAD`) to origin.
+2. Standing: present `backend/spectral` design (`docs/DESIGN_spectral.md`) for
    user approval when the user is available.
-2. **Build123d spike review** (posted #23 comment-17906678): decide merge of
-   `opencode/build123d/laptop` (`8ddfc7a` spike + `e8d6254` mesh-repair protocol)
-   into `opencode/main/laptop`, then docs-only cherry-pick to `main` as done for
-   the research doc — desktop's call per branch-naming convention.
-3. **Reconcile `kalles-main-branch` deletion** with desktop: confirm which branch
+3. **Await desktop replies** (posted #23, comment-17914586): (a) `baroque_clarinet.json`
+   option-1/2 decision (laptop recommended option 2); (b) Fusion 360 contract change
+   approval (no A/B/C fusion work until approved); (c) build123d spike + mesh-repair
+   gate merge decision (comment-17906678).
+4. **Deferred (not P0):** interpolate `n_bore_cp` radii into a multi-segment bore
+   profile in `backend/optimization/bore_optimizer.py` (Kimi P1; needs shared
+   network.py/Segment profile interpolation — coordinate with desktop before
+   touching shared geometry).
+5. **Reconcile `kalles-main-branch` deletion** with desktop: confirm which branch
    now carries the metamaterial/topk/spectral work toward `main` (history safe on
    `opencode/main/laptop`; desktop branch lacks `3d318dc`).
-2. Monitor `kalles-main-branch` for laptop's `team_chat.py` fixes landing on
-   `main` (laptop's call) and for Phase 2G updates; laptop may want the L2-vs-L1
-   parity sweep now that `main` has the ported experiment scripts.
-3. Optional user-verification: folded/low-clarinet notes wording in
+6. Optional user-verification: folded/low-clarinet notes wording in
    `docs/RESEARCH_acoustic_metamaterials.md` §7 / wiki §5.8.
-4. **ML optimization integration** (future): add ML-based optimization methods
+7. **ML optimization integration** (future): add ML-based optimization methods
    (e.g., Bayesian optimization, neural surrogates, gradient-free methods) to
    complement the existing two-phase optimizer (`backend/two_phase_optimizer.py`).
-   **Progress this session:** laptop delivered the reusable gradient-free winner
+   **Progress to date:** laptop delivered the reusable gradient-free winner
    as `backend/optimization/topk_polish.py` (DE + k-elite L-BFGS-B); surrogate
    warm-start tested and rejected on the shared contract. Desktop's comparison
    runners now take explicit budget args + `verify_with_retries` (PR #62), so
@@ -301,10 +329,12 @@
   `docs/WIKI.md` §11, `docs/WIKI-INDEX.md`, `wiki/Internal-Research-CAD-Pipeline.md`,
   `wiki/Internal-Research.md`, `wiki/3D-Printing-Guide.md`) + BOOT_STATE (`1e70d01`).
   **123 passed / 1 skipped** on laptop.
-- **`origin/opencode/build123d/laptop` = `e8d6254`** (new side branch off
-  `opencode/main/laptop`): build123d spike (`8ddfc7a`) + mesh-repair gate protocol
-  in `docs/TOOLS.md` (`e8d6254`). Not merged to laptop branch yet — awaiting
-  desktop review (see #23 comment-17906678).
+- **`origin/opencode/build123d/laptop`** = the K3-fix branch (was `e8d6254`
+  spike + mesh-repair protocol). This session added B1 `47e1b9a`, B2 `6d67f8d`,
+  C1–C6 (`2ea8806`..`99e36cf`), bore_optimizer fix `439537e` (HEAD). Not yet
+  pushed at last BOOT_STATE write — final wrap pushes it. Awaiting desktop review
+  of the spike merge (see #23 comment-17906678); K3 fixes posted as
+  comment-17914586.
 - Untracked regenerable artifacts left uncommitted: `bench_main.txt`,
   `bench_perf_tmm_medium.txt`, `bench_perf_tmm_refactor.txt`, `test_output/`.
 - #23 stream: laptop confirmation (01:41:04Z) + laptop's three `team_chat.py`
