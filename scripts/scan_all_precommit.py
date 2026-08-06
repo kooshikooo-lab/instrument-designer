@@ -49,4 +49,14 @@ for e in errors:
 print("\nWARNINGS:")
 for w in warnings:
     print(f"  - {w}")
+
+# Dependency drift check (non-blocking here; run with --warn to fail)
+dep_result = subprocess.run(
+    [sys.executable, str(root / "scripts" / "check_local_dependencies.py")],
+    capture_output=True, text=True, cwd=root,
+)
+print("\nDEPENDENCY CHECK:")
+print(dep_result.stdout.strip())
+print(dep_result.stderr.strip())
+
 print(f"\nTotal errors: {len(errors)}, warnings: {len(warnings)}")

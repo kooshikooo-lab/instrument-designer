@@ -222,6 +222,8 @@ def phantom_deps(declared_all: set[str], imported_pkgs: set[str]) -> list[str]:
 
 
 def main() -> int:
+    strict = "--strict" in sys.argv
+
     installed = _installed()
     declared = _declared()
     declared_all = set().union(*declared.values()) if declared else set()
@@ -278,11 +280,26 @@ def main() -> int:
         print(f"  {r}  -> {_resolve_pkg(r)}")
 
     print()
-    problems = phantom  # phantom deps are the actionable failures
+    # Strict mode also fails on declared packages that the code imports but are
+    # not installed. This prevents merging code that depends on a missing local
+    # dependency across machines with different environments.
+    active_orphan = sorted(p for p in orphan if p in imported_pkgs)
+    problems = list(phantom)
+    if strict and active_orphan:
+        problems.extend(active_orphan)
     if problems:
-        print(f"RESULT: FAIL — {len(problems)} phantom dependencies must be declared or removed.")
+        print(f"RESULT: FAIL — {len(problems)} dependency problem(s):")
+        for p in problems:
+            print(f"  - {p}")
+        if strict and active_orphan:
+            print("\nRun 'pip install -e \".[dev,cad,test]\"' or the missing extras.")
         return 1
     print("RESULT: PASS — all imported tools are declared in pyproject.")
+    if strict:
+        if active_orphan:
+            print(f"(strict mode: {len(active_orphan)} declared+imported package(s) not installed, listed above)")
+        else:
+            print("(strict mode: all declared packages used by the code are installed)")
     return 0
 
 

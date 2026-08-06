@@ -15,3 +15,6 @@ jobs:
       - name: Block unauthorized governance file edits and unmarked provisional work
         run: |
           python scripts/validate_commit_msg.py
+      - name: Check local dependencies are present for imported declared packages
+        run: |
+          python scripts/check_local_dependencies.py --warn
