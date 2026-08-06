@@ -47,14 +47,30 @@ MATCH_TOTAL_SECONDS = int(os.environ.get("CHESS_MATCH_BUDGET_SECONDS", 600 + 20 
 
 
 def _machine_name():
-    env = os.environ.get("MACHINE_NAME", "").strip().lower()
-    if env in ("desktop", "laptop"):
-        return env
+    for key in ("MACHINE_NAME", "TEAM_MACHINE"):
+        env = os.environ.get(key, "").strip().lower()
+        if env in ("desktop", "laptop"):
+            return env
     host = os.environ.get("COMPUTERNAME", "").lower()
     if "desktop" in host:
         return "desktop"
     if "laptop" in host:
         return "laptop"
+    cfg = _load_config()
+    if cfg:
+        try:
+            result = subprocess.run(
+                ["tailscale", "ip", "-4"],
+                capture_output=True, text=True, timeout=10,
+            )
+            if result.returncode == 0:
+                my_ip = result.stdout.strip().splitlines()[0].strip()
+                if my_ip and cfg.get("desktop", {}).get("ip") == my_ip:
+                    return "desktop"
+                if my_ip and cfg.get("laptop", {}).get("ip") == my_ip:
+                    return "laptop"
+        except Exception:
+            pass
     return "unknown"
 
 
@@ -568,6 +584,9 @@ def main():
     peer_ip, port = _resolve_peer()
 
     if args.cmd == "challenge":
+        if args.games < 2:
+            print("ERROR: a match must be a series of more than one game.", file=sys.stderr)
+            sys.exit(1)
         cmd_challenge(peer_ip, port, match_games=args.games, time_control=args.time_control)
     elif args.cmd == "accept":
         cmd_accept(peer_ip, port)

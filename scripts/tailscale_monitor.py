@@ -51,9 +51,10 @@ LOG_FILE = REPO_ROOT / "scripts" / "tailscale_monitor.log"
 
 def _machine_name():
     """Return 'desktop' or 'laptop'. Prefer env, then hostname hints."""
-    env = os.environ.get("MACHINE_NAME", "").strip().lower()
-    if env in ("desktop", "laptop"):
-        return env
+    for key in ("MACHINE_NAME", "TEAM_MACHINE"):
+        env = os.environ.get(key, "").strip().lower()
+        if env in ("desktop", "laptop"):
+            return env
     host = os.environ.get("COMPUTERNAME", "").lower()
     if "desktop" in host:
         return "desktop"
@@ -229,9 +230,16 @@ def _handle_command(sock, addr, obj):
         text = obj.get("text", "")
         _update_last_seen(addr[0])
         state = _load_state()
-        state["received_messages"] = state.get("received_messages", []) + [
-            {"from": sender, "text": text, "time": _now_iso()}
-        ]
+        existing = state.get("received_messages", [])
+        msg_id = obj.get("id")
+        if msg_id and any(m.get("id") == msg_id for m in existing):
+            _log(f"duplicate message id {msg_id} ignored")
+        else:
+            entry = {"from": sender, "text": text, "time": _now_iso()}
+            if msg_id:
+                entry["id"] = msg_id
+            existing = existing + [entry]
+        state["received_messages"] = existing[-200:]
         _save_state(state)
         _log(f"message from {sender}: {text[:80]}")
         sock.sendall(_encode({"cmd": "ok", "from": me, "time": _now_iso()}))

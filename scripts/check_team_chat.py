@@ -43,6 +43,7 @@ def _run(cmd, timeout=30):
     """Run a subprocess silently and return (returncode, stdout, stderr)."""
     env = os.environ.copy()
     env.setdefault("TEAM_MACHINE", "desktop")
+    env.setdefault("MACHINE_NAME", "desktop")
     try:
         proc = subprocess.run(
             cmd,
