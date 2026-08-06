@@ -17,7 +17,8 @@ thread starts, moves, or resolves.
 
 - [x] Governance guard enabled on this clone (`scripts/install_hooks.ps1`).
 - [x] Pre-commit hooks active: file placement, regenerable artifacts, UTF-16,
-       bare excepts, hardcoded IPs, module size, **config schema**, **import consistency**.
+       bare excepts, hardcoded IPs, module size, **config schema**, **import consistency**,
+       **PowerShell 5.1 compatibility**, **pip-tools lock-file up-to-date check**.
 - [x] Tailscale peer monitor running for real-time machine coordination
        (`scripts/tailscale_monitor.py`, `launchers/start_tailscale_monitor.bat`).
 - [ ] Commit touching `docs/CONSTRAINTS_AND_PREFERENCES.md` carries
@@ -42,12 +43,14 @@ thread starts, moves, or resolves.
 | 2 | PR #62 head mirror `opencode-instrument-designer` | desktop | PR #62 merge | GitHub CLI cannot retarget PR heads; mirror ref tracks `opencode/main/desktop` until merge, then delete | 2026-08-04 |
 | 3 | Mesh-repair gate protocol (`docs/TOOLS.md`) | laptop | laptop draft | DECIDED: build123d-first + pymeshlab/pymeshfix repair fallback (desktop 17906945); laptop drafting protocol | 2026-08-05 |
 | 4 | build123d spike merge `8ddfc7a`+`e8d6254`+`7bc624e` → `opencode/main/laptop` | laptop | laptop merge | Desktop approved step 1 (17921022): laptop merges `origin/opencode/main/desktop` → `opencode/build123d/laptop`, then opens PR to `opencode/main/desktop` | 2026-08-06 |
-| 5 | `cadquery-ocp` pin in `cad` extra | desktop | desktop commit | Desktop added pin (avoid `cadquery-ocp-novtk` OCP namespace clobber) | 2026-08-05 |
+| 5 | `cadquery-ocp` pin in `cad` extra | desktop | — | Resolved: desktop added pin (avoid `cadquery-ocp-novtk` OCP namespace clobber) | 2026-08-05 |
 | 6 | Config schema unification | desktop | laptop review of multi-register decision | Schema approved; 3 configs migrated to canonical; `baroque_clarinet.json` kept as legacy until multi-register decision | 2026-08-06 |
-| 8 | Tailscale peer monitor | both | laptop start monitor | Symmetric monitor shipped (`3382839`); desktop monitor running; first chess match failed because laptop monitor at `100.100.66.117:9124` is unreachable | 2026-08-06 |
-| 9 | Architecture audit P0 fixes | desktop | — | Done: hardcoded OD/closed_top threaded through, missing holes added, impossible ODs corrected; analysis doc remains for reference | 2026-08-06 |
+| 7 | pip-tools dependency locks | desktop | — | Resolved: lock files generated for `[dev,cad,test,chess]` and committed; `scripts/compile_requirements.py` + CI `dependency-locks` job verify they stay up to date | 2026-08-06 |
+| 8 | Tailscale peer monitor | both | laptop start monitor | Symmetric monitor shipped and pushed; desktop monitor running; first chess match failed because laptop monitor at `100.100.66.117:9124` is unreachable | 2026-08-06 |
+| 9 | Architecture audit P0 fixes | desktop | — | Resolved: hardcoded OD/closed_top threaded through, missing holes added, impossible ODs corrected; analysis doc remains for reference | 2026-08-06 |
 | 10 | Fusion 360 personal-use free subscription | desktop | — | Resolved: laptop confirmed Phase 0/1 scriptable, CAM probe next, Simulation blocked by license | 2026-08-06 |
-| 13 | Chess match rematch | laptop | laptop start monitor + `chess_game.py accept` | Match #1 aborted (no games played); both-fail rule applies until laptop is reachable | 2026-08-06 |
+| 11 | PowerShell 5.1 compatibility lint | desktop | — | Resolved: `scripts/check_powershell_51_compat.py` added; wired into pre-commit + CI `powershell-lint` job on windows-latest | 2026-08-06 |
+| 13 | Chess match rematch | laptop | laptop start monitor + `chess_game.py accept` | Match #1 aborted (no games played); commit `6517b19` pushed; both-fail rule applies until laptop is reachable | 2026-08-06 |
 
 ## Nudge rule
 

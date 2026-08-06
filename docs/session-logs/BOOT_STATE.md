@@ -249,6 +249,19 @@
   - PowerShell: stay on Windows PowerShell 5.1; add CI lint for PS 7-only syntax.
   - No exact-dimension manufacturing STEP found; fallback is academic bore profile
     → CAD export → TMM compare.
+- **Pip-tools lock files committed and pushed** (`6517b19`):
+  - `requirements.txt`, `requirements-dev.txt`, `requirements-cad.txt`,
+    `requirements-test.txt`, `requirements-chess.txt` with hashes.
+  - `scripts/compile_requirements.py` regenerates locks and verifies them with
+    `--check`.
+  - CI `dependency-locks` job on `ubuntu-latest` runs the check on every push/PR.
+- **PowerShell 5.1 compatibility lint shipped** (`6517b19`):
+  - `scripts/check_powershell_51_compat.py` detects PS7-only operators (`&&`,
+    `||`, `??`, `??=`, `?.`, `?[]`, ternary, etc.).
+  - Wired into `scripts/validate_pre_commit.py` for staged `.ps1` files.
+  - CI `powershell-lint` job on `windows-latest` scans the whole repo.
+- **`[test]` extra added to `pyproject.toml`** (`6517b19`).
+- **README updated** with pip-tools install, lock regeneration, and CI usage.
 
 ### In Progress
 - P0 geometry fixes committed and pushed (`e3492ed`).
@@ -280,7 +293,7 @@
 ## Next Steps
 
 1. **Laptop must start Tailscale monitor and accept chess rematch**:
-   - Pull latest `opencode/main/desktop`.
+   - Pull latest `opencode/main/desktop` (now `6517b19`).
    - Run `python scripts/tailscale_monitor.py configure`.
    - Start monitor via `launchers/start_tailscale_monitor.bat`.
    - Run `python scripts/chess_game.py accept` and wait for desktop challenge.
@@ -302,11 +315,9 @@
    - Clean bare excepts in production code (`backend/`, `scripts/`).
    - Remove or ignore tracked regenerable artifacts / misplaced files.
 7. **Coordinate with laptop**: confirm Tailscale monitor is running latest and
-   close resolved #23 threads.
-8. **Decisions resolved in Discussion #23** (action: implement):
-   - Dependency locks: pip-tools, desktop Python 3.12, `[dev,cad,test]`,
-     `pip install -r` on dev machines.
-   - PowerShell: stay on Windows PowerShell 5.1; add CI lint for PS 7-only syntax.
+    close resolved #23 threads.
+8. **Monitor CI**: new `powershell-lint` and `dependency-locks` jobs should pass
+   on the next push/PR.
 
 ## Standing / Longer Term
 
