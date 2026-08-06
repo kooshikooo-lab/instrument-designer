@@ -8,8 +8,5 @@ set "TAILSCALE_PEER_IP=100.100.66.117"
 set "TAILSCALE_PORT=9124"
 set "TAILSCALE_BIND_IP=0.0.0.0"
 
-powershell -WindowStyle Hidden -Command "Start-Process -FilePath python -ArgumentList '%~dp0..\scripts\tailscale_monitor.py','monitor' -WindowStyle Hidden -RedirectStandardOutput '%~dp0..\scripts\tailscale_monitor.out.log' -RedirectStandardError '%~dp0..\scripts\tailscale_monitor.err.log'"
-
-echo Tailscale monitor started in background.
-echo Check status: python scripts\tailscale_monitor.py status
-pause
+powershell -WindowStyle Hidden -Command "Start-Process -FilePath pythonw -ArgumentList '%~dp0..\scripts\tailscale_monitor.py','monitor' -WindowStyle Hidden -RedirectStandardOutput '%~dp0..\scripts\tailscale_monitor.out.log' -RedirectStandardError '%~dp0..\scripts\tailscale_monitor.err.log'"
+REM No pop-ups: use pythonw and no echo/pause. Check status: python scripts\tailscale_monitor.py status

@@ -105,7 +105,7 @@ def phase1_de_search(bore_length, n_holes, hole_lens, targets, fingerings,
                      n_register, bore_bounds_range, hole_pos_bounds_range,
                      popsize=15, maxiter=30, seed=42, verbose=True,
                      n_bore_ctrl=6, hd_min=3.0, hd_max=15.0,
-                     loss_model=None):
+                     loss_model=None, outer_diameter=22.0, closed_top=False):
     """
     Phase 1: Differential Evolution with phase cost (fast).
 
@@ -128,7 +128,7 @@ def phase1_de_search(bore_length, n_holes, hole_lens, targets, fingerings,
         try:
             inst = tmm_instrument_from_radii(
                 radii, bore_length, hp, hd, hole_lens,
-                outer_diameter_mm=22.0, closed_top=False, cone_step=0.5,
+                outer_diameter_mm=outer_diameter, closed_top=closed_top, cone_step=0.5,
                 loss_model=loss_model,
             )
             return inst.phase_cost_with_offset(targets, fingerings, n_register=n_register)
@@ -159,7 +159,7 @@ def phase2_lbfgsb_refine(x0, bore_length, n_holes, hole_lens, targets, fingering
                          detected_regs, bore_bounds_range, hole_pos_bounds_range,
                          n_iters=500, verbose=True,
                          n_bore_ctrl=6, hd_min=3.0, hd_max=15.0,
-                         loss_model=None):
+                         loss_model=None, outer_diameter=22.0, closed_top=False):
     """
     Phase 2: L-BFGS-B with phase-based absolute cost.
 
@@ -186,7 +186,7 @@ def phase2_lbfgsb_refine(x0, bore_length, n_holes, hole_lens, targets, fingering
         try:
             inst = tmm_instrument_from_radii(
                 radii, bore_length, hp, hd, hole_lens,
-                outer_diameter_mm=22.0, closed_top=False, cone_step=0.5,
+                outer_diameter_mm=outer_diameter, closed_top=closed_top, cone_step=0.5,
                 loss_model=loss_model,
             )
             return peak_cost_nearest(
@@ -231,6 +231,8 @@ def two_phase_optimize(
     seed: int = 42,
     verbose: bool = True,
     loss_model=None,
+    outer_diameter: float = 22.0,
+    closed_top: bool = False,
 ) -> dict:
     """
     Complete two-phase optimization pipeline (Noreland approach).
@@ -256,6 +258,8 @@ def two_phase_optimize(
         dict with optimization results and best instrument
     """
     n_holes = len(hole_lens)
+    if n_register is None:
+        n_register = 1 if closed_top else 2
 
     if hole_pos_bounds_range[1] is None:
         hole_pos_bounds_range = (10.0, bore_length - 10.0)
@@ -267,6 +271,7 @@ def two_phase_optimize(
         print(f"  Bore length: {bore_length:.1f}mm, {n_holes} holes")
         print(f"  Targets: {[f'{f:.1f}' for f in targets]} Hz")
         print(f"  Register: {n_register}")
+        print(f"  Closed top: {closed_top}, outer diameter: {outer_diameter:.1f}mm")
         if loss_model:
             print(f"  Loss model: {loss_model.__class__.__name__}")
 
@@ -302,7 +307,7 @@ def two_phase_optimize(
         sorted(x0[6+len(hole_lens):]),  # hole positions
         x0[6:6+len(hole_lens)],  # hole diameters
         hole_lens,
-        outer_diameter_mm=22.0, closed_top=False, cone_step=0.5,
+        outer_diameter_mm=outer_diameter, closed_top=closed_top, cone_step=0.5,
         loss_model=loss_model,
     )
     regs = detect_registers(inst=initial_inst, targets=targets, fingerings=fingerings_parsed)
@@ -318,6 +323,7 @@ def two_phase_optimize(
         hole_pos_bounds_range=(hp_min, hp_max),
         popsize=popsize, maxiter=maxiter, seed=seed,
         loss_model=loss_model,
+        outer_diameter=outer_diameter, closed_top=closed_top,
     )
 
     # Build instrument from Phase 1 result
@@ -326,7 +332,7 @@ def two_phase_optimize(
     hp1 = sorted(x1[6+len(hole_lens):])
     inst1 = tmm_instrument_from_radii(
         radii1, bore_length, hp1, hd1, hole_lens,
-        outer_diameter_mm=22.0, closed_top=False, cone_step=0.5,
+        outer_diameter_mm=outer_diameter, closed_top=closed_top, cone_step=0.5,
         loss_model=loss_model,
     )
 
@@ -346,6 +352,7 @@ def two_phase_optimize(
         hole_pos_bounds_range=(hp_min, hp_max),
         n_iters=n_iters,
         loss_model=loss_model,
+        outer_diameter=outer_diameter, closed_top=closed_top,
     )
 
     # Build final instrument
@@ -354,7 +361,7 @@ def two_phase_optimize(
     hp2 = sorted(x2[6+len(hole_lens):])
     inst2 = tmm_instrument_from_radii(
         radii2, bore_length, hp2, hd2, hole_lens,
-        outer_diameter_mm=22.0, closed_top=False, cone_step=0.5,
+        outer_diameter_mm=outer_diameter, closed_top=closed_top, cone_step=0.5,
         loss_model=loss_model,
     )
 
