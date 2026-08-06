@@ -16,8 +16,10 @@ thread starts, moves, or resolves.
 ## Standing compliance checklist
 
 - [ ] Governance guard enabled on this clone (`scripts/install_hooks.ps1`).
+- [ ] Pre-commit hooks active: file placement, regenerable artifacts, UTF-16,
+       bare excepts, hardcoded IPs, module size.
 - [ ] Commit touching `docs/CONSTRAINTS_AND_PREFERENCES.md` carries
-      `GOVERNANCE-UPDATE` in the message (hook + CI enforce).
+       `GOVERNANCE-UPDATE` in the message (hook + CI enforce).
 - [ ] Provisional / exploratory work tagged `AUDIT:` in the commit message.
 - [ ] No regenerable artifacts committed (STLs, JSON dumps, logs, `test_output/`).
 - [ ] `team_chat.py sync` at session start and before stopping.

@@ -67,6 +67,15 @@
 - **Governance**: ORDER OF OPERATIONS + "ASK, do not speculate" written into
   `docs/CONSTRAINTS_AND_PREFERENCES.md` (committed with `GOVERNANCE-UPDATE` in
   `a1807bd`).
+- **Governance hooks expanded** (`8acdb61`, pushed to `opencode/main/desktop`):
+  - `.gitattributes` to keep shell scripts LF-encoded and executable.
+  - `scripts/git-hooks/pre-commit` runs `scripts/validate_pre_commit.py`:
+    blocks regenerable artifacts, UTF-16, file-placement violations, bare
+    excepts, hardcoded IPs, and warns on oversized modules.
+  - `scripts/git-hooks/commit-msg` runs `scripts/validate_commit_msg.py`:
+    requires `GOVERNANCE-UPDATE` for governance files and `AUDIT:` for
+    provisional keywords.
+  - CI workflow updated to use `validate_commit_msg.py`.
 - **Path-rewrite cleanup** (in `a1807bd`): all 15 active scripts/tests use
   repo-relative resolution (`os.path.dirname(os.path.dirname(os.path.abspath(__file__)))`
   / `Split-Path $PSScriptRoot -Parent`), no hardcoded paths.
@@ -141,13 +150,19 @@
 
 1. Stay on `opencode/main/desktop`; PR #62 (MERGEABLE) still needs no external
    approval per user; laptop is deferring its branch merge until PR #62 merges.
-2. Have the user verify the three.js preview (`View in Browser.bat`) and the
+2. Continue governance / agent-coordination improvements: schema enforcement for
+   instrument configs (fingering charts, JSON configs) and/or pre-commit
+   import-consistency checks (per the other model's analysis).
+3. Have the user verify the three.js preview (`View in Browser.bat`) and the
    Blender viewer; then continue or pivot.
-3. Monitor #23 for: laptop's mesh-repair gate protocol draft for `docs/TOOLS.md`,
+4. Monitor #23 for: laptop's mesh-repair gate protocol draft for `docs/TOOLS.md`,
    laptop's merge of track C, cluster worker re-attach, PR #62 status.
-4. Optional later: track A (FreeCAD workbench); `tests/test_stl_export.py` has a
+5. Optional later: track A (FreeCAD workbench); `tests/test_stl_export.py` has a
    duplicate `test_stl_export` (l.8–47 dead code shadowed by l.50–83) to clean up.
-5. Standing: present `backend/spectral` for approval when the user is available.
+6. Standing: present `backend/spectral` for approval when the user is available.
+7. Acoustic improvements held pending user priority: Ernoult phase-based cost
+   (already partially implemented in `tmm_acoustics.py` and `tmm_acoustics_jax.py`)
+   and cross-fingerings for 12-hole chromatic clarinet.
 
 ## Critical Context
 
