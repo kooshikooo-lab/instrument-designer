@@ -398,8 +398,12 @@ def cmd_challenge(peer_ip, port, match_games=10, time_control="60+0"):
         if result != "*":
             games_played += 1
 
+    # If no games were played, both sides failed to establish a working channel.
+    if games_played == 0:
+        both_failed = True
+
     if both_failed:
-        print(f"\n### Match failed: no games played within {MATCH_TOTAL_SECONDS}s ###")
+        print(f"\n### Match failed: no games played within {MATCH_TOTAL_SECONDS}s (both sides fail) ###")
     elif match_aborted:
         print(f"\n### Match aborted at game {game_num}/{match_games} ###")
     else:
