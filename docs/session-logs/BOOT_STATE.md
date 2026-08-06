@@ -7,6 +7,22 @@
 
 ---
 
+## Current Task Cursor
+
+> Source of truth for what is unfinished. Read this FIRST on every session start
+> and after every interruption (Step 0.5 in `docs/CONSTRAINTS_AND_PREFERENCES.md`).
+> If the previous turn was interrupted, resume THIS task automatically.
+
+- Task: P0-2b CAM-activation probe (Fusion 360 Phase 2b)
+- State: `test_output/fusion/phase1/phase2b_trigger.json` written (mode
+  `cam_activation`, `koncovka_C.step`, turning setup, generic post);
+  add-in constants `PHASE2B_TRIGGER`/`PHASE2B_RESULT`/`PHASE2B_PROGRESS` added.
+  **NOT implemented:** `_delayed_phase2b` thread hook + `_run_phase2b()`
+  (import STEP, activate CAM product, turning setup, toolpath, write result).
+- Last checkpoint: `74f6e00` (pushed). Fusion 360 running (PID 1772, 14:37).
+
+---
+
 ## Goal
 
 - Deliver the laptop's research task: deep research on **3D modeling/CAD software,

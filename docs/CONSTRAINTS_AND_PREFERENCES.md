@@ -98,6 +98,24 @@ For other threads (e.g. Discussion #46), pass `--discussion N`.
 6. **Do not commit regenerable artifacts** (STLs, large JSON dumps, logs). The
    `.gitignore` covers most; check with `git status` before committing.
 
+### ☐ Step 0.5 — Recover from an interrupted turn (MANDATORY)
+
+If the previous assistant turn was interrupted before finishing (stream error,
+stopped mid-task, context dropped, or an unfinished task is left in
+`docs/session-logs/BOOT_STATE.md`), you MUST recover on the very next turn —
+automatically, without waiting for the human to say "go on":
+
+1. Run `python scripts/team_chat.py sync` and read any new messages.
+2. Re-read `docs/session-logs/BOOT_STATE.md` and read the
+   `## Current Task Cursor` block (the exact task, its state, and its last
+   checkpoint).
+3. State "Resuming <task>" and continue it from where it left off
+   (`python scripts/resume_check.py` prints a compact status report). Do not
+   start unrelated new work first.
+
+Treating an interruption as "done" and moving on is a failure. The cursor in
+`BOOT_STATE.md` is the source of truth for what is unfinished.
+
 ### ☐ Step 1 — Read the AI Constitution
 
 Read `docs/AI_CONSTITUTION.md` completely.

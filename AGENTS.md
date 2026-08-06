@@ -36,6 +36,19 @@ python scripts/team_chat.py sync      # at session start AND before you stop
 python scripts/team_chat.py post --file path\to\msg.md   # to send (use --file)
 ```
 
+**Interrupted turn (MANDATORY — never wait for "go on"):** if the previous
+assistant turn was interrupted before finishing (stream failed, you stopped
+mid-task, context was dropped, or there is an aborted/unfinished task in
+`BOOT_STATE.md`), you MUST recover on the very next turn, automatically:
+
+1. Run `python scripts/team_chat.py sync` and read any new messages.
+2. Re-read `docs/session-logs/BOOT_STATE.md` and read the
+   `## Current Task Cursor` block.
+3. State "Resuming <task>" (name the exact task from the cursor), check where it
+   left off (`python scripts/resume_check.py` for a compact report), and continue
+   that task — do not start new work and do not wait for the human to prompt you
+   to resume.
+
 - Post when you start/finish a task affecting shared state, make a decision, or
   are blocked.
 - Reply in-channel; never silently drop a request.
