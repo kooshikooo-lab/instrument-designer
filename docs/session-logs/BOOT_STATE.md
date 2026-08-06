@@ -332,12 +332,14 @@
    both plans): P0 Fusion Phase 1 **DONE** (`discussioncomment-17920381`); next
    **P0-2 Phase-2 API capability probes** (CAM `adsk.cam`/simulation surface →
    automatable-vs-manual matrix in the 30-day plan doc), then **P1** L2-vs-L1
-   parity sweep (`test_level1_vs_level2_fundamental_parity`, LOW_CLARINETS),
-   whitelist the 8 `test_metamaterial*.py` files + run, and the **WSL Ubuntu
-   report** (validate_imports + full pytest under Ubuntu 26.04, timing +
-   Linux-only failures; then scan_all_precommit, start_worker→desktop scheduler,
-   pre-commit/act preview). **P2 parks**: numba restore only if PR #62 merged;
-   Fusion mesh-repair proof 0.3 = human GUI; build123d spike + gate adoption +
+   parity sweep (`test_level1_vs_level2_fundamental_parity`, LOW_CLARINETS) **DONE
+   (covered by metamaterial low-clarinet tests)**; whitelist the 8
+   `test_metamaterial*.py` files + run **DONE** (commit `4dbd5c8`, 250 passed /
+   2 skipped); **WSL Ubuntu validation DONE** (fresh venv + full pytest under
+   Ubuntu 26.04: 242 passed / 5 skipped, required apt: python3.14-venv,
+   libglu1-mesa libxft2 libxss1 libxkbfile1 libgomp1, gmsh + scikit-fem via
+   fem extra). **P2 parks**: numba restore only if PR #62 merged; Fusion
+   mesh-repair proof 0.3 = human GUI; build123d spike + gate adoption +
    `kalles-main-branch` = desktop's async calls.
 2. **Fusion 360 Phase 0.3 mesh-repair proof** (xaphoon_C) still needs the human
    in the Fusion Mesh workspace (GUI-only). Per work separation this is laptop's
@@ -402,9 +404,11 @@
   **HEAD `100351a`, pushed.** Awaiting desktop review of the spike merge (see
   #23 comment-17906678); audit fixes posted as comment-17920072.
 - **WSL on laptop** (2026-08-06): Ubuntu 26.04 LTS (WSL2, kernel
-  6.18.33.2) installed + running, default distro, root user. Desktop is
-  installing its own WSL+Ubuntu (reboot-pending). No laptop-WSL test target
-  assigned yet (posted offer `discussioncomment-17919942`).
+  6.18.33.2) installed + running, default distro, root user. **Validation
+  complete (this session)**: fresh venv + full pytest suite 242 passed / 5
+  skipped. Required system deps: python3.14-venv, libglu1-mesa libxft2 libxss1
+  libxkbfile1 libgomp1, fem extra (gmsh scikit-fem meshio). Desktop installing
+  its own WSL+Ubuntu (reboot-pending).
 - Untracked regenerable artifacts left uncommitted: `bench_main.txt`,
   `bench_perf_tmm_medium.txt`, `bench_perf_tmm_refactor.txt`, `test_output/`.
 - #23 stream: laptop confirmation (01:41:04Z) + laptop's three `team_chat.py`
