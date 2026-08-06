@@ -28,7 +28,7 @@ dependencies = [
 [project.optional-dependencies]
 jax = ["jax>=0.4", "jaxlib>=0.4"]
 surrogate = ["jax>=0.4", "jaxlib>=0.4", "flax", "optax", "botorch", "torch", "gpytorch"]
-cad = ["cadquery>=2.4", "cadquery-ocp", "build123d>=0.7", "vtk>=9.0", "trimesh>=4.0", "pillow>=9.0"]
+cad = ["cadquery>=2.4", "cadquery-ocp", "build123d>=0.7", "vtk>=9.0", "trimesh>=4.0", "rtree>=1.0", "pillow>=9.0"]
 bench = ["dask[distributed]>=2024.1", "psutil>=5.9", "cma>=3.0"]
 perf = ["numba>=0.60"]
 freecad = ["freecad"]
@@ -59,6 +59,7 @@ python_files = [
     "test_openwind_solver.py",
     "test_phase2_objective.py",
     "test_properties.py",
+    "test_scan_to_bore.py",
     "test_server_routes.py",
     "test_stl_export.py",
     "test_stl_render_compare.py",
