@@ -274,6 +274,21 @@
   broken cadquery direct-STL path. `phase0_result.json` written. Posted to #23
   (`discussioncomment-17919778`). Remaining: mesh-repair proof 0.3 is GUI-only
   (human), and post-Phase-1 audit fixes are still pending desktop review.
+- **Fusion 360 Phase 1 batch — 5/5 PASS** (this session): extended the add-in
+  (`API\AddIns\phase0_automation`) with a Phase-1 batch mode
+  (`phase1_trigger.json` → `phase1_progress.json` → `phase1_result.json`,
+  sequential + document close) and added `scripts/make_fusion_phase1_artifacts.py`
+  (5 presets: koncovka_C, xaphoon_C, fujara_G, bass_chalumeau_C, glissotar).
+  Each: STEP import (1 body) → measure → STEP round-trip → STL re-export → STL
+  mesh re-import (1 body). Fusion volumes +0.03–0.19% vs cadquery solids; all 5
+  re-exported STLs **watertight + manifold + single component, gate PASS**;
+  Fusion STL tessellation volume loss 0.3–1.1%. Posted `discussioncomment-17920381`.
+  Artifacts gitignored (`test_output/fusion/phase1/`).
+- **Autonomous work loop (charter posted `discussioncomment-17920221`)**: laptop
+  stops halting on replies — a persistent Task Queue in BOOT_STATE auto-starts
+  the next item; milestone posts per workstream; parked-not-blocked for
+  desktop/human decisions. Do-not-touch boundary: STL pipeline (`stl_verifier.py`,
+  cadquery export/gate internals, Blender viewer, gate protocol) = desktop's.
 
 ### Blocked
 - Standing (not this session): `backend/spectral` implementation awaits user
@@ -304,19 +319,26 @@
 
 ## Next Steps
 
-1. **Fusion 360 Phase 0 (scriptable part DONE — PASS)**: verified above; post-1
-   Phase 0.3 mesh-repair proof (xaphoon_C) still needs the human in the Fusion
-   Mesh workspace (GUI-only, not in the API). Per the new work separation this
-   is laptop's track. Desktop is also installing WSL+Ubuntu (reboot-pending).
-2. **Audit fixes DONE** (see Progress): B1/C1/C2/S2 applied as `AUDIT:` commits
-   on `opencode/build123d/laptop`, 159 passed / 2 skipped, posted
-   `discussioncomment-17920072`. Next touch on the STL pipeline belongs to
-   desktop (per work separation).
+1. **Autonomous queue** (charter `discussioncomment-17920221`, desktop accepted
+   both plans): P0 Fusion Phase 1 **DONE** (`discussioncomment-17920381`); next
+   **P0-2 Phase-2 API capability probes** (CAM `adsk.cam`/simulation surface →
+   automatable-vs-manual matrix in the 30-day plan doc), then **P1** L2-vs-L1
+   parity sweep (`test_level1_vs_level2_fundamental_parity`, LOW_CLARINETS),
+   whitelist the 8 `test_metamaterial*.py` files + run, and the **WSL Ubuntu
+   report** (validate_imports + full pytest under Ubuntu 26.04, timing +
+   Linux-only failures; then scan_all_precommit, start_worker→desktop scheduler,
+   pre-commit/act preview). **P2 parks**: numba restore only if PR #62 merged;
+   Fusion mesh-repair proof 0.3 = human GUI; build123d spike + gate adoption +
+   `kalles-main-branch` = desktop's async calls.
+2. **Fusion 360 Phase 0.3 mesh-repair proof** (xaphoon_C) still needs the human
+   in the Fusion Mesh workspace (GUI-only). Per work separation this is laptop's
+   track; routed via desktop.
 3. Standing: present `backend/spectral` design (`docs/DESIGN_spectral.md`) for
    user approval when the user is available.
 4. **Await desktop replies** (posted #23): (a) audit-fix approval
    (comment-17915034); (b) build123d spike + mesh-repair gate merge decision
-   (comment-17906678). `baroque_clarinet.json` resolved (Option 2).
+   (comment-17906678); (c) charter boundary confirm + artifact handoff
+   (comment-17920221). None block the queue.
 5. **Deferred (not P0):** interpolate `n_bore_cp` radii into a multi-segment bore
    profile in `backend/optimization/bore_optimizer.py` (Kimi P1; needs shared
    network.py/Segment profile interpolation — coordinate with desktop before
@@ -456,7 +478,12 @@
   `opencode/main/laptop`).
 - `backend/experiments/build123d_koncovka.py` — **new on
   `opencode/build123d/laptop`** — build123d parity spike (koncovka_C / fujara_G /
-  xaphoon_C); finding: CadQuery holed STL not watertight, build123d is.
+  xaphoon_C); after audit fixes B1/C1 both backends produce **identical watertight
+  meshes** (0.000% parity), so the earlier "CadQuery not watertight / build123d
+  is" finding is obsolete.
+- `scripts/make_fusion_phase1_artifacts.py` — **new on
+  `opencode/build123d/laptop`** — generates the Phase-1 Fusion batch (5 presets
+  STEP+STL + `phase1_trigger.json` manifest under `test_output/fusion/phase1/`).
 - `docs/TOOLS.md` — **mesh-repair gate decision (2026-08-05)** on
   `opencode/build123d/laptop`: check-only gate wireable now; pymeshlab/pymeshfix/
   admesh declared but not adopted (awaiting desktop review).
