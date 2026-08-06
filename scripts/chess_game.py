@@ -87,6 +87,35 @@ def _resolve_peer():
     return peer_ip, int(port_env)
 
 
+def _post_to_team_channel(body):
+    """Post a message to GitHub Discussion #23 via team_chat.py."""
+    env = os.environ.copy()
+    env.setdefault("TEAM_MACHINE", _machine_name())
+    msg_path = REPO_ROOT / "scripts" / ".chess_match_post.md"
+    try:
+        with open(msg_path, "w", encoding="utf-8") as f:
+            f.write(body)
+        result = subprocess.run(
+            [sys.executable, "scripts/team_chat.py", "post", "--file", str(msg_path)],
+            cwd=REPO_ROOT,
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        if result.returncode == 0:
+            print(result.stdout.strip())
+        else:
+            print(f"Failed to post to team channel: {result.stderr}", file=sys.stderr)
+    except Exception as e:
+        print(f"Failed to post to team channel: {e}", file=sys.stderr)
+    finally:
+        try:
+            msg_path.unlink()
+        except Exception:
+            pass
+
+
 def _send_payload(peer_ip, port, payload):
     """Send a JSON payload via tailscale_monitor.py send."""
     env = os.environ.copy()
@@ -289,6 +318,7 @@ def cmd_challenge(peer_ip, port, match_games=10, time_control="60+0"):
     my_color = chess.WHITE
     scores = {"1-0": 0, "0-1": 0, "1/2-1/2": 0, "*": 0}
 
+    match_aborted = False
     for game_num in range(1, match_games + 1):
         print(f"\n### Game {game_num}/{match_games} ###")
         print(f"[{_machine_name()}] Challenging {peer_ip}:{port} to {time_control}")
@@ -302,9 +332,10 @@ def cmd_challenge(peer_ip, port, match_games=10, time_control="60+0"):
             "from": _machine_name(),
         }
         if not _send_payload(peer_ip, port, challenge):
-            print(f"[{_machine_name()}] Challenge failed to deliver.")
-            scores["*"] += 1
-            continue
+            print(f"[{_machine_name()}] Challenge failed to deliver. Aborting match — monitoring is not working.")
+            scores["*"] += (match_games - game_num + 1)
+            match_aborted = True
+            break
 
         def is_accept(msg):
             return msg.get("cmd") == "chess_accept" and msg.get("game") == game_num
@@ -319,14 +350,17 @@ def cmd_challenge(peer_ip, port, match_games=10, time_control="60+0"):
         result = _play_game(peer_ip, port, game_num, time_control, my_color, side_names)
         scores[result] = scores.get(result, 0) + 1
 
-    print(f"\n### Match result ({match_games} games) ###")
+    if match_aborted:
+        print(f"\n### Match aborted at game {game_num}/{match_games} ###")
+    else:
+        print(f"\n### Match result ({match_games} games) ###")
     for k, v in scores.items():
         print(f"  {k}: {v}")
 
-    _analyze_match(peer_ip, port, match_games, time_control, scores, side_names)
+    _analyze_match(peer_ip, port, match_games, time_control, scores, side_names, aborted=match_aborted, aborted_at=game_num)
 
 
-def _analyze_match(peer_ip, port, match_games, time_control, scores, side_names):
+def _analyze_match(peer_ip, port, match_games, time_control, scores, side_names, aborted=False, aborted_at=0):
     """If the loser is the local machine, propose improvements.
 
     If the loser is the remote machine, post a failure analysis to the team
@@ -340,10 +374,11 @@ def _analyze_match(peer_ip, port, match_games, time_control, scores, side_names)
     forfeits = scores.get("*", 0)
 
     # For this match, the local player is White (challenger), so wins = 1-0.
-    if losses > wins:
-        loser = my_name
-    elif wins > losses:
+    # Forfeits (scores['*']) mean the opponent failed to respond, so they are losses for the opponent.
+    if forfeits > 0 or losses > wins:
         loser = opponent
+    elif wins > losses:
+        loser = my_name
     else:
         loser = "draw"
 
@@ -357,7 +392,20 @@ def _analyze_match(peer_ip, port, match_games, time_control, scores, side_names)
         "improvements": [],
     }
 
-    if forfeits > 0:
+    if aborted:
+        analysis["observation"] = (
+            f"Match aborted at game {aborted_at}: "
+            "the challenge could not be delivered to the peer. "
+            "The monitoring channel is not working."
+        )
+        analysis["improvements"] = [
+            "Ensure the laptop has pulled the latest opencode/main/desktop.",
+            "Run `python scripts/tailscale_monitor.py configure` on the laptop.",
+            "Start the monitor via launchers/start_tailscale_monitor.bat on the laptop.",
+            "Verify the laptop's Tailscale IP is reachable from the desktop.",
+            "Add a lightweight UDP beacon or TCP keep-alive as a backup channel.",
+        ]
+    elif forfeits > 0:
         analysis["observation"] = (
             f"{forfeits} games were forfeited because the opponent did not accept "
             f"a challenge or reply within the time limit."
@@ -396,13 +444,16 @@ def _analyze_match(peer_ip, port, match_games, time_control, scores, side_names)
             "\n\nNext match: please run `python scripts/chess_game.py accept` "
             "and start the Tailscale monitor first."
         )
-        print(f"\n[{my_name}] Posting analysis to team channel...")
-        # Use tailscale_monitor send to notify the peer of the analysis.
+        print(f"\n[{my_name}] Sending analysis to peer...")
+        # Also try to send via Tailscale in case the peer is actually up.
         _send_payload(peer_ip, port, {
             "cmd": "chess_match_analysis",
             "text": body,
             "from": my_name,
         })
+        _post_to_team_channel(body)
+    elif loser == my_name:
+        print(f"\n[{my_name}] I lost the match. Analysis saved locally; implement the improvements before the next match.")
 
 
 def cmd_accept(peer_ip, port):
