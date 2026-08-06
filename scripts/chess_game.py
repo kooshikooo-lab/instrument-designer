@@ -1,13 +1,14 @@
 """Bullet chess match over the Tailscale peer channel (UCI notation).
 
-This is a stress test of the Tailscale instant-messaging channel. A 10-game
-match is played with a fixed time control (default 1 minute each, no increment).
-The challenger plays White. The challengee must accept within 20 seconds or
-forfeit the game.
+A "match" is always a predetermined series of games (any number > 1 that both
+sides agree on). The default is 10 games. Each game is played with a fixed time
+control (default 1 minute each, no increment). The challenger plays White in
+every game. The challengee must accept each game challenge within 20 seconds or
+forfeit that game.
 
 Usage:
-    python scripts/chess_game.py challenge            # desktop challenges laptop
-    python scripts/chess_game.py accept               # wait for a challenge and play
+    python scripts/chess_game.py challenge            # challenge the laptop to a match
+    python scripts/chess_game.py accept               # wait for a match challenge and play
 
 Protocol (all payloads are JSON sent via tailscale_monitor.py send/mag):
     challenge: {"cmd": "chess_challenge", "match_games": 10, "time_control": "60+0", "game": 1}
@@ -344,7 +345,7 @@ def cmd_challenge(peer_ip, port, match_games=10, time_control="60+0"):
     match_start = time.time()
     match_deadline = match_start + MATCH_TOTAL_SECONDS
 
-    print(f"\n### Match: {match_games} games, {time_control}, total budget {MATCH_TOTAL_SECONDS}s ###")
+    print(f"\n### Match (series of {match_games} games): time control {time_control}, total match budget {MATCH_TOTAL_SECONDS}s ###")
 
     for game_num in range(1, match_games + 1):
         remaining_budget = match_deadline - time.time()
@@ -558,8 +559,8 @@ def cmd_accept(peer_ip, port):
 def main():
     parser = argparse.ArgumentParser(description="Bullet chess match over Tailscale")
     sub = parser.add_subparsers(dest="cmd", required=True)
-    p_challenge = sub.add_parser("challenge", help="challenge the laptop to a 10-game bullet match")
-    p_challenge.add_argument("--games", type=int, default=10, help="number of games in the match")
+    p_challenge = sub.add_parser("challenge", help="challenge the laptop to a bullet match (a series of games)")
+    p_challenge.add_argument("--games", type=int, default=10, help="number of games in the match series (must be > 1)")
     p_challenge.add_argument("--time-control", default="60+0", help="time control in seconds+increment")
     sub.add_parser("accept", help="wait for and accept a challenge")
     args = parser.parse_args()
