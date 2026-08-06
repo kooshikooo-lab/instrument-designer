@@ -98,12 +98,12 @@ INSTRUMENTS = {
         "bore_radius": 7.25, "outer_diameter": 22.0,
         "hole_diameter": 7.0, "hole_length": 3.75,
         "fingerings": [
-            ["closed"] * 6,
-            ["open", "closed", "closed", "closed", "closed", "closed"],
-            ["open", "open", "closed", "closed", "closed", "closed"],
-            ["open", "open", "open", "closed", "closed", "closed"],
-            ["open", "open", "open", "open", "closed", "closed"],
-            ["open", "open", "open", "open", "open", "closed"],
+            ["closed"] * 5,
+            ["open", "closed", "closed", "closed", "closed"],
+            ["open", "open", "closed", "closed", "closed"],
+            ["open", "open", "open", "closed", "closed"],
+            ["open", "open", "open", "open", "closed"],
+            ["open", "open", "open", "open", "open"],
         ],
     },
     "bass_chalumeau_Bb": {
@@ -114,14 +114,14 @@ INSTRUMENTS = {
         "bore_radius": 9.5, "outer_diameter": 28.0,
         "hole_diameter": 8.0, "hole_length": 4.0,
         "fingerings": [
-            ["closed"] * 8,
-            ["open", "closed", "closed", "closed", "closed", "closed", "closed", "closed"],
-            ["open", "open", "closed", "closed", "closed", "closed", "closed", "closed"],
-            ["open", "open", "open", "closed", "closed", "closed", "closed", "closed"],
-            ["open", "open", "open", "open", "closed", "closed", "closed", "closed"],
-            ["open", "open", "open", "open", "open", "closed", "closed", "closed"],
-            ["open", "open", "open", "open", "open", "open", "closed", "closed"],
-            ["open", "open", "open", "open", "open", "open", "open", "closed"],
+            ["closed"] * 7,
+            ["open", "closed", "closed", "closed", "closed", "closed", "closed"],
+            ["open", "open", "closed", "closed", "closed", "closed", "closed"],
+            ["open", "open", "open", "closed", "closed", "closed", "closed"],
+            ["open", "open", "open", "open", "closed", "closed", "closed"],
+            ["open", "open", "open", "open", "open", "closed", "closed"],
+            ["open", "open", "open", "open", "open", "open", "closed"],
+            ["open", "open", "open", "open", "open", "open", "open"],
         ],
     },
     "soprano_sax_Bb": {
@@ -132,13 +132,13 @@ INSTRUMENTS = {
         "bore_radius": 6.0, "outer_diameter": 20.0,
         "hole_diameter": 6.5, "hole_length": 3.0,
         "fingerings": [
-            ["closed"] * 7,
-            ["open", "closed", "closed", "closed", "closed", "closed", "closed"],
-            ["open", "open", "closed", "closed", "closed", "closed", "closed"],
-            ["open", "open", "open", "closed", "closed", "closed", "closed"],
-            ["open", "open", "open", "open", "closed", "closed", "closed"],
-            ["open", "open", "open", "open", "open", "closed", "closed"],
-            ["open", "open", "open", "open", "open", "open", "closed"],
+            ["closed"] * 6,
+            ["open", "closed", "closed", "closed", "closed", "closed"],
+            ["open", "open", "closed", "closed", "closed", "closed"],
+            ["open", "open", "open", "closed", "closed", "closed"],
+            ["open", "open", "open", "open", "closed", "closed"],
+            ["open", "open", "open", "open", "open", "closed"],
+            ["open", "open", "open", "open", "open", "open"],
         ],
     },
     "xaphoon_C": {
@@ -149,13 +149,13 @@ INSTRUMENTS = {
         "bore_radius": 7.0, "outer_diameter": 20.0,
         "hole_diameter": 6.5, "hole_length": 3.0,
         "fingerings": [
-            ["closed"] * 7,
-            ["open", "closed", "closed", "closed", "closed", "closed", "closed"],
-            ["open", "open", "closed", "closed", "closed", "closed", "closed"],
-            ["open", "open", "open", "closed", "closed", "closed", "closed"],
-            ["open", "open", "open", "open", "closed", "closed", "closed"],
-            ["open", "open", "open", "open", "open", "closed", "closed"],
-            ["open", "open", "open", "open", "open", "open", "closed"],
+            ["closed"] * 6,
+            ["open", "closed", "closed", "closed", "closed", "closed"],
+            ["open", "open", "closed", "closed", "closed", "closed"],
+            ["open", "open", "open", "closed", "closed", "closed"],
+            ["open", "open", "open", "open", "closed", "closed"],
+            ["open", "open", "open", "open", "open", "closed"],
+            ["open", "open", "open", "open", "open", "open"],
         ],
     },
     "alto_sax_Eb": {
@@ -166,13 +166,13 @@ INSTRUMENTS = {
         "bore_radius": 8.5, "outer_diameter": 26.0,
         "hole_diameter": 7.5, "hole_length": 3.5,
         "fingerings": [
-            ["closed"] * 7,
-            ["open", "closed", "closed", "closed", "closed", "closed", "closed"],
-            ["open", "open", "closed", "closed", "closed", "closed", "closed"],
-            ["open", "open", "open", "closed", "closed", "closed", "closed"],
-            ["open", "open", "open", "open", "closed", "closed", "closed"],
-            ["open", "open", "open", "open", "open", "closed", "closed"],
-            ["open", "open", "open", "open", "open", "open", "closed"],
+            ["closed"] * 6,
+            ["open", "closed", "closed", "closed", "closed", "closed"],
+            ["open", "open", "closed", "closed", "closed", "closed"],
+            ["open", "open", "open", "closed", "closed", "closed"],
+            ["open", "open", "open", "open", "closed", "closed"],
+            ["open", "open", "open", "open", "open", "closed"],
+            ["open", "open", "open", "open", "open", "open"],
         ],
     },
     "tin_whistle_D": {
@@ -197,7 +197,7 @@ INSTRUMENTS = {
         "closed_top": False,
         "targets": [261.6, 293.7, 329.6, 349.2, 392.0, 440.0, 493.9],
         "names": ["C4", "D4", "E4", "F4", "G4", "A4", "B4"],
-        "bore_radius": 9.5, "outer_diameter": 16.0,
+        "bore_radius": 9.5, "outer_diameter": 19.8,
         "hole_diameter": 8.0, "hole_length": 3.0,
         "fingerings": [
             ["closed"] * 6,
@@ -214,7 +214,7 @@ INSTRUMENTS = {
         "closed_top": False,
         "targets": [196.0, 220.0, 246.9, 261.6, 293.7, 329.6, 369.9],
         "names": ["G3", "A3", "B3", "C4", "D4", "E4", "F#4"],
-        "bore_radius": 11.0, "outer_diameter": 18.0,
+        "bore_radius": 11.0, "outer_diameter": 22.8,
         "hole_diameter": 9.0, "hole_length": 3.0,
         "fingerings": [
             ["closed"] * 6,
@@ -231,7 +231,7 @@ INSTRUMENTS = {
         "closed_top": False,
         "targets": [293.7, 329.6, 369.9, 392.0, 440.0, 493.9, 554.4],
         "names": ["D4", "E4", "F#4", "G4", "A4", "B4", "C#5"],
-        "bore_radius": 10.2, "outer_diameter": 14.0,
+        "bore_radius": 10.2, "outer_diameter": 26.7,
         "hole_diameter": 8.0, "hole_length": 3.0,
         "fingerings": [
             ["closed"] * 6,
@@ -248,7 +248,7 @@ INSTRUMENTS = {
         "closed_top": True,
         "targets": [277.2, 293.7, 329.6, 370.0, 392.0, 440.0, 493.9],
         "names": ["C#4", "D4", "E4", "F#4", "G4", "A4", "B4"],
-        "bore_radius": 8.0, "outer_diameter": 14.0,
+        "bore_radius": 8.0, "outer_diameter": 22.0,
         "hole_diameter": 5.0, "hole_length": 3.0,
         "fingerings": [
             ["closed"] * 6,
@@ -279,6 +279,25 @@ INSTRUMENTS = {
         ],
     },
 }
+
+def _validate_instruments() -> None:
+    """Assert physically possible walls (outer_diameter > bore diameter) for all INSTRUMENTS."""
+    for name, cfg in INSTRUMENTS.items():
+        od = cfg["outer_diameter"]
+        bd = 2.0 * cfg["bore_radius"]
+        if od <= bd:
+            raise ValueError(
+                f"{name}: outer_diameter {od} <= bore diameter {bd} "
+                f"(wall {(od - bd) / 2.0} <= 0)"
+            )
+        for fing in cfg["fingerings"]:
+            if len(fing) > len(cfg["targets"]) - (1 if cfg["closed_top"] else 0):
+                raise ValueError(
+                    f"{name}: fingering row length {len(fing)} exceeds the hole count "
+                    f"(targets={len(cfg['targets'])}, closed_top={cfg['closed_top']})"
+                )
+
+_validate_instruments()
 
 c = SPEED_OF_SOUND
 

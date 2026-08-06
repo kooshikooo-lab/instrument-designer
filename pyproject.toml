@@ -60,6 +60,8 @@ python_files = [
     "test_tool_registry.py",
     "test_topk_polish.py",
     "test_dask_topk.py",
+    "test_mesh_repair_gate.py",
+    "test_benchmark_all.py",
 ]
 
 [tool.ruff]
