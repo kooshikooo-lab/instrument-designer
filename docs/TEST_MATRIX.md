@@ -54,10 +54,10 @@ Scheduled cadence (Task Scheduler): **daily 02:00 low tier**, **weekly Sunday 03
 - **Tests:** `tests/test_blender_server_client.py` (8 tests) — bpy-free stdlib client protocol (monkeypatched urllib); `tests/test_blender_addon_import.py` (2 tests, skip-guarded on `bpy`) — register/unregister round trip, operator declarations.
 - **Tier:** low · **Pass:** client tests pass on host Python; addon tests run inside Blender's Python (skipped otherwise).
 
-### scan / inverse — mesh-to-bore + recording comparison
-- **Tests:** `tests/test_scan_to_bore.py` (7 tests) — synthetic cylinder/cone slicing, area-equivalent diameters, wall-offset bore estimate, CLI JSON output; `tests/test_compare_recording.py` (6 tests) — WAV vs TMM pitch cents error, harmonic-envelope RMSE/correlation, closed-loop synth→compare; `tests/test_inverse_design.py` — Tier 1 f0 recovery + Tier 3 timbre matching.
+### scan / inverse — mesh-to-bore + recording comparison + physics-grounded inverse design
+- **Tests:** `tests/test_scan_to_bore.py` (7 tests) — synthetic cylinder/cone slicing, area-equivalent diameters, wall-offset bore estimate, CLI JSON output; `tests/test_compare_recording.py` (6 tests) — WAV vs TMM pitch cents error, harmonic-envelope RMSE/correlation, closed-loop synth→compare; `tests/test_inverse_design.py` — Tier 1 f0 recovery + Tier 2 physics-grounded numpy GA (plays a major scale within 15¢ max / 10¢ RMS) + Tier 3 timbre matching; `tests/test_bore_design.py` (7 tests) — analytic tone-hole physics (speed of sound, effective length, end corrections, closed-hole volume).
 - **CLI:** `backend/scan_to_bore.py` (mesh→bore JSON); `scripts/compare_recording.py` (recording vs TMM synthesis).
-- **Tier:** low/medium · **Pass:** all pass; scan→bore→TMM→synthesize→measure chain verified end-to-end.
+- **Tier:** low/medium · **Pass:** all pass; scan→bore→TMM→synthesize→measure chain verified end-to-end; inverse-design seeding uses `backend.physics.bore_design` and refines against the TMM with a smooth resonance-phase fitness.
 
 ### whitelist — pytest collection guard
 - **Tests:** `tests/test_whitelist.py` (4 tests) — every `python_files` entry exists, unique, contains tests, parses.
@@ -101,12 +101,13 @@ Scheduled cadence (Task Scheduler): **daily 02:00 low tier**, **weekly Sunday 03
 `tests/diagnose_*.py`, `debug_*.py`, `compare_*.py`, `refine_*.py` are manual debugging
 tools — they are **not** part of the matrix (many hang or need arguments). Use them
 interactively only. `pytest` collects only the whitelisted files in `pyproject.toml`
-(`[tool.pytest.ini_options] python_files`, 23 files).
+(`[tool.pytest.ini_options] python_files`, 24 files).
 
 ## Current baseline
 
 | Run | Result |
 |---|---|
+| `pytest tests/` | 217 passed, 3 skipped (2026-08-06) |
 | `pytest tests/` | 207 passed, 3 skipped (2026-08-06) |
 | `pytest tests/` | 131 passed (2026-08-04) |
 | `run_tests.py` (5 parts) | all return codes 0 (2026-08-01) |

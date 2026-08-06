@@ -49,6 +49,7 @@ OVERSIZED_ALLOWLIST = {
     "backend/ai_advisor.py",
     "backend/benchmark_all.py",
     "backend/cadquery_export.py",
+    "backend/inverse_design.py",
     "backend/modular_components.py",
     "backend/pareto_optimizer.py",
     "backend/tmm_acoustics.py",

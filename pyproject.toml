@@ -51,6 +51,7 @@ python_files = [
     "test_architecture.py",
     "test_blender_addon_import.py",
     "test_blender_server_client.py",
+    "test_bore_design.py",
     "test_cadquery_instrument.py",
     "test_compare_recording.py",
     "test_inverse_design.py",

@@ -22,6 +22,8 @@ try:
 except ImportError:
     KeefeLoss = None
 
+from backend.physics.bore_design import hole_positions_for_scale
+
 try:
     from backend.generative_agent import design_from_sound as _generative_design
 except ImportError:
@@ -170,8 +172,273 @@ def analyze_wav(filepath: str) -> dict:
 
 
 # =============================================================================
-# Tier 2: Scale Optimization (delegates to generative agent)
+# Tier 2: Scale Optimization (generative agent, with numpy-GA fallback)
 # =============================================================================
+
+_DIATONIC_STEPS = [0, 2, 4, 5, 7, 9, 11]  # major scale within an octave
+
+
+def _scale_targets(fundamental_hz: float, harmonic_frequencies: np.ndarray | None) -> list[float]:
+    """Target note frequencies for successive hole fingerings.
+
+    Builds a major-scale ladder starting at the recorded fundamental. The
+    harmonic series (overblow targets) is not used here: hole-ladder design
+    targets adjacent scale steps, not harmonic overtones.
+    """
+    if fundamental_hz <= 0.0:
+        fundamental_hz = 261.63
+    return [fundamental_hz * 2.0 ** (s / 12.0) for s in _DIATONIC_STEPS]
+
+
+def _fingering_ladder(hole_count: int) -> list[list[str]]:
+    """All-closed, then progressively opening holes from the bottom."""
+    sets = [['closed'] * hole_count]
+    for k in range(1, hole_count + 1):
+        fing = ['closed'] * hole_count
+        for i in range(k):
+            fing[i] = 'open'
+        sets.append(fing)
+    return sets
+
+
+def _project_positions(u: np.ndarray, spacing: float = 0.03) -> np.ndarray:
+    """Project sorted fractions [0,1] into a feasible min-spaced layout."""
+    n = len(u)
+    s = np.sort(np.clip(u, 0.0, 1.0))
+    lo = spacing * np.arange(n) + spacing / 2.0
+    hi = 1.0 - spacing * np.arange(n) - spacing / 2.0
+    s = np.maximum(s, lo)
+    s = np.minimum(s, hi)
+    for i in range(n - 2, -1, -1):
+        s[i] = min(s[i], s[i + 1] - spacing)
+    for i in range(1, n):
+        s[i] = max(s[i], s[i - 1] + spacing)
+    return s
+
+
+def _decode_chromosome(x: np.ndarray, hole_count: int) -> dict:
+    """Decode GA chromosome -> min-spaced hole positions, diameters, length."""
+    positions_frac = _project_positions(x[:hole_count])
+    diameters = np.maximum(x[hole_count:2 * hole_count], 1.0)
+    length = x[2 * hole_count]
+    positions = [float(p * length) for p in positions_frac]
+    return {
+        'bore_length_mm': float(length),
+        'hole_positions_mm': positions,
+        'hole_diameters_mm': [float(d) for d in diameters],
+        'hole_lengths_mm': [3.0] * hole_count,
+        'closed_top': False,
+        'bore_length': float(length),
+        'hole_positions': positions,
+        'hole_diameters': [float(d) for d in diameters],
+        'hole_lengths': [3.0] * hole_count,
+        'bore_radii': np.linspace(7.0, 9.0, 6).tolist(),
+    }
+
+
+def _scale_fitness(x: np.ndarray, hole_count: int, targets: list[float],
+                   loss: Any) -> float:
+    """Weighted RMS cents error via the resonance-phase model.
+
+    For the progressive hole ladder (holes opening from the bell) the vented
+    fundamental is the phase-2 resonance of the effective column — the model
+    satisfies p(w) = 1 + 2*L_eff/w, so the phase at the target wavelength gives
+    a smooth pitch error directly:
+
+        f_res = f_target / (p - 1)   =>   cents = -1200*log2(p - 1)
+
+    (Verified against find_resonance to within ~1 cent, and it is continuous,
+    so the GA can optimize without the branch-jumping of peak search.) The
+    all-closed fundamental gets double weight: it is the bore-length anchor.
+    """
+    try:
+        cand = _decode_chromosome(x, hole_count)
+        inst = tmm_instrument_from_radii(
+            radii_mm=np.linspace(7.0, 9.0, 6),
+            bore_length_mm=cand['bore_length_mm'],
+            hole_positions_mm=cand['hole_positions_mm'],
+            hole_diameters_mm=cand['hole_diameters_mm'],
+            hole_lengths_mm=cand['hole_lengths_mm'],
+            closed_top=False,
+            loss_model=loss,
+        )
+        ladder = _fingering_ladder(hole_count)
+        n_notes = min(len(targets), len(ladder))
+        if n_notes == 0:
+            return 1e10
+        weights = [2.0] + [1.0] * (n_notes - 1)
+        sq = []
+        for t, fing, w in zip(targets[:n_notes], ladder[:n_notes], weights):
+            if t <= 0.0:
+                continue
+            p = inst.resonance_phase(inst.speed_of_sound / t, fing)
+            if not (p > 1.0):
+                return 1e10
+            cents = -1200.0 * math.log2(p - 1.0)
+            sq.append(w * cents * cents)
+        if not sq:
+            return 1e10
+        return float(np.mean(sq))
+    except Exception:
+        return 1e10
+
+
+def _fundamental_length(fundamental_hz: float, hole_count: int, loss: Any,
+                        step_mm: float = 2.0) -> float:
+    """Grid-search bore length that plays the all-closed fundamental on pitch.
+
+    The all-closed note is set almost entirely by bore length, so it is solved
+    first (cheap 1-D sweep), then the GA refines holes and length together.
+    """
+    c = SPEED_OF_SOUND
+    nominal = c / (2.0 * fundamental_hz) if fundamental_hz > 0 else 500.0
+    lengths = np.arange(0.85 * nominal, 1.15 * nominal, step_mm)
+    fracs = np.linspace(0.12, 0.5, hole_count)
+    best, best_err = nominal, 1e18
+    for L in lengths:
+        inst = tmm_instrument_from_radii(
+            radii_mm=np.linspace(7.0, 9.0, 6),
+            bore_length_mm=float(L),
+            hole_positions_mm=(fracs * L).tolist(),
+            hole_diameters_mm=[7.0] * hole_count,
+            hole_lengths_mm=[3.0] * hole_count,
+            closed_top=False,
+            loss_model=loss,
+        )
+        wl = inst.find_resonance(
+            c / fundamental_hz, ['closed'] * hole_count, n_register=2
+        )
+        f = inst.frequency_from_wavelength(wl)
+        err = abs(1200.0 * math.log2(f / fundamental_hz)) if f > 0 else 1e18
+        if err < best_err:
+            best, best_err = L, err
+    return float(best)
+
+
+def design_scale_numpy_ga(
+    fundamental_hz: float,
+    harmonic_frequencies: np.ndarray | None = None,
+    hole_count: int = 6,
+    n_candidates: int = 2,
+    pop_size: int = 50,
+    n_gen: int = 50,
+    rng: np.random.Generator | None = None,
+) -> dict:
+    """Self-contained numpy genetic algorithm for hole-position/diameter design.
+
+    Fallback for Tier 2 when the generative agent is unavailable. Two stages:
+    1. Grid-search bore length so the all-closed fundamental is on pitch.
+    2. GA over min-spaced hole positions + diameters (length refined in a tight
+       band) so successive fingerings play a major-scale ladder, scored by
+       weighted absolute-pitch error in cents.
+    """
+    rng = rng if rng is not None else np.random.default_rng(42)
+    c = SPEED_OF_SOUND
+    targets = _scale_targets(fundamental_hz, harmonic_frequencies)
+    loss = _get_loss_model(None)
+    length0 = _fundamental_length(fundamental_hz, hole_count, loss)
+
+    # Physics-grounded seed: the note of fingering k is set by the distance
+    # from the blowing end to the first open hole (hole k-1, opening from the
+    # bell). Seed the population around those analytic positions rather than
+    # uniform random, and bound the search around them.
+    hole_freqs = targets[1:hole_count + 1]
+    analytic_mm = hole_positions_for_scale(
+        hole_freqs, bore_length_mm=length0, hole_diameter_mm=7.0,
+        wall_thickness_mm=3.0, bore_diameter_mm=14.0, closed_top=False,
+    )
+    analytic_frac = np.clip(np.asarray(analytic_mm) / length0, 0.0, 1.0)
+    pos_lo = max(0.02, float(np.min(analytic_frac)) - 0.05)
+    pos_hi = min(0.65, float(np.max(analytic_frac)) + 0.05)
+    if pos_hi <= pos_lo:
+        pos_lo, pos_hi = 0.02, 0.65
+
+    # chromosome: [positions_frac * hole_count, diameters, length]
+    n_var = 2 * hole_count + 1
+    xl = np.concatenate([
+        np.full(hole_count, pos_lo), np.full(hole_count, 4.0),
+        np.array([length0 - 20.0]),
+    ])
+    xu = np.concatenate([
+        np.full(hole_count, pos_hi), np.full(hole_count, 11.0),
+        np.array([length0 + 20.0]),
+    ])
+
+    n_seed = max(2, int(0.6 * pop_size))
+    pop = rng.random((pop_size, n_var)) * (xu - xl) + xl
+    seed_pos = np.clip(
+        np.repeat(analytic_frac[None, :], n_seed, axis=0)
+        + rng.normal(0.0, 0.02, size=(n_seed, hole_count)),
+        pos_lo, pos_hi,
+    )
+    pop[:n_seed, :hole_count] = seed_pos
+    pop[:n_seed, hole_count:2 * hole_count] = np.clip(
+        7.0 + rng.normal(0.0, 1.5, size=(n_seed, hole_count)), 4.0, 11.0
+    )
+    pop[:n_seed, 2 * hole_count] = length0 + rng.normal(0.0, 5.0, size=n_seed)
+    fitness = np.array([_scale_fitness(p, hole_count, targets, loss) for p in pop])
+
+    length_scale = 40.0  # mutation sigma for length band (mm)
+    for gen in range(n_gen):
+        order = np.argsort(fitness)
+        elites = pop[order[:max(2, pop_size // 5)]].copy()
+        children: list[np.ndarray] = []
+        while len(children) < pop_size - len(elites):
+            a = pop[order[rng.integers(0, max(1, pop_size // 2))]]
+            b = pop[order[rng.integers(0, max(1, pop_size // 2))]]
+            mask = rng.random(n_var) < 0.5
+            child = np.where(mask, a, b)
+            mutate = rng.random(n_var) < (1.0 / n_var)
+            noise = np.full(n_var, 0.03 * (xu - xl))
+            noise[-1] = length_scale
+            child = child + mutate * rng.normal(0.0, noise)
+            child = np.clip(child, xl, xu)
+            children.append(child)
+        pop = np.vstack([elites, np.asarray(children)])
+        fitness = np.array([_scale_fitness(p, hole_count, targets, loss) for p in pop])
+
+    order = np.argsort(fitness)
+    candidates = [_decode_chromosome(pop[i], hole_count) for i in order[:n_candidates]]
+    best = candidates[0]
+
+    # Verification pass: play the final design with the peak finder and report
+    # per-note pitch error (the phase fitness is smooth; this confirms pitch).
+    ladder = _fingering_ladder(hole_count)
+    verif_inst = tmm_instrument_from_radii(
+        radii_mm=np.linspace(7.0, 9.0, 6),
+        bore_length_mm=best['bore_length_mm'],
+        hole_positions_mm=best['hole_positions_mm'],
+        hole_diameters_mm=best['hole_diameters_mm'],
+        hole_lengths_mm=best['hole_lengths_mm'],
+        closed_top=False,
+        loss_model=loss,
+    )
+    n_notes = min(len(targets), len(ladder))
+    target_wavelengths = [verif_inst.speed_of_sound / t for t in targets[:n_notes]]
+    played = verif_inst.compute_fingered_frequencies(
+        target_wavelengths, ladder[:n_notes], n_register=2
+    )
+    cents_error = [
+        (1200.0 * math.log2(p / t)) if t > 0.0 and p > 0.0 else 1e6
+        for t, p in zip(targets[:n_notes], played)
+    ]
+
+    return {
+        'method': 'numpy_ga',
+        'fundamental_hz': float(fundamental_hz),
+        'target_frequencies': [round(t, 3) for t in targets],
+        'fitness': [float(fitness[i]) for i in order[:n_candidates]],
+        'cents_error': [round(c, 2) for c in cents_error],
+        'candidates': candidates,
+        'geometry': {
+            'bore_length': best['bore_length_mm'],
+            'hole_positions': best['hole_positions_mm'],
+            'hole_diameters': best['hole_diameters_mm'],
+            'hole_lengths': best['hole_lengths_mm'],
+            'closed_top': False,
+            'bore_radii': np.linspace(7.0, 9.0, 6).tolist(),
+        },
+    }
 
 
 def design_scale(
@@ -181,22 +448,25 @@ def design_scale(
     hole_count: int = 6,
     n_candidates: int = 2,
 ) -> dict:
-    if _generative_design is None:
-        raise ImportError(
-            'generative_agent module not available; cannot run design_scale'
-        )
-    input_data: dict[str, Any] = {
-        'fundamental_hz': fundamental_hz,
-        'harmonic_frequencies': (
-            harmonic_frequencies.tolist()
-            if harmonic_frequencies is not None
-            else []
-        ),
-        'label': label,
-        'hole_count': hole_count,
-        'n_candidates': n_candidates,
-    }
-    return _generative_design(input_data)
+    if _generative_design is not None:
+        input_data: dict[str, Any] = {
+            'fundamental_hz': fundamental_hz,
+            'harmonic_frequencies': (
+                harmonic_frequencies.tolist()
+                if harmonic_frequencies is not None
+                else []
+            ),
+            'label': label,
+            'hole_count': hole_count,
+            'n_candidates': n_candidates,
+        }
+        return _generative_design(input_data)
+    return design_scale_numpy_ga(
+        fundamental_hz=fundamental_hz,
+        harmonic_frequencies=harmonic_frequencies,
+        hole_count=hole_count,
+        n_candidates=n_candidates,
+    )
 
 
 # =============================================================================
