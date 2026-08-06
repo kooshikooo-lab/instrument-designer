@@ -214,6 +214,17 @@ def main():
             for line in result.stdout.splitlines() + result.stderr.splitlines():
                 errors.append(f"  {line}")
 
+    # 6. Import consistency for staged Python files
+    if any(rel.endswith(".py") for rel in files):
+        result = subprocess.run(
+            [sys.executable, str(repo_root / "scripts" / "validate_imports.py")],
+            capture_output=True, text=True, encoding="utf-8", errors="replace"
+        )
+        if result.returncode != 0:
+            errors.append("Python import consistency check failed")
+            for line in result.stdout.splitlines() + result.stderr.splitlines():
+                errors.append(f"  {line}")
+
     if warnings:
         print("WARNINGS (non-blocking):")
         for w in warnings:
