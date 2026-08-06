@@ -97,11 +97,17 @@
     (`backend/archived_optimizers`, etc.) and unresolved imports.
   - Wired into `scripts/validate_pre_commit.py` for all staged Python files.
   - `tests/test_validate_imports.py` added (4 tests passing).
-- **Instrument config schema updated** (`051ae95`, pushed):
+- **Instrument config schema updated** (`051ae95` + `e11ae1e`, pushed):
   - Added explicit `performance` definition (register RMS/offset, twelfths RMS, note).
+  - Extended with benchmark-export fields (`timbre_consistency`, `playability`,
+    `register_break`, `max_error`, `per_note_errors`) per laptop review.
   - `performance` now allowed in canonical variant.
   - Fixed `fingering_chart` cross-check in `validate_instrument_configs.py` to
-    handle both legacy nested and canonical flat structures.
+    handle both legacy nested and canonical flat structures, `fingering_chart_chalumeau`,
+    `finger_holes`, `keys`, and `register_hole`.
+- **Pre-commit IP check updated** (`e11ae1e`, pushed):
+  - Tailscale CGNAT range (`100.64.0.0/10`) whitelisted so cluster scripts are
+    not blocked when edited; public IPs still flagged.
 - **Path-rewrite cleanup** (in `a1807bd`): all 15 active scripts/tests use
   repo-relative resolution (`os.path.dirname(os.path.dirname(os.path.abspath(__file__)))`
   / `Split-Path $PSScriptRoot -Parent`), no hardcoded paths.
@@ -176,9 +182,10 @@
 
 1. Stay on `opencode/main/desktop`; PR #62 (MERGEABLE) still needs no external
    approval per user; laptop is deferring its branch merge until PR #62 merges.
-2. Await laptop feedback on `schemas/instrument_config.schema.json` (posted to #23).
-   If approved, continue with unified canonical config format + migration of the 4
-   existing configs. If laptop has additional config keys, revise schema first.
+2. Laptop approved the instrument-config schema (Discussion #23, 01:07Z). Next:
+   unify the 4 existing configs (`baroque_clarinet`, `bass_clarinet_7hole`,
+   `bass_clarinet_7hole_bell`, `bass_chalumeau`) to canonical format. Wait for laptop
+   to pull + run validator before starting the migration, or proceed if laptop says go.
 3. Continue governance / agent-coordination improvements: pre-commit
    import-consistency checks (per the other model's analysis) and/or design-output
    JSON schema.
