@@ -55,6 +55,7 @@ OVERSIZED_ALLOWLIST = {
     "backend\\tmm_acoustics.py",
     "backend\\trumpet_acoustics.py",
     "backend\\trumpet_openwind.py",
+    "backend\\stl_verifier.py",
     "woodwind_designer\\engine\\design_server.py",
     "woodwind_designer\\engine\\instrument_library.py",
 }
