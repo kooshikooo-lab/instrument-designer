@@ -313,50 +313,51 @@ def _play_game(peer_ip, port, game_num, time_control, my_color, side_names, star
 
 
 def cmd_challenge(peer_ip, port, match_games=10, time_control="60+0"):
-    """Desktop challenges laptop to a match (one challenge, then a series of games)."""
+    """Desktop challenges laptop to a match (one challenge per game, sequential)."""
     side_names = {"white": _machine_name(), "black": "opponent"}
     my_color = chess.WHITE
     scores = {"1-0": 0, "0-1": 0, "1/2-1/2": 0, "*": 0}
 
-    print(f"\n### Match: {match_games} games, {time_control} ###")
-    print(f"[{_machine_name()}] Challenging {peer_ip}:{port}")
-
-    _clear_chess_messages()
-    challenge = {
-        "cmd": "chess_challenge",
-        "match_games": match_games,
-        "time_control": time_control,
-        "from": _machine_name(),
-    }
-    if not _send_payload(peer_ip, port, challenge):
-        print(f"[{_machine_name()}] Challenge failed to deliver. Aborting match — monitoring is not working.")
-        scores["*"] = match_games
-        _analyze_match(peer_ip, port, match_games, time_control, scores, side_names, aborted=True, aborted_at=0)
-        return
-
-    def is_accept(msg):
-        return msg.get("cmd") == "chess_accept"
-
-    accept = _wait_for_message(peer_ip, port, is_accept, CHALLENGE_TIMEOUT, 0)
-    if accept is None:
-        print(f"[{_machine_name()}] No acceptance within {CHALLENGE_TIMEOUT}s. Match won by forfeit.")
-        scores["1-0"] = match_games
-        _analyze_match(peer_ip, port, match_games, time_control, scores, side_names)
-        return
-
-    print(f"[{_machine_name()}] Challenge accepted. Playing White in all games.")
-
     match_aborted = False
     for game_num in range(1, match_games + 1):
         print(f"\n### Game {game_num}/{match_games} ###")
+        print(f"[{_machine_name()}] Challenging {peer_ip}:{port} to {time_control}")
+
+        _clear_chess_messages()
+        challenge = {
+            "cmd": "chess_challenge",
+            "match_games": match_games,
+            "time_control": time_control,
+            "game": game_num,
+            "from": _machine_name(),
+        }
+        if not _send_payload(peer_ip, port, challenge):
+            print(f"[{_machine_name()}] Challenge failed to deliver. Aborting match — monitoring is not working.")
+            scores["*"] += (match_games - game_num + 1)
+            match_aborted = True
+            break
+
+        def is_accept(msg):
+            return msg.get("cmd") == "chess_accept" and msg.get("game") == game_num
+
+        accept = _wait_for_message(peer_ip, port, is_accept, CHALLENGE_TIMEOUT, 0)
+        if accept is None:
+            print(f"[{_machine_name()}] No acceptance within {CHALLENGE_TIMEOUT}s. Win game {game_num} by forfeit.")
+            scores["1-0"] += 1
+            continue
+
+        print(f"[{_machine_name()}] Challenge accepted for game {game_num}. Playing White.")
         result = _play_game(peer_ip, port, game_num, time_control, my_color, side_names)
         scores[result] = scores.get(result, 0) + 1
 
-    print(f"\n### Match result ({match_games} games) ###")
+    if match_aborted:
+        print(f"\n### Match aborted at game {game_num}/{match_games} ###")
+    else:
+        print(f"\n### Match result ({match_games} games) ###")
     for k, v in scores.items():
         print(f"  {k}: {v}")
 
-    _analyze_match(peer_ip, port, match_games, time_control, scores, side_names)
+    _analyze_match(peer_ip, port, match_games, time_control, scores, side_names, aborted=match_aborted, aborted_at=game_num)
 
 
 def _analyze_match(peer_ip, port, match_games, time_control, scores, side_names, aborted=False, aborted_at=0):
@@ -456,30 +457,32 @@ def _analyze_match(peer_ip, port, match_games, time_control, scores, side_names,
 
 
 def cmd_accept(peer_ip, port):
-    """Wait for a match challenge, accept it, and play Black for the whole series."""
-    print(f"[{_machine_name()}] Waiting for a chess challenge from {peer_ip}:{port}...")
+    """Wait for challenges, accept each game, and play Black."""
+    print(f"[{_machine_name()}] Waiting for chess challenges from {peer_ip}:{port}...")
     msg_count = len(_read_chess_messages(from_peer_only=True))
 
-    def is_challenge(msg):
-        return msg.get("cmd") == "chess_challenge"
+    while True:
+        def is_challenge(msg):
+            return msg.get("cmd") == "chess_challenge"
 
-    challenge = _wait_for_message(peer_ip, port, is_challenge, 3600, msg_count)
-    if challenge is None:
-        print("No challenge received in the last hour. Exiting.")
-        return
+        challenge = _wait_for_message(peer_ip, port, is_challenge, 3600, msg_count)
+        if challenge is None:
+            print("No challenge received in the last hour. Exiting.")
+            return
 
-    match_games = challenge.get("match_games", 1)
-    time_control = challenge.get("time_control", "60+0")
+        msg_count = len(_read_chess_messages(from_peer_only=True))
+        game_num = challenge.get("game", 1)
+        match_games = challenge.get("match_games", 1)
+        time_control = challenge.get("time_control", "60+0")
 
-    print(f"[{_machine_name()}] Accepted match: {match_games} games, {time_control}")
-    _send_payload(peer_ip, port, {
-        "cmd": "chess_accept",
-        "from": _machine_name(),
-    })
+        print(f"[{_machine_name()}] Accepted game {game_num}/{match_games}")
+        _send_payload(peer_ip, port, {
+            "cmd": "chess_accept",
+            "game": game_num,
+            "from": _machine_name(),
+        })
 
-    side_names = {"white": "opponent", "black": _machine_name()}
-    for game_num in range(1, match_games + 1):
-        print(f"\n### Game {game_num}/{match_games} ###")
+        side_names = {"white": "opponent", "black": _machine_name()}
         _play_game(peer_ip, port, game_num, time_control, chess.BLACK, side_names)
 
 
