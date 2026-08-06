@@ -15,6 +15,8 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+jax = pytest.importorskip("jax", reason="jax is required for surrogate tests")
+
 from backend.surrogate import SurrogateConfig, SurrogateTrainer, generate_training_data
 
 

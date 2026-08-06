@@ -45,3 +45,14 @@ scripts/.team_watch.log
 scripts/.team_inbox.md
 # GitHub monitor runtime log
 scripts/github_updates.log
+
+# Dask cluster runtime artifacts
+scripts/*.log
+scripts/*.pid
+scripts/*.err
+
+# Tailscale peer monitor runtime artifacts
+scripts/.tailscale_monitor.json
+scripts/tailscale_monitor.log
+scripts/tailscale_monitor.out.log
+scripts/tailscale_monitor.err.log
