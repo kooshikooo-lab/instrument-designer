@@ -76,7 +76,13 @@ def generate_instrument_build123d(
         # so its odd-indexed −X holes are placed inside the bore and never cut
         # the wall — a known cadquery_export bug; see module docstring.)
         length = wall_thickness + hole_depth
-        center_x = side * (inner_r + length / 2)
+        # Hole cylinder is horizontal (axis along X), centered on the bore
+        # surface (x = inner_r * side) and extending `length/2` into the bore
+        # void and `length/2` past the outer surface, so it fully pierces the
+        # wall on the entry side without a cap face tangent to the bore
+        # (a tangent cap yields a degenerate edge -> non-watertight mesh).
+        # Mirrors cadquery_export._cut_single_hole (audit C1).
+        center_x = side * inner_r
         # Hole z is absolute (0=bell, bore_length=top); the build123d frame is
         # centered, so subtract bore_length/2 here (whole solid translated below).
         hole = b.Pos(center_x, 0, pos - bore_length / 2) * b.Cylinder(
