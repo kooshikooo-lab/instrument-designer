@@ -2,6 +2,8 @@
   "name": "Bass Clarinet in Bb (7-hole D major, quadratic bell)",
   "description": "Optimized 7-hole diatonic with quadratic bell flare. Bell distorts 12th significantly.",
   "status": "ACTIVE - bell working but 12th degraded",
+  "instrument_type": "bass_clarinet",
+  "pitch": "Bb",
   "bore": {
     "cylinder_length_mm": 1003.9,
     "bell_length_mm": 160.0,
@@ -26,7 +28,16 @@
     {"position_mm": 618, "diameter_mm": 11.0, "chimney_mm": 5.0},
     {"position_mm": 645, "diameter_mm": 11.0, "chimney_mm": 5.0}
   ],
-  "target_notes": ["D2","E2","F#2","G2","A2","B2","C#3","D3"],
+  "targets_hz": {
+    "D2": 73.416,
+    "E2": 82.407,
+    "F#2": 92.499,
+    "G2": 97.999,
+    "A2": 110.000,
+    "B2": 123.471,
+    "C#3": 138.591,
+    "D3": 146.832
+  },
   "performance": {
     "first_register_rms_relative_cents": 0.00,
     "first_register_offset_cents": -97,
