@@ -126,6 +126,14 @@
   - `tests/test_tailscale_monitor.py` added (3 tests passing).
   - `tests/test_surrogate.py` now skips if jax is missing.
   - Desktop monitor is running and receiving heartbeats from laptop.
+- **Architecture audit + AI review prompt** (`fd9a1de`, pushed):
+  - `docs/ARCHITECTURE_AUDIT.md` — current test failures, deleted-module
+    references, bare excepts, impossible outer diameters, fingering/hole
+    mismatches, file-placement violations, regenerable artifacts, oversized
+    modules, packaging/test-collection issues.
+  - `docs/AI_REVIEW_PROMPT.md` — structured prompt for the next AI review pass,
+    focused on physics-correctness, architectural consistency, parameter
+    plumbing, and register/fingering conventions.
 - **Path-rewrite cleanup** (in `a1807bd`): all 15 active scripts/tests use
   repo-relative resolution (`os.path.dirname(os.path.dirname(os.path.abspath(__file__)))`
   / `Split-Path $PSScriptRoot -Parent`), no hardcoded paths.
