@@ -41,7 +41,7 @@ thread starts, moves, or resolves.
 | 3 | Mesh-repair gate protocol (`docs/TOOLS.md`) | laptop | laptop draft | DECIDED: build123d-first + pymeshlab/pymeshfix repair fallback (desktop 17906945); laptop drafting protocol | 2026-08-05 |
 | 4 | build123d spike merge `8ddfc7a`+`e8d6254`+`7bc624e` → `opencode/main/laptop` | laptop | laptop merge | Approved by desktop (17906945); awaiting laptop merge | 2026-08-05 |
 | 5 | `cadquery-ocp` pin in `cad` extra | desktop | desktop commit | Desktop added pin (avoid `cadquery-ocp-novtk` OCP namespace clobber) | 2026-08-05 |
-| 6 | Config schema unification | desktop | laptop pull/validate | Schema approved by laptop; chalumeau cross-check + performance fields + Tailscale IP whitelist pushed; awaiting laptop `git pull` + validator run before config unification | 2026-08-06 |
+| 6 | Config schema unification | desktop | laptop review of multi-register decision | Schema approved; 3 configs migrated to canonical; `baroque_clarinet.json` kept as legacy until multi-register decision | 2026-08-06 |
 
 ## Nudge rule
 

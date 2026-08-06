@@ -108,6 +108,13 @@
 - **Pre-commit IP check updated** (`e11ae1e`, pushed):
   - Tailscale CGNAT range (`100.64.0.0/10`) whitelisted so cluster scripts are
     not blocked when edited; public IPs still flagged.
+- **Config migration to canonical** (`d25960e`, pushed):
+  - `bass_clarinet_7hole.json`, `bass_clarinet_7hole_bell.json`,
+    `bass_chalumeau.json` converted to canonical schema.
+  - `bass_chalumeau`: renamed `fingering_chart_chalumeau` → `fingering_chart`,
+    `targets_hz_chalumeau` → `targets_hz`.
+  - `baroque_clarinet.json` kept as `legacyBaroqueClarinet` pending multi-register
+    decision (two registers: chalumeau + clarion).
 - **Path-rewrite cleanup** (in `a1807bd`): all 15 active scripts/tests use
   repo-relative resolution (`os.path.dirname(os.path.dirname(os.path.abspath(__file__)))`
   / `Split-Path $PSScriptRoot -Parent`), no hardcoded paths.
@@ -182,10 +189,11 @@
 
 1. Stay on `opencode/main/desktop`; PR #62 (MERGEABLE) still needs no external
    approval per user; laptop is deferring its branch merge until PR #62 merges.
-2. Laptop approved the instrument-config schema (Discussion #23, 01:07Z). Next:
-   unify the 4 existing configs (`baroque_clarinet`, `bass_clarinet_7hole`,
-   `bass_clarinet_7hole_bell`, `bass_chalumeau`) to canonical format. Wait for laptop
-   to pull + run validator before starting the migration, or proceed if laptop says go.
+2. Laptop approved the instrument-config schema (Discussion #23, 01:07Z).
+   Migrated 3 configs (`bass_clarinet_7hole`, `bass_clarinet_7hole_bell`,
+   `bass_chalumeau`) to canonical format. `baroque_clarinet.json` remains
+   `legacyBaroqueClarinet` pending a decision on multi-register support (posted to
+   #23). All 4 configs validate; 13 tests pass.
 3. Continue governance / agent-coordination improvements: pre-commit
    import-consistency checks (per the other model's analysis) and/or design-output
    JSON schema.
