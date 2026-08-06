@@ -47,3 +47,9 @@ scripts/github_updates.log
 scripts/*.log
 scripts/*.pid
 scripts/*.err
+
+# Tailscale peer monitor runtime artifacts
+scripts/.tailscale_monitor.json
+scripts/tailscale_monitor.log
+scripts/tailscale_monitor.out.log
+scripts/tailscale_monitor.err.log
