@@ -70,6 +70,14 @@
         "second_register_rms_relative_cents": { "type": "number" },
         "second_register_offset_cents": { "type": "number" },
         "twelfths_rms_cents": { "type": "number" },
+        "timbre_consistency": { "type": "number", "minimum": 0 },
+        "playability": { "type": "number", "minimum": 0 },
+        "register_break": { "type": "number", "minimum": 0 },
+        "max_error": { "type": "number", "minimum": 0 },
+        "per_note_errors": {
+          "type": "array",
+          "items": { "type": "number" }
+        },
         "note": { "type": "string" }
       },
       "additionalProperties": true

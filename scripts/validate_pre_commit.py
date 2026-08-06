@@ -130,8 +130,17 @@ def check_bare_excepts(path: Path) -> list[int]:
     ]
 
 
+def _is_tailscale_ip(ip: str) -> bool:
+    """Tailscale addresses are in the CGNAT range 100.64.0.0/10."""
+    try:
+        octets = [int(o) for o in ip.split(".")]
+    except ValueError:
+        return False
+    return len(octets) == 4 and octets[0] == 100 and 64 <= octets[1] <= 127
+
+
 def check_hardcoded_ips(path: Path) -> list[str]:
-    """Return list of hardcoded non-loopback IPs."""
+    """Return list of hardcoded non-loopback, non-Tailscale IPs."""
     try:
         with open(path, "r", encoding="utf-8", errors="ignore") as f:
             content = f.read()
@@ -139,7 +148,7 @@ def check_hardcoded_ips(path: Path) -> list[str]:
         return []
     ips = re.findall(r"(?<!\d)\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(?!\d)", content)
     safe = {"0.0.0.0", "127.0.0.1", "255.255.255.255"}
-    return [ip for ip in ips if ip not in safe]
+    return [ip for ip in ips if ip not in safe and not _is_tailscale_ip(ip)]
 
 
 def check_module_size(path: Path, root: Path) -> str | None:

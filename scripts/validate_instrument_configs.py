@@ -47,27 +47,37 @@ def validate_file(path: Path, schema: dict) -> list[str]:
     for err in validator.iter_errors(data):
         errors.append(f"{path.name}: {err.message} (at {list(err.path)})")
 
-    # Cross-check: fingering chart bit length must match tonehole count (if both present).
-    if "toneholes" in data and "fingering_chart" in data:
-        n_holes = len(data["toneholes"])
-        chart = data["fingering_chart"]
-        if chart and isinstance(next(iter(chart.values())), dict):
-            # Legacy nested structure: {instrument_name: {note: [bits]}}
-            for chart_name, subchart in chart.items():
-                for note, bits in subchart.items():
+    # Cross-check: fingering chart bit length must match total hole count
+    # (toneholes or finger_holes + optional keys + optional register_hole).
+    n_holes = (
+        len(data.get("toneholes", []))
+        + len(data.get("finger_holes", []))
+        + len(data.get("keys", []))
+    )
+    if "register_hole" in data:
+        n_holes += 1
+    if n_holes:
+        for key in ("fingering_chart", "fingering_chart_chalumeau"):
+            if key not in data:
+                continue
+            chart = data[key]
+            if chart and isinstance(next(iter(chart.values())), dict):
+                # Legacy nested structure: {instrument_name: {note: [bits]}}
+                for chart_name, subchart in chart.items():
+                    for note, bits in subchart.items():
+                        if len(bits) != n_holes:
+                            errors.append(
+                                f"{path.name}: {key}.{chart_name}.{note} has "
+                                f"{len(bits)} bits but toneholes+keys has {n_holes} entries"
+                            )
+            else:
+                # Flat structure: {note: [bits]}
+                for note, bits in chart.items():
                     if len(bits) != n_holes:
                         errors.append(
-                            f"{path.name}: fingering_chart.{chart_name}.{note} has "
-                            f"{len(bits)} bits but toneholes has {n_holes} entries"
+                            f"{path.name}: {key}.{note} has "
+                            f"{len(bits)} bits but toneholes+keys has {n_holes} entries"
                         )
-        else:
-            # Canonical flat structure: {note: [bits]}
-            for note, bits in chart.items():
-                if len(bits) != n_holes:
-                    errors.append(
-                        f"{path.name}: fingering_chart.{note} has "
-                        f"{len(bits)} bits but toneholes has {n_holes} entries"
-                    )
 
     return errors
 
