@@ -100,11 +100,39 @@ def _bore_smoothness(radii: np.ndarray) -> float:
     return float(np.std(dd))
 
 
-def _hole_radiation_consistency(hole_diameters: list[float], bore_radius: float) -> float:
+def _hole_radiation_consistency(
+    hole_diameters: list[float], bore_radius: float,
+    local_radii: list[float] | None = None,
+) -> float:
     if not hole_diameters or bore_radius <= 0:
         return 0.0
+    if local_radii is not None:
+        if len(local_radii) != len(hole_diameters):
+            raise ValueError(
+                "local_radii must match hole_diameters length "
+                f"({len(local_radii)} != {len(hole_diameters)})"
+            )
+        ratios = [
+            (d / (2.0 * r)) ** 2
+            for d, r in zip(hole_diameters, local_radii)
+            if r > 0
+        ]
+        if not ratios:
+            return 0.0
+        return float(np.std(ratios))
     ratios = [(d / (2.0 * bore_radius)) ** 2 for d in hole_diameters]
     return float(np.std(ratios))
+
+
+def _local_bore_radii(candidate: dict) -> list[float] | None:
+    """Bore radius at each hole location, or None if geometry is incomplete."""
+    bore_radii = candidate.get("bore_radii", candidate.get("bore_radii_mm", []))
+    hole_positions = candidate.get("hole_positions", candidate.get("hole_positions_mm", []))
+    bore_length = candidate.get("bore_length", candidate.get("bore_length_mm", 0.0))
+    if not bore_radii or not hole_positions or not bore_length:
+        return None
+    cp = np.linspace(0.0, float(bore_length), len(bore_radii))
+    return np.interp(hole_positions, cp, np.asarray(bore_radii, dtype=float)).tolist()
 
 
 def _cost_smoothness(candidate: dict) -> float:
@@ -116,7 +144,9 @@ def _cost_consistency(candidate: dict) -> float:
     hole_diameters = candidate.get("hole_diameters", candidate.get("hole_diameters_mm", []))
     bore_radii = candidate.get("bore_radii", candidate.get("bore_radii_mm", []))
     bore_radius = candidate.get("bore_radius", np.mean(bore_radii) if bore_radii else 7.0)
-    return _hole_radiation_consistency(hole_diameters, bore_radius)
+    return _hole_radiation_consistency(
+        hole_diameters, bore_radius, _local_bore_radii(candidate)
+    )
 
 
 def _cost_timbre_proxy(candidate: dict) -> float:
@@ -127,7 +157,9 @@ def _cost_timbre_proxy(candidate: dict) -> float:
     hole_diameters = candidate.get("hole_diameters", candidate.get("hole_diameters_mm", []))
     bore_radii = candidate.get("bore_radii", candidate.get("bore_radii_mm", []))
     bore_radius = candidate.get("bore_radius", np.mean(bore_radii) if bore_radii else 7.0)
-    consistency = _hole_radiation_consistency(hole_diameters, bore_radius)
+    consistency = _hole_radiation_consistency(
+        hole_diameters, bore_radius, _local_bore_radii(candidate)
+    )
     return smoothness + 0.5 * consistency
 
 
