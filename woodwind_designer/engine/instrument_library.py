@@ -1,4 +1,6 @@
+import json
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Optional
 
 
@@ -19,6 +21,7 @@ class InstrumentEntry:
     demakein_preset: str = ""
     tags: list = field(default_factory=list)
     difficulty: str = "Beginner"
+    verified: bool = False
 
 
 LIBRARY: list
@@ -306,6 +309,7 @@ LIBRARY = [
         download_url="https://www.printables.com/model/752555-clarinet-modern-chalumeau-in-c",
         tags=["intermediate", "clarinet", "chalumeau", "single-reed", "keyed"],
         difficulty="Intermediate",
+        verified=True,
         description="Simple clarinet in C with two extension keys. Suitable for "
                     "Vandoren Eb clarinet mouthpiece. 3-part body with bell, barrel, "
                     "and main section. Updated with corrected finger hole positions. "
@@ -321,6 +325,7 @@ LIBRARY = [
         download_url="https://www.printables.com/model/888905-c-clarinet-remix",
         tags=["intermediate", "clarinet", "chalumeau", "14mm-bore", "remix", "tunable"],
         difficulty="Intermediate",
+        verified=True,
         description="Remix of Tom's Chalumeau with 14mm bore (vs original narrower "
                     "bore), 3-part split body, and adjustable tuning via bell and barrel. "
                     "Fixes intonation issues of the original design. Barrel fits standard "
@@ -386,20 +391,6 @@ LIBRARY = [
                     "reeds, played simultaneously. One pipe is melodic (6 holes), the other "
                     "is a drone. Membrane reeds give a buzzing, reedy timbre. "
                     "Ancestor of the modern clarinet family. 3D-printed versions use paired bores.",
-    ),
-    InstrumentEntry(
-        name="Modern Chalumeau in C (Clarinet)",
-        family="Wind", subcategory="Woodwind", type_label="Single Reed",
-        range="Soprano", key="C",
-        source="Printables – Tom_b",
-        image_url="",
-        audio_url="https://www.youtube.com/watch?v=weU1eW8vMQA",
-        download_url="https://www.printables.com/model/752555-clarinet-modern-chalumeau-in-c",
-        tags=["intermediate", "clarinet", "chalumeau", "single-reed", "keyed"],
-        difficulty="Intermediate",
-        description="Modern 3D-printed chalumeau with clarinet-style keywork. "
-                    "Single reed (standard clarinet reed). Keyed for full chromatic range. "
-                    "Compact design, good for learning and practice.",
     ),
     InstrumentEntry(
         name="Modern Chalumeau 14mm Bore (Remix)",
@@ -1026,23 +1017,6 @@ LIBRARY = [
                     "Free STL files. Simple clarinet-like fingering.",
     ),
 
-    # C Clarinet Remix (14mm bore)
-    InstrumentEntry(
-        name="C Clarinet Remix (14mm Bore)",
-        family="Wind", subcategory="Clarinet", type_label="Modern Clarinet",
-        range="Soprano", key="C",
-        source="Printables – Gubbledenut (remix of Tom's Chalumeau)",
-        image_url="",
-        audio_url="https://www.youtube.com/watch?v=weU1eW8vMQA",
-        download_url="https://www.printables.com/model/888905-c-clarinet-remix",
-        tags=["professional", "clarinet", "14mm-bore", "remix", "tunable", "eb-mouthpiece", "verified"],
-        difficulty="Intermediate",
-        description="Remix of Tom's Chalumeau with 14mm bore (vs original narrower). "
-                    "3-part split body. Barrel fits standard Eb mouthpiece. "
-                    "Adjustable tuning via bell and barrel. Raised key blocks. "
-                    "Fixes intonation issues of original design. Free STL.",
-    ),
-
     # Atomica Ultra-Compact Bass Clarinet
     InstrumentEntry(
         name="Atomica Ultra-Compact Bass Clarinet",
@@ -1091,57 +1065,6 @@ LIBRARY = [
         description="Fully 3D-printed clarinet with plastic membrane reed (bag foil/space blanket). "
                     "3 screw-together parts with LH/RH threads. Membrane holder with 2 DOF tuning. "
                     "No cane reed needed. Inspired by Nicolas Bras membrane clarinet concept. Free STL.",
-    ),
-
-    # Diplica (Croatian)
-    InstrumentEntry(
-        name="Diplica (Croatian Double Reed Pipe)",
-        family="Wind", subcategory="Woodwind", type_label="Membrane/Double Reed",
-        range="Soprano", key="Variable",
-        source="Traditional / Printables – User",
-        image_url="",
-        audio_url="",
-        download_url="",
-        tags=["diplica", "croatian", "traditional", "double-reed", "membrane", "verified"],
-        difficulty="Intermediate",
-        description="Traditional Croatian diplica — double-reed pipe with membrane. "
-                    "Two parallel single reeds with shared membrane chamber. "
-                    "Characteristic nasal, buzzing timbre. Historically wood/cane; 3D-printed uses plastic membrane. "
-                    "6 holes. Related to zurna/duduk family.",
-    ),
-
-    # Sipsi (Turkish)
-    InstrumentEntry(
-        name="Sipsi (Turkish Single Reed)",
-        family="Wind", subcategory="Woodwind", type_label="Membrane/Single Reed",
-        range="Soprano", key="Variable",
-        source="Traditional / Printables – User",
-        image_url="",
-        audio_url="",
-        download_url="",
-        tags=["sipsi", "turkish", "traditional", "single-reed", "membrane", "verified"],
-        difficulty="Intermediate",
-        description="Turkish folk instrument — simple cylindrical pipe with single reed "
-                    "made from thin membrane (historically reed/cane skin). Typically 6 holes. "
-                    "High-pitched, bright timbre. Related to Greek psítha and Mizmar family. "
-                    "3D-printed versions use plastic membrane. Simple construction.",
-    ),
-
-    # Zummara (Egyptian)
-    InstrumentEntry(
-        name="Zummara (Egyptian Double Clarinet)",
-        family="Wind", subcategory="Woodwind", type_label="Membrane/Double Reed",
-        range="Soprano", key="Variable",
-        source="Traditional / Printables – User",
-        image_url="",
-        audio_url="",
-        download_url="",
-        tags=["zummara", "egyptian", "double-clarinet", "parallel-bore", "membrane", "verified"],
-        difficulty="Advanced",
-        description="Egyptian folk instrument — two parallel cylindrical pipes with single "
-                    "reeds, played simultaneously. One pipe melodic (6 holes), other drone. "
-                    "Membrane reeds give buzzing, reedy timbre. Ancestor of modern clarinet family. "
-                    "3D-printed versions use paired bores with membrane reeds.",
     ),
 
     # ##############################################################
@@ -1290,8 +1213,9 @@ def get_families() -> list[str]:
 def get_subcategories(family: str) -> list[str]:
     seen = set()
     result = []
+    family_l = family.lower()
     for e in LIBRARY:
-        if e.family == family and e.subcategory not in seen:
+        if e.family.lower() == family_l and e.subcategory not in seen:
             seen.add(e.subcategory)
             result.append(e.subcategory)
     return result
@@ -1315,8 +1239,10 @@ def get_by_preset(preset: str) -> Optional[InstrumentEntry]:
 def get_type_labels(family: str, subcategory: str) -> list[str]:
     seen = set()
     result = []
+    family_l = family.lower()
+    sub_l = subcategory.lower()
     for e in LIBRARY:
-        if e.family == family and e.subcategory == subcategory and e.type_label not in seen:
+        if e.family.lower() == family_l and e.subcategory.lower() == sub_l and e.type_label not in seen:
             seen.add(e.type_label)
             result.append(e.type_label)
     return result
@@ -1350,9 +1276,6 @@ def save_novel_instrument(
     ``inner_diameters``), writes a JSON record to ``output_dir`` and returns the
     record.
     """
-    import json
-    from pathlib import Path
-
     if result is None:
         result = optimization_result or {}
     if not isinstance(result, dict):
@@ -1410,8 +1333,16 @@ def save_novel_instrument(
         "notes": notes,
     }
 
+    # Resolve the repo root by walking up to the project marker instead of
+    # assuming a fixed __file__ depth, so moving the module does not silently
+    # redirect output elsewhere.
+    default_root = Path(__file__)
+    for parent in default_root.parents:
+        if (parent / "pyproject.toml").exists() or (parent / ".git").exists():
+            default_root = parent
+            break
     out_dir = output_dir or str(
-        Path(__file__).parent.parent.parent / "test_output" / "unconventional" / "novel_instruments"
+        default_root / "test_output" / "unconventional" / "novel_instruments"
     )
     Path(out_dir).mkdir(parents=True, exist_ok=True)
 
