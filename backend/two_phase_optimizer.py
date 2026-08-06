@@ -25,22 +25,6 @@ from backend.tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
 from backend.physics.losses import KeefeLoss
 
 c = SPEED_OF_SOUND
-SEMITONE_MAP = {'C': 0, 'D': 2, 'E': 4, 'F': 5, 'G': 7, 'A': 9, 'B': 11}
-
-def note_to_freq(name):
-    if name.endswith('hz'):
-        return float(name[:-2])
-    mult = 1.0
-    if '*' in name:
-        idx = name.index('*')
-        mult = float(name[idx+1:])
-        name = name[:idx]
-    s = SEMITONE_MAP[name[0].upper()]
-    rest = name[1:]
-    if rest and rest[0] == 'b': s -= 1; rest = rest[1:]
-    if rest and rest[0] in ('#', 's'): s += 1; rest = rest[1:]
-    s += 12 * int(rest) if rest else 0
-    return 440.0 * 2.0**((s - 57) / 12.0) * mult
 
 def cents_error(actual, target):
     if actual <= 0 or target <= 0: return 1e10
@@ -62,7 +46,7 @@ def peak_cost_nearest(inst, targets, fingerings, detected_regs):
             wl = inst.find_resonance(SPEED_OF_SOUND / tgt, fl, n_register=pr)
             f = inst.frequency_from_wavelength(wl)
             cents.append(cents_error(f, targets[len(cents)]))
-        except:
+        except Exception:
             cents.append(1e10)
     ca = np.array(cents)
     if np.any(np.abs(ca) > 1e5):
@@ -91,7 +75,7 @@ def detect_registers(inst, targets, fingerings, max_reg=5):
                 if dist < best_dist:
                     best_dist = dist
                     best_pr = pr
-            except:
+            except Exception:
                 continue
         regs.append(best_pr)
     return regs
@@ -105,6 +89,7 @@ def phase1_de_search(bore_length, n_holes, hole_lens, targets, fingerings,
                      n_register, bore_bounds_range, hole_pos_bounds_range,
                      popsize=15, maxiter=30, seed=42, verbose=True,
                      n_bore_ctrl=6, hd_min=3.0, hd_max=15.0,
+                     outer_diameter_mm=22.0, closed_top=False,
                      loss_model=None):
     """
     Phase 1: Differential Evolution with phase cost (fast).
@@ -115,7 +100,6 @@ def phase1_de_search(bore_length, n_holes, hole_lens, targets, fingerings,
     n_vars = n_bore_ctrl + n_holes + n_holes
     bore_min, bore_max = bore_bounds_range
     hp_min, hp_max = hole_pos_bounds_range
-    hd_min, hd_max = 3.0, 15.0
 
     def cost(x):
         radii = x[:n_bore_ctrl]
@@ -128,11 +112,11 @@ def phase1_de_search(bore_length, n_holes, hole_lens, targets, fingerings,
         try:
             inst = tmm_instrument_from_radii(
                 radii, bore_length, hp, hd, hole_lens,
-                outer_diameter_mm=22.0, closed_top=False, cone_step=0.5,
+                outer_diameter_mm=outer_diameter_mm, closed_top=closed_top, cone_step=0.5,
                 loss_model=loss_model,
             )
             return inst.phase_cost_with_offset(targets, fingerings, n_register=n_register)
-        except:
+        except Exception:
             return 1e6
 
     bounds = (
@@ -159,6 +143,7 @@ def phase2_lbfgsb_refine(x0, bore_length, n_holes, hole_lens, targets, fingering
                          detected_regs, bore_bounds_range, hole_pos_bounds_range,
                          n_iters=500, verbose=True,
                          n_bore_ctrl=6, hd_min=3.0, hd_max=15.0,
+                         outer_diameter_mm=22.0, closed_top=False,
                          loss_model=None):
     """
     Phase 2: L-BFGS-B with phase-based absolute cost.
@@ -171,10 +156,8 @@ def phase2_lbfgsb_refine(x0, bore_length, n_holes, hole_lens, targets, fingering
     targets = np.array(targets)
     n_holes = len(hole_lens)
 
-    n_bore_ctrl = 6
     bore_min, bore_max = bore_bounds_range
     hp_min, hp_max = hole_pos_bounds_range
-    hd_min, hd_max = 3.0, 15.0
 
     def cost(x):
         radii = x[:n_bore_ctrl]
@@ -186,13 +169,13 @@ def phase2_lbfgsb_refine(x0, bore_length, n_holes, hole_lens, targets, fingering
         try:
             inst = tmm_instrument_from_radii(
                 radii, bore_length, hp, hd, hole_lens,
-                outer_diameter_mm=22.0, closed_top=False, cone_step=0.5,
+                outer_diameter_mm=outer_diameter_mm, closed_top=closed_top, cone_step=0.5,
                 loss_model=loss_model,
             )
             return peak_cost_nearest(
                 inst, targets, fingerings, detected_regs
             )
-        except:
+        except Exception:
             return 1e6
 
     bore_min, bore_max = bore_bounds_range
@@ -230,6 +213,10 @@ def two_phase_optimize(
     n_iters: int = 500,
     seed: int = 42,
     verbose: bool = True,
+    outer_diameter_mm: float = 22.0,
+    closed_top: bool = False,
+    hd_min: float = 3.0,
+    hd_max: float = 15.0,
     loss_model=None,
 ) -> dict:
     """
@@ -271,13 +258,10 @@ def two_phase_optimize(
             print(f"  Loss model: {loss_model.__class__.__name__}")
 
     # Initial guess: uniform bore
-    bore_min, bore_max = (3.0, 18.0) if isinstance(bore_bounds_range, tuple) else (3.0, 18.0)
+    bore_min, bore_max = bore_bounds_range
     hp_min, hp_max = 10.0, bore_length - 10.0
     if hole_pos_bounds_range[1] is not None:
         hp_min, hp_max = hole_pos_bounds_range
-
-    hd_min, hd_max = 3.0, 15.0
-    n_bore_ctrl = 6
 
     # Initial guess
     x0 = np.array(
@@ -298,11 +282,11 @@ def two_phase_optimize(
     # Per desktop decision (Discussion #23): registers derived from initial geometry + closed_top,
     # frozen, and never re-derived post-hoc. This prevents register drift during optimization.
     initial_inst = tmm_instrument_from_radii(
-        x0[:6], bore_length,
-        sorted(x0[6+len(hole_lens):]),  # hole positions
-        x0[6:6+len(hole_lens)],  # hole diameters
+        x0[:n_bore_ctrl], bore_length,
+        sorted(x0[n_bore_ctrl+len(hole_lens):]),  # hole positions
+        x0[n_bore_ctrl:n_bore_ctrl+len(hole_lens)],  # hole diameters
         hole_lens,
-        outer_diameter_mm=22.0, closed_top=False, cone_step=0.5,
+        outer_diameter_mm=outer_diameter_mm, closed_top=closed_top, cone_step=0.5,
         loss_model=loss_model,
     )
     regs = detect_registers(inst=initial_inst, targets=targets, fingerings=fingerings_parsed)
@@ -317,16 +301,18 @@ def two_phase_optimize(
         bore_bounds_range=(bore_min, bore_max),
         hole_pos_bounds_range=(hp_min, hp_max),
         popsize=popsize, maxiter=maxiter, seed=seed,
+        n_bore_ctrl=n_bore_ctrl, hd_min=hd_min, hd_max=hd_max,
+        outer_diameter_mm=outer_diameter_mm, closed_top=closed_top,
         loss_model=loss_model,
     )
 
     # Build instrument from Phase 1 result
-    radii1 = x1[:6]
-    hd1 = x1[6:6+len(hole_lens)]
-    hp1 = sorted(x1[6+len(hole_lens):])
+    radii1 = x1[:n_bore_ctrl]
+    hd1 = x1[n_bore_ctrl:n_bore_ctrl+len(hole_lens)]
+    hp1 = sorted(x1[n_bore_ctrl+len(hole_lens):])
     inst1 = tmm_instrument_from_radii(
         radii1, bore_length, hp1, hd1, hole_lens,
-        outer_diameter_mm=22.0, closed_top=False, cone_step=0.5,
+        outer_diameter_mm=outer_diameter_mm, closed_top=closed_top, cone_step=0.5,
         loss_model=loss_model,
     )
 
@@ -345,16 +331,18 @@ def two_phase_optimize(
         bore_bounds_range=(bore_min, bore_max),
         hole_pos_bounds_range=(hp_min, hp_max),
         n_iters=n_iters,
+        n_bore_ctrl=n_bore_ctrl, hd_min=hd_min, hd_max=hd_max,
+        outer_diameter_mm=outer_diameter_mm, closed_top=closed_top,
         loss_model=loss_model,
     )
 
     # Build final instrument
-    radii2 = x2[:6]
-    hd2 = x2[6:6+len(hole_lens)]
-    hp2 = sorted(x2[6+len(hole_lens):])
+    radii2 = x2[:n_bore_ctrl]
+    hd2 = x2[n_bore_ctrl:n_bore_ctrl+len(hole_lens)]
+    hp2 = sorted(x2[n_bore_ctrl+len(hole_lens):])
     inst2 = tmm_instrument_from_radii(
         radii2, bore_length, hp2, hd2, hole_lens,
-        outer_diameter_mm=22.0, closed_top=False, cone_step=0.5,
+        outer_diameter_mm=outer_diameter_mm, closed_top=closed_top, cone_step=0.5,
         loss_model=loss_model,
     )
 

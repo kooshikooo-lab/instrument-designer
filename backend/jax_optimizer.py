@@ -72,9 +72,9 @@ def eval_metrics(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg=None
     return compute_metrics(cents)
 
 
-def safe_eval(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg=None):
+def safe_eval(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg=None, outer_diameter_mm=22.0):
     try:
-        return eval_all(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg)
+        return eval_all(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg, outer_diameter_mm)
     except Exception:
         return 1e10
 
@@ -102,7 +102,7 @@ def sequential_placement(cfg):
             f = inst.frequency_from_wavelength(wl)
             if f <= 0 or not math.isfinite(f): return 1e10
             return abs(1200.0 * math.log2(f / fundamental))
-        except: return 1e10
+        except Exception: return 1e10
 
     from scipy.optimize import minimize as sp_min
     r = sp_min(bore_obj, [L_est], method='L-BFGS-B',
@@ -146,7 +146,7 @@ def sequential_placement(cfg):
                 err = abs(1200.0 * math.log2(f / target)) if f > 0 else 1e10
                 if err < best_err:
                     best_err, best_pos = err, pos
-            except: pass
+            except Exception: pass
         hp.append(best_pos)
         hd.append(cfg["hole_diameter"])
         hl.append(cfg["hole_length"])
@@ -156,7 +156,7 @@ def sequential_placement(cfg):
     hd = [hd[j] for j in idx]
     hl = [hl[j] for j in idx]
 
-    rms = safe_eval(bore_radii, bore_length, hp, hd, hl, closed_top, targets, n_reg)
+    rms = safe_eval(bore_radii, bore_length, hp, hd, hl, closed_top, targets, n_reg, cfg["outer_diameter"])
     return rms, bore_length, bore_radii, hp, hd, hl
 
 
@@ -190,7 +190,7 @@ def refine_sequential(cfg, verbose=False, use_jax_bore=False, use_phase_cost=Tru
     hd_max = bore_r * 0.9
 
     def safe_eval_local(radii, L, hp, hd, hl):
-        return safe_eval(radii, L, hp, hd, hl, closed_top, targets)
+        return safe_eval(radii, L, hp, hd, hl, closed_top, targets, outer_diameter_mm=cfg["outer_diameter"])
 
     # DE global re-optimization for open-open instruments
     if not closed_top and n_h > 0:
