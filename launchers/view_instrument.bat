@@ -1,4 +1,4 @@
 @echo off
 cd /d "%~dp0.."
 python scripts\view_instrument.py %*
-pause
+REM No pause: avoid pop-ups.

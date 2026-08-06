@@ -28,15 +28,16 @@ for obj in bpy.data.objects:
         bpy.ops.object.shade_smooth()
 
 area = next(
-    (a for s in bpy.data.screens for a in s.areas if a.type == "VIEW_3D"),
+    (a for a in getattr(bpy.context.screen, "areas", []) if a.type == "VIEW_3D"),
     None,
 )
 if area:
-    with bpy.context.temp_override(area=area):
+    region = next((r for r in area.regions if r.type == "WINDOW"), None)
+    with bpy.context.temp_override(area=area, region=region):
         for sp in area.spaces:
-            sp.shading.type = "SOLID"
-            sp.shading.color_type = "MATERIAL"
+            if sp.type == "VIEW_3D":
+                sp.shading.type = "SOLID"
+                sp.shading.color_type = "MATERIAL"
         bpy.ops.view3d.view_selected()
-        bpy.ops.view3d.rotate(angle=0.5, orient_axis="Y")
 
 print("VIEW READY")

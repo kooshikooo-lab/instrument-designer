@@ -31,16 +31,23 @@ import os
 def _cut_single_hole(solid, diam, x, z, wall_thickness, hole_depth):
     """Cut one tone hole through the tube wall at (x, z).
 
-    The hole cylinder is horizontal (axis along +X), entering the tube from
-    the side, with its center at axial position ``z`` and side offset ``x``.
+    The hole cylinder is horizontal, entering the tube from the side given by
+    ``x`` (positive = +X side, negative = -X side), with its center at axial
+    position ``z``. The cylinder extends from the inner bore surface outward,
+    so both +X and -X holes actually pierce the wall. A small overlap (eps) on
+    both ends avoids tangential boolean intersections that create non-manifold
+    edges.
     """
     import cadquery as cq
+    sign = 1 if x >= 0 else -1
+    eps = 0.05
+    length = wall_thickness + hole_depth + 2 * eps
     cyl = (
         cq.Workplane("XY")
         .circle(diam / 2)
-        .extrude(wall_thickness + hole_depth)
-        .rotate((0, 0, 0), (0, 1, 0), 90)
-        .translate((x, 0, z))
+        .extrude(length)
+        .rotate((0, 0, 0), (0, 1, 0), 90 * sign)
+        .translate((x - sign * eps, 0, z))
     )
     return solid.cut(cyl)
 
@@ -100,6 +107,14 @@ def generate_instrument(
             .loft()
         )
         solid = outer.cut(bore)
+        if closed_top:
+            cap = (
+                cq.Workplane("XY")
+                .circle(small_outer / 2)
+                .extrude(wall_thickness)
+            )
+            cap = cap.translate((0, 0, -wall_thickness))
+            solid = solid.union(cap)
     else:
         outer_diam = bore_diameter + 2 * wall_thickness
         solid = (
