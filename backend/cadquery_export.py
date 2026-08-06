@@ -33,14 +33,20 @@ def _cut_single_hole(solid, diam, x, z, wall_thickness, hole_depth):
 
     The hole cylinder is horizontal (axis along +X), entering the tube from
     the side, with its center at axial position ``z`` and side offset ``x``.
+
+    The cutter is centered on ``x`` (it extends ``hole_length/2`` on both
+    sides), so holes on either the +X or −X wall (odd/even ``holes`` indices)
+    pierce the wall fully. Centering on the wall centerline rather than on the
+    bore surface also keeps large-diameter cutters from crossing the far wall.
     """
     import cadquery as cq
+    hole_length = wall_thickness + hole_depth
     cyl = (
         cq.Workplane("XY")
         .circle(diam / 2)
-        .extrude(wall_thickness + hole_depth)
+        .extrude(hole_length)
         .rotate((0, 0, 0), (0, 1, 0), 90)
-        .translate((x, 0, z))
+        .translate((x - hole_length / 2, 0, z))
     )
     return solid.cut(cyl)
 
