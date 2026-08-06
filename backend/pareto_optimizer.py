@@ -125,6 +125,7 @@ def _bore_smoothness(radii: np.ndarray) -> float:
 def _hole_radiation_consistency(
     hole_diameters: Sequence[float],
     bore_radius: float,
+    local_radii: Sequence[float] | None = None,
 ) -> float:
     """Standard deviation of per-hole radiation ratios.
 
@@ -132,12 +133,21 @@ def _hole_radiation_consistency(
     Lower standard deviation means more uniform radiation across all holes,
     which correlates with more consistent timbre between notes.
 
+    On a conical bore the radius at each hole location differs, so a single
+    nominal ``bore_radius`` makes the metric meaningless for conical
+    instruments.  Pass per-hole ``local_radii`` (one per hole diameter) to
+    normalise each hole by the bore radius at its own position; when omitted,
+    the nominal ``bore_radius`` is used for every hole (backward compatible).
+
     Parameters
     ----------
     hole_diameters : sequence of float
         Diameters of each tone hole (mm).
     bore_radius : float
-        Bore radius at the hole locations (mm).
+        Nominal bore radius (mm), used when *local_radii* is not provided.
+    local_radii : sequence of float or None, optional
+        Bore radius at each hole location (mm).  Must match the length of
+        *hole_diameters* when provided.
 
     Returns
     -------
@@ -146,6 +156,20 @@ def _hole_radiation_consistency(
     """
     if not hole_diameters or bore_radius <= 0:
         return 0.0
+    if local_radii is not None:
+        if len(local_radii) != len(hole_diameters):
+            raise ValueError(
+                "local_radii must match hole_diameters length "
+                f"({len(local_radii)} != {len(hole_diameters)})"
+            )
+        ratios = np.array([
+            (d / (2.0 * r)) ** 2
+            for d, r in zip(hole_diameters, local_radii)
+            if r > 0
+        ])
+        if not len(ratios):
+            return 0.0
+        return float(np.std(ratios))
     ratios = np.array([(d / (2.0 * bore_radius)) ** 2 for d in hole_diameters])
     return float(np.std(ratios))
 
@@ -156,6 +180,7 @@ def compute_timbre_cost(
     bore_radius: float,
     w_smooth: float = 1.0,
     w_consist: float = 0.5,
+    local_radii: Sequence[float] | None = None,
 ) -> float:
     """Bore-geometry timbre proxy (lower = better).
 
@@ -175,6 +200,9 @@ def compute_timbre_cost(
         Weight for the bore-smoothness term.  Default 1.0.
     w_consist : float, optional
         Weight for the hole-radiation-consistency term.  Default 0.5.
+    local_radii : sequence of float or None, optional
+        Bore radius at each hole location (mm).  When provided, radiation
+        consistency uses these instead of the nominal *bore_radius*.
 
     Returns
     -------
@@ -182,7 +210,7 @@ def compute_timbre_cost(
         Combined timbre cost (dimensionless, lower is better).
     """
     smooth = _bore_smoothness(radii)
-    consist = _hole_radiation_consistency(hole_diameters, bore_radius)
+    consist = _hole_radiation_consistency(hole_diameters, bore_radius, local_radii)
     return w_smooth * smooth + w_consist * consist
 
 
@@ -302,7 +330,11 @@ def evaluate_bi_objective(
     n_holes = len(hole_positions)
     fingerings = _build_fingerings(n_holes, closed_top)
     intonation = compute_intonation_cost(inst, fingerings, targets, n_register)
-    timbre = compute_timbre_cost(radii, hole_diameters, bore_radius)
+    # Normalise each hole's radiation by the bore radius at its own position
+    # (radii are bore radii at control points evenly spaced from 0 to L).
+    cp_positions = np.linspace(0.0, bore_length, len(radii))
+    local_radii = np.interp(hole_positions, cp_positions, np.asarray(radii)).tolist()
+    timbre = compute_timbre_cost(radii, hole_diameters, bore_radius, local_radii=local_radii)
     return intonation, timbre
 
 
@@ -374,20 +406,23 @@ def pareto_sweep(
     hd_min = bore_r * 0.4
     hd_max = bore_r * 0.9
 
-    # Pack baseline into a single design vector for re-optimization
+    # Pack baseline into a single design vector for re-optimization.
+    # bore_length is a design variable so the sweep can trade length against
+    # intonation/timbre (previously it was fixed at L_init).
     x_baseline = np.concatenate([
-        radii_init, np.array(hp_init), np.array(hd_init),
+        [L_init], radii_init, np.array(hp_init), np.array(hd_init),
     ])
 
     def combined_obj(x: np.ndarray, w_int: float) -> float:
         """Weighted sum: ``w_int * intonation + (1-w_int) * timbre``."""
-        radii = np.maximum(x[:n_cp], 0.1)
-        hp = sorted(x[n_cp:n_cp + n_h].tolist())
-        hd = x[n_cp + n_h:n_cp + 2 * n_h].tolist()
+        L = float(x[0])
+        radii = x[1:n_cp + 1]
+        hp = sorted(x[n_cp + 1:n_cp + 1 + n_h].tolist())
+        hd = x[n_cp + 1 + n_h:n_cp + 1 + 2 * n_h].tolist()
         hl = [cfg["hole_length"]] * n_h
 
         intonation, timbre = evaluate_bi_objective(
-            radii, L_init, hp, hd, hl, closed_top, targets, bore_r, od,
+            radii, L, hp, hd, hl, closed_top, targets, bore_r, od,
             n_register, loss_model,
         )
         if intonation >= 1e10 or timbre >= 1e10:
@@ -395,7 +430,8 @@ def pareto_sweep(
         return w_int * intonation + (1.0 - w_int) * timbre
 
     bounds = (
-        [(3.0, 15.0)] * n_cp
+        [(L_init * 0.8, L_init * 1.2)]
+        + [(3.0, 15.0)] * n_cp
         + [(30.0, L_init * 1.3)] * n_h
         + [(hd_min, hd_max)] * n_h
     )
@@ -413,16 +449,17 @@ def pareto_sweep(
         )
 
         x_opt = r.x
-        radii = np.maximum(x_opt[:n_cp], 0.1)
-        hp = sorted(x_opt[n_cp:n_cp + n_h].tolist())
-        hd = x_opt[n_cp + n_h:n_cp + 2 * n_h].tolist()
+        L_opt = float(x_opt[0])
+        radii = x_opt[1:n_cp + 1]
+        hp = sorted(x_opt[n_cp + 1:n_cp + 1 + n_h].tolist())
+        hd = x_opt[n_cp + 1 + n_h:n_cp + 1 + 2 * n_h].tolist()
         hl = [cfg["hole_length"]] * n_h
 
         intonation, timbre = evaluate_bi_objective(
-            radii, L_init, hp, hd, hl, closed_top, targets, bore_r, od,
+            radii, L_opt, hp, hd, hl, closed_top, targets, bore_r, od,
             n_register, loss_model,
         )
-        results.append((w_int, intonation, timbre, L_init))
+        results.append((w_int, intonation, timbre, L_opt))
 
     if verbose:
         print(f"\n  {'w_int':>6s}  {'Intonation':>12s}  {'Timbre':>12s}  {'Bore L':>8s}")
@@ -500,6 +537,8 @@ def run_pareto(
 
     wl_min = c / max(targets)
     L_est = wl_min / 2.0 * 1.2
+    L_lo = L_est * 0.8
+    L_hi = L_est * 1.3
 
     hd_min = bore_r * 0.4
     hd_max = bore_r * 0.9
@@ -508,12 +547,16 @@ def run_pareto(
         """Two-objective problem: (intonation, timbre)."""
 
         def __init__(self) -> None:
-            n_vars = n_cp + n_h + n_h
+            # Design vector: [bore_length, radii (n_cp), hole_positions (n_h),
+            # hole_diameters (n_h)].  bore_length is a variable so NSGA-II can
+            # trade length against the objectives instead of fixing a rough
+            # L_est estimate.
+            n_vars = 1 + n_cp + n_h + n_h
             xl = np.array(
-                [3.0] * n_cp + [30.0] * n_h + [hd_min] * n_h
+                [L_lo] + [3.0] * n_cp + [30.0] * n_h + [hd_min] * n_h
             )
             xu = np.array(
-                [15.0] * n_cp + [L_est * 1.3] * n_h + [hd_max] * n_h
+                [L_hi] + [15.0] * n_cp + [L_hi] * n_h + [hd_max] * n_h
             )
             super().__init__(n_var=n_vars, n_obj=2, xl=xl, xu=xu)
 
@@ -521,13 +564,14 @@ def run_pareto(
             F = np.full((X.shape[0], 2), 1e10)
             for i in range(X.shape[0]):
                 x = X[i]
-                radii = np.maximum(x[:n_cp], 0.1)
-                hp = sorted(x[n_cp:n_cp + n_h].tolist())
-                hd = x[n_cp + n_h:n_cp + 2 * n_h].tolist()
+                L = float(x[0])
+                radii = x[1:n_cp + 1]
+                hp = sorted(x[n_cp + 1:n_cp + 1 + n_h].tolist())
+                hd = x[n_cp + 1 + n_h:n_cp + 1 + 2 * n_h].tolist()
                 hl = [cfg["hole_length"]] * n_h
 
                 intonation, timbre = evaluate_bi_objective(
-                    radii, L_est, hp, hd, hl, closed_top, targets,
+                    radii, L, hp, hd, hl, closed_top, targets,
                     bore_r, od, n_register, loss_model,
                 )
                 if intonation < 1e10 and timbre < 1e10:
