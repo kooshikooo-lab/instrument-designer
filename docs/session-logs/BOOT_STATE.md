@@ -85,6 +85,10 @@
   - `tests/test_instrument_config_schema.py` added (5 tests passing).
   - `jsonschema` added to `dev` extras.
   - Draft schema posted to Discussion #23 for laptop review.
+- **Design-output schema** (`f8fad63`, pushed):
+  - `schemas/design_output.schema.json` for optimizer-generated JSON artifacts.
+  - `scripts/validate_json_schema.py` generic validator (schema + file/dir).
+  - `tests/test_design_output_schema.py` added (4 tests passing).
 - **Path-rewrite cleanup** (in `a1807bd`): all 15 active scripts/tests use
   repo-relative resolution (`os.path.dirname(os.path.dirname(os.path.abspath(__file__)))`
   / `Split-Path $PSScriptRoot -Parent`), no hardcoded paths.
