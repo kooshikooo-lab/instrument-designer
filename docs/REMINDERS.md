@@ -18,6 +18,8 @@ thread starts, moves, or resolves.
 - [x] Governance guard enabled on this clone (`scripts/install_hooks.ps1`).
 - [x] Pre-commit hooks active: file placement, regenerable artifacts, UTF-16,
        bare excepts, hardcoded IPs, module size, **config schema**, **import consistency**.
+- [x] Tailscale peer monitor running for real-time machine coordination
+       (`scripts/tailscale_monitor.py`, `launchers/start_tailscale_monitor.bat`).
 - [ ] Commit touching `docs/CONSTRAINTS_AND_PREFERENCES.md` carries
        `GOVERNANCE-UPDATE` in the message (hook + CI enforce).
 - [ ] Provisional / exploratory work tagged `AUDIT:` in the commit message.
@@ -42,6 +44,7 @@ thread starts, moves, or resolves.
 | 4 | build123d spike merge `8ddfc7a`+`e8d6254`+`7bc624e` → `opencode/main/laptop` | laptop | laptop merge | Approved by desktop (17906945); awaiting laptop merge | 2026-08-05 |
 | 5 | `cadquery-ocp` pin in `cad` extra | desktop | desktop commit | Desktop added pin (avoid `cadquery-ocp-novtk` OCP namespace clobber) | 2026-08-05 |
 | 6 | Config schema unification | desktop | laptop review of multi-register decision | Schema approved; 3 configs migrated to canonical; `baroque_clarinet.json` kept as legacy until multi-register decision | 2026-08-06 |
+| 8 | Tailscale peer monitor | desktop | laptop start monitor | New `scripts/tailscale_monitor.py` + launcher + docs committed; desktop ready; laptop needs to start `python scripts/tailscale_monitor.py monitor` with `MACHINE_NAME=laptop TAILSCALE_PEER_IP=100.69.113.41` | 2026-08-06 |
 
 ## Nudge rule
 
