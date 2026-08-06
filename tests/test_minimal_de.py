@@ -103,7 +103,7 @@ print("Diameters: d_min=%.1f d_max=%.1f" % (grad_d[0], grad_d[1]))
 
 # Full eval with both registers
 all_pos = sorted(free_pos + [80.0])
-from tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
+from backend.tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
 d_min, d_max = grad_d
 n_free = 12
 dias = [d_min + (d_max - d_min) * i / (n_free - 1) for i in range(n_free)]

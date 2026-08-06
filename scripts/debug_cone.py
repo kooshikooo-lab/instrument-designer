@@ -2,7 +2,7 @@
 import sys, math, numpy as np
 from scipy.optimize import minimize as sp_min
 sys.path.insert(0, 'backend')
-from tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
+from backend.tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
 from metrics import rms_cents, scale_rms_cents, median_offset_cents
 
 c = SPEED_OF_SOUND

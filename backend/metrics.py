@@ -16,7 +16,7 @@ All functions accept raw cents deviations relative to the target frequencies.
 from __future__ import annotations
 
 import math
-from typing import Sequence
+from typing import Optional, Sequence, Tuple, Union
 
 import numpy as np
 
@@ -84,3 +84,79 @@ def cents_from_frequencies(actual, target) -> list:
         else:
             out.append(1e10)
     return out
+
+
+# ---------------------------------------------------------------------------
+# Intonation pass tiers
+# ---------------------------------------------------------------------------
+# Literature-grounded cents thresholds; rationale and sources in
+# docs/PHYSICS_PRINCIPLES.md ("Intonation pass standards"). The RMS tier is
+# the primary accuracy gate; the per-note max gate catches register-break
+# outliers that RMS alone masks (e.g. a bad register hole buried in an
+# otherwise even scale).
+#
+#   sane            150c RMS  screening only -- keeps an optimizer/test from
+#                            failing on the uniform-10mm baseline (~77c) or a
+#                            numerically-exploded run (tuned floor is ~6c).
+#   acceptable      10c RMS, 25c max  -- design acceptance for conventional
+#                            instruments (Selmer R&D accepts 10-20c peaks;
+#                            woodwind practice treats up to ~+/-20c as normal).
+#   professional     5c RMS, 15c max  -- flagship quality (numerically tuned
+#                            clarinet: most resonances < 5c, mean ~2c).
+#   unconventional  20c RMS, 40c max  -- looser bar for novel/folded shapes
+#                            (metamaterial caps, folded low-clarinet register
+#                            holes); still inside the 20-50c band where notes
+#                            start to sound out of tune.
+#
+#   FIXTURE_TOLERANCE_CENTS       5c mean   single-resonance physics fixtures
+#                                            (our 180mm pipe: 2.5c vs theory).
+#   CROSS_SOFTWARE_MEAN_ABS_CENTS 10c mean  TMM vs chalumier agreement; also
+#                                            the practical simulation ceiling
+#                                            (recorder modeling: all < 15c).
+SANE_RMS_CENTS = 150.0
+ACCEPTABLE_RMS_CENTS = 10.0
+ACCEPTABLE_MAX_ABS_CENTS = 25.0
+PROFESSIONAL_RMS_CENTS = 5.0
+PROFESSIONAL_MAX_ABS_CENTS = 15.0
+UNCONVENTIONAL_RMS_CENTS = 20.0
+UNCONVENTIONAL_MAX_ABS_CENTS = 40.0
+FIXTURE_TOLERANCE_CENTS = 5.0
+CROSS_SOFTWARE_MEAN_ABS_CENTS = 10.0
+
+INTONATION_TIERS: dict[str, Tuple[float, Optional[float]]] = {
+    "sane": (SANE_RMS_CENTS, None),
+    "acceptable": (ACCEPTABLE_RMS_CENTS, ACCEPTABLE_MAX_ABS_CENTS),
+    "professional": (PROFESSIONAL_RMS_CENTS, PROFESSIONAL_MAX_ABS_CENTS),
+    "unconventional": (UNCONVENTIONAL_RMS_CENTS, UNCONVENTIONAL_MAX_ABS_CENTS),
+}
+
+
+def intonation_passes(
+    rms: Union[float, None],
+    max_abs: Optional[float] = None,
+    tier: str = "acceptable",
+) -> bool:
+    """Whether intonation metrics meet a pass tier (see ``INTONATION_TIERS``).
+
+    Args:
+        rms: absolute RMS cents error (primary gate).
+        max_abs: optional per-note max |cents error|; if the tier defines a
+            max limit and ``max_abs`` is supplied it must also pass.
+        tier: one of ``INTONATION_TIERS`` keys.
+
+    ``None`` / non-finite values never pass.
+    """
+    if tier not in INTONATION_TIERS:
+        raise KeyError(f"unknown intonation tier: {tier!r}")
+    rms_lim, max_lim = INTONATION_TIERS[tier]
+    try:
+        if not (math.isfinite(float(rms)) and float(rms) <= rms_lim):
+            return False
+    except (TypeError, ValueError):
+        return False
+    if max_lim is None or max_abs is None:
+        return True
+    try:
+        return math.isfinite(float(max_abs)) and float(max_abs) <= max_lim
+    except (TypeError, ValueError):
+        return False

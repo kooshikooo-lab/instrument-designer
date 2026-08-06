@@ -114,6 +114,17 @@ def test_meta_branch_default_noop():
     assert inst2.actions == chain
 
 
+def test_meta_disables_numba_fast_path():
+    """Metamaterial instruments must stay on the Python walk: the compiled
+    numba loop only implements pipe/junction2/hole actions, so any instrument
+    whose chain contains meta actions must never build the fast-path arrays."""
+    inst = _plain_flute()
+    assert inst._action_arrays is not None, "plain instrument should use the fast path"
+    inst.meta_slots = [_sample_resonator()]
+    inst._prepare_phase()
+    assert inst._action_arrays is None, "meta_branch must disable the numba fast path"
+
+
 def test_meta_branch_changes_resonances():
     """
     A resonator tuned near a bore resonance must perturb it (stopband effect),

@@ -16,7 +16,7 @@ except ModuleNotFoundError:
 
 sys.path.insert(0, 'backend')
 from optimizer_global import GlobalFingeringOptimizer
-from tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
+from backend.tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
 
 FIXED_REGISTER = [(80.0, 2.5, 3.0)]
 
@@ -125,7 +125,7 @@ free_pos = sorted(result['free_hole_positions'])
 all_pos = sorted(free_pos + [80.0])
 grad_diam = result.get('graduated_diameters', [11.0]*12)
 
-from tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
+from backend.tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
 inst = tmm_instrument_from_radii(
     np.full(10, 12.5), 1211.3, all_pos, 
     [d/2.0 for d in grad_diam] + [2.5/2.0],

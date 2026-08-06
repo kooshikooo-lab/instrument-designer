@@ -2,7 +2,7 @@
 import sys, os, math
 import numpy as np
 sys.path.insert(0, os.path.dirname(__file__))
-from tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
+from backend.tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
 
 c = SPEED_OF_SOUND
 bore_length = 331.0

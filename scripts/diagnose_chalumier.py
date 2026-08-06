@@ -6,7 +6,7 @@ import sys, os, json, re, math
 import numpy as np
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'backend'))
-from tmm_acoustics import (
+from backend.tmm_acoustics import (
     TMMInstrument, SPEED_OF_SOUND, Profile,
     end_flange_length_correction, circle_area,
     pipe_reply_phase, junction2_reply_phase, junction3_reply_phase,
@@ -214,7 +214,7 @@ def test_clarinet():
     print(f"\n  KEY FINDING: For clarinet (reed instrument), chalumier's patchInstrument()")
     print(f"  prepends a virtual reed tube of length bore*reedVirtualLength = {bore_diameter}*{reed_virtual_length} = {bore_diameter*reed_virtual_length:.1f}mm")
     print(f"  This extends the bore from {true_length:.1f}mm to {true_length + bore_diameter*reed_virtual_length:.1f}mm")
-    print(f"  Our TMM model does NOT include this reed tube — this explains the huge error")
+    print(f"  Our TMM model does NOT include this reed tube â€” this explains the huge error")
 
 if __name__ == '__main__':
     test_whistle()

@@ -38,7 +38,7 @@ import math
 import numpy as np
 from typing import List, Tuple, Optional, Dict
 
-from tmm_acoustics import (
+from backend.tmm_acoustics import (
     TMMInstrument, tmm_instrument_from_radii, SPEED_OF_SOUND, Hole,
 )
 

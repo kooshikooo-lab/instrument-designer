@@ -1,13 +1,13 @@
 """Try fundamentally different chart designs for 13-note chromatic.
 
 The problem: current charts have too much pattern overlap, causing hole collapse.
-New approach: maximize acoustic diversity — each note gets a unique hole pattern.
+New approach: maximize acoustic diversity â€” each note gets a unique hole pattern.
 """
 import sys, time
 import numpy as np
 from scipy.optimize import differential_evolution, minimize
 sys.path.insert(0, '.')
-from tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
+from backend.tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
 
 targets = [73.416, 77.782, 82.407, 87.307, 92.499, 97.999,
            103.826, 110.000, 116.541, 123.471, 130.813, 138.591, 146.832]

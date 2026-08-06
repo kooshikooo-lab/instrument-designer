@@ -1,4 +1,4 @@
-"""Full optimizer convergence test — starts from non-optimal bore."""
+"""Full optimizer convergence test â€” starts from non-optimal bore."""
 
 # QUARANTINED 2026-07-31: exercises TMMBoreOptimizerJAX, deleted from
 # backend/archived_optimizers (docs/ARCHIVED_OPTIMIZERS.md). Superseded by
@@ -23,11 +23,11 @@ import numpy as np
 import jax
 import jax.numpy as jnp
 import time
-from tmm_acoustics import TMMInstrument, tmm_instrument_from_radii, SPEED_OF_SOUND, end_flange_length_correction
+from backend.tmm_acoustics import TMMInstrument, tmm_instrument_from_radii, SPEED_OF_SOUND, end_flange_length_correction
 from tmm_acoustics_jax import build_action_chain_v2, make_rms_cost, MAX_HOLES
 
 print("=" * 70)
-print("FULL OPTIMIZER CONVERGENCE TEST — Non-optimal start")
+print("FULL OPTIMIZER CONVERGENCE TEST â€” Non-optimal start")
 print("=" * 70)
 
 bore_length = 500.0

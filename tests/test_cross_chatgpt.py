@@ -16,7 +16,7 @@ except ModuleNotFoundError:
 
 sys.path.insert(0, 'backend')
 from optimizer_global import GlobalFingeringOptimizer
-from tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
+from backend.tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
 
 FIXED_REGISTER = [(80.0, 2.5, 3.0)]
 

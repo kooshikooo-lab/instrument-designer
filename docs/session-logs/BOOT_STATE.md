@@ -9,6 +9,14 @@
 
 ## Goal
 
+- **Working branch: `opencode/main/desktop`** (naming convention
+  `opencode/<app>/<machine>`, user directive 2026-08-04; renamed from
+  `opencode-instrument-designer`). Based on `origin/main` (`d663a43`); pushed
+  to origin; PR **#62** open against `main` (import repair + numba restore +
+  AI/ML-family port + Step-3 reconciliation + intonation pass standards + top-k
+  polish family; 13 commits, MERGEABLE). `opencode-instrument-designer` remains
+  as the PR #62 head mirror until merge (GitHub CLI cannot retarget PR heads).
+  Desktop stays on `opencode/main/desktop`.
 - Consolidate the acoustic-metamaterials research (Claude + Kimi exports + web
   research) into `docs/RESEARCH_acoustic_metamaterials.md` (reference doc) and the
   internal wiki, restructured into **one page per major topic** with the
@@ -22,7 +30,7 @@
   reproducing documented outputs exactly.
 - Standing items from prior sessions (not this session's work): `backend/spectral`
   design awaits user approval; laptop Phase 2G surrogate work lives on
-  `kalles-main-branch`.
+  `opencode/main/laptop` (renamed from `kalles-main-branch`, 2026-08-04).
 - Standing directive: tools must be **integrated into a pipeline**, never just
   installed and forgotten (tool registry guard is live).
 - User's fallback instruction: if no task is assigned, do something **safe** (no
@@ -44,12 +52,91 @@
 - Tool adoption rule: install + declare (`docs/TOOLS.md`) + import + whitelisted
   test; guard = `tests/test_tool_registry.py` + `scripts/toolcheck.py`.
 - Laptop's `team_chat.py` protocol fixes (cursor, watch-stale-save, sync-launch)
-  are on `kalles-main-branch`, **not yet on `main`** — landing them is the
+  are on `opencode/main/laptop`, **not yet on `main`** — landing them is the
   laptop's call, do not merge unilaterally.
 
 ## Progress
 
 ### Done
+- **PR #62 = 11 commits, MERGEABLE** (2026-08-04): `56d0ec9` (import repair) +
+  `0b6e9ad` (numba test guard) + `9e58f39` (BOOT_STATE) + `da8e8fc` (numba
+  wiring restore) + `6870fde` (ML-surrogate + AI-family comparison port) +
+  `6cbd47c` (PR report docs) + `2f275fe` (BOOT_STATE step-3) + `6a69c0d`
+  (Step-3 reconciliation scripts) + `ebfeaf1` (scrap inferior ML-optimizer
+  duplicates per compliance audit) + `9d98643` (PR docs update) + `1fca1b2`
+  (intonation pass tiers). Full PR report: `docs/PR_REPORT.md` (all 4 open
+  PRs #33/#58/#61/#62). Audit: low + medium tiers PASS, `pytest tests/`
+  **128 passed** (63.4s; +`tests/test_metrics.py` 14 tests), comparison
+  6 passed (44.7s; Bayesian 64.9c / neural 34.7c / RL 26.2c / gradient-free
+  9.6c RMS), `scripts/toolcheck.py` PASS.
+- **Branch renames + naming convention** (2026-08-04): `opencode/<app>/<machine>`
+  per-machine integration branches — desktop `opencode/main/desktop`, laptop
+  `opencode/main/laptop` (was `kalles-main-branch` = `3ce2fe9`, renamed by
+  laptop); side branches `opencode/<idea>/<machine>` (test ideas, merge or
+  scrap). Desktop's old `opencode-instrument-designer` ref stays as the PR #62
+  head mirror until merge (GitHub CLI cannot retarget PR heads); delete after
+  merge. Both renames verified on origin; no open PR was lost (PR #62 reopened
+  after the ref swap).
+- **Topk polish family consolidated** (commit `25e215f`): adopted the laptop's
+  generic DE + top-k L-BFGS-B polish engine `backend/optimization/topk_polish.py`
+  (file copy of its AUDIT `27ce1cb`) as family `topk_polish` in
+  `tests/comparison/ai_methods_benchmark.py` (`run_topk_polish`; retry scales
+  `maxiter`); `__init__.py` export + laptop's `tests/test_topk_polish.py` (3
+  tests) whitelisted; `tests/comparison/tune_topk_polish.py` seed-robustness
+  script. Comparison suite **7 passed** — Topk Polish **5.98c / 11,076 evals /
+  17.3s** vs Gradient Free 9.64c; 5-seed robustness **5.918–6.045c** (mean
+  5.964c) vs plain 8.125–10.441c (mean 9.698c); `pytest tests/` **131 passed**
+  (111.3s).
+- **Reminders mechanism** (2026-08-04): new `docs/REMINDERS.md` (living file
+  both machines edit) — standing compliance checklist + pending cross-machine
+  threads + nudge rule; wired into AGENTS.md Step 0 (read after sync; nudge
+  #23 on stale threads) + branch-naming line in AGENTS.md Environment.
+- **Session close** (2026-08-04): commit `82bfeaa` (docs: reminders +
+  PR_REPORT/TEST_MATRIX/BOOT_STATE updates) pushed to `opencode/main/desktop`
+  + `opencode-instrument-designer` mirror — PR #62 = **14 commits,
+  +3,623/−93, MERGEABLE**. Integration table + 5-seed robustness posted to
+  #23 (comment 17891204); laptop verified the shared engine parity on its side
+  (5.902c / 28,001 evals @ maxiter=250) and has nothing pending. Topk thread
+  #1 RESOLVED.
+- **Intonation pass standards** (commit `1fca1b2`): canonical cents tiers in
+  `backend/metrics.py` (`INTONATION_TIERS`: sane 150c RMS; acceptable 10c/25c;
+  professional 5c/15c; unconventional 20c/40c; fixture 5c; cross-software 10c)
+  + two-stage acceptance `backend/verification.py` `verify_with_retries`
+  (screen at budget 1.0, doubled-budget retry before FAIL). Wired into the
+  AI/ML comparison suite, `backend/benchmark_unconventional_shapes.py`
+  (unconventional tier + intonation gate), `scripts/v2_validation_runner.py`,
+  `scripts/benchmark_v1_inria.py`. Rationale + sources:
+  `docs/PHYSICS_PRINCIPLES.md` "Intonation pass standards"; `tests/test_metrics.py`
+  (14 tests).
+- **Numba wiring restored** (commit `da8e8fc`): `7cae468` dropped it from
+  `32d4c9f`; re-applied in `_prepare_phase` (precompute moved out of `__init__`
+  so post-construction meta wiring is caught), gated on `_NUMBA_ENABLED` +
+  `loss_model is None` + no `pipe_meta`/`meta_branch`; int32 mask fast path;
+  6.66x, parity 0.0, `TMM_USE_NUMBA=0` verified; new
+  `test_meta_disables_numba_fast_path`. 79 TMM+metamaterial tests pass.
+- **AI-family comparison port** (commit `6870fde`): desktop's uncommitted pile
+  now versioned on this branch — `tests/comparison/*` (5 files:
+  `ai_methods_benchmark.py`, `ai_methods_dask.py`, `test_ai_methods_comparison.py`
+  + pre-existing byte-identical `comparison_framework.py`),
+  `backend/experiments/{bore_builder,benchmark_and_optimize}.py`;
+  `pyproject.toml` whitelist + `run_all_tests.py`/`TEST_MATRIX.md` `comparison`
+  medium tier. **Scrapped in `ebfeaf1`** (compliance audit, user directive):
+  `backend/ml_surrogate_optimizer.py` + `backend/ml_optimizer_splitted.py` were
+  an inferior duplicate of the canonical `two_phase_optimizer.py` (bare
+  `except:`, hardcoded `closed_top`/`n_bore_ctrl`; "splitted" was imported by
+  nothing); their test file went too; `jax_resonator_sketch.py` (untested dead
+  code) preserved in `docs/JAX_RESONATOR_SKETCH_IDEA.md`. Default `pytest tests/`
+  back to **114 passed** (matches laptop's canonical baseline).
+- **opencode-instrument-designer branch** (2026-08-04): pushed `d663a43` +
+  `56d0ec9` (fix: repair broken `tmm_acoustics` imports across 45 files / 50 files)
+  + `0b6e9ad` (fix: numba parity test skip-guard). PR **#62** → `main`. Audit:
+  low + medium test tiers PASS, TMM + metamaterial suites 78 passed / 1 skipped,
+  whole tree compiles, governance hooks active. Posted to #23
+  (discussioncomment-17888679).
+- **Pre-existing test failure noted**: `7cae468` (metamaterial merge) overwrote
+  `backend/tmm_acoustics.py` and **dropped the numba wiring** from `32d4c9f`
+  (`_NUMBA_ENABLED`/`TMM_USE_NUMBA`/`_action_arrays` gone). Parity test now
+  skips; **restore the wiring is a tracked follow-up** (tmm_numba.py is intact).
 - **Laptop confirmation on #23** (2026-08-03T01:41:04Z): verified desktop's
   `593e149` already contains the numba fix; laptop's holding branch
   `fix/tmm-medium-numba` obsolete and dropped; **114 passed** on laptop too;
@@ -114,7 +201,26 @@
   imported, 0 phantom).
 
 ### In Progress
-- None — this session's work is complete and pushed.
+- **Compliance audit (user directive 2026-08-04 — audit before porting; scrap
+  inferior solvers).** Done: `scripts/toolcheck.py` PASS; all 11 ported
+  ML/comparison/script files ≤ 442 lines (Law 8); scrapped
+  `backend/ml_surrogate_optimizer.py` + `backend/ml_optimizer_splitted.py` +
+  `tests/comparison/test_ml_surrogate_optimizer.py` (inferior duplicate of the
+  canonical `two_phase_optimizer.py`; "splitted" was imported by nothing) and
+  `backend/experiments/jax_resonator_sketch.py` (untested dead code; idea saved
+  to `docs/JAX_RESONATOR_SKETCH_IDEA.md`) in commit `ebfeaf1`. **Still to
+  audit**: `backend/experiments/{bore_builder,benchmark_and_optimize}.py` and
+  the remaining ~5 genuinely-new desktop candidates before any further port.
+- Step 3 (desktop reconciliation) **focused port done** this session:
+  ported + cleaned `scripts/v2_validation_runner.py` and
+  `scripts/benchmark_v1_inria.py` (moved from `backend/` to `scripts/` per
+  CODING_STANDARDS); dropped `external_solvers.py` (unused on desktop, duplicates
+  `backend/solvers/openwind_solver.py`/`impedance_solver.py`); skipped
+  `routes/*` package + `shared_state.py` (mutually-exclusive server architecture),
+  `UnconventionalBoreDesigner.tsx` (imports api.ts symbols absent here),
+  `.gitmodules`, `stl_library/*.lnk`, `validation_results/*`, `output-*`,
+  `archived_optimizers` (deleted per docs/ARCHIVED_OPTIMIZERS.md). Full
+  72-file categorization: `docs/PR_REPORT.md` §"Step 3".
 
 ### Blocked
 - Standing (not this session): `backend/spectral` implementation awaits user
@@ -127,6 +233,25 @@
   `origin/main`, two commits), **not** a merge of the copilot branches; the
   pure-Python path stays the authoritative fallback (Law 1); laptop confirmed the
   pure-Python refactors were ~+15–20% slower and agreed not to merge them.
+- Intonation pass criteria: canonical tiers in `backend/metrics.py` +
+  `verify_with_retries` two-stage acceptance (screen → doubled-budget retry →
+  FAIL) so a short noisy run never scraps a design; unconventional shapes get a
+  looser 20¢ RMS / 40¢ max tier. Literature + rationale in
+  `docs/PHYSICS_PRINCIPLES.md` "Intonation pass standards".
+- Branch naming `opencode/<app>/<machine>` (per-machine integration branches
+  `opencode/main/desktop` / `opencode/main/laptop`; experiments on
+  `opencode/<idea>/<machine>`, merge or scrap; keep `main` divergence minimal) —
+  user directive 2026-08-04. PR heads GitHub CLI cannot retarget stay on a
+  mirror ref (`opencode-instrument-designer`) until merge.
+- Topk polish: adopt the laptop's shared `backend/optimization/topk_polish.py`
+  engine as the single implementation (Law-3; desktop's inline duplicate
+  removed). Family default maxiter=60 (≈5.98c / 11k evals) ≈ maxiter=250
+  (≈5.92c / 25k) on the contract.
+- Reminders: `docs/REMINDERS.md` is the living compliance + pending-thread file
+  both machines read at session start; stale threads get a #23 nudge.
+- Numba wiring: already restored on PR #62 (`da8e8fc` + guarded fallback);
+  `main` gets it via the PR #62 merge — laptop keeps the guarded skip, no
+  double-fix.
 - Wiki restructure: **one page per major topic** (hub + Acoustics/Optimization/
   Measurement/Perception/Resources/Metamaterials), user-selected over finer or
   coarser grouping; metamaterials page by instrument category with per-instrument
@@ -145,14 +270,21 @@
 
 ## Next Steps
 
-1. Standing: present `backend/spectral` design (`docs/DESIGN_spectral.md`) for
+1. **Stay on `opencode/main/desktop`**. PR #62 (13 commits) is MERGEABLE and
+   needs no external approval per user (properly audited + governance docs +
+   compliance). Merge when ready; after merge delete the
+   `opencode-instrument-designer` head mirror.
+2. **Step 3 reconciliation**: port desktop-only files (72 per audit) — CadQuery
+   STL, Dask, routes split, STL library, archived optimizers, `.gitmodules`,
+   external solvers, validation results — at file level onto this branch.
+3. Standing: present `backend/spectral` design (`docs/DESIGN_spectral.md`) for
    user approval when the user is available.
-2. Monitor `kalles-main-branch` for laptop's `team_chat.py` fixes landing on
+4. Monitor `opencode/main/laptop` for laptop's `team_chat.py` fixes landing on
    `main` (laptop's call) and for Phase 2G updates; laptop may want the L2-vs-L1
    parity sweep now that `main` has the ported experiment scripts.
-3. Optional user-verification: folded/low-clarinet notes wording in
+5. Optional user-verification: folded/low-clarinet notes wording in
    `docs/RESEARCH_acoustic_metamaterials.md` §7 / wiki §5.8.
-4. **ML optimization integration** (future): add ML-based optimization methods
+6. **ML optimization integration** (future): add ML-based optimization methods
    (e.g., Bayesian optimization, neural surrogates, gradient-free methods) to
    complement the existing two-phase optimizer (`backend/two_phase_optimizer.py`).
    Timing TBD — consider whether to optimize the physics pipeline further first
@@ -160,11 +292,14 @@
 
 ## Critical Context
 
-- **`main` HEAD = `0c794fd`** (BOOT_STATE update) over `5d5c5a0` (Appendix B)
-  over `401e889` (BOOT_STATE) over `cf7e625` (Claude artifact ports + doc/wiki +
-  toolcheck fix) over `91b0df8` (string port) over `80a4435`/`e8780d7` (BOOT_STATE)
-  over `b42b5bf` (wiki cross-link fixes) over `32d4c9f` (numba wiring) over
-  `5c7529f` (wiki restructure); `origin/main` = `0c794fd`.
+- **`origin/main` = `d663a43`** (this lineage's main tip; BOOT_STATE — laptop
+  register-suppression + soprano demos). `opencode/main/desktop` = `25e215f`
+  (`d663a43` + import fixes + numba restore + AI-family port + Step-3 +
+  compliance scrap + intonation pass tiers + topk polish family); PR #62 head
+  mirrors to `opencode-instrument-designer` (delete after merge). Laptop
+  `opencode/main/laptop` = `3ce2fe9` (was `kalles-main-branch`). Note: this
+  lineage is NOT the desktop's main lineage (desktop `main` = `ae38527`;
+  kalles-main-branch merged to `187b770`).
 - Env: Windows, Python 3.14.6, numpy 2.4.6, numba 0.66.0, pytest 9.1.1, dask
   2026.7.1, jax 0.11.0; **conda NOT on PATH** — use system Python +
   `PYTHONPATH=<repo root>`; `tmmbench` env unavailable on desktop.
@@ -220,7 +355,8 @@
 - Repo canonical constants unchanged: `SPEED_OF_SOUND = 346100.0` mm/s in
   `backend/tmm_acoustics.py` (Law 7 / chalumier parity).
 - Git identity `Admin <kooshikooo@gmail.com>`; `gh` authed as `kooshikooo-lab`.
-- Laptop identity `big-pickle`; desktop `TEAM_MACHINE=desktop`.
+- Desktop `TEAM_MACHINE=desktop`; laptop `TEAM_MACHINE=laptop` (Copilot Pro
+  agents on the desktop are paused until 2026-09-01 — no usage data).
 
 ## Relevant Files
 
@@ -228,6 +364,17 @@
   lossless-only `_action_arrays`, int32-mask fast path in `resonance_phase`).
 - `backend/tmm_numba.py` — **new on `main`** — `np.*` inside `@njit`, no
   `import math`, no circular `Hole` import.
+- `backend/metrics.py`, `backend/verification.py` — canonical intonation tiers
+  (`INTONATION_TIERS`, `intonation_passes`) + two-stage retry acceptance
+  (`verify_with_retries`); `tests/test_metrics.py` (14 tests);
+  `docs/PHYSICS_PRINCIPLES.md` "Intonation pass standards" (tier table +
+  sources).
+- `backend/optimization/topk_polish.py` — shared DE + top-k L-BFGS-B polish
+  engine (from laptop, AUDIT `27ce1cb`); `tests/test_topk_polish.py` (3 tests);
+  `tests/comparison/ai_methods_benchmark.py` `run_topk_polish` family;
+  `tests/comparison/tune_topk_polish.py` seed-robustness study.
+- `docs/REMINDERS.md` — living compliance checklist + pending cross-machine
+  threads + nudge rule (read at session start after sync).
 - `pyproject.toml` / `docs/TOOLS.md` — `perf = ["numba>=0.60"]` extra + declaration.
 - `tests/test_tmm.py` — `test_numba_resonance_phase_matches_python()` parity test.
 - `docs/RESEARCH_acoustic_metamaterials.md` — Claude + Kimi + web research

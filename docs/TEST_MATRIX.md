@@ -37,6 +37,10 @@ Scheduled cadence (Task Scheduler): **daily 02:00 low tier**, **weekly Sunday 03
 - **Smoke (optional, slow):** `tests/test_two_phase_quick.py` (known slow — capped timeout).
 - **Tier:** medium · **Pass:** phase-2 tests pass; quick smoke completes or times out cleanly.
 
+### metrics — canonical tuning-error metrics + intonation tiers
+- **Tests:** `tests/test_metrics.py` (14 tests) — `compute_metrics`/`rms_cents`/`cents_from_frequencies`, tier ordering, `intonation_passes` boundaries, and the screen-then-extended-budget acceptance policy (`verify_with_retries`).
+- **Tier:** low · **Pass:** all metric/tier tests pass.
+
 ### openwind — OpenWind FEM vs TMM validation
 - **Tests:** `tests/test_openwind_solver.py` (3 tests) — open-pipe register+1 convention, reed-pipe agreement, register vent.
 - **Tier:** medium · **Pass:** all agreement checks within tolerance.
@@ -62,8 +66,14 @@ Scheduled cadence (Task Scheduler): **daily 02:00 low tier**, **weekly Sunday 03
 - **Smoke:** import + tiny evaluation.
 - **Tier:** low · **Pass:** import OK, eval completes.
 
+### comparison — AI/ML optimization families
+- **Medium (on-demand):** `pytest tests/comparison/test_ai_methods_comparison.py -m comparison -s` (head-to-head: Bayesian, neural surrogate, RL, gradient-free, top-k polish).
+- **Tier:** medium · **Pass:** every family meets the canonical `sane` intonation tier (150¢, `backend.metrics`); a failing screen is retried once with a doubled budget (`backend.verification.verify_with_retries`) before FAIL; report table prints.
+- **Status 2026-08-04:** 7 passed — Topk Polish 5.98¢ RMS (11,076 evals) vs Gradient Free 9.64¢; 5-seed robustness 5.92–6.05¢ (mean 5.96¢) vs plain 8.13–10.44¢ (mean 9.70¢).
+
 ### unconventional — bore-shape benchmark
 - **Heavy (on-demand):** `python backend/benchmark_unconventional_shapes.py` (serial) or `--dask` (remote cluster).
+- **Pass:** pipeline + all optimizations meet the `unconventional` tier (20¢ RMS, canonical in `backend.metrics`); optimization screens get a doubled-budget retry before FAIL.
 - **Status 2026-08-01:** ALL PASSED — 10/10 pipeline, 7/7 optimizations (0.0–15.8¢ RMS), serial + distributed (2 workers).
 
 ### pareto / full instrument suite — heavy sweeps
@@ -76,13 +86,14 @@ Scheduled cadence (Task Scheduler): **daily 02:00 low tier**, **weekly Sunday 03
 
 `tests/diagnose_*.py`, `debug_*.py`, `compare_*.py`, `refine_*.py` are manual debugging
 tools — they are **not** part of the matrix (many hang or need arguments). Use them
-interactively only. `pytest` collects only the 7 files listed above (26 tests).
+interactively only. `pytest` collects only the whitelisted files in `pyproject.toml`
+(`[tool.pytest.ini_options] python_files`, 13 files).
 
 ## Current baseline
 
 | Run | Result |
 |---|---|
-| `pytest tests/` | 26 passed (2026-08-01) |
+| `pytest tests/` | 131 passed (2026-08-04) |
 | `run_tests.py` (5 parts) | all return codes 0 (2026-08-01) |
 | Unconventional benchmark | ALL PASSED, 0.0–15.8¢ RMS (2026-08-01) |
 | chalumier design sweep | 5/6 timeout, 1/6 CLI parse fail (2026-08-01) — follow-up open |
