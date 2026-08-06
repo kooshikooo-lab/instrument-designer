@@ -62,6 +62,14 @@ python_files = [
     "test_dask_topk.py",
     "test_mesh_repair_gate.py",
     "test_benchmark_all.py",
+    "test_metamaterial.py",
+    "test_metamaterial_fem_crosscheck.py",
+    "test_metamaterial_graded.py",
+    "test_metamaterial_intonation.py",
+    "test_metamaterial_low_clarinets.py",
+    "test_metamaterial_register_suppression.py",
+    "test_metamaterial_stl_export.py",
+    "test_metamaterial_subcontrabass.py",
 ]
 
 [tool.ruff]
