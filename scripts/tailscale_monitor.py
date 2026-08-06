@@ -216,6 +216,7 @@ def _remove_acked(msg_id):
 def _server_connection_loop(conn):
     peer_addr = conn.sock.getpeername()
     _log(f"peer connected from {peer_addr}")
+    _flush_queue(conn)
     while conn.alive:
         line, conn.buf = _recv_line(conn.sock, conn.buf)
         if line is None:
