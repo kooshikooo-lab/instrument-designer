@@ -51,6 +51,7 @@ thread starts, moves, or resolves.
 | 10 | Fusion 360 personal-use free subscription | desktop | — | Resolved: laptop confirmed Phase 0/1 scriptable, CAM probe next, Simulation blocked by license | 2026-08-06 |
 | 11 | PowerShell 5.1 compatibility lint | desktop | — | Resolved: `scripts/check_powershell_51_compat.py` added; wired into pre-commit + CI `powershell-lint` job on windows-latest | 2026-08-06 |
 | 13 | Chess match rematch | both | laptop reachable again | One test game drawn; full 10-game bullet rematch pending when both monitors are online | 2026-08-06 |
+| 14 | Laptop Opencode account / usage budget | desktop→laptop | laptop reply | Laptop went offline mid-session (2026-08-06) with Opencode Go + Zen subscriptions NOT active on it, or it uses a different account. If it is a different account, laptop must be more restrictive with usage data. Desktop posted note to #23. | 2026-08-06 |
 
 ## Nudge rule
 
