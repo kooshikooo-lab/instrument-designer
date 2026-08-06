@@ -134,6 +134,16 @@
   - `docs/AI_REVIEW_PROMPT.md` — structured prompt for the next AI review pass,
     focused on physics-correctness, architectural consistency, parameter
     plumbing, and register/fingering conventions.
+- **Reusable AI review workflow** (`6dc6208`, pushed):
+  - `scripts/ai_review.py` — calls OpenRouter frontier models (free/paid) with a
+    prompt + source files; saves the response. Supports review, planning, and
+    debug modes.
+  - `docs/AI_REVIEW_WORKFLOW.md` — usage instructions.
+  - `docs/AI_PLANNING_PROMPT.md` and `docs/AI_DEBUG_PROMPT.md` — reusable
+    prompt templates.
+  - `docs/AI_REVIEW_NEMOTRON_3_SUPER_120B_OPENROUTER.md` — first automated
+    review output.
+  - `docs/PLAN_2026-08-06_TEST.md` — first automated planning output.
 - **Path-rewrite cleanup** (in `a1807bd`): all 15 active scripts/tests use
   repo-relative resolution (`os.path.dirname(os.path.dirname(os.path.abspath(__file__)))`
   / `Split-Path $PSScriptRoot -Parent`), no hardcoded paths.
