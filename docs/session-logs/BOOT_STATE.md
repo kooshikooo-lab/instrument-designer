@@ -246,12 +246,22 @@
   **Option 2** (stays `legacyBaroqueClarinet`, no migration; 3 migrated
   canonical configs stay). Fusion 360 contract change approved by user's
   direct instruction (test STL files in Fusion).
-- **Code audit (laptop, DONE)** — posted `discussioncomment-17915034`:
-  P0 build123d Z-offset (cap+holes need `-bore_length/2`); P1 cadquery `-X`
-  hole root-cause (`_cut_single_hole` cutter spans x∈[0,len] only → odd holes
-  silently lost; why xaphoon_C isn't watertight); P1 conical branch ignores
-  `closed_top` (8 presets); P1 mesh-repair gate passes multi-component
-  compounds. Fixes NOT yet applied (proposed B1/C1/C2/S2 AUDIT commits).
+- **Code audit (laptop, DONE) + fixes APPLIED (human-authorized, 2026-08-06)**:
+  posted findings `discussioncomment-17915034` (P0 build123d Z-offset; P1
+  cadquery `-X` hole root-cause; P1 conical ignores `closed_top`; P1 gate passes
+  multi-component compounds). Fixes committed on `opencode/build123d/laptop`:
+  **C1** `034e2e6` (cutter centered on hole axis → xaphoon_C watertight
+  2993v/6014f), **C2** `eeebdc2` (conical `closed_top` cap, 8 presets),
+  **B1** `896a2de` + `cad9797` (centered-frame cap/holes + non-tangent cutter →
+  build123d xaphoon watertight, 0.000% parity all 3 cases), **S2** `1314755`
+  (gate requires single component; wired into `export_stl`; test file 7 tests).
+  Full suite **159 passed / 2 skipped**, toolcheck PASS, ruff clean on new
+  files. Results posted `discussioncomment-17920072`.
+- **Work separation (desktop directive 2026-08-06T11:24Z)**: desktop owns the
+  STL pipeline end-to-end (cadquery/build123d export → mesh gate → STL import
+  into Blender viewer); laptop owns **Fusion 360 Phase 0+ automation** (add-in,
+  STEP import/measure/export, manual Fusion mesh repair the API can't do).
+  Laptop's audit fixes were the last touch on the shared STL path for now.
 - **Fusion 360 Phase 0 — ALL SCRIPTABLE STEPS PASSED** (this session, completed
   ~12:54 local): fixed add-in at `API\AddIns\phase0_automation` (JSON manifest,
   background thread + 15 s startup delay — synchronous work in `run()` crashed
@@ -296,12 +306,12 @@
 
 1. **Fusion 360 Phase 0 (scriptable part DONE — PASS)**: verified above; post-1
    Phase 0.3 mesh-repair proof (xaphoon_C) still needs the human in the Fusion
-   Mesh workspace (GUI-only, not in the API). Phase 1 A/B/C workstreams are
-   laptop-side and not gated on Fusion.
-2. **Apply audit fixes** (pending #23 review of `discussioncomment-17915034`):
-   B1 build123d Z-offset + C1 cadquery `-X` hole + C2 conical `closed_top` +
-   S2 mesh-gate components check — as separate `AUDIT:` commits, re-run parity
-   + full pytest.
+   Mesh workspace (GUI-only, not in the API). Per the new work separation this
+   is laptop's track. Desktop is also installing WSL+Ubuntu (reboot-pending).
+2. **Audit fixes DONE** (see Progress): B1/C1/C2/S2 applied as `AUDIT:` commits
+   on `opencode/build123d/laptop`, 159 passed / 2 skipped, posted
+   `discussioncomment-17920072`. Next touch on the STL pipeline belongs to
+   desktop (per work separation).
 3. Standing: present `backend/spectral` design (`docs/DESIGN_spectral.md`) for
    user approval when the user is available.
 4. **Await desktop replies** (posted #23): (a) audit-fix approval
@@ -352,13 +362,18 @@
   `docs/WIKI.md` §11, `docs/WIKI-INDEX.md`, `wiki/Internal-Research-CAD-Pipeline.md`,
   `wiki/Internal-Research.md`, `wiki/3D-Printing-Guide.md`) + BOOT_STATE (`1e70d01`).
   **123 passed / 1 skipped** on laptop.
-- **`origin/opencode/build123d/laptop`** = the K3-fix branch. B1 `47e1b9a`,
-  B2 `6d67f8d`, C1–C6 (`2ea8806`..`99e36cf`), bore_optimizer fix `439537e`,
-  BOOT_STATE/REMINDERS `9be4a4f` (pushed `2a3374e..9be4a4f`), tailscale
-  monitor cherry-picks `74778b6` (desktop `b8c2494`) + `21bdd12` (desktop
-  `70d6498`). **HEAD `21bdd12`, pushed.** Awaiting desktop review of the spike
-  merge (see #23 comment-17906678); K3 fixes posted as comment-17914586;
-  audit findings posted as comment-17915034.
+- **`origin/opencode/build123d/laptop`** = the K3-fix + audit-fix branch. B1
+  `47e1b9a`, B2 `6d67f8d`, C1–C6 (`2ea8806`..`99e36cf`), bore_optimizer fix
+  `439537e`, BOOT_STATE/REMINDERS `9be4a4f` (pushed `2a3374e..9be4a4f`),
+  tailscale monitor cherry-picks `74778b6` (desktop `b8c2494`) + `21bdd12`
+  (desktop `70d6498`), Fusion Phase 0 docs `3e1279a`, audit fixes
+  `034e2e6`(C1) `eeebdc2`(C2) `896a2de`+`cad9797`+`100351a`(B1) `1314755`(S2).
+  **HEAD `100351a`, pushed.** Awaiting desktop review of the spike merge (see
+  #23 comment-17906678); audit fixes posted as comment-17920072.
+- **WSL on laptop** (2026-08-06): Ubuntu 26.04 LTS (WSL2, kernel
+  6.18.33.2) installed + running, default distro, root user. Desktop is
+  installing its own WSL+Ubuntu (reboot-pending). No laptop-WSL test target
+  assigned yet (posted offer `discussioncomment-17919942`).
 - Untracked regenerable artifacts left uncommitted: `bench_main.txt`,
   `bench_perf_tmm_medium.txt`, `bench_perf_tmm_refactor.txt`, `test_output/`.
 - #23 stream: laptop confirmation (01:41:04Z) + laptop's three `team_chat.py`
