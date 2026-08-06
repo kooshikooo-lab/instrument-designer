@@ -294,15 +294,18 @@ def _optimize_candidate_standalone(spec_dict: dict, verbose: bool = False) -> di
         n_h = hole_count
 
     n_cp = 6
-    radii = x_best[:n_cp].tolist()
-    hp = x_best[n_cp:n_cp + n_h].tolist()
-    hd = x_best[n_cp + n_h:].tolist()
+    # run_pareto design vector: [bore_length, radii (n_cp), hp (n_h), hd (n_h)]
+    n_h = (len(x_best) - 1 - n_cp) // 2
+    L_opt = float(x_best[0])
+    radii = x_best[1:n_cp + 1].tolist()
+    hp = x_best[n_cp + 1:n_cp + 1 + n_h].tolist()
+    hd = x_best[n_cp + 1 + n_h:].tolist()
 
     return {
         "success": True,
         "intonation_rms": intonation_rms,
         "timbre_cost": timbre_cost,
-        "bore_length_opt_mm": L_base,
+        "bore_length_opt_mm": L_opt,
         "bore_radii": radii,
         "hole_positions_mm": hp,
         "hole_diameters_mm": hd,
