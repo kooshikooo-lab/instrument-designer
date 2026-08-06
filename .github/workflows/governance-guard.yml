@@ -12,6 +12,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 2
-      - name: Block unauthorized governance file edits
+      - name: Block unauthorized governance file edits and unmarked provisional work
         run: |
-          python scripts/guard_governance.py
+          python scripts/validate_commit_msg.py

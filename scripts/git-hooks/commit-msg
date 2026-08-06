@@ -1,6 +1,6 @@
 #!/bin/sh
-# commit-msg hook: block unauthorized edits to the governance file.
+# commit-msg hook: block unauthorized governance edits and unmarked provisional work.
 # Installed by scripts/install_hooks.ps1 (or copied into .git/hooks/).
 MSG_FILE="$1"
-python "$(git rev-parse --show-toplevel)/scripts/guard_governance.py" \
-    --staged --message-file "$MSG_FILE" || exit 1
+python "$(git rev-parse --show-toplevel)/scripts/validate_commit_msg.py" \
+    "$MSG_FILE" || exit 1
