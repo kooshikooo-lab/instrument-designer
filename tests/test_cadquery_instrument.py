@@ -57,6 +57,10 @@ def test_cylindrical_bore_with_holes():
         wall = wall.cut(holes)
     print(f"  Cut {len(hole_positions)} tone holes ({hole_diameter}mm)")
 
+    assert len(bore.solids().vals()) == 1
+    assert len(wall.solids().vals()) == 1
+    assert wall.val().isValid()
+
     t1 = time.time()
     print(f"  Geometry created in {t1-t0:.2f}s")
 
@@ -75,11 +79,14 @@ def test_cylindrical_bore_with_holes():
     stl_size = os.path.getsize(stl_path)
     print(f"  STL exported: {stl_path} ({stl_size/1024:.1f} KB)")
 
+    assert step_size > 0
+    assert stl_size > 0
+    assert os.path.exists(step_path)
+    assert os.path.exists(stl_path)
+
     t2 = time.time()
     print(f"  Export took {t2-t1:.2f}s")
     print(f"  Total time: {t2-t0:.2f}s")
-
-    return True
 
 
 def test_conical_bore():
@@ -139,6 +146,9 @@ def test_conical_bore():
         instrument = instrument.cut(hole)
     print(f"  Cut {len(hole_positions)} tone holes")
 
+    assert len(instrument.solids().vals()) == 1
+    assert instrument.val().isValid()
+
     t1 = time.time()
     print(f"  Geometry created in {t1-t0:.2f}s")
 
@@ -154,10 +164,11 @@ def test_conical_bore():
     exporters.export(instrument, stl_path)
     print(f"  STL: {os.path.getsize(stl_path)/1024:.1f} KB")
 
+    assert os.path.getsize(step_path) > 0
+    assert os.path.getsize(stl_path) > 0
+
     t2 = time.time()
     print(f"  Total time: {t2-t0:.2f}s")
-
-    return True
 
 
 def test_parametric_instrument():
@@ -220,6 +231,9 @@ def test_parametric_instrument():
         instrument = instrument.cut(hole)
     print(f"  Cut {len(tone_holes)} tone holes")
 
+    assert len(instrument.solids().vals()) == 1
+    assert instrument.val().isValid()
+
     t1 = time.time()
     print(f"  Geometry created in {t1-t0:.2f}s")
 
@@ -235,10 +249,11 @@ def test_parametric_instrument():
     exporters.export(instrument, stl_path)
     print(f"  STL: {os.path.getsize(stl_path)/1024:.1f} KB")
 
+    assert os.path.getsize(step_path) > 0
+    assert os.path.getsize(stl_path) > 0
+
     t2 = time.time()
     print(f"  Total time: {t2-t0:.2f}s")
-
-    return True
 
 
 if __name__ == "__main__":
@@ -249,19 +264,22 @@ if __name__ == "__main__":
     results = []
 
     try:
-        results.append(("Cylindrical bore", test_cylindrical_bore_with_holes()))
+        test_cylindrical_bore_with_holes()
+        results.append(("Cylindrical bore", True))
     except Exception as e:
         print(f"  FAILED: {e}")
         results.append(("Cylindrical bore", False))
 
     try:
-        results.append(("Conical bore", test_conical_bore()))
+        test_conical_bore()
+        results.append(("Conical bore", True))
     except Exception as e:
         print(f"  FAILED: {e}")
         results.append(("Conical bore", False))
 
     try:
-        results.append(("Parametric profile", test_parametric_instrument()))
+        test_parametric_instrument()
+        results.append(("Parametric profile", True))
     except Exception as e:
         print(f"  FAILED: {e}")
         results.append(("Parametric profile", False))

@@ -68,6 +68,7 @@ python_files = [
     "test_surrogate.py",
     "test_tmm.py",
     "test_tool_registry.py",
+    "test_whitelist.py",
     "test_topk_polish.py",
 ]
 
