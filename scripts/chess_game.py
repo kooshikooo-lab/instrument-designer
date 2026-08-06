@@ -40,6 +40,10 @@ STATE_FILE = REPO_ROOT / "scripts" / ".tailscale_monitor.json"
 CHALLENGE_TIMEOUT = 20.0  # seconds to accept a challenge
 MOVE_POLL_INTERVAL = 0.2  # seconds
 
+# 10 minutes for games + 20s abort window + 20s grace.
+# Override with CHESS_MATCH_BUDGET_SECONDS for testing.
+MATCH_TOTAL_SECONDS = int(os.environ.get("CHESS_MATCH_BUDGET_SECONDS", 600 + 20 + 20))
+
 
 def _machine_name():
     env = os.environ.get("MACHINE_NAME", "").strip().lower()
@@ -218,7 +222,7 @@ def _parse_time_control(tc):
         return 60000, 0
 
 
-def _play_game(peer_ip, port, game_num, time_control, my_color, side_names, start_fen=None):
+def _play_game(peer_ip, port, game_num, time_control, my_color, side_names, start_fen=None, match_deadline=None):
     """Play one bullet game. Returns result string (e.g. '1-0')."""
     base_ms, inc_ms = _parse_time_control(time_control)
     white_ms = base_ms
@@ -230,6 +234,10 @@ def _play_game(peer_ip, port, game_num, time_control, my_color, side_names, star
     msg_count = len(_read_chess_messages(from_peer_only=True))
 
     while not board.is_game_over():
+        if match_deadline is not None and time.time() >= match_deadline:
+            print(f"[{_machine_name()}] Game {game_num}: match budget expired.")
+            return "*"
+
         is_my_turn = (board.turn == my_color)
         side_str = "White" if board.turn == chess.WHITE else "Black"
 
@@ -273,11 +281,18 @@ def _play_game(peer_ip, port, game_num, time_control, my_color, side_names, star
             def is_game_move(msg):
                 return msg.get("cmd") == "chess_move" and msg.get("game") == game_num
 
+            move_timeout = remaining_ms / 1000.0 + 0.5
+            if match_deadline is not None:
+                move_timeout = min(move_timeout, match_deadline - time.time())
+
             wait_start = time.time()
-            msg = _wait_for_message(peer_ip, port, is_game_move, remaining_ms / 1000.0 + 0.5, msg_count)
+            msg = _wait_for_message(peer_ip, port, is_game_move, move_timeout, msg_count)
             elapsed_ms = int((time.time() - wait_start) * 1000)
 
             if msg is None:
+                if match_deadline is not None and time.time() >= match_deadline:
+                    print(f"[{_machine_name()}] Game {game_num}: match budget expired while waiting.")
+                    return "*"
                 print(f"[{_machine_name()}] Game {game_num}: {opponent} did not reply in time.")
                 return "1-0" if board.turn == chess.WHITE else "0-1"
 
@@ -323,9 +338,25 @@ def cmd_challenge(peer_ip, port, match_games=10, time_control="60+0"):
     side_names = {"white": _machine_name(), "black": "opponent"}
     my_color = chess.WHITE
     scores = {"1-0": 0, "0-1": 0, "1/2-1/2": 0, "*": 0}
-
+    games_played = 0
     match_aborted = False
+    both_failed = False
+    match_start = time.time()
+    match_deadline = match_start + MATCH_TOTAL_SECONDS
+
+    print(f"\n### Match: {match_games} games, {time_control}, total budget {MATCH_TOTAL_SECONDS}s ###")
+
     for game_num in range(1, match_games + 1):
+        remaining_budget = match_deadline - time.time()
+        if remaining_budget <= 0:
+            print(f"[{_machine_name()}] Match budget expired ({MATCH_TOTAL_SECONDS}s elapsed).")
+            if games_played == 0:
+                print("No games were played. Both sides fail.")
+                both_failed = True
+            else:
+                print(f"{games_played} games played; match stopped.")
+            break
+
         print(f"\n### Game {game_num}/{match_games} ###")
         print(f"[{_machine_name()}] Challenging {peer_ip}:{port} to {time_control}")
 
@@ -343,30 +374,45 @@ def cmd_challenge(peer_ip, port, match_games=10, time_control="60+0"):
             match_aborted = True
             break
 
+        challenge_timeout = min(CHALLENGE_TIMEOUT, match_deadline - time.time())
+        if challenge_timeout <= 0:
+            print(f"[{_machine_name()}] Match budget expired during challenge.")
+            if games_played == 0:
+                print("No games were played. Both sides fail.")
+                both_failed = True
+            break
+
         def is_accept(msg):
             return msg.get("cmd") == "chess_accept" and msg.get("game") == game_num
 
-        accept = _wait_for_message(peer_ip, port, is_accept, CHALLENGE_TIMEOUT, 0)
+        accept = _wait_for_message(peer_ip, port, is_accept, challenge_timeout, 0)
         if accept is None:
             print(f"[{_machine_name()}] No acceptance within {CHALLENGE_TIMEOUT}s. Win game {game_num} by forfeit.")
             scores["1-0"] += 1
+            games_played += 1
             continue
 
         print(f"[{_machine_name()}] Challenge accepted for game {game_num}. Playing White.")
-        result = _play_game(peer_ip, port, game_num, time_control, my_color, side_names)
+        result = _play_game(peer_ip, port, game_num, time_control, my_color, side_names, match_deadline=match_deadline)
         scores[result] = scores.get(result, 0) + 1
+        if result != "*":
+            games_played += 1
 
-    if match_aborted:
+    if both_failed:
+        print(f"\n### Match failed: no games played within {MATCH_TOTAL_SECONDS}s ###")
+    elif match_aborted:
         print(f"\n### Match aborted at game {game_num}/{match_games} ###")
     else:
         print(f"\n### Match result ({match_games} games) ###")
     for k, v in scores.items():
         print(f"  {k}: {v}")
+    print(f"  games_played: {games_played}")
 
-    _analyze_match(peer_ip, port, match_games, time_control, scores, side_names, aborted=match_aborted, aborted_at=game_num)
+    _analyze_match(peer_ip, port, match_games, time_control, scores, side_names,
+                   aborted=match_aborted, aborted_at=game_num, both_failed=both_failed, games_played=games_played)
 
 
-def _analyze_match(peer_ip, port, match_games, time_control, scores, side_names, aborted=False, aborted_at=0):
+def _analyze_match(peer_ip, port, match_games, time_control, scores, side_names, aborted=False, aborted_at=0, both_failed=False, games_played=0):
     """If the loser is the local machine, propose improvements.
 
     If the loser is the remote machine, post a failure analysis to the team
@@ -398,7 +444,20 @@ def _analyze_match(peer_ip, port, match_games, time_control, scores, side_names,
         "improvements": [],
     }
 
-    if aborted:
+    if both_failed:
+        analysis["observation"] = (
+            f"Match budget ({MATCH_TOTAL_SECONDS}s) expired with no games played. "
+            "Both sides failed to establish a working Tailscale channel."
+        )
+        analysis["improvements"] = [
+            "Both machines must pull the latest opencode/main/desktop.",
+            "Both machines must run `python scripts/tailscale_monitor.py configure`.",
+            "Both machines must start the monitor before the rematch.",
+            "Verify both Tailscale IPs are correct and reachable.",
+            "Add a lightweight UDP beacon or TCP keep-alive as a backup channel.",
+        ]
+        loser = "both"
+    elif aborted:
         analysis["observation"] = (
             f"Match aborted at game {aborted_at}: "
             "the challenge could not be delivered to the peer. "
