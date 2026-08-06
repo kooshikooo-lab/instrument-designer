@@ -116,14 +116,16 @@
   - `baroque_clarinet.json` kept as `legacyBaroqueClarinet` pending multi-register
     decision (three registers for clarinet-family instruments; baroque fingerings
     are historically variable).
-- **Tailscale peer monitor** (`b8c2494`, pushed):
-  - New `scripts/tailscale_monitor.py` using a chess-engine-inspired protocol:
-    persistent TCP, newline-delimited JSON, ping/pong heartbeat, msg/ack delivery,
-    exponential-backoff reconnect, queued messages.
+- **Tailscale peer monitor** (`abd0a88`, pushed):
+  - `scripts/tailscale_monitor.py` using a chess-engine-inspired protocol:
+    newline-delimited JSON, ping/pong heartbeat, one-shot TCP connection per message.
+    Simplified from a persistent-connection design to avoid reconnect loops and
+    protocol desync.
   - `launchers/start_tailscale_monitor.bat` for one-click desktop start.
   - `docs/TAILSCALE_MONITOR.md` documents protocol + usage.
   - `tests/test_tailscale_monitor.py` added (3 tests passing).
   - `tests/test_surrogate.py` now skips if jax is missing.
+  - Desktop monitor is running and receiving heartbeats from laptop.
 - **Path-rewrite cleanup** (in `a1807bd`): all 15 active scripts/tests use
   repo-relative resolution (`os.path.dirname(os.path.dirname(os.path.abspath(__file__)))`
   / `Split-Path $PSScriptRoot -Parent`), no hardcoded paths.

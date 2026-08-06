@@ -44,7 +44,7 @@ thread starts, moves, or resolves.
 | 4 | build123d spike merge `8ddfc7a`+`e8d6254`+`7bc624e` → `opencode/main/laptop` | laptop | laptop merge | Approved by desktop (17906945); awaiting laptop merge | 2026-08-05 |
 | 5 | `cadquery-ocp` pin in `cad` extra | desktop | desktop commit | Desktop added pin (avoid `cadquery-ocp-novtk` OCP namespace clobber) | 2026-08-05 |
 | 6 | Config schema unification | desktop | laptop review of multi-register decision | Schema approved; 3 configs migrated to canonical; `baroque_clarinet.json` kept as legacy until multi-register decision | 2026-08-06 |
-| 8 | Tailscale peer monitor | desktop | laptop start monitor | New `scripts/tailscale_monitor.py` + launcher + docs committed; desktop ready; laptop needs to start `python scripts/tailscale_monitor.py monitor` with `MACHINE_NAME=laptop TAILSCALE_PEER_IP=100.69.113.41` | 2026-08-06 |
+| 8 | Tailscale peer monitor | desktop | laptop pull latest | Monitor simplified to connection-per-message protocol; desktop running; laptop should pull latest `opencode/main/desktop` and restart | 2026-08-06 |
 
 ## Nudge rule
 

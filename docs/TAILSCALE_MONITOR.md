@@ -3,8 +3,8 @@
 `scripts/tailscale_monitor.py` provides direct, reliable machine-to-machine
 communication and monitoring over Tailscale. It is inspired by the simple,
 state-machine protocols used by chess engines talking to servers (e.g., UCI
-/XBoard/ICS): a persistent TCP connection, newline-delimited JSON commands,
-automatic reconnect, ping/pong heartbeats, and explicit message acknowledgments.
+/XBoard/ICS): newline-delimited JSON commands, ping/pong heartbeats, and
+short-lived TCP connections.
 
 ## Why this exists
 
@@ -15,18 +15,18 @@ battle-tested protocol shape.
 
 ## Protocol
 
-Both machines run the same script. One machine starts a `server` (or use
-`monitor` which runs both server and client). The other starts a `client` (or
-`monitor`) pointing at the first machine's Tailscale IP.
+Both machines run the same script. Each machine runs a `server` to accept
+incoming connections, and a `heartbeat` loop to poll the peer.
 
 Commands are JSON objects, one per line:
 
 - `{"cmd": "ping", "from": "desktop", "time": "..."}` -> reply with `pong`
-- `{"cmd": "msg", "id": "...", "from": "desktop", "text": "..."}` -> reply with `ack`
+- `{"cmd": "msg", "from": "desktop", "text": "..."}` -> reply with `ok`
 - `{"cmd": "status"}` -> reply with `status_reply`
 
-The connection auto-reconnects with exponential backoff. Messages are queued on
-disk and delivered when the peer comes back online.
+Each interaction opens a fresh TCP connection, sends one command, waits for the
+reply, and closes the connection. There is no persistent connection to break, no
+message queue, and no acknowledgment state to keep in sync.
 
 ## Environment variables
 
@@ -60,14 +60,14 @@ python scripts/tailscale_monitor.py monitor
 
 ```bash
 python scripts/tailscale_monitor.py server      # accept incoming connections
-python scripts/tailscale_monitor.py client      # connect to peer and keep alive
-python scripts/tailscale_monitor.py monitor     # run both server and client
+python scripts/tailscale_monitor.py heartbeat   # ping peer every N seconds
+python scripts/tailscale_monitor.py monitor     # run server + heartbeat
 python scripts/tailscale_monitor.py status      # print peer status
 python scripts/tailscale_monitor.py test        # one-shot connectivity check
-python scripts/tailscale_monitor.py send "..."  # queue a message
+python scripts/tailscale_monitor.py send "..."  # send a message
 ```
 
 ## State and logs
 
-- `scripts/.tailscale_monitor.json` — last seen time, queued messages, received messages.
+- `scripts/.tailscale_monitor.json` — last seen time, received messages.
 - `scripts/tailscale_monitor.log` — human-readable log.
