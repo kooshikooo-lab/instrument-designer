@@ -1,6 +1,8 @@
 # Fusion 360 — 30-Day Evaluation Plan
 
-Status: **ACTIVE** (Phase 0 scriptable parts PASSED 2026-08-06 via automated add-in; mesh-repair proof 0.3 still needs human GUI)
+Status: **ACTIVE** (Phase 0 scriptable PASSED 2026-08-06; Phase 1 batch 5/5 PASS
+2026-08-06; Phase-2 API probe 2026-08-06 — CAM scriptable surface confirmed,
+Simulation absent; mesh-repair proof 0.3 still needs human GUI)
 Owner: laptop (with human at the Fusion GUI)
 Date: 2026-08-05
 Related: `docs/RESEARCH_design_to_finished_instrument.md`, `docs/TOOLS.md` (mesh-repair gate), `wiki/3D-Printing-Guide.md`
@@ -37,6 +39,15 @@ SLA resin per `wiki/3D-Printing-Guide.md`; CNC is a future option.
   is not scriptable via Python. Expect a manual/GUI-assisted batch workflow.
 - Simulation: base-trial simulation studies may require the Simulation
   Extension or Flex tokens; verify included scope before investing in 2c.
+- **Phase-2 API probe (2026-08-06, automated via the add-in, `phase2_result.json`):**
+  both `adsk.cam` and `adsk.sim` modules exist in this build. **CAM**:
+  `CAMManager.get()` returns a valid manager (post engine + library manager
+  present); the `CAM` product exposes `setups`, `generateAllToolpaths`,
+  `getMachiningTime`, `generateSetupSheet` → toolpath automation is scriptable in
+  principle. **Simulation**: no `SimulationProductType` product in the document →
+  not available in this trial without extension activation (2c stays
+  license-gated). API notes: this build's `Products` has no `itemById` and
+  `Product` has no `.name` — enumerate via `.count`/`.item(i)` + `productType`.
 
 ## Phase 0 — Smoke test (days 1–2) — gates deeper Fusion investment
 
@@ -105,8 +116,10 @@ manifold=true, 72844.11 mm³ → **PASS** (posted as `discussioncomment-17919778
 - Findings appended to this doc; status post to #23; then proceed to Phase 1.
 
 **Automation posture (2026-08-06):** scriptable = STEP import, body/volume
-measure, STEP/STL export, mesh import. Not scriptable = mesh repair (GUI-only,
-not exposed in the Fusion Python API), CAM toolpaths, simulation. Mechanism =
+measure, STEP/STL export, mesh import, CAM manager + toolpath-generation API
+surface (CAM product activation probe pending). Not scriptable = mesh repair
+(GUI-only, not exposed in the Fusion Python API), simulation (product absent in
+this trial — license/extension-gated), manual CAD (human). Mechanism =
 `phase0_automation` add-in in `%APPDATA%\Autodesk\Autodesk Fusion 360\API\AddIns\`
 (JSON manifest `"type":"addin"`, `runOnStartup:true`) triggered by a file watch;
 work runs on a background thread after a 15 s startup delay (synchronous work in
@@ -135,16 +148,29 @@ verdict. See `docs/session-logs/BOOT_STATE.md` for details.
   `metamaterial_low_clarinets/`; re-verify each with `verify_stl`; commit only
   the report (repaired STLs stay regenerable/untracked). Feeds the
   repair-fallback leg of the mesh-repair gate.
+  **Status (2026-08-06):** repair itself is GUI-only. But the **STEP→Fusion→STL
+  re-export path is fully scriptable (Phase 1, 5/5 gate PASS)** and heals meshes
+  for STEP-source artifacts; STL-source artifacts (no STEP) still need the GUI
+  Mesh workspace. Phase 1's batch add-in already does the scriptable leg.
 - **2b. CAM / CNC feasibility** — import STEP, set up lathe/turning for the bore
   + milling/drilling for tone holes, post-process to a generic post, save CAM
   files; document feeds/speeds and machine constraints for resin/wood/POM.
   Deliverable is a feasibility file + toolpath plan (no machine to run it).
+  **Status (2026-08-06):** `CAMManager` reachable via API + `CAM` product has
+  `setups`/`generateAllToolpaths`/`getMachiningTime`/`generateSetupSheet` → a
+  headless CAM probe (create setup → generate toolpath → post) is the next
+  scriptable test; needs a CAM-product activation probe before committing to
+  the sweep.
 - **2c. Simulation / modal FEA** — modal analysis on a thin-wall tube body;
   compare body resonances vs the rigid-wall TMM assumption. Bounded effort:
   verify trial licensing first (Simulation Extension / Flex tokens).
+  **Status (2026-08-06):** **BLOCKED — no `SimulationProductType` product in
+  the document** (probe confirmed). Do not invest until the Simulation
+  Extension is confirmed available; revisit before trial end.
 - **2d. Manual CAD fallback proof** — hand-model one folded/paperclip geometry
   (bells, bends) in Fusion; STEP-export back; document when to use the manual
-  path over code-CAD.
+  path over code-CAD. **Status (2026-08-06):** inherently manual (human), but
+  STEP export back into the pipeline is scriptable (proven in Phase 0/1).
 
 ## Phase 3 — Checkpoints & decision (end of trial)
 
@@ -183,7 +209,18 @@ verdict. See `docs/session-logs/BOOT_STATE.md` for details.
 - 2026-08-06: `BRepBody.volume` returns cm³ (×1000 → mm³); there is no `Timer`
   class in this build's API.
 - 2026-08-06: Fusion re-exports a watertight/manifold STL from an imported STEP
-  solid (696v/1392f, gate PASS), while cadquery's direct STL export of the same
-  solid is broken for xaphoon_C. STEP is confirmed as the interchange format.
+  solid (696v/1392f, gate PASS). STEP is confirmed as the interchange format.
+- 2026-08-06: Phase 1 batch add-in proves the STEP→Fusion→STL heal generalizes:
+  all five geometry families (cylindrical, open-open holed, closed-top cap,
+  8-hole closed-open, conical) re-export watertight + manifold + single
+  component (gate PASS); Fusion volumes +0.03–0.19% vs cadquery solids; Fusion
+  STL tessellation volume loss 0.3–1.1%.
 - 2026-08-06: Fusion accepts non-watertight STL as a mesh import without warning;
   mesh repair is GUI-only (not API-exposed).
+- 2026-08-06: Phase-2 probe — `adsk.cam` + `adsk.sim` modules present;
+  `CAMManager.get()` works (post engine + library manager); `CAM` product has
+  toolpath API (`setups`, `generateAllToolpaths`, `getMachiningTime`).
+  Simulation product **absent** from the document (license-gated). `Products`
+  has no `itemById` (iterate `.count`/`.item(i)`); `Product` has no `.name`.
+- 2026-08-06: `CAMManager.manufacturingModels` does not exist on this build —
+  `ManufacturingModels` is accessed via the `CAM` product (defs line 8024).

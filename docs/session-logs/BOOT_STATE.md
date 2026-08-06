@@ -289,6 +289,15 @@
   the next item; milestone posts per workstream; parked-not-blocked for
   desktop/human decisions. Do-not-touch boundary: STL pipeline (`stl_verifier.py`,
   cadquery export/gate internals, Blender viewer, gate protocol) = desktop's.
+- **Fusion Phase-2 API probe — DONE** (this session, `phase2_result.json`):
+  `CAMManager.get()` works (post engine + library manager present; `CAM` product
+  has `setups`/`generateAllToolpaths`/`getMachiningTime`/`generateSetupSheet`) →
+  CAM toolpath automation scriptable in principle. **Simulation: no
+  `SimulationProductType` product** → 2c stays license-gated (BLOCKED). API
+  notes: `Products` has no `itemById` (iterate `.count`/`.item(i)`), `Product`
+  has no `.name`, `manufacturingModels` is on the `CAM` product not `CAMManager`.
+  Matrix + posture updated in `docs/FUSION_360_30day_plan.md` (Phase 2 statuses,
+  findings log). Posted to #23 (`discussioncomment-17920743`).
 
 ### Blocked
 - Standing (not this session): `backend/spectral` implementation awaits user

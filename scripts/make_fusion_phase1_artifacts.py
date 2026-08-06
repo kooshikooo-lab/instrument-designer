@@ -13,6 +13,11 @@ manifest ``phase1_trigger.json`` the Fusion add-in consumes:
 Prints a baseline summary (watertight + volume per file) so the Fusion
 batch results in ``phase1_result.json`` have expected values to compare.
 
+Optional preset-name arguments generate only those presets (and overwrite the
+trigger manifest with just them), e.g.:
+
+    python scripts/make_fusion_phase1_artifacts.py soprano_recorder_C pvc_flute_D
+
 Run:
     python scripts/make_fusion_phase1_artifacts.py
 """
@@ -47,10 +52,15 @@ def mesh_stats(path):
 
 def main():
     os.makedirs(OUT, exist_ok=True)
+    presets = sys.argv[1:] or PHASE1_PRESETS
+    unknown = [p for p in presets if p not in INSTRUMENTS]
+    if unknown:
+        raise SystemExit(f"unknown preset(s): {unknown}")
+
     manifest = []
     baseline = {}
 
-    for name in PHASE1_PRESETS:
+    for name in presets:
         spec = INSTRUMENTS[name]
         kwargs = {k: spec[k] for k in _PARAMS if k in spec}
 
@@ -81,7 +91,7 @@ def main():
         json.dump({"files": manifest}, f, indent=2)
 
     print("\n=== baseline (expected values for the Fusion batch) ===")
-    for name in PHASE1_PRESETS:
+    for name in presets:
         b = baseline[name]
         print(f"  {name}: verts={b['verts']} faces={b['faces']} "
               f"volume={b['volume_mm3']:.3f} mm3 [{b['status']}]")
