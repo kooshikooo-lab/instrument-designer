@@ -172,6 +172,103 @@ def render_mesh_views(stl_path: str, size=(768, 768)) -> dict[str, bytes]:
     }
 
 
+# ── PNG annotation + comparison compositing (PIL, optional) ─────────────────
+
+def _load_font(size: int):
+    """Load a truetype font, falling back to the default bitmap font."""
+    from PIL import ImageFont
+
+    for path in (
+        r"C:\Windows\Fonts\arial.ttf",
+        r"C:\Windows\Fonts\segoeui.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+    ):
+        try:
+            return ImageFont.truetype(path, size)
+        except Exception:  # noqa: BLE001
+            continue
+    return ImageFont.load_default()
+
+
+def overlay_dimension_band(png_bytes: bytes, text: str, band_height: int = 40) -> bytes:
+    """Draw a bottom text band (bbox dimensions etc.) onto a PNG via PIL.
+
+    Pure-image helper: no VTK involved, so it is cheap to unit test.
+    """
+    from io import BytesIO
+
+    from PIL import Image, ImageDraw
+
+    img = Image.open(BytesIO(png_bytes)).convert("RGB")
+    band = Image.new("RGB", (img.width, band_height), (255, 255, 255))
+    draw = ImageDraw.Draw(band)
+    font = _load_font(22)
+    draw.text((8, (band_height - 22) // 2), text, fill=(20, 20, 20), font=font)
+
+    out = Image.new("RGB", (img.width, img.height + band_height), (255, 255, 255))
+    out.paste(img, (0, 0))
+    out.paste(band, (0, img.height))
+
+    buf = BytesIO()
+    out.save(buf, format="PNG")
+    return buf.getvalue()
+
+
+def render_with_dimensions(stl_path: str, size=(768, 768)) -> dict:
+    """Render the 4 standard views and overlay bbox + volume on each PNG."""
+    if isinstance(size, int):
+        size = (size, size)
+    metrics = compute_mesh_metrics(stl_path)
+    bbox = metrics.bbox_mm
+    text = (
+        f"bbox (x,y,z) = {bbox[0]} x {bbox[1]} x {bbox[2]} mm  "
+        f"vol = {metrics.volume_mm3:.0f} mm3  watertight = {metrics.watertight}"
+    )
+    return {
+        name: overlay_dimension_band(png, text)
+        for name, png in render_mesh_views(stl_path, size=size).items()
+    }
+
+
+def compose_compare_grid(cells, cols: int = 2, label_height: int = 34) -> bytes:
+    """Compose labeled PNGs into a side-by-side grid, returned as PNG bytes.
+
+    Args:
+        cells: list of dicts {"label": str, "png": bytes, "subtitle": str|None}
+        cols: number of grid columns
+        label_height: px reserved under each cell for its label
+    """
+    from io import BytesIO
+
+    from PIL import Image, ImageDraw
+
+    if not cells:
+        raise ValueError("compose_compare_grid: no cells to compose")
+
+    imgs = [Image.open(BytesIO(c["png"])).convert("RGB") for c in cells]
+    cell_w = max(i.width for i in imgs)
+    cell_h = max(i.height for i in imgs)
+    rows = (len(cells) + cols - 1) // cols
+
+    canvas = Image.new("RGB", (cols * cell_w, rows * (cell_h + label_height)), (235, 235, 235))
+    draw = ImageDraw.Draw(canvas)
+    font = _load_font(20)
+
+    for idx, cell in enumerate(cells):
+        r, c = divmod(idx, cols)
+        x, y = c * cell_w, r * (cell_h + label_height)
+        canvas.paste(imgs[idx], (x, y))
+        label = cell["label"]
+        if cell.get("subtitle"):
+            label += f"  ({cell['subtitle']})"
+        draw.text((x + 8, y + cell_h + 6), label, fill=(20, 20, 20), font=font)
+
+    buf = BytesIO()
+    canvas.save(buf, format="PNG")
+    return buf.getvalue()
+
+
 # ── Multimodal client ──────────────────────────────────────────────────────
 
 def _data_uri(png_bytes: bytes) -> str:

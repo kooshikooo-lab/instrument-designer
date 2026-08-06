@@ -28,7 +28,7 @@ dependencies = [
 [project.optional-dependencies]
 jax = ["jax>=0.4", "jaxlib>=0.4"]
 surrogate = ["jax>=0.4", "jaxlib>=0.4", "flax", "optax", "botorch", "torch", "gpytorch"]
-cad = ["cadquery>=2.4", "cadquery-ocp", "build123d>=0.7", "vtk>=9.0", "trimesh>=4.0"]
+cad = ["cadquery>=2.4", "cadquery-ocp", "build123d>=0.7", "vtk>=9.0", "trimesh>=4.0", "pillow>=9.0"]
 bench = ["dask[distributed]>=2024.1", "psutil>=5.9", "cma>=3.0"]
 perf = ["numba>=0.60"]
 freecad = ["freecad"]
@@ -49,6 +49,8 @@ include = ["woodwind_designer*"]
 python_files = [
     "test_analytical_pipes.py",
     "test_architecture.py",
+    "test_blender_addon_import.py",
+    "test_blender_server_client.py",
     "test_cadquery_instrument.py",
     "test_inverse_design.py",
     "test_local_llm.py",
@@ -58,6 +60,7 @@ python_files = [
     "test_properties.py",
     "test_server_routes.py",
     "test_stl_export.py",
+    "test_stl_render_compare.py",
     "test_stl_watertight.py",
     "test_folded_export.py",
     "test_surrogate.py",
