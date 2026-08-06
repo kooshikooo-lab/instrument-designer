@@ -282,6 +282,16 @@ def _play_game(peer_ip, port, game_num, time_control, my_color, side_names, star
                 return "1-0" if board.turn == chess.WHITE else "0-1"
 
             msg_count = len(_read_chess_messages(from_peer_only=True))
+
+            # Update clocks from the opponent's message. Their own clock already
+            # reflects the time they spent thinking. Network delay is *not* charged
+            # to either side; the waiting side uses its own local clock.
+            white_ms = msg.get("white_ms", white_ms)
+            black_ms = msg.get("black_ms", black_ms)
+            if (board.turn == chess.WHITE and white_ms <= 0) or (board.turn == chess.BLACK and black_ms <= 0):
+                print(f"[{_machine_name()}] Game {game_num}: {opponent} ran out of time.")
+                return "0-1" if board.turn == chess.WHITE else "1-0"
+
             uci = msg.get("move", "")
             try:
                 move = board.parse_uci(uci)
@@ -292,12 +302,8 @@ def _play_game(peer_ip, port, game_num, time_control, my_color, side_names, star
                 print(f"[{_machine_name()}] Game {game_num}: invalid UCI {uci}")
                 return "1-0" if board.turn == chess.WHITE else "0-1"
 
-            if board.turn == chess.WHITE:
-                white_ms = max(0, msg.get("white_ms", white_ms) - elapsed_ms)
-            else:
-                black_ms = max(0, msg.get("black_ms", black_ms) - elapsed_ms)
             board.push(move)
-            print(f"[{_machine_name()}] Game {game_num}: {opponent} ({side_str}) plays {uci}")
+            print(f"[{_machine_name()}] Game {game_num}: {opponent} ({side_str}) plays {uci} (waited {elapsed_ms}ms)")
 
         _print_board(board, white_ms, black_ms, side_names)
 
