@@ -1,0 +1,189 @@
+# Fusion 360 — 30-Day Evaluation Plan
+
+Status: **ACTIVE** (Phase 0 scriptable parts PASSED 2026-08-06 via automated add-in; mesh-repair proof 0.3 still needs human GUI)
+Owner: laptop (with human at the Fusion GUI)
+Date: 2026-08-05
+Related: `docs/RESEARCH_design_to_finished_instrument.md`, `docs/TOOLS.md` (mesh-repair gate), `wiki/3D-Printing-Guide.md`
+
+## Purpose
+
+Evaluate Autodesk Fusion 360 (30-day trial) as a **complementary** tool to the
+code-CAD core (CadQuery / build123d). The code-CAD pipeline stays canonical
+(parametric, versioned, repeatable); Fusion is evaluated for four jobs:
+
+1. **Mesh repair + STL cleanup** — repair non-watertight preset/instrument
+   meshes (e.g. xaphoon_C: 2624 verts / 5264 faces, NOT watertight in CadQuery).
+   This plugs directly into the mesh-repair-gate protocol in `docs/TOOLS.md`
+   (build123d-first, repair-fallback).
+2. **CAM / CNC toolpaths** — lathe/turning for bores + milling for tone holes.
+   No machine yet, so this track is feasibility + saved toolpaths only.
+3. **Simulation / modal FEA** — cross-check thin-wall body resonances against
+   the TMM/acoustic models (which treat walls as rigid). Licensing caveat below.
+4. **Manual CAD fallback** — hand-finish folded/paperclip geometries (bells,
+   bends) that code-CAD does awkwardly, then export STEP back into the pipeline.
+
+Fabrication equipment: **none yet** (planning only). Primary print path remains
+SLA resin per `wiki/3D-Printing-Guide.md`; CNC is a future option.
+
+## Environment
+
+- Install: `Autodesk Fusion 360` v2704.1.36 (trial)
+  - `C:\Users\koosh\AppData\Local\Autodesk\Autodesk Fusion 360\`
+  - `C:\Users\koosh\AppData\Roaming\Autodesk\Autodesk Fusion 360\`
+- Trial scope: full CAD + CAM + CAE + PCB access for 30 days.
+- Python API (`adsk` module): add-ins/scripts run **inside** Fusion (app must be
+  open). **Mesh repair is NOT exposed in the API** (Autodesk forum, 2023) —
+  repair is a manual Mesh-workspace action; text-command workaround exists but
+  is not scriptable via Python. Expect a manual/GUI-assisted batch workflow.
+- Simulation: base-trial simulation studies may require the Simulation
+  Extension or Flex tokens; verify included scope before investing in 2c.
+
+## Phase 0 — Smoke test (days 1–2) — gates deeper Fusion investment
+
+Goal: prove the two highest-value flows in ~30 minutes of GUI time, then hand
+results back to the laptop for the A/B/C workstreams.
+
+### 0.1 Generate smoke-test artifacts (laptop — done)
+
+```
+python scripts/make_fusion_smoke_test.py
+```
+
+Writes to `test_output/fusion/` (gitignored):
+- `koncovka_C.step`  — clean no-hole solid (volume reference, STEP round-trip)
+- `koncovka_C.stl`   — watertight STL reference (504 verts / 1008 faces)
+- `xaphoon_C.stl`    — known NON-watertight mesh (mesh-repair proof target)
+
+Baseline (laptop-verified, 2026-08-06): koncovka_C watertight (504v/1008f,
+volume 73652.381 mm³); xaphoon_C NOT watertight (2624v/5264f).
+
+**Automation (2026-08-06):** scriptable parts of Phase 0 are automated in
+`test_output/fusion/fusion_phase0_smoke.py` (staged in Fusion as
+`phase0_smoke_test` under MyScripts/ManuallyInstalled). It imports the STEP,
+reports body count + volume, and re-exports STEP + STL round-trip artifacts.
+Mesh repair (xaphoon) remains manual (not in the Fusion API).
+
+### 0.2 STEP round-trip (automated 2026-08-06 — PASS)
+
+Fully automated via the `phase0_automation` add-in (no GUI steps needed):
+
+1. File > Open, select `test_output/fusion/koncovka_C.step`. (add-in import)
+2. Measure volume via the API (`BRepBody.volume`, returned in **cm³**).
+3. Save As STEP → `test_output/fusion/koncovka_C_roundtrip.step`.
+4. Export STL → `test_output/fusion/koncovka_C_from_fusion.stl`.
+5. **Result (PASS):** 1 body, 73682.914 mm³ vs expected 73652.381 mm³
+   (+0.04%); round-trip STEP 7488 B; re-exported STL 696v/1392f watertight AND
+   manifold (`check_mesh_repair_gate` PASS), bbox 20×20×651.5 mm unchanged;
+   mesh volume 72844.11 mm³ (~1.1% tessellation loss at default refinement).
+
+### 0.3 Mesh repair proof (human in Fusion GUI — still open)
+
+1. Insert `test_output/fusion/xaphoon_C.stl` (File > Insert > Mesh).
+2. Mesh workspace > Modify > Repair (Close Holes / Stitch-and-Remove; enable
+   "Close holes" at default tolerance, then "Rebuild" if needed).
+3. Export as STL → `test_output/fusion/xaphoon_C_repaired.stl`.
+4. Save the repaired mesh also as a component to measure volume.
+5. Pass criteria: repaired STL passes the laptop verification step below.
+
+### 0.4 Verify repaired/exported STLs (laptop — runs on the files you save)
+
+```
+python -m backend.stl_verifier test_output/fusion/koncovka_C_from_fusion.stl --no-vision
+python -m backend.stl_verifier test_output/fusion/xaphoon_C_repaired.stl --no-vision
+```
+
+Report the `watertight=...` and `volume_mm3` lines back to #23.
+
+2026-08-06 automated check: `koncovka_C_from_fusion.stl` — watertight=true,
+manifold=true, 72844.11 mm³ → **PASS** (posted as `discussioncomment-17919778`).
+
+### 0.5 Exit criteria for Phase 0
+
+- One STEP round-trips (0.2) with volume intact. — **DONE (automated, +0.04%).**
+- One non-watertight mesh becomes watertight via Fusion (0.3) and passes `verify_stl`. — **OPEN (human GUI).**
+- Automation posture recorded (what can be scripted vs manual). — **DONE (below).**
+- Findings appended to this doc; status post to #23; then proceed to Phase 1.
+
+**Automation posture (2026-08-06):** scriptable = STEP import, body/volume
+measure, STEP/STL export, mesh import. Not scriptable = mesh repair (GUI-only,
+not exposed in the Fusion Python API), CAM toolpaths, simulation. Mechanism =
+`phase0_automation` add-in in `%APPDATA%\Autodesk\Autodesk Fusion 360\API\AddIns\`
+(JSON manifest `"type":"addin"`, `runOnStartup:true`) triggered by a file watch;
+work runs on a background thread after a 15 s startup delay (synchronous work in
+the startup `run()` crashes Fusion).
+
+## Phase 1 — A/B/C code workstreams (laptop; not gated on Fusion outcome)
+
+Runs in parallel with the trial; these are needed regardless of the Fusion
+verdict. See `docs/session-logs/BOOT_STATE.md` for details.
+
+- **A. Check-only mesh gate** — watertight + manifold checks in
+  `backend/stl_verifier.py`, called from `backend/cadquery_export.export_stl`;
+  new whitelisted test `tests/test_mesh_repair_gate.py`.
+- **B. build123d backend module** — `backend/build123d_export.py` mirroring
+  `generate_instrument` (cylindrical + tone-hole path) using build123d 0.11
+  `Pos(...) * part`; parity tests vs CadQuery (koncovka_C / fujara_G / xaphoon_C).
+- **C. Metamaterial test gap** — whitelist the 8 `tests/test_metamaterial*.py`
+  files in `pyproject.toml`; run; fix real bugs only.
+- **L2-vs-L1 parity sweep** — `test_level1_vs_level2_fundamental_parity` across
+  all `LOW_CLARINETS` keys; report deviations.
+
+## Phase 2 — Deeper Fusion evaluation (trial weeks 2–4, background)
+
+- **2a. Mesh-repair library sweep** — batch-repair the ~57 gitignored STLs
+  across `output/`, `test_output/`, `instrument-designer/`,
+  `metamaterial_low_clarinets/`; re-verify each with `verify_stl`; commit only
+  the report (repaired STLs stay regenerable/untracked). Feeds the
+  repair-fallback leg of the mesh-repair gate.
+- **2b. CAM / CNC feasibility** — import STEP, set up lathe/turning for the bore
+  + milling/drilling for tone holes, post-process to a generic post, save CAM
+  files; document feeds/speeds and machine constraints for resin/wood/POM.
+  Deliverable is a feasibility file + toolpath plan (no machine to run it).
+- **2c. Simulation / modal FEA** — modal analysis on a thin-wall tube body;
+  compare body resonances vs the rigid-wall TMM assumption. Bounded effort:
+  verify trial licensing first (Simulation Extension / Flex tokens).
+- **2d. Manual CAD fallback proof** — hand-model one folded/paperclip geometry
+  (bells, bends) in Fusion; STEP-export back; document when to use the manual
+  path over code-CAD.
+
+## Phase 3 — Checkpoints & decision (end of trial)
+
+- Weekly status posts to #23 (smoke-test results, A/B/C completion, sweep
+  results, Fusion track progress).
+- End-of-trial decision write-up in this doc: keep SLA code-CAD pipeline as
+  core; adopt Fusion for mesh repair + future CAM once equipment exists;
+  document trial/extension costs.
+
+## Constraints
+
+- Work on `opencode/build123d/laptop` (or a side branch); AUDIT-tag exploratory
+  commits. No pushes to `main` while desktop is offline (PR #62, team_chat.py
+  fixes D are desktop's / held).
+- Repaired STLs, STEPs, CAM files, and reports-under-test are regenerable and
+  **never committed** (`*.stl`, `output/`, `test_output/*.stl` are gitignored).
+  Only docs/decisions are tracked.
+- New pytest files must be whitelisted in `pyproject.toml` `python_files`.
+- `scripts/toolcheck.py` must stay clean; no secrets in commits.
+
+## Research findings log
+
+- 2026-08-05: Fusion 30-day trial = full CAD/CAM/CAE/PCB access (Autodesk).
+- 2026-08-05: Fusion Python API does not expose the mesh-repair command
+  (Autodesk forum 2023); repair is manual Mesh-workspace work. STEP import and
+  STL export are scriptable.
+- 2026-08-05: v2704.1.36 installed; trial began.
+- 2026-08-06: Add-in auto-load requires `%APPDATA%\...\API\AddIns\<name>\` with a
+  **JSON** manifest (`"type":"addin"`, `runOnStartup:true`); `MyScripts\Autorun`
+  alone does not load and XML manifests are rejected on this build.
+- 2026-08-06: Synchronous import/export inside the add-in's startup `run()`
+  crashes Fusion (Qt6WebEngineCore); a background thread + ~15 s startup delay is
+  stable.
+- 2026-08-06: `app.exportManager` does not exist; `exportManager` is exposed on
+  `Design` (adsk/fusion.py:48042). `app.importManager` is on `Application`.
+- 2026-08-06: `BRepBody.volume` returns cm³ (×1000 → mm³); there is no `Timer`
+  class in this build's API.
+- 2026-08-06: Fusion re-exports a watertight/manifold STL from an imported STEP
+  solid (696v/1392f, gate PASS), while cadquery's direct STL export of the same
+  solid is broken for xaphoon_C. STEP is confirmed as the interchange format.
+- 2026-08-06: Fusion accepts non-watertight STL as a mesh import without warning;
+  mesh repair is GUI-only (not API-exposed).

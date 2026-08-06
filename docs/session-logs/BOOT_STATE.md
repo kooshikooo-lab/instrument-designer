@@ -240,12 +240,30 @@
   `tcp://100.69.113.41:8786` (logs: `scripts/laptop_worker_stdout.log` /
   `_stderr.log`, gitignored). Leave running while benchmarks use both machines;
   desktop's `cluster_health.py` will confirm once their commits land.
-- **Kimi K3 doc fixes B3 = final wrap of `opencode/build123d/laptop`**
-  (this session): all C-phase files committed; D-phase verification done
-  (build123d parity at parity, toolcheck PASS, 158 passed / 2 skipped);
-  remaining: final BOOT_STATE/REMINDERS commit + push branch. Desktop's
-  `baroque_clarinet.json` option-1/2 answer (my option-2 recommendation in
-  `discussioncomment-17914412`) and Fusion 360 contract approval still pending.
+- **Kimi K3 doc fixes B3 = DONE** (this session): branch pushed
+  (`2a3374e..9be4a4f`), then tailscale monitor cherry-picks (`74778b6`,
+  `21bdd12`); HEAD `21bdd12`. Desktop confirmed `baroque_clarinet.json`
+  **Option 2** (stays `legacyBaroqueClarinet`, no migration; 3 migrated
+  canonical configs stay). Fusion 360 contract change approved by user's
+  direct instruction (test STL files in Fusion).
+- **Code audit (laptop, DONE)** — posted `discussioncomment-17915034`:
+  P0 build123d Z-offset (cap+holes need `-bore_length/2`); P1 cadquery `-X`
+  hole root-cause (`_cut_single_hole` cutter spans x∈[0,len] only → odd holes
+  silently lost; why xaphoon_C isn't watertight); P1 conical branch ignores
+  `closed_top` (8 presets); P1 mesh-repair gate passes multi-component
+  compounds. Fixes NOT yet applied (proposed B1/C1/C2/S2 AUDIT commits).
+- **Fusion 360 Phase 0 — ALL SCRIPTABLE STEPS PASSED** (this session, completed
+  ~12:54 local): fixed add-in at `API\AddIns\phase0_automation` (JSON manifest,
+  background thread + 15 s startup delay — synchronous work in `run()` crashed
+  Fusion). Ran import→measure→re-export automatically on `test_output/fusion/`:
+  koncovka_C STEP import 1 body 73682.914 mm³ (+0.04% vs 73652.381 expected);
+  STEP round-trip `koncovka_C_roundtrip.step` (7488 B); STL re-export
+  `koncovka_C_from_fusion.stl` 696v/1392f **watertight + manifold, gate PASS**
+  (mesh volume 72844.11 mm³, ~1.1% tessellation loss); xaphoon_C mesh import OK
+  (Fusion accepts non-watertight STL). Key finding: STEP→Fusion→STL heals the
+  broken cadquery direct-STL path. `phase0_result.json` written. Posted to #23
+  (`discussioncomment-17919778`). Remaining: mesh-repair proof 0.3 is GUI-only
+  (human), and post-Phase-1 audit fixes are still pending desktop review.
 
 ### Blocked
 - Standing (not this session): `backend/spectral` implementation awaits user
@@ -276,24 +294,29 @@
 
 ## Next Steps
 
-1. **Finish B3 push of `opencode/build123d/laptop`**: commit BOOT_STATE/REMINDERS
-   update (this session), then push the K3-fix branch (`47e1b9a`..`HEAD`) to origin.
-2. Standing: present `backend/spectral` design (`docs/DESIGN_spectral.md`) for
+1. **Fusion 360 Phase 0 (scriptable part DONE — PASS)**: verified above; post-1
+   Phase 0.3 mesh-repair proof (xaphoon_C) still needs the human in the Fusion
+   Mesh workspace (GUI-only, not in the API). Phase 1 A/B/C workstreams are
+   laptop-side and not gated on Fusion.
+2. **Apply audit fixes** (pending #23 review of `discussioncomment-17915034`):
+   B1 build123d Z-offset + C1 cadquery `-X` hole + C2 conical `closed_top` +
+   S2 mesh-gate components check — as separate `AUDIT:` commits, re-run parity
+   + full pytest.
+3. Standing: present `backend/spectral` design (`docs/DESIGN_spectral.md`) for
    user approval when the user is available.
-3. **Await desktop replies** (posted #23, comment-17914586): (a) `baroque_clarinet.json`
-   option-1/2 decision (laptop recommended option 2); (b) Fusion 360 contract change
-   approval (no A/B/C fusion work until approved); (c) build123d spike + mesh-repair
-   gate merge decision (comment-17906678).
-4. **Deferred (not P0):** interpolate `n_bore_cp` radii into a multi-segment bore
+4. **Await desktop replies** (posted #23): (a) audit-fix approval
+   (comment-17915034); (b) build123d spike + mesh-repair gate merge decision
+   (comment-17906678). `baroque_clarinet.json` resolved (Option 2).
+5. **Deferred (not P0):** interpolate `n_bore_cp` radii into a multi-segment bore
    profile in `backend/optimization/bore_optimizer.py` (Kimi P1; needs shared
    network.py/Segment profile interpolation — coordinate with desktop before
    touching shared geometry).
-5. **Reconcile `kalles-main-branch` deletion** with desktop: confirm which branch
+6. **Reconcile `kalles-main-branch` deletion** with desktop: confirm which branch
    now carries the metamaterial/topk/spectral work toward `main` (history safe on
    `opencode/main/laptop`; desktop branch lacks `3d318dc`).
-6. Optional user-verification: folded/low-clarinet notes wording in
+7. Optional user-verification: folded/low-clarinet notes wording in
    `docs/RESEARCH_acoustic_metamaterials.md` §7 / wiki §5.8.
-7. **ML optimization integration** (future): add ML-based optimization methods
+8. **ML optimization integration** (future): add ML-based optimization methods
    (e.g., Bayesian optimization, neural surrogates, gradient-free methods) to
    complement the existing two-phase optimizer (`backend/two_phase_optimizer.py`).
    **Progress to date:** laptop delivered the reusable gradient-free winner
@@ -329,12 +352,13 @@
   `docs/WIKI.md` §11, `docs/WIKI-INDEX.md`, `wiki/Internal-Research-CAD-Pipeline.md`,
   `wiki/Internal-Research.md`, `wiki/3D-Printing-Guide.md`) + BOOT_STATE (`1e70d01`).
   **123 passed / 1 skipped** on laptop.
-- **`origin/opencode/build123d/laptop`** = the K3-fix branch (was `e8d6254`
-  spike + mesh-repair protocol). This session added B1 `47e1b9a`, B2 `6d67f8d`,
-  C1–C6 (`2ea8806`..`99e36cf`), bore_optimizer fix `439537e` (HEAD). Not yet
-  pushed at last BOOT_STATE write — final wrap pushes it. Awaiting desktop review
-  of the spike merge (see #23 comment-17906678); K3 fixes posted as
-  comment-17914586.
+- **`origin/opencode/build123d/laptop`** = the K3-fix branch. B1 `47e1b9a`,
+  B2 `6d67f8d`, C1–C6 (`2ea8806`..`99e36cf`), bore_optimizer fix `439537e`,
+  BOOT_STATE/REMINDERS `9be4a4f` (pushed `2a3374e..9be4a4f`), tailscale
+  monitor cherry-picks `74778b6` (desktop `b8c2494`) + `21bdd12` (desktop
+  `70d6498`). **HEAD `21bdd12`, pushed.** Awaiting desktop review of the spike
+  merge (see #23 comment-17906678); K3 fixes posted as comment-17914586;
+  audit findings posted as comment-17915034.
 - Untracked regenerable artifacts left uncommitted: `bench_main.txt`,
   `bench_perf_tmm_medium.txt`, `bench_perf_tmm_refactor.txt`, `test_output/`.
 - #23 stream: laptop confirmation (01:41:04Z) + laptop's three `team_chat.py`
