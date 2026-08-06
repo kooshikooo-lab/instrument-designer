@@ -120,6 +120,7 @@ class BoreOptimizer(Optimizer):
         # Initial guess
         initial_length = self.network.total_length
 
+        best_radii = None
         if self.n_bore_cp == 0:
             # Optimize only bore length
             bounds = [self.bore_length_bounds]
@@ -148,11 +149,13 @@ class BoreOptimizer(Optimizer):
 
             best_length = result.x[0]
             best_cost = result.fun
+            best_radii = result.x[1:].tolist()
 
         dt = time.time() - t0
 
-        # Compute final metrics — absolute RMS is primary, median-corrected is secondary
-        temp_net = self._make_network(best_length)
+        # Compute final metrics — absolute RMS is primary, median-corrected is secondary.
+        # Use the optimized radii when present so the reported metrics match best_cost.
+        temp_net = self._make_network(best_length, best_radii)
         target_wavelengths = [self.network.speed_of_sound / f for f in self.targets]
         try:
             freqs = self.solver.compute_frequencies(
@@ -178,7 +181,7 @@ class BoreOptimizer(Optimizer):
 
         return OptimizationResult(
             success=best_cost < 50.0,
-            parameters={"bore_length": best_length},
+            parameters={"bore_length": best_length, "bore_radii": best_radii},
             cost=best_cost,
             rms_cents=rms_cents,           # absolute RMS — primary (accuracy)
             rms_cents_median=rms_cents_median,  # median-corrected — secondary (evenness)
