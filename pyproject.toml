@@ -52,6 +52,7 @@ python_files = [
     "test_blender_addon_import.py",
     "test_blender_server_client.py",
     "test_cadquery_instrument.py",
+    "test_compare_recording.py",
     "test_inverse_design.py",
     "test_local_llm.py",
     "test_metrics.py",
