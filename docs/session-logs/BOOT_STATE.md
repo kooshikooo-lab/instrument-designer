@@ -89,6 +89,19 @@
   - `schemas/design_output.schema.json` for optimizer-generated JSON artifacts.
   - `scripts/validate_json_schema.py` generic validator (schema + file/dir).
   - `tests/test_design_output_schema.py` added (4 tests passing).
+- **Team chat cursor bug fixed** (`051ae95`, pushed):
+  - `scripts/team_chat.py` no longer updates the "last read" cursor after posting.
+  - This caused desktop to miss the laptop's 00:54:58 reply to the schema thread.
+- **Import-consistency validator** (`051ae95`, pushed):
+  - `scripts/validate_imports.py` detects imports from deleted modules
+    (`backend/archived_optimizers`, etc.) and unresolved imports.
+  - Wired into `scripts/validate_pre_commit.py` for all staged Python files.
+  - `tests/test_validate_imports.py` added (4 tests passing).
+- **Instrument config schema updated** (`051ae95`, pushed):
+  - Added explicit `performance` definition (register RMS/offset, twelfths RMS, note).
+  - `performance` now allowed in canonical variant.
+  - Fixed `fingering_chart` cross-check in `validate_instrument_configs.py` to
+    handle both legacy nested and canonical flat structures.
 - **Path-rewrite cleanup** (in `a1807bd`): all 15 active scripts/tests use
   repo-relative resolution (`os.path.dirname(os.path.dirname(os.path.abspath(__file__)))`
   / `Split-Path $PSScriptRoot -Parent`), no hardcoded paths.
@@ -138,8 +151,8 @@
   (laptop is 55 commits ahead, carries the metamaterial stack).
 
 ### In Progress
-- **Track B (three.js preview)** delivered this session (see Done); awaiting user
-  verification of the browser preview.
+- Governance/schema coordination with laptop via Discussion #23 (cursor bug fixed,
+  reply posted at 2026-08-06, awaiting laptop confirmation).
 - `scripts/dask_scheduler.log` left unstaged (live log, tracked pre-existing).
 
 ### Blocked
@@ -213,7 +226,10 @@
 - `scripts/view_instrument.py` + `scripts/blender_view.py` + `blender_addon/` —
   Blender one-click viewer + addon.
 - `launchers/view_instrument.bat`, `launchers/view_browser.bat` — repo launchers.
-- `scripts/team_chat.py` — Discussion #23 sync/post (use `post --file`).
+- `scripts/team_chat.py` — Discussion #23 sync/post (use `post --file`). **Note:**
+  posts no longer move the read cursor; always run `sync` after posting.
+- `scripts/validate_imports.py` — import-consistency checker (staged files or `--path`).
+- `schemas/instrument_config.schema.json` — migration + canonical schema for `config/*.json`.
 - `scripts/start-cluster.ps1`, `spawn_worker.py`, `cluster_health.py`,
   `start_scheduler.py`, `start_worker.py`, `sync.ps1` — cluster tooling.
 - `backend/cadquery_export.py` — 90 presets; `docs/RESEARCH_design_to_finished_instrument.md`

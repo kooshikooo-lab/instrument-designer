@@ -15,9 +15,9 @@ thread starts, moves, or resolves.
 
 ## Standing compliance checklist
 
-- [ ] Governance guard enabled on this clone (`scripts/install_hooks.ps1`).
-- [ ] Pre-commit hooks active: file placement, regenerable artifacts, UTF-16,
-       bare excepts, hardcoded IPs, module size.
+- [x] Governance guard enabled on this clone (`scripts/install_hooks.ps1`).
+- [x] Pre-commit hooks active: file placement, regenerable artifacts, UTF-16,
+       bare excepts, hardcoded IPs, module size, **config schema**, **import consistency**.
 - [ ] Commit touching `docs/CONSTRAINTS_AND_PREFERENCES.md` carries
        `GOVERNANCE-UPDATE` in the message (hook + CI enforce).
 - [ ] Provisional / exploratory work tagged `AUDIT:` in the commit message.
@@ -41,6 +41,8 @@ thread starts, moves, or resolves.
 | 3 | Mesh-repair gate protocol (`docs/TOOLS.md`) | laptop | laptop draft | DECIDED: build123d-first + pymeshlab/pymeshfix repair fallback (desktop 17906945); laptop drafting protocol | 2026-08-05 |
 | 4 | build123d spike merge `8ddfc7a`+`e8d6254`+`7bc624e` → `opencode/main/laptop` | laptop | laptop merge | Approved by desktop (17906945); awaiting laptop merge | 2026-08-05 |
 | 5 | `cadquery-ocp` pin in `cad` extra | desktop | desktop commit | Desktop added pin (avoid `cadquery-ocp-novtk` OCP namespace clobber) | 2026-08-05 |
+| 6 | Config schema unification | desktop | laptop review | Schema + validator delivered; `bass_clarinet_7hole_bell.json` now explicitly supported; awaiting laptop confirmation of `performance` block fields | 2026-08-06 |
+| 7 | `team_chat.py` cursor bug | desktop | laptop verification | Fixed: `post` no longer moves the "last read" cursor; run `sync` on laptop to confirm replies are visible | 2026-08-06 |
 
 ## Nudge rule
 
