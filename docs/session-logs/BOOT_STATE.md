@@ -162,7 +162,9 @@
     sync + Tailscale peer reachability; logs to `scripts/check_team_chat.log`.
   - `launchers/check_team_chat.bat`: one-click no-window run via pythonw.
   - `launchers/start_tailscale_monitor.bat`: no `pause`/pop-up, uses pythonw.
-- **WSL + Ubuntu** approved and installed; system reboot required to activate.
+- **WSL + Ubuntu** approved; WSL2 installed but cannot start until CPU
+  virtualization (Intel VT-x / AMD-V) is enabled in BIOS/UEFI. A second reboot
+  into BIOS is required.
 - **Work separation decided**: desktop owns STL pipeline → Blender; laptop owns
   Fusion 360 Phase 0+ automation.
 - **Path-rewrite cleanup** (in `a1807bd`): all 15 active scripts/tests use
@@ -215,7 +217,7 @@
 
 ### In Progress
 - P0 geometry fixes committed and pushed (`e3492ed`).
-- Reboot needed to activate WSL + Ubuntu.
+- WSL2 installed; waiting for CPU virtualization to be enabled in BIOS/UEFI.
 - Work separation posted to Discussion #23; awaiting laptop confirmation.
 - Desktop next focus: debug STL pipeline end-to-end (CadQuery/build123d → mesh
   repair gate → Blender viewer).
@@ -224,7 +226,7 @@
 - `scripts/dask_scheduler.log` left unstaged (live log, tracked pre-existing).
 
 ### Blocked
-- Full test suite run deferred until after WSL reboot (hooks require bash).
+- Full test suite run with git hooks deferred until WSL/Ubuntu is fully active.
 - Standing (not this session): `backend/spectral` implementation awaits user
   approval of `docs/DESIGN_spectral.md` (3 open questions). FreeCAD workbench
   (track A) deferred — user chose three.js first.
