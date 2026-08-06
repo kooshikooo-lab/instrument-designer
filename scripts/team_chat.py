@@ -106,14 +106,8 @@ def post_comment(body, discussion_num=23):
     except (KeyError, json.JSONDecodeError):
         print(f"Unexpected response: {raw}", file=sys.stderr)
         sys.exit(1)
-    state = load_state()
-    try:
-        comments = fetch_comments()
-        state["last_comment_date"] = comments[-1]["date"] if comments else datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    except Exception:
-        state["last_comment_date"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    save_state(state)
     print(f"POSTED: {url}")
+    print("Run 'python scripts/team_chat.py sync' to fetch any replies.")
 
 
 OTHER = {"laptop": "desktop", "desktop": "laptop"}

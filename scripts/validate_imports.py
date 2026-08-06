@@ -1,192 +1,139 @@
-"""Pre-commit import-consistency checker.
+"""Check Python imports for references to deleted modules and unresolved names.
 
-Scans staged Python files for import statements and verifies that every
-imported module actually exists in the repository. Flags:
-  - imports from deleted/archived modules (e.g. backend/archived_optimizers)
-  - imports from modules that do not exist
-  - relative imports that leave the repository
+Usage:
+    python scripts/validate_imports.py
+    python scripts/validate_imports.py --path path/to/file.py
 
-Used by the pre-commit hook in scripts/git-hooks/pre-commit.
+Exit codes:
+    0 = all imports resolvable
+    1 = deleted/unresolved imports detected
 """
 
+import argparse
 import ast
+import importlib.util
 import os
 import subprocess
 import sys
 from pathlib import Path
 
-# Modules/packages that are explicitly forbidden to import.
-DELETED_PREFIXES = (
-    "backend.archived_optimizers",
-    "archived_optimizers",
-)
 
-# External packages and stdlib modules that we never try to resolve in-repo.
-# This is intentionally incomplete; anything not matching a repo package and
-# not resolvable is reported.
-KNOWN_EXTERNAL = {
-    "ast", "argparse", "base64", "collections", "copy", "csv", "datetime",
-    "functools", "glob", "hashlib", "importlib", "inspect", "io", "itertools",
-    "json", "logging", "math", "numbers", "numpy", "os", "pathlib", "pickle",
-    "pprint", "random", "re", "shutil", "subprocess", "sys", "tempfile", "time",
-    "traceback", "typing", "unittest", "uuid", "warnings",
-    # common third-party
-    "cv2", "fastapi", "flask", "jax", "jinja2", "matplotlib", "numba", "numpy",
-    "pandas", "pydantic", "pymoo", "pytest", "requests", "scipy", "sklearn",
-    "starlette", "uvicorn", "yaml",
+# Modules that are known to have been deleted/moved. Keep in sync with repo history.
+DELETED_MODULES = {
+    "backend.archived_optimizers",
+    "backend.legacy_optimizer",
+    "backend.bore_optimizer",
+    "backend.stage1_optimizer",
+    "backend.stage2_optimizer",
+    "backend_old",
+    "woodwind_designer",
 }
 
 
-def repo_root() -> Path:
-    return Path(subprocess.run(
-        ["git", "rev-parse", "--show-toplevel"],
-        capture_output=True, text=True, encoding="utf-8", errors="replace"
-    ).stdout.strip())
+REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
-def staged_python_files() -> list[str]:
+def staged_files():
+    """Return staged Python files (relative to repo root)."""
     result = subprocess.run(
         ["git", "diff", "--cached", "--name-only", "--diff-filter=ACMR"],
         capture_output=True, text=True, encoding="utf-8", errors="replace"
     )
     if result.returncode != 0:
         return []
-    return [
-        line.strip() for line in result.stdout.splitlines()
-        if line.strip().endswith(".py")
-    ]
+    return [line.strip() for line in result.stdout.splitlines() if line.strip().endswith(".py")]
 
 
-def extract_imports(source: str) -> list[tuple[str, int]]:
-    """Return list of (module_name, line_number) for top-level imports.
-
-    For relative imports, the module name is reconstructed with leading dots so
-    the resolver can determine the relative level.
-    """
-    imports = []
+def resolve_module(name):
+    """Try to resolve a module/import name. Returns True if resolvable."""
+    # Add repo root to sys.path so local packages can be discovered.
+    repo_root = str(REPO_ROOT)
+    if repo_root not in sys.path:
+        sys.path.insert(0, repo_root)
     try:
-        tree = ast.parse(source)
-    except SyntaxError:
-        return imports
-
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            for alias in node.names:
-                imports.append((alias.name, node.lineno))
-        elif isinstance(node, ast.ImportFrom):
-            level = node.level or 0
-            if node.module is None:
-                # from . import x
-                imports.append(("." * level, node.lineno))
-            else:
-                imports.append(("." * level + node.module, node.lineno))
-    return imports
+        spec = importlib.util.find_spec(name)
+        return spec is not None
+    except (ModuleNotFoundError, ImportError):
+        return False
 
 
-def is_external(module: str) -> bool:
-    top = module.split(".")[0]
-    return top in KNOWN_EXTERNAL
-
-
-def module_exists(root: Path, module: str) -> bool:
-    """Check whether a dotted module path resolves to an existing file or package."""
-    parts = module.split(".")
-    candidate_py = root / "/".join(parts[:-1]) / f"{parts[-1]}.py"
-    candidate_pkg = root / "/".join(parts) / "__init__.py"
-    return candidate_py.exists() or candidate_pkg.exists()
-
-
-def resolve_relative(root: Path, file_rel: str, module: str) -> bool:
-    """Resolve a relative import (e.g. '.foo.bar') against the file location."""
-    file_path = root / file_rel
-    level = 0
-    for ch in module:
-        if ch == ".":
-            level += 1
-        else:
-            break
-    rel_parts = module[level:].split(".") if module[level:] else []
-    base = file_path.parent
-    for _ in range(level - 1):
-        base = base.parent
-        if not root in [base, *base.parents]:
-            return False  # goes outside repo
-    candidate_py = base / f"{rel_parts[-1]}.py" if rel_parts else base / "__init__.py"
-    candidate_pkg = base / "/".join(rel_parts) / "__init__.py"
-    return candidate_py.exists() or candidate_pkg.exists()
-
-
-def check_file(root: Path, file_rel: str) -> list[str]:
-    """Return list of error messages for a single staged Python file."""
+def check_imports(path: Path, rel: str) -> list[str]:
+    """Return list of error messages for imports in the given Python file."""
     errors = []
-    path = root / file_rel
     try:
         with open(path, "r", encoding="utf-8", errors="replace") as f:
             source = f.read()
     except OSError as e:
-        return [f"{file_rel}: cannot read — {e}"]
+        return [f"{rel}: cannot read file — {e}"]
 
-    source = source.lstrip("\ufeff")  # strip UTF-8 BOM before parsing
-    imports = extract_imports(source)
-    for module, lineno in imports:
-        # Block imports from deleted modules.
-        if any(module == prefix or module.startswith(prefix + ".") for prefix in DELETED_PREFIXES):
-            errors.append(
-                f"{file_rel}:{lineno}: import from deleted module '{module}' "
-                f"(see docs/ARCHIVED_OPTIMIZERS.md; use SystemExit guard if intentional)"
-            )
-            continue
+    try:
+        tree = ast.parse(source)
+    except SyntaxError as e:
+        return [f"{rel}:{e.lineno}: syntax error — {e.msg}"]
 
-        # Skip external packages and stdlib.
-        if is_external(module):
-            continue
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                name = alias.name
+                if name in DELETED_MODULES or name.split(".")[0] in DELETED_MODULES:
+                    errors.append(f"{rel}:{node.lineno}: import from deleted module '{name}'")
+                elif not resolve_module(name):
+                    errors.append(f"{rel}:{node.lineno}: import '{name}' cannot be resolved")
 
-        # Skip empty/relative markers handled below.
-        if module == ".":
-            continue
-
-        # Resolve absolute repo imports.
-        if module.startswith("."):
-            if not resolve_relative(root, file_rel, module):
-                errors.append(f"{file_rel}:{lineno}: relative import '{module}' cannot be resolved")
-        else:
-            # Only check modules whose top-level package is one of the repo packages.
-            top = module.split(".")[0]
-            if (root / top).is_dir():
-                if not module_exists(root, module):
-                    errors.append(f"{file_rel}:{lineno}: import '{module}' cannot be resolved")
+        elif isinstance(node, ast.ImportFrom):
+            module = node.module or ""
+            level = node.level
+            if level > 0:
+                # Relative import. Check if the module file exists relative to rel_file.
+                parent = (REPO_ROOT / rel).parent
+                parts = module.split(".") if module else []
+                for _ in range(level - 1):
+                    parent = parent.parent
+                candidate = parent
+                for part in parts:
+                    candidate = candidate / part
+                # Accept a package directory with __init__.py or a .py module.
+                if candidate.with_suffix(".py").is_file() or (candidate.is_dir() and (candidate / "__init__.py").is_file()):
+                    continue
+                mod_name = "." * level + module
+                errors.append(f"{rel}:{node.lineno}: relative import '{mod_name}' cannot be resolved")
+            else:
+                full = module
+                if full in DELETED_MODULES or full.split(".")[0] in DELETED_MODULES:
+                    errors.append(f"{rel}:{node.lineno}: import from deleted module '{full}'")
+                elif not resolve_module(full):
+                    errors.append(f"{rel}:{node.lineno}: import '{full}' cannot be resolved")
 
     return errors
 
 
 def main():
-    import argparse
-    parser = argparse.ArgumentParser(description="Check Python imports for consistency")
+    parser = argparse.ArgumentParser(description="Check Python imports for deleted/unresolved references")
     parser.add_argument("--path", type=str, help="check a single file (relative to repo root)")
     args = parser.parse_args()
 
-    root = repo_root()
-
     if args.path:
-        files = [args.path]
+        rels = [args.path]
     else:
-        files = staged_python_files()
-
-    if not files:
-        print("No staged Python files to check.")
-        return 0
+        rels = staged_files()
+        if not rels:
+            print("No staged Python files to check.")
+            return 0
 
     all_errors = []
-    for rel in files:
-        all_errors.extend(check_file(root, rel))
+    for rel in rels:
+        path = REPO_ROOT / rel
+        if not path.is_file():
+            continue
+        all_errors.extend(check_imports(path, rel))
 
     if all_errors:
-        print("IMPORT CONSISTENCY ERRORS:")
+        print("IMPORT ERRORS:")
         for e in all_errors:
             print(f"  - {e}")
         return 1
 
-    print(f"Import consistency OK for {len(files)} Python file(s).")
+    print(f"OK: imports resolvable for {len(rels)} Python file(s).")
     return 0
 
 

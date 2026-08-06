@@ -50,11 +50,22 @@ def validate_file(path: Path, schema: dict) -> list[str]:
     # Cross-check: fingering chart bit length must match tonehole count (if both present).
     if "toneholes" in data and "fingering_chart" in data:
         n_holes = len(data["toneholes"])
-        for chart_name, chart in data["fingering_chart"].items():
+        chart = data["fingering_chart"]
+        if chart and isinstance(next(iter(chart.values())), dict):
+            # Legacy nested structure: {instrument_name: {note: [bits]}}
+            for chart_name, subchart in chart.items():
+                for note, bits in subchart.items():
+                    if len(bits) != n_holes:
+                        errors.append(
+                            f"{path.name}: fingering_chart.{chart_name}.{note} has "
+                            f"{len(bits)} bits but toneholes has {n_holes} entries"
+                        )
+        else:
+            # Canonical flat structure: {note: [bits]}
             for note, bits in chart.items():
                 if len(bits) != n_holes:
                     errors.append(
-                        f"{path.name}: fingering_chart.{chart_name}.{note} has "
+                        f"{path.name}: fingering_chart.{note} has "
                         f"{len(bits)} bits but toneholes has {n_holes} entries"
                     )
 
