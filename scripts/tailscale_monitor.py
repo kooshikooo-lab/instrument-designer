@@ -1,17 +1,20 @@
 """Tailscale peer monitor and direct message relay.
 
-Chess-engine-inspired protocol over a persistent TCP connection:
-- newline-delimited JSON commands
-- automatic reconnect with exponential backoff
-- ping/pong heartbeat, msg/ack delivery, status/status_reply
-- both peers run the same script (server + client loop)
+Simple, robust protocol inspired by UCI/ICS chess-engine interfaces:
+- Desktop always runs a TCP server on its Tailscale IP.
+- Each interaction is a short-lived connection: connect, send one command,
+  receive a reply, disconnect.
+- The laptop can send heartbeats, messages, and status requests.
+- The desktop tracks the last time it heard from the laptop.
+
+This avoids the fragility of persistent TCP connections and NAT/firewall issues.
 
 Usage:
-    python scripts/tailscale_monitor.py server              # accept incoming connections
-    python scripts/tailscale_monitor.py client              # connect to peer and keep alive
-    python scripts/tailscale_monitor.py send "hello"        # queue a message
-    python scripts/tailscale_monitor.py status              # show peer status
-    python scripts/tailscale_monitor.py test                # one-shot connectivity test
+    python scripts/tailscale_monitor.py server                # start listening server
+    python scripts/tailscale_monitor.py heartbeat             # ping peer every N seconds
+    python scripts/tailscale_monitor.py send "hello"          # one-shot message to peer
+    python scripts/tailscale_monitor.py status                # show last seen time
+    python scripts/tailscale_monitor.py test                  # one-shot connectivity test
 
 Environment:
     TAILSCALE_PEER_IP    - IP of the other machine (default: 100.100.66.117)
@@ -25,7 +28,6 @@ import json
 import os
 import socket
 import sys
-import threading
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -36,8 +38,7 @@ DEFAULT_PORT = 9124
 
 HEARTBEAT_INTERVAL = 15.0
 OFFLINE_THRESHOLD = 60.0
-RECONNECT_MIN = 1.0
-RECONNECT_MAX = 30.0
+RECV_TIMEOUT = 5.0
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 STATE_FILE = REPO_ROOT / "scripts" / ".tailscale_monitor.json"
@@ -84,9 +85,7 @@ def _load_state():
         "port": _port(),
         "last_seen_peer": None,
         "last_heartbeat_sent": None,
-        "queued_messages": [],
         "received_messages": [],
-        "connection_up": False,
     }
 
 
@@ -103,138 +102,100 @@ def _now_iso():
 
 
 def _encode(obj):
-    return json.dumps(obj, ensure_ascii=False) + "\n"
+    return (json.dumps(obj, ensure_ascii=False) + "\n").encode("utf-8")
 
 
-def _recv_line(sock, buf):
-    """Read one complete line from socket. Returns (line, buf) or (None, buf) on close/error."""
-    while True:
-        if "\n" in buf:
-            line, buf = buf.split("\n", 1)
-            return line, buf
+def _send_and_receive(peer_ip, port, command, timeout=RECV_TIMEOUT):
+    """One-shot request: connect, send one command, receive reply, close."""
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(timeout)
+    try:
+        sock.connect((peer_ip, port))
+        sock.sendall(_encode(command))
+        sock.shutdown(socket.SHUT_WR)
+        buf = b""
+        while True:
+            chunk = sock.recv(4096)
+            if not chunk:
+                break
+            buf += chunk
+            if b"\n" in buf:
+                break
+        if not buf:
+            return None
         try:
-            chunk = sock.recv(4096).decode("utf-8", errors="replace")
-        except (socket.timeout, ConnectionResetError, OSError):
-            return None, buf
-        if not chunk:
-            return None, buf
-        buf += chunk
-
-
-class _Connection:
-    """One persistent TCP connection (either inbound or outbound)."""
-
-    def __init__(self, sock, name, is_inbound):
-        self.sock = sock
-        self.name = name
-        self.is_inbound = is_inbound
-        self.buf = ""
-        self.lock = threading.Lock()
-        self.alive = True
-
-    def send(self, obj):
-        if not self.alive:
-            return False
-        with self.lock:
-            try:
-                self.sock.sendall(_encode(obj).encode("utf-8"))
-                return True
-            except (ConnectionResetError, OSError) as e:
-                self.alive = False
-                return False
-
-    def close(self):
-        self.alive = False
+            return json.loads(buf.decode("utf-8", errors="replace").strip().split("\n")[0])
+        except (json.JSONDecodeError, ValueError):
+            return None
+    except (ConnectionRefusedError, socket.timeout, OSError) as e:
+        return None
+    finally:
         try:
-            self.sock.close()
+            sock.close()
         except Exception:
             pass
 
 
-def _handle_command(conn, obj):
+def _update_last_seen(peer_ip):
+    state = _load_state()
+    state["last_seen_peer"] = _now_iso()
+    _save_state(state)
+    _log(f"heard from peer at {peer_ip}")
+
+
+def _handle_command(sock, addr, obj):
     me = _machine_name()
     cmd = obj.get("cmd")
-    state = _load_state()
-
     if cmd == "ping":
-        conn.send({"cmd": "pong", "from": me, "time": _now_iso()})
-        state["last_seen_peer"] = _now_iso()
-        state["connection_up"] = True
-        _save_state(state)
-    elif cmd == "pong":
-        state["last_seen_peer"] = _now_iso()
-        state["connection_up"] = True
-        _save_state(state)
+        _update_last_seen(addr[0])
+        sock.sendall(_encode({"cmd": "pong", "from": me, "time": _now_iso()}))
     elif cmd == "msg":
-        msg_id = obj.get("id", "")
-        text = obj.get("text", "")
         sender = obj.get("from", "unknown")
-        msg = {
-            "from": sender,
-            "text": text,
-            "time": _now_iso(),
-            "id": msg_id,
-        }
-        state["received_messages"] = state.get("received_messages", []) + [msg]
-        state["last_seen_peer"] = _now_iso()
-        state["connection_up"] = True
+        text = obj.get("text", "")
+        _update_last_seen(addr[0])
+        state = _load_state()
+        state["received_messages"] = state.get("received_messages", []) + [
+            {"from": sender, "text": text, "time": _now_iso()}
+        ]
         _save_state(state)
         _log(f"message from {sender}: {text[:80]}")
-        conn.send({"cmd": "ack", "id": msg_id, "from": me})
-    elif cmd == "ack":
-        msg_id = obj.get("id", "")
-        _remove_acked(msg_id)
-        state["last_seen_peer"] = _now_iso()
-        state["connection_up"] = True
-        _save_state(state)
+        sock.sendall(_encode({"cmd": "ok", "from": me, "time": _now_iso()}))
     elif cmd == "status":
-        conn.send({
+        _update_last_seen(addr[0])
+        state = _load_state()
+        sock.sendall(_encode({
             "cmd": "status_reply",
             "from": me,
             "time": _now_iso(),
-            "queued": len(state.get("queued_messages", [])),
             "last_seen_peer": state.get("last_seen_peer"),
-        })
-        state["last_seen_peer"] = _now_iso()
-        state["connection_up"] = True
-        _save_state(state)
-    elif cmd == "status_reply":
-        state["last_seen_peer"] = _now_iso()
-        state["connection_up"] = True
-        _save_state(state)
+        }))
 
 
-def _remove_acked(msg_id):
-    state = _load_state()
-    queue = state.get("queued_messages", [])
-    new_queue = [m for m in queue if m.get("id") != msg_id]
-    if len(new_queue) != len(queue):
-        state["queued_messages"] = new_queue
-        _save_state(state)
-
-
-def _server_connection_loop(conn):
-    peer_addr = conn.sock.getpeername()
-    _log(f"peer connected from {peer_addr}")
-    _flush_queue(conn)
-    while conn.alive:
-        line, conn.buf = _recv_line(conn.sock, conn.buf)
-        if line is None:
-            break
-        line = line.strip()
-        if not line:
-            continue
+def _client_handler(sock, addr):
+    buf = b""
+    try:
+        while True:
+            chunk = sock.recv(4096)
+            if not chunk:
+                break
+            buf += chunk
+            while b"\n" in buf:
+                line, buf = buf.split(b"\n", 1)
+                if not line.strip():
+                    continue
+                try:
+                    obj = json.loads(line.decode("utf-8", errors="replace"))
+                except json.JSONDecodeError:
+                    _log(f"non-JSON line from {addr}: {line[:80]}")
+                    continue
+                _handle_command(sock, addr, obj)
+    except (ConnectionResetError, OSError) as e:
+        _log(f"peer {addr} disconnected: {e}")
+    finally:
         try:
-            obj = json.loads(line)
-        except json.JSONDecodeError:
-            _log(f"non-JSON line: {line[:80]}")
-            continue
-        _handle_command(conn, obj)
-    conn.close()
-    state = _load_state()
-    state["connection_up"] = False
-    _save_state(state)
-    _log(f"peer disconnected from {peer_addr}")
+            sock.close()
+        except Exception:
+            pass
 
 
 def cmd_server():
@@ -253,171 +214,112 @@ def cmd_server():
             except socket.timeout:
                 continue
             sock.settimeout(5.0)
-            conn = _Connection(sock, str(addr), True)
-            threading.Thread(target=_server_connection_loop, args=(conn,), daemon=True).start()
+            _log(f"peer connected from {addr}")
+            _client_handler(sock, addr)
+            _log(f"peer disconnected from {addr}")
     except KeyboardInterrupt:
         pass
     finally:
         srv.close()
 
 
-def _connect_peer(peer_ip, port):
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.settimeout(5.0)
-    try:
-        sock.connect((peer_ip, port))
-        sock.settimeout(None)
-        return _Connection(sock, peer_ip, False)
-    except (ConnectionRefusedError, socket.timeout, OSError) as e:
-        sock.close()
-        return None
-
-
-def _client_loop():
+def cmd_send(text):
     peer_ip = _peer_ip()
     port = _port()
-    _log(f"client loop starting, peer={peer_ip}:{port}")
-    backoff = RECONNECT_MIN
+    reply = _send_and_receive(peer_ip, port, {
+        "cmd": "msg",
+        "from": _machine_name(),
+        "text": text,
+    })
+    if reply:
+        _log(f"message delivered to {peer_ip}:{port}, reply: {reply.get('cmd')}")
+        return True
+    else:
+        _log(f"message failed to deliver to {peer_ip}:{port}")
+        return False
+
+
+def cmd_heartbeat():
+    peer_ip = _peer_ip()
+    port = _port()
+    _log(f"heartbeat loop starting, peer={peer_ip}:{port}")
     while True:
-        conn = _connect_peer(peer_ip, port)
-        if conn is None:
-            _log(f"peer unreachable, reconnect in {backoff:.1f}s")
-            time.sleep(backoff)
-            backoff = min(backoff * 2, RECONNECT_MAX)
-            continue
-        _log(f"connected to peer {peer_ip}:{port}")
-        backoff = RECONNECT_MIN
-
-        # Heartbeat thread
-        stop_event = threading.Event()
-
-        def heartbeat():
-            while not stop_event.is_set():
-                if not conn.send({"cmd": "ping", "from": _machine_name(), "time": _now_iso()}):
-                    break
-                time.sleep(HEARTBEAT_INTERVAL)
-
-        hb_thread = threading.Thread(target=heartbeat, daemon=True)
-        hb_thread.start()
-
-        # Send any queued messages
-        _flush_queue(conn)
-
-        # Receive loop
-        while conn.alive:
-            line, conn.buf = _recv_line(conn.sock, conn.buf)
-            if line is None:
-                break
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                obj = json.loads(line)
-            except json.JSONDecodeError:
-                _log(f"non-JSON line from peer: {line[:80]}")
-                continue
-            _handle_command(conn, obj)
-
-        stop_event.set()
-        conn.close()
-        state = _load_state()
-        state["connection_up"] = False
-        _save_state(state)
-        _log(f"peer connection lost, reconnect in {backoff:.1f}s")
-        time.sleep(backoff)
-        backoff = min(backoff * 2, RECONNECT_MAX)
-
-
-def _flush_queue(conn):
-    state = _load_state()
-    queue = state.get("queued_messages", [])
-    if not queue:
-        return
-    for msg in list(queue):
-        if conn.send({
-            "cmd": "msg",
-            "id": msg.get("id"),
+        reply = _send_and_receive(peer_ip, port, {
+            "cmd": "ping",
             "from": _machine_name(),
-            "text": msg.get("text", ""),
-        }):
-            _log(f"sent message: {msg.get('text', '')[:60]}")
+            "time": _now_iso(),
+        })
+        if reply and reply.get("cmd") == "pong":
+            state = _load_state()
+            state["last_heartbeat_sent"] = _now_iso()
+            _save_state(state)
+            _log(f"heartbeat ok from {peer_ip}:{port}")
         else:
-            break
-
-
-def cmd_client():
-    _client_loop()
-
-
-def cmd_send(text):
-    state = _load_state()
-    msg_id = f"{_machine_name()}-{int(time.time()*1000)}"
-    state["queued_messages"] = state.get("queued_messages", []) + [
-        {"id": msg_id, "text": text, "time": _now_iso()}
-    ]
-    _save_state(state)
-    _log(f"queued message [{msg_id}]: {text[:80]}")
+            state = _load_state()
+            last_seen = state.get("last_seen_peer")
+            if last_seen:
+                ago = (datetime.now(timezone.utc) - datetime.fromisoformat(last_seen)).total_seconds()
+                if ago > OFFLINE_THRESHOLD:
+                    _log(f"ALERT: peer offline for {ago:.0f}s")
+            else:
+                _log(f"peer unreachable at {peer_ip}:{port}")
+        time.sleep(HEARTBEAT_INTERVAL)
 
 
 def cmd_status():
     state = _load_state()
     last_seen = state.get("last_seen_peer")
     last_sent = state.get("last_heartbeat_sent")
-    queued = len(state.get("queued_messages", []))
     print(f"machine: {_machine_name()}")
     print(f"peer: {state.get('peer_ip')}:{state.get('port')}")
-    print(f"connection_up: {state.get('connection_up', False)}")
     print(f"last_seen_peer: {last_seen or 'never'}")
-    print(f"queued_messages: {queued}")
+    print(f"last_heartbeat_sent: {last_sent or 'never'}")
     if last_seen:
         ago = (datetime.now(timezone.utc) - datetime.fromisoformat(last_seen)).total_seconds()
         print(f"peer_offline_for_seconds: {ago:.0f}")
+    else:
+        print("peer_offline_for_seconds: N/A")
 
 
 def cmd_test():
     peer_ip = _peer_ip()
     port = _port()
-    conn = _connect_peer(peer_ip, port)
-    if conn is None:
-        print(f"FAIL: cannot connect to {peer_ip}:{port}")
+    reply = _send_and_receive(peer_ip, port, {
+        "cmd": "ping",
+        "from": _machine_name(),
+        "time": _now_iso(),
+    })
+    if reply and reply.get("cmd") == "pong":
+        print(f"OK: peer replied {reply}")
+        return True
+    else:
+        print(f"FAIL: no reply from {peer_ip}:{port}")
         sys.exit(1)
-    conn.send({"cmd": "ping", "from": _machine_name(), "time": _now_iso()})
-    line, conn.buf = _recv_line(conn.sock, conn.buf)
-    conn.close()
-    if line:
-        try:
-            obj = json.loads(line)
-            if obj.get("cmd") == "pong":
-                print(f"OK: peer replied with {obj}")
-                return
-        except json.JSONDecodeError:
-            pass
-    print(f"FAIL: no pong from {peer_ip}:{port}")
-    sys.exit(1)
 
 
 def cmd_monitor():
-    """Run both server and client in background threads."""
+    """Run server in background and heartbeat in foreground."""
+    import threading
     threading.Thread(target=cmd_server, daemon=True).start()
-    cmd_client()
+    cmd_heartbeat()
 
 
 def main():
     parser = argparse.ArgumentParser(description="Tailscale peer monitor")
     sub = parser.add_subparsers(dest="cmd", required=True)
-    sub.add_parser("server", help="accept incoming connections")
-    sub.add_parser("client", help="connect to peer and keep alive")
-    sub.add_parser("monitor", help="run both server and client")
+    sub.add_parser("server", help="start listening server")
+    sub.add_parser("heartbeat", help="send ping to peer every N seconds")
+    sub.add_parser("monitor", help="run server + heartbeat")
     sub.add_parser("status", help="show local status")
     sub.add_parser("test", help="one-shot connectivity test")
-    p_send = sub.add_parser("send", help="queue a message for the peer")
+    p_send = sub.add_parser("send", help="send a message to the peer")
     p_send.add_argument("text", help="message text")
     args = parser.parse_args()
 
     if args.cmd == "server":
         cmd_server()
-    elif args.cmd == "client":
-        cmd_client()
+    elif args.cmd == "heartbeat":
+        cmd_heartbeat()
     elif args.cmd == "monitor":
         cmd_monitor()
     elif args.cmd == "status":

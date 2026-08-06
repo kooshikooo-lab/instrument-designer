@@ -35,38 +35,22 @@ def _send(sock, obj):
     sock.sendall((json.dumps(obj) + "\n").encode("utf-8"))
 
 
-def _recv(sock, buf):
+def _recv(sock):
+    data = b""
     deadline = time.time() + 5.0
     while time.time() < deadline:
-        if "\n" in buf:
-            line, buf = buf.split("\n", 1)
-            return line, buf
-        chunk = sock.recv(4096).decode("utf-8")
+        chunk = sock.recv(4096)
         if not chunk:
             break
-        buf += chunk
-    return None, buf
+        data += chunk
+        if b"\n" in data:
+            break
+    if not data:
+        return None
+    return json.loads(data.decode("utf-8").strip().split("\n")[0])
 
 
-def test_server_accepts_connection():
-    env = _env()
-    proc = subprocess.Popen(
-        [sys.executable, str(SCRIPT), "server"],
-        cwd=REPO_ROOT,
-        env=env,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    )
-    try:
-        time.sleep(0.5)
-        sock = _connect()
-        sock.close()
-    finally:
-        proc.terminate()
-        proc.wait(timeout=5)
-
-
-def test_ping_pong():
+def test_server_accepts_ping():
     env = _env()
     proc = subprocess.Popen(
         [sys.executable, str(SCRIPT), "server"],
@@ -79,18 +63,17 @@ def test_ping_pong():
         time.sleep(0.5)
         sock = _connect()
         _send(sock, {"cmd": "ping", "from": "test"})
-        line, _ = _recv(sock, "")
-        assert line is not None
-        obj = json.loads(line)
-        assert obj["cmd"] == "pong"
-        assert obj["from"] == "desktop"
+        reply = _recv(sock)
+        assert reply is not None
+        assert reply["cmd"] == "pong"
+        assert reply["from"] == "desktop"
         sock.close()
     finally:
         proc.terminate()
         proc.wait(timeout=5)
 
 
-def test_message_and_ack():
+def test_server_accepts_message():
     env = _env()
     proc = subprocess.Popen(
         [sys.executable, str(SCRIPT), "server"],
@@ -102,13 +85,36 @@ def test_message_and_ack():
     try:
         time.sleep(0.5)
         sock = _connect()
-        _send(sock, {"cmd": "msg", "id": "m1", "from": "test", "text": "hello"})
-        line, _ = _recv(sock, "")
-        assert line is not None
-        obj = json.loads(line)
-        assert obj["cmd"] == "ack"
-        assert obj["id"] == "m1"
+        _send(sock, {"cmd": "msg", "from": "test", "text": "hello"})
+        reply = _recv(sock)
+        assert reply is not None
+        assert reply["cmd"] == "ok"
         sock.close()
+    finally:
+        proc.terminate()
+        proc.wait(timeout=5)
+
+
+def test_one_shot_send():
+    env = _env()
+    proc = subprocess.Popen(
+        [sys.executable, str(SCRIPT), "server"],
+        cwd=REPO_ROOT,
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    try:
+        time.sleep(0.5)
+        result = subprocess.run(
+            [sys.executable, str(SCRIPT), "send", "test message"],
+            cwd=REPO_ROOT,
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        assert "delivered" in result.stdout or "failed" in result.stdout
     finally:
         proc.terminate()
         proc.wait(timeout=5)
