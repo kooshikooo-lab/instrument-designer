@@ -9,89 +9,69 @@
 
 ## Goal
 
-- **Working branch: `opencode/main/desktop`** (HEAD `e359f06`).
-- **This session's focus**: ground Tier-2 inverse design in woodwind acoustics and
-  separate physics from optimization code; then research/scoping for a lightweight
-  "team of experts" agent review model.
-- **Standing directive**: tools must be integrated into a pipeline, never just
-  installed and forgotten; `AUDIT:` for provisional commits; ask rather than
-  speculate when intent is unclear.
+- **Working branch: `opencode/main/desktop`** (HEAD `73159c1`).
+- **This session's focus**: Phase 0 critical bug fixes — SoS literal cleanup (46 sites), two-phase optimizer register freeze, bass chalumeau merge conflict; then Phase 1 WoodwindOpenWind FEM integration.
+- **Standing directive**: tools must be integrated into a pipeline, never just installed and forgotten; `AUDIT:` for provisional commits; ask rather than speculate when intent is unclear.
+- **P0 questions posted to Discussion #23** — awaiting human decisions on 4 blocking items.
 
 ## Constraints & Preferences
 
-- **Step 0 protocol**: `python scripts/team_chat.py sync` at session start AND
-  before stopping (Discussion #23); channel is canonical.
-- Constitution: Law 1 (no architecture damage), Law 3 (reuse existing bench
-  scripts), Law 7 (canonical `346100.0` mm/s speed of sound), Law 10 (stop/ask).
-- `AUDIT:` for provisional commits; `GOVERNANCE-UPDATE` for
-  `docs/CONSTRAINTS_AND_PREFERENCES.md`; don't commit regenerable artifacts.
+- **Step 0 protocol**: `python scripts/team_chat.py sync` at session start AND before stopping (Discussion #23); channel is canonical.
+- Constitution: Law 1 (no architecture damage), Law 3 (reuse existing bench scripts), Law 7 (canonical `346100.0` mm/s speed of sound), Law 10 (stop/ask).
+- `AUDIT:` for provisional commits; `GOVERNANCE-UPDATE` for `docs/CONSTRAINTS_AND_PREFERENCES.md`; don't commit regenerable artifacts.
 - Tool adoption rule: install + declare (`docs/TOOLS.md`) + import + whitelisted test.
 
 ## Progress
 
 ### Done (this session)
-- **Physics layer added**: `backend/physics/bore_design.py` (first-order tone-hole
-  acoustics: speed-of-sound vs. temperature, effective length, open/closed end
-  corrections, closed-hole compliance volume). Committed and pushed in `e359f06`.
-- **Tier-2 inverse design hardened**: `backend/inverse_design.py`:
-  - Analytic seeding from `bore_design.hole_positions_for_scale()` with dynamic
-    search bounds.
-  - Smooth resonance-phase fitness (`cents = -1200*log2(p - 1)`), replacing the
-    fragile peak-finding search that caused branch-jumping on vented fingerings.
-  - Lazy-loads `backend.generative_agent` via `importlib` so the module can be
-    absent without breaking static import checks.
-  - Fixed verification call sites: `compute_fingered_frequencies` now receives
-    wavelengths (mm), not frequencies (Hz).
-- **Tests + whitelist**:
-  - Added `tests/test_bore_design.py` (7 tests).
-  - Tightened `test_design_scale_numpy_ga_returns_candidates` to `<10c` RMS and
-    `<15c` max error, verifying with `KeefeLoss`.
-  - Whitelisted `test_bore_design.py` in `pyproject.toml` (now 24 files).
-  - Added `backend/inverse_design.py` to `OVERSIZED_ALLOWLIST` in
-    `scripts/validate_pre_commit.py` and `scripts/compliance_watchdog.py`.
-- **Docs**: `docs/TEST_MATRIX.md` updated with scan/inverse category details and
-  new baseline `217 passed, 3 skipped`.
-- **Team-of-experts research**: proposal drafted and posted to Discussion #23
-  (https://github.com/kooshikooo-lab/instrument-designer/discussions/23#discussioncomment-17925874).
-  Recommends a lightweight custom `scripts/review_panel.py` with Physics Auditor +
-  Math+Code Formalist as the first two experts, evaluator-optimizer loop for
-  flagged issues.
+- **Merged PR #63**: Removed phantom `openwind` gitlink (shadowed pip package).
+- **Merged PR #62**: 45-file import repair (tmm_acoustics imports moved to `archived_optimizers/`).
+- **SoS Literal Cleanup plan**: 46 non-canonical speed-of-sound literals across 10 files, organized by dependency layer (physics → optimizers → core → tone-hole → tests).
+- **Two-Phase Optimizer Fix plan**: Extract shared `detect_registers()` to `backend/physics/register_detection.py`, wire into selector's `TwoPhaseOptimizer` and standalone `two_phase_optimizer.py`, add `bore_length_bounds` enforcement for bass instruments, remove hardcoded `outer_diameter=22.0`/`closed_top=False`.
+- **Bass Chalumeau Merge Conflict identified**: Desktop has tone-hole fix in `build_bass_chalumeau_Bb()`; laptop doesn't. Manual diff required before merge.
+- **WoodwindOpenWind FEM prioritized**: Create `backend/woodwind_openwind.py` mirroring `TrumpetOpenWind`, register `REFINED` strategy for woodwinds.
+- **Backlog defined**: CT-Scan Benchmarking (Issue #47), Demakein Replacement (Issue #48), Monte Carlo Tolerance Budget, Surrogate Audit, Tier 2 items.
+- **P0 Questions posted to Discussion #23**: 4 blocking decisions needed (impossible ODs, bass chalumeau holes, two-phase scope, merge conflict).
+- **ROADMAP.md completely overhauled** with Phase 0-3 plan.
+- **Session log saved**: `chat-logs/2026-08-07-session-log.md` + P0 questions `chat-logs/2026-08-07-p0-questions.md`.
 
 ### In Progress
-- None — session closing after this update.
+- SoS Literal Cleanup (10 files, 46 sites) — not yet started
+- Two-Phase Optimizer Fixes — not yet started
+- Validation suite run — pending
 
 ### Blocked
-- None.
+- P0 fixes await human decisions on 4 questions (Discussion #23)
 
 ## Key Decisions
-
-- Vented fingerings in the progressive ladder are the model's phase-2 resonance;
-  the phase fitness directly measures pitch error and is smooth enough for the GA.
-- `KeefeLoss` is part of the design target: the GA compensates for the loss model's
-  frequency-dependent phase shift, so verification must use the same loss model.
-- `backend.generative_agent` should remain optional; lazy import avoids a hard
-  dependency and satisfies the pre-commit import checker.
-- Team-of-experts should start as a lightweight custom script, not a framework.
+- **SoS test expectations → 346100 mm/s** (Law 7: canonical source of truth)
+- **Register detection → shared module** `backend/physics/register_detection.py` (Law 3, Law 4)
+- **Two-phase optimizer: Fix, don't delete** (Law 1 — it's the default `ACCURATE` strategy)
+- **Batch work**: SoS + two-phase today; surrogate + bass diff tomorrow
+- **WoodwindOpenWind before remaining SoS test updates** (architecture over features)
 
 ## Next Steps
-
-1. Await feedback on the team-of-experts proposal in Discussion #23; if approved,
-   implement `scripts/review_panel.py` PoC with Physics + Math/Code reviewers.
-2. If laptop replies to pending threads, resolve or nudge as needed.
-3. Continue any user-directed work next session.
+1. Await human decisions on 4 P0 questions in Discussion #23.
+2. Execute Phase 0: SoS cleanup (by layer), Two-Phase fixes, validation.
+3. Phase 1: WoodwindOpenWind FEM, surrogate audit.
+4. Phase 2: CT-Scan benchmarking (Issue #47), Demakein replacement (Issue #48), Monte Carlo, Surrogate.
 
 ## Critical Context
-
-- `origin/main` = `c8b9fd2`; `opencode/main/desktop` = `e359f06`.
+- `origin/main` = `d935287`; `opencode/main/desktop` = `73159c1`.
 - Test baseline: `pytest tests/` → 217 passed, 3 skipped; `python scripts/toolcheck.py` PASS.
-- No PHANTOM imports; 10 ORPHAN declared-not-installed packages unchanged.
-- Pre-commit validation passes; `backend/inverse_design.py` is now allowlisted as oversized.
+- Pre-commit validation passes; `backend/inverse_design.py` is allowlisted as oversized.
+- Merged PRs: #63 (openwind gitlink), #62 (45-file import repair).
+- Discussion #23 — P0 questions posted, awaiting feedback.
 
 ## Relevant Files
+- `backend/physics/bore_design.py` — analytic tone-hole physics (temp formula for SoS).
+- `backend/tmm_acoustics.py` — canonical `SPEED_OF_SOUND = 346100.0`.
+- `backend/two_phase_optimizer.py:73-97` — `detect_registers()` to extract.
+- `backend/optimization/selector.py` — `TwoPhaseOptimizer` class to wire.
+- `backend/modular_components.py:699` — `build_bass_chalumeau_Bb()` merge conflict.
+- `backend/surrogate/` — `mlp_surrogate.py`, `bi_objective_bo.py` (audit first).
+- `docs/ROADMAP.md` — complete Phase 0-3 plan.
+- `chat-logs/2026-08-07-session-log.md` — full session audit.
+- `chat-logs/2026-08-07-p0-questions.md` — 4 blocking questions for human.
 
-- `backend/physics/bore_design.py` — analytic tone-hole physics.
-- `backend/inverse_design.py` — Tier-1/2/3 inverse design; numpy GA fallback.
-- `tests/test_bore_design.py`, `tests/test_inverse_design.py` — corresponding tests.
-- `docs/TEST_MATRIX.md` — updated baseline and category docs.
-- `scripts/validate_pre_commit.py`, `scripts/compliance_watchdog.py` — allowlists.
-- Discussion #23 — team-of-experts proposal awaiting feedback.
+(End of file)
