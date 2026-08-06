@@ -149,6 +149,22 @@
     `build_bass_chalumeau_Bb()`, hardcoded `outer_diameter_mm=22.0` and
     `closed_top=False` in `jax_optimizer.py` and `two_phase_optimizer.py`. False
     alarm: positional `outer_diameter` argument in `sequential_placement` is correct.
+- **P0 geometry fixes pushed** (`e3492ed`):
+  - `backend/jax_optimizer.py`: `eval_all`/`safe_eval` accept `outer_diameter`.
+  - `backend/two_phase_optimizer.py`: `two_phase_optimize`/`phase1_de_search`/
+    `phase2_lbfgsb_refine` accept `outer_diameter` and `closed_top`.
+  - `backend/benchmark_all.py`: impossible outer diameters corrected for
+    `concert_flute_C`, `alto_flute_G`, `pvc_flute_D`, `diatonic_D_chalumeau`.
+  - `backend/modular_components.py`: `build_bass_chalumeau_Bb()` now adds 8 tone
+    holes matching the benchmark fingerings.
+- **Team-chat health check** (`e3492ed`):
+  - `scripts/check_team_chat.py`: silent background check of GitHub Discussion #23
+    sync + Tailscale peer reachability; logs to `scripts/check_team_chat.log`.
+  - `launchers/check_team_chat.bat`: one-click no-window run via pythonw.
+  - `launchers/start_tailscale_monitor.bat`: no `pause`/pop-up, uses pythonw.
+- **WSL + Ubuntu** approved and installed; system reboot required to activate.
+- **Work separation decided**: desktop owns STL pipeline → Blender; laptop owns
+  Fusion 360 Phase 0+ automation.
 - **Path-rewrite cleanup** (in `a1807bd`): all 15 active scripts/tests use
   repo-relative resolution (`os.path.dirname(os.path.dirname(os.path.abspath(__file__)))`
   / `Split-Path $PSScriptRoot -Parent`), no hardcoded paths.
@@ -198,15 +214,17 @@
   (laptop is 55 commits ahead, carries the metamaterial stack).
 
 ### In Progress
-- Session ended 2026-08-06. Next work deferred to tomorrow after user reviews
-  `docs/ARCHITECTURE_AUDIT.md` + `docs/AI_REVIEW_FACT_CHECK.md` and answers 4
-  detailed questions (correct wall thickness, `bass_chalumeau_Bb` builder fate,
-  `two_phase_optimizer.py` fate, P0-only vs P0+P1 scope).
-- Governance/schema coordination with laptop via Discussion #23 (cursor bug fixed,
-  reply posted at 2026-08-06, awaiting laptop confirmation).
+- P0 geometry fixes committed and pushed (`e3492ed`).
+- Reboot needed to activate WSL + Ubuntu.
+- Work separation posted to Discussion #23; awaiting laptop confirmation.
+- Desktop next focus: debug STL pipeline end-to-end (CadQuery/build123d → mesh
+  repair gate → Blender viewer).
+- Laptop next focus: Fusion 360 Phase 0+ automation and audit fixes B1/C1/C2/S2.
+- Governance/schema coordination with laptop via Discussion #23 ongoing.
 - `scripts/dask_scheduler.log` left unstaged (live log, tracked pre-existing).
 
 ### Blocked
+- Full test suite run deferred until after WSL reboot (hooks require bash).
 - Standing (not this session): `backend/spectral` implementation awaits user
   approval of `docs/DESIGN_spectral.md` (3 open questions). FreeCAD workbench
   (track A) deferred — user chose three.js first.
@@ -223,28 +241,23 @@
   read-only so the app can't overwrite on close (then unlock once relaunched OK).
 - Order of operations + ASK-don't-speculate are now binding governance.
 
-## Next Steps (Tomorrow)
+## Next Steps
 
-1. **User review**: walk through `docs/ARCHITECTURE_AUDIT.md` and
-   `docs/AI_REVIEW_FACT_CHECK.md` and answer 4 detail questions:
-   - Correct wall thickness / outer diameter for `pvc_flute_D` and `diatonic_D_chalumeau`.
-   - Add holes to `build_bass_chalumeau_Bb()` or remove the benchmark target?
-   - Delete `two_phase_optimizer.py` (if dead) or fix it?
-   - P0 bugs only tomorrow, or P0 + P1 import fixes together?
-2. **Fix P0 critical bugs** after answers:
-   - Impossible outer diameters in `backend/benchmark_all.py`.
-   - Missing tone holes in `backend/modular_components.build_bass_chalumeau_Bb()`.
-   - Hardcoded `outer_diameter_mm=22.0` in `backend/jax_optimizer.py::eval_all`.
-   - Hardcoded `outer_diameter_mm=22.0` and `closed_top=False` in
-     `backend/two_phase_optimizer.py` (or delete it).
-3. **Fix deleted-module references** in `backend/benchmark_unconventional_shapes.py`,
-   `backend/main.py`, `run.py`, `scripts/benchmark_chalumier_dask.py`,
-   `tests/test_measure.py`, `tests/test_server_routes.py`.
-4. **Clean up bare excepts** in production code (`backend/`, `scripts/`).
-5. **Remove or ignore** tracked regenerable artifacts / misplaced files.
-6. **Coordinate with laptop**: confirm Tailscale monitor is running latest, pull
+1. **Reboot desktop** to complete WSL + Ubuntu activation.
+2. **Desktop (STL pipeline + Blender):**
+   - Re-run full test suite with hooks active after reboot.
+   - Verify STL export pipeline for one preset from `backend/cadquery_export.py`.
+   - Confirm Blender viewer opens the STL correctly via `launchers/view_instrument.bat`.
+3. **Laptop (Fusion 360):**
+   - Continue Fusion 360 Phase 0+ automation.
+   - Apply audit fixes B1/C1/C2/S2 as separate AUDIT commits.
+4. **Remaining cleanup (post-reboot):**
+   - Fix deleted-module references if any remain (modules now appear to exist;
+     failures were due to missing optional deps `pymoo`, `PySide6`, `openwind`).
+   - Clean bare excepts in production code (`backend/`, `scripts/`).
+   - Remove or ignore tracked regenerable artifacts / misplaced files.
+5. **Coordinate with laptop**: confirm Tailscale monitor is running latest, pull
    latest `opencode/main/desktop`, and close resolved #23 threads.
-7. **Research**: Fusion 360 personal-use free-subscription limitations for API/scripting.
 
 ## Standing / Longer Term
 
