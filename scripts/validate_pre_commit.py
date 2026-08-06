@@ -109,14 +109,23 @@ def check_regenerable(path: str) -> str | None:
     return None
 
 
+# Specific files that are allowed despite their directory's normal placement rules.
+PLACEMENT_ALLOWLIST = {
+    "scripts/.tailscale_config.json",
+}
+
+
 def check_placement(path: str) -> str | None:
-    """Return violation message if path violates directory placement rules."""
+    """Detect violation if path violates directory placement rules."""
+    if path in PLACEMENT_ALLOWLIST:
+        return None
     for prefix, rule in PLACEMENT_RULES.items():
         if path.startswith(prefix):
             suffix = Path(path).suffix.lower()
             if suffix and suffix not in rule["allowed"]:
                 return f"{path}: {rule['message']}"
     return None
+
 
 
 def check_bare_excepts(path: Path) -> list[int]:
