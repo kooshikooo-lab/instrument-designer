@@ -62,3 +62,6 @@ scripts/.tailscale_config.json
 scripts/tailscale_monitor.log
 scripts/tailscale_monitor.out.log
 scripts/tailscale_monitor.err.log
+
+# Compliance watchdog runtime log (baseline JSON is versioned on purpose)
+scripts/compliance_log.jsonl

@@ -1,0 +1,236 @@
+{
+  "violations": [
+    [
+      "backend\\archived_optimizers\\bore_optimizer.py",
+      "module_size",
+      [
+        747
+      ]
+    ],
+    [
+      "backend\\archived_optimizers\\tmm_optimizer_sequential.py",
+      "module_size",
+      [
+        1032
+      ]
+    ],
+    [
+      "backend\\benchmark_all.py",
+      "module_mutable",
+      [
+        "INSTRUMENTS L10"
+      ]
+    ],
+    [
+      "backend\\benchmark_chalumeau.py",
+      "module_mutable",
+      [
+        "INSTRUMENTS L37",
+        "all_results L237"
+      ]
+    ],
+    [
+      "backend\\benchmark_dask.py",
+      "bare_except",
+      [
+        58,
+        127,
+        98
+      ]
+    ],
+    [
+      "backend\\benchmark_dask.py",
+      "hardcoded_ip",
+      [
+        "100.69.113.41",
+        "100.69.113.41"
+      ]
+    ],
+    [
+      "backend\\benchmark_unconventional_shapes.py",
+      "hardcoded_ip",
+      [
+        "100.69.113.41",
+        "100.69.113.41",
+        "100.69.113.41",
+        "100.69.113.41"
+      ]
+    ],
+    [
+      "backend\\build123d_export.py",
+      "module_mutable",
+      [
+        "CASES L148"
+      ]
+    ],
+    [
+      "backend\\cadquery_export.py",
+      "module_mutable",
+      [
+        "INSTRUMENTS L473"
+      ]
+    ],
+    [
+      "backend\\design_desk.py",
+      "module_mutable",
+      [
+        "INSTRUMENT_CONFIGS L61"
+      ]
+    ],
+    [
+      "backend\\design_pipeline.py",
+      "module_size",
+      [
+        528
+      ]
+    ],
+    [
+      "backend\\experiments\\build123d_koncovka.py",
+      "module_mutable",
+      [
+        "KONCOVKA L44"
+      ]
+    ],
+    [
+      "backend\\fingering_reference.py",
+      "module_mutable",
+      [
+        "written_pitches L34",
+        "HOLE_POSITIONS_CHALUMIER L57",
+        "HOLE_POSITIONS_EXTENDED L62",
+        "GRADUATED_DIAMETERS L69",
+        "FINGERING_CHART_CHALUMEAU L84",
+        "FINGERING_CHART_CLARION L108"
+      ]
+    ],
+    [
+      "backend\\fixtures.py",
+      "module_size",
+      [
+        611
+      ]
+    ],
+    [
+      "backend\\flute_calculator.py",
+      "module_mutable",
+      [
+        "NOTE_NAMES L22"
+      ]
+    ],
+    [
+      "backend\\generative_agent.py",
+      "hardcoded_ip",
+      [
+        "100.69.113.41",
+        "100.69.113.41"
+      ]
+    ],
+    [
+      "backend\\generative_agent.py",
+      "module_mutable",
+      [
+        "BORE_SHAPE_GENERATORS L176"
+      ]
+    ],
+    [
+      "backend\\generative_agent.py",
+      "module_size",
+      [
+        828
+      ]
+    ],
+    [
+      "backend\\instrument_knowledge.py",
+      "module_size",
+      [
+        800
+      ]
+    ],
+    [
+      "backend\\jax_optimizer.py",
+      "module_size",
+      [
+        523
+      ]
+    ],
+    [
+      "backend\\metamaterial_low_clarinets.py",
+      "module_mutable",
+      [
+        "LOW_CLARINETS L45"
+      ]
+    ],
+    [
+      "backend\\modular_components.py",
+      "module_mutable",
+      [
+        "PVC_PIPES L40",
+        "CLARINET_TENONS L108",
+        "SAX_TENONS L131",
+        "PVC_CONNECTIONS L144",
+        "BASS_CLARINET_REF L530"
+      ]
+    ],
+    [
+      "backend\\optimization\\selector.py",
+      "module_size",
+      [
+        524
+      ]
+    ],
+    [
+      "backend\\optimizer.py",
+      "module_size",
+      [
+        525
+      ]
+    ],
+    [
+      "backend\\physics\\bore_optimizer.py",
+      "module_mutable",
+      [
+        "SCALE_INTERVALS L29"
+      ]
+    ],
+    [
+      "backend\\stl_verifier.py",
+      "module_mutable",
+      [
+        "FALLBACK_VISION_MODELS L39",
+        "VIEWS L219"
+      ]
+    ],
+    [
+      "backend\\target_frequencies.py",
+      "module_mutable",
+      [
+        "NOTES L52",
+        "FLAT_MAP L53"
+      ]
+    ],
+    [
+      "backend\\trumpet_acoustics.py",
+      "module_mutable",
+      [
+        "VALVE_TUBES_BB L60",
+        "TRUMPET_VALVE_COMBOS L67",
+        "TRUMPET_SEMITONE_SHIFTS L79",
+        "NOTE_NAMES L96"
+      ]
+    ],
+    [
+      "backend\\trumpet_openwind.py",
+      "module_mutable",
+      [
+        "NOTE_NAMES L47"
+      ]
+    ],
+    [
+      "woodwind_designer\\engine\\instrument_library.py",
+      "module_mutable",
+      [
+        "LIBRARY L28"
+      ]
+    ]
+  ]
+}

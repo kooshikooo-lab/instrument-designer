@@ -59,6 +59,8 @@ OVERSIZED_ALLOWLIST = {
     "backend/stl_verifier.py",
     "woodwind_designer/engine/design_server.py",
     "woodwind_designer/engine/instrument_library.py",
+    # Multi-purpose compliance tool with several independent check modes.
+    "scripts/compliance_watchdog.py",
 }
 
 
@@ -118,6 +120,8 @@ def check_regenerable(path: str) -> str | None:
 # Specific files that are allowed despite their directory's normal placement rules.
 PLACEMENT_ALLOWLIST = {
     "scripts/.tailscale_config.json",
+    # Versioned compliance-baseline snapshot (Law 14 watchdog regression gate).
+    "scripts/compliance_baseline.json",
 }
 
 

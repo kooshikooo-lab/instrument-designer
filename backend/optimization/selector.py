@@ -104,8 +104,17 @@ class OptimizerFactory:
         if config.strategy != OptimizerStrategy.ACCURATE:
             return config.strategy
         
-        # Brass instruments → need FEM (bell flare not handled by TMM)
-        if config.instrument_type == InstrumentType.BRASS:
+        # Brass + Woodwinds → need FEM (bell flare, register vents, complex bore not handled by TMM)
+        if config.instrument_type in (
+            InstrumentType.BRASS,
+            InstrumentType.CLARINET,
+            InstrumentType.SAXOPHONE,
+            InstrumentType.FLUTE,
+            InstrumentType.CHALUMEAU,
+            InstrumentType.RECORDER,
+            InstrumentType.OCARINA,
+            InstrumentType.WHISTLE,
+        ):
             return OptimizerStrategy.REFINED  # Will route to OpenWInD
         
         # Timbre-aware optimization requested

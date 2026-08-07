@@ -38,7 +38,7 @@ For each check below, answer PASS or FAIL.
 
 ### CHECK 1 — Constitution refresh
 
-Recite the 10 laws from `docs/AI_CONSTITUTION.md` from memory. If you cannot remember all 10, re-read the file.
+Recite the laws from `docs/AI_CONSTITUTION.md` from memory. If you cannot remember them all, re-read the file.
 
 State which laws apply to your current activity and which do not.
 
@@ -47,7 +47,56 @@ State which laws apply to your current activity and which do not.
 
 ---
 
-### CHECK 2 — Subsystem check
+### CHECK 1b — Dependency integrity (Law 13)
+
+For every declared dependency (`pyproject.toml` extras, `requirements*.txt`) required by your subsystem: verify it is installed and importable, and check there is no `importorskip`/`skip` masking a missing package that production code relies on.
+
+```
+python -m pip check
+python -m pytest tests -q -rs    # review every SKIPPED line — is the skip justified?
+```
+
+**PASS:** All required dependencies import; every skip is genuinely optional/declared-off.
+**FAIL:** A declared dependency is missing — that is a bug (Law 13). Install it and re-run the skipped tests until they pass.
+
+---
+
+### CHECK 1c — Pre-commit audit (Law 14)
+
+Before every commit touching `.py` files, verify the work you are about to commit:
+
+1. **Constitution re-read** — agents forget the constitution because of lack of context size, so re-read `docs/AI_CONSTITUTION.md` and state which laws apply to this change (from the file, not from memory). If you cannot quote them, you have not read them.
+2. **Tests ran and passed** — the tests covering the change passed (or you added coverage for new code).
+3. **Diff reviewed** — `git diff --cached` was read line-by-line and checked against the laws and coding standards from step 1; you can explain every hunk.
+4. **No silent killers** — scan for wrong enum names, unit swaps, hardcoded physics constants, off-by-one, copy-paste edits.
+5. **No scratch files** — `git status` shows no `fix_*.py` / debug / one-off files staged.
+6. **Verification declared** — the commit message carries a `Tests:` or `Verification:` line (enforced by the commit-msg hook). If verification was skipped, declare `AUDIT: unverified` explicitly.
+
+**PASS:** All six points checked and recorded in the commit message.
+**FAIL:** You are about to commit unverified work. Stop — run the tests / fix the environment first.
+
+---
+
+### CHECK 1d — Compliance watchdog (Law 14)
+
+The watchdog automates what agents forget. Run it, and trust its exit code over your memory:
+
+```
+python scripts/compliance_watchdog.py --check-laws       # laws match AI_CONSTITUTION.md?
+python scripts/compliance_watchdog.py --check-baseline   # no NEW violations vs baseline?
+python scripts/compliance_watchdog.py --once             # full scan (session start)
+```
+
+- The pre-commit hook already runs `--check-baseline` — a new violation blocks the commit.
+- The baseline (`scripts/compliance_baseline.json`) is versioned: when you *intentionally* fix
+  debt, regenerate it with `--baseline` so the fix becomes the new baseline.
+- If you introduce a real violation, the regression check blocks — do not work around it by
+  re-baselining unless the change is deliberate and reviewed.
+
+**PASS:** `--check-laws` and `--check-baseline` both exit 0.
+**FAIL:** A new violation or stale law list — fix it before committing (do not bypass).
+
+---
 
 State which single subsystem you are modifying (from the table in `docs/CONSTRAINTS_AND_PREFERENCES.md`).
 
