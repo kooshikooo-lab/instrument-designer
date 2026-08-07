@@ -214,3 +214,63 @@ def _assert_result_contract(result):
         assert rec["ok"] is True, rec
         assert rec["bodies"] == 1, rec
         assert rec["volume_mm3"] > 0, rec
+
+
+# --- Phase 2b CAM-probe result contract (next scriptable Fusion test) --------
+
+# Shape `phase0_automation._run_phase2b` will write: one `cam` record with the
+# probe results the laptop reads back to judge CAM feasibility.
+CAM_PROBE_FIELDS = {"available", "post_engine_path", "library_manager"}
+
+
+def _valid_cam_probe_sample():
+    return {
+        "ok": True,
+        "probes": {
+            "documents": {"count": 1, "active_document": True},
+            "cam": {
+                "available": True,
+                "post_engine_path": True,
+                "library_manager": True,
+            },
+        },
+    }
+
+
+def test_cam_probe_contract_valid_sample_passes():
+    _assert_cam_probe_contract(_valid_cam_probe_sample())
+
+
+def test_cam_probe_contract_matches_live_phase2_result():
+    """The live probe (test_output/fusion/phase1/phase2_result.json) records
+    CAM available with post engine + library manager; that result must satisfy
+    the contract the laptop uses to judge CAM feasibility."""
+    path = os.path.join(PHASE1_OUT, "phase2_result.json")
+    if not os.path.exists(path):
+        pytest.skip("phase2_result.json not generated yet")
+    with open(path, "r") as f:
+        live = json.load(f)
+    _assert_cam_probe_contract(live)
+
+
+def test_cam_probe_contract_rejects_unavailable_cam():
+    sample = _valid_cam_probe_sample()
+    sample["probes"]["cam"]["available"] = False
+    with pytest.raises(AssertionError):
+        _assert_cam_probe_contract(sample)
+
+
+def test_cam_probe_contract_rejects_missing_cam_fields():
+    sample = _valid_cam_probe_sample()
+    del sample["probes"]["cam"]["post_engine_path"]
+    with pytest.raises(AssertionError):
+        _assert_cam_probe_contract(sample)
+
+
+def _assert_cam_probe_contract(result):
+    assert result["ok"] is True
+    cam = result["probes"]["cam"]
+    assert cam["available"] is True, cam
+    assert CAM_PROBE_FIELDS.issubset(set(cam.keys())), cam
+    assert cam["post_engine_path"] is True
+    assert cam["library_manager"] is True
