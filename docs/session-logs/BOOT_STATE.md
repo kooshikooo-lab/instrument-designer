@@ -9,81 +9,106 @@
 
 ## Goal
 
-- **Working branch: `opencode/build123d/laptop`** (laptop), HEAD `8e8fd97`.
-- **Desktop branch `opencode/main/desktop`** at `9fb1c0b` (Phase 0 complete).
-- **Phase 0 COMPLETE (desktop)**: SoS literal cleanup, Two-Phase optimizer register freeze, bass chalumeau merge conflict resolved — merged into laptop.
-- **Laptop merge RECONSTRUCTED + caught up to desktop Phase 0**: broken single-parent merge `73ae792` replaced by proper 2-parent merge `e794979` (parents `56cad29` + `962b3f9`), then merged desktop `9fb1c0b` (Phase 0) on top (`4518573`).
-- **PR #66 OPEN** (`opencode/build123d/laptop` → `opencode/main/desktop`), mergeable, awaiting desktop review.
+- **Working branch: `opencode/build123d/laptop`** (laptop), HEAD `0808026`.
+- **Desktop branch `opencode/main/desktop`** at `84309099` (includes Law 15).
+- **Governance merge COMPLETE (2026-08-07)**: laptop merged desktop `04564614`
+  (Laws 12-14 + compliance watchdog) → resolved `scripts/team_chat.py` as a union
+  (1 conflict, not the 19 desktop predicted) → `6c23a11`, promoted via ff-only
+  onto `opencode/build123d/laptop`, pushed. Approved by desktop; 355 passed / 4
+  skipped. PR #66 remains the carrier.
+- **Law 15 (Branch governance) added by desktop** (`84309099`); NOT yet merged
+  into laptop branch — bring it in via `merge/` staging when desktop authorizes
+  (holding cross-machine merges during the audit).
+- **Desktop is running a FULL CODEBASE AUDIT** (Laws 1-14) — laptop holds pushes
+  to shared branches until audit completes.
 - **Phase 1 READY**: WoodwindOpenWind FEM integration, surrogate audit.
-- **Standing directive**: tools must be integrated into a pipeline, never just installed and forgotten; `AUDIT:` for provisional commits; ask rather than speculate when intent is unclear.
+- **Standing directive**: tools must be integrated into a pipeline, never just
+  installed and forgotten; `AUDIT:` for provisional commits; ask rather than
+  speculate when intent is unclear.
 
 ## Constraints & Preferences
 
-- **Step 0 protocol**: `python scripts/team_chat.py sync` at session start AND before stopping (Discussion #23); channel is canonical.
-- Constitution: Law 1 (no architecture damage), Law 3 (reuse existing bench scripts), Law 7 (canonical `346100.0` mm/s speed of sound), Law 10 (stop/ask).
-- `AUDIT:` for provisional commits; `GOVERNANCE-UPDATE` for `docs/CONSTRAINTS_AND_PREFERENCES.md`; don't commit regenerable artifacts.
-- Tool adoption rule: install + declare (`docs/TOOLS.md`) + import + whitelisted test.
+- **Step 0 protocol**: `python scripts/team_chat.py sync` at session start AND
+  before stopping (Discussion #23); channel is canonical.
+- Constitution: Law 1 (no architecture damage), Law 3 (reuse existing bench
+  scripts), Law 7 (canonical `346100.0` mm/s speed of sound), Law 10 (stop/ask),
+  **Law 15 (branch governance — 4 namespaces, `merge/` staging, prove-before-delete)**.
+- `AUDIT:` for provisional commits; `GOVERNANCE-UPDATE` for protected governance
+  files (`docs/CONSTRAINTS_AND_PREFERENCES.md`, `docs/REMINDERS.md`, etc.);
+  don't commit regenerable artifacts.
 
 ## Progress
 
-### Done (this session)
-- **Merged PR #63**: Removed phantom `openwind` gitlink (shadowed pip package).
-- **Merged PR #62**: 45-file import repair (tmm_acoustics imports moved to `archived_optimizers/`).
-- **SoS Literal Cleanup COMPLETE**: 46 non-canonical speed-of-sound literals fixed across 10 files (by dependency layer: physics → optimizers → core → tone-hole → tests).
-- **Two-Phase Optimizer Fixes COMPLETE**:
-  - Created shared `backend/physics/register_detection.py` with frozen register detection.
-  - Updated `backend/two_phase_optimizer.py` to use shared module.
-  - Updated `backend/optimization/selector.py` TwoPhaseOptimizer:
-    - Added configurable `outer_diameter`, `closed_top`, `bore_length_bounds`.
-    - Register detection frozen once from initial geometry (Discussion #23 decision).
-    - Phase 2 uses `peak_cost_nearest` with frozen registers.
-    - Bass instruments (>1m) enforce `bore_length_bounds`.
-- **Bass Chalumeau Merge Conflict RESOLVED**: Laptop merged desktop first (per Discussion #23 decision 4B).
-- **P0 Questions RESOLVED** (Discussion #23): All 4 human decisions received (A/A/A/B).
-- **ROADMAP.md completely overhauled** with Phase 0-3 plan.
-- **Session log saved**: `chat-logs/2026-08-07-session-log.md` + P0 questions `chat-logs/2026-08-07-p0-questions.md`.
+### Done (this session, 2026-08-07)
+- **Governance merge completed + verified**: side branch
+  `merge/build123d-laptop-receives-governance` → merged desktop `04564614`,
+  1 conflict resolved (`team_chat.py` union), exec-bit fixes on git hooks,
+  compliance baseline regenerated 23→30, gates green, 355 passed / 4 skipped,
+  promoted + pushed `6c23a11`. Posted merge report + completion to #23.
+- **ACK'd desktop promote instruction + audit coordination** (holding shared
+  pushes).
+- **Dask test batches (local cluster)**: local scheduler (PID 15908) + 1 worker
+  (PID 7204) on `tcp://127.0.0.1:8786`; dask topk suite 5 passed; full suite
+  355 passed / 4 skipped; cross-branch dask benchmark validated (2 instruments
+  in 1.0s).
+- **Law 15 read + ACK'd**; deleted local `merge/build123d-laptop-receives-governance`
+  (content proven ancestor of integration branch).
+- **Broad research expansion committed locally** (`0808026`, pre-commit +
+  compliance regression passed): 2 new docs (`RESEARCH_openwind_fem_and_surrogates.md`,
+  `RESEARCH_ct_benchmarking.md`) + addenda to metamaterials (§9) and
+  design-to-finished (§6b). Wiki updated + pushed (separate repo, `master 7e10b6e`).
+- Research docs commit held locally pending audit; wiki live.
 
 ### In Progress
-- **PR #66** (`opencode/build123d/laptop` → `opencode/main/desktop`) — OPEN + MERGEABLE, awaiting desktop review (desktop was offline/frozen at session end).
-- **Chess match rematch (thread 12)** — pending desktop recovery; laptop ready to start the 10-game bullet match monitor on request.
-- Laptop: Phase 1 tasks per work separation — desktop owns WoodwindOpenWind FEM skeleton + surrogate audit (per REMINDERS threads 17-19).
-- Laptop cursor: **P0-2b CAM-activation probe (Fusion 360 Phase 2b)** — trigger/result/progress constants added, `_delayed_phase2b` + `_run_phase2b()` NOT yet implemented.
+- **PR #66** (`opencode/build123d/laptop` → `opencode/main/desktop`) — OPEN +
+  MERGEABLE, carrier for laptop work.
+- **Desktop codebase audit (Laws 1-14)** — posted in batches to #23; no code
+  changes to shared branches during audit.
+- **Dask worker attach to desktop scheduler**: `tcp://100.69.113.41:8786` still
+  unreachable; laptop local cluster running meanwhile.
 
 ### Blocked
-- Chess match: desktop offline/frozen (human reported restart has no effect).
-- PR #66 review: awaiting desktop.
+- Chess match rematch (thread 12): pending both monitors; desktop monitor port
+  9124 not responding.
+- Dask desktop scheduler: not started yet on desktop side.
 
 ## Key Decisions
 - **SoS test expectations → 346100 mm/s** (Law 7: canonical source of truth).
-- **Register detection → shared module** `backend/physics/register_detection.py` (Law 3, Law 4).
-- **Two-phase optimizer: Fix, don't delete** (Law 1 — it's the default `ACCURATE` strategy).
-- **WoodwindOpenWind before remaining SoS test updates** (architecture over features).
+- **Register detection → shared module** `backend/physics/register_detection.py`.
+- **Two-phase optimizer: Fix, don't delete** (Law 1).
+- **Governance merge: keep PR #66 as carrier**; no merge to `opencode/main/laptop`.
+- **Law 15 ACK'd**; all `merge/` staging branches deleted on both sides.
 
 ## Next Steps
-1. Phase 1: Create `backend/woodwind_openwind.py` mirroring `TrumpetOpenWind`.
-2. Register `REFINED` strategy for woodwinds in selector.
-3. Add TMM vs FEM comparison to `run_optimizer_comparison`.
-4. Surrogate audit (`backend/surrogate/`).
-5. Phase 2: CT-Scan benchmarking (Issue #47), Demakein replacement (Issue #48), Monte Carlo, Surrogate.
+1. Wait for desktop audit to complete; post any laptop-side gate findings.
+2. When desktop authorizes: bring Law 15 (`84309099`) into laptop branch via
+   `merge/` staging per Law 15.3.
+3. Attach laptop dask workers to desktop scheduler when reachable; re-run
+   cluster test batches.
+4. Phase 1: WoodwindOpenWind FEM (desktop-owned; research base in
+   `docs/RESEARCH_openwind_fem_and_surrogates.md`), surrogate audit.
+5. Phase 2 (Issue #47): CT-scan benchmarking using
+   `docs/RESEARCH_ct_benchmarking.md` (FT40/FT44, DaSCH STLs).
+6. Push research docs commit (`0808026`) after audit completes.
 
 ## Critical Context
-- `origin/main` = `d935287`; `opencode/main/desktop` = `9fb1c0b` (was `962b3f9` at merge time).
-- Laptop branch `opencode/build123d/laptop`: HEAD `8e8fd97` — reconstruction `e794979` + Phase 0 merge `4518573` + AUDIT commits `8124afa`/`8e8fd97`. Local = remote, worktree clean.
-- Test baseline: laptop full suite after Phase 0 merge → **355 passed, 4 skipped** (273s). Desktop baseline: 217 passed, 3 skipped.
-- Pre-commit validation passes; `backend/inverse_design.py` is allowlisted as oversized.
-- Merged PRs: #63 (openwind gitlink), #62 (45-file import repair).
-- Original broken merge `73ae792` (single-parent, partial) force-replaced with `e794979` (proper 2-parent merge). Desktop notified via #23 comments 17927394 + 17927522; PR #66 opened.
-- This session (2026-08-07): reconstructed broken merge, merged desktop Phase 0, resolved 8 conflicts, fixed `test_whitelist.py` subdirectory search, opened PR #66.
+- `origin/main` = `d935287`; `opencode/main/desktop` = `84309099` (includes Law 15).
+- Laptop branch `opencode/build123d/laptop`: HEAD `0808026` (research docs,
+  committed locally, NOT pushed yet — audit hold).
+- Test baseline: laptop full suite → **355 passed, 4 skipped** (≈264s).
+- Pre-commit validation passes; `backend/inverse_design.py` allowlisted oversized.
+- Discussion #23 comment IDs (laptop): 17933680 (dask ready), 17933694 (ACK
+  promote + audit hold), 17933898 (ACK Law 15 + test/research report).
+- Wiki repo: `instrument-designer.wiki.git`, cloned at
+  `%TEMP%\opencode\wiki2`, last pushed `master 7e10b6e`.
 
 ## Relevant Files
-- `backend/physics/bore_design.py` — analytic tone-hole physics (temp formula for SoS).
-- `backend/tmm_acoustics.py` — canonical `SPEED_OF_SOUND = 346100.0`.
-- `backend/physics/register_detection.py` — shared frozen register detection.
-- `backend/two_phase_optimizer.py` — uses shared register detection.
-- `backend/optimization/selector.py` — `TwoPhaseOptimizer` with frozen registers + bass bounds.
-- `backend/modular_components.py:699` — `build_bass_chalumeau_Bb()` merge conflict resolved.
-- `backend/surrogate/` — `mlp_surrogate.py`, `bi_objective_bo.py` (audit next).
-- `docs/ROADMAP.md` — complete Phase 0-3 plan.
-- `chat-logs/2026-08-07-session-log.md` — full session audit.
-
-(End of file)
+- `docs/RESEARCH_openwind_fem_and_surrogates.md` — Phase 1 FEM/surrogate base (new).
+- `docs/RESEARCH_ct_benchmarking.md` — Phase 2 CT benchmark base (new).
+- `docs/RESEARCH_acoustic_metamaterials.md` — §9 addendum (2024-2026).
+- `docs/RESEARCH_design_to_finished_instrument.md` — §6b addendum (fabrication loop).
+- `scripts/spawn_worker.py`, `scripts/start_worker.py`, `scripts/cluster_health.py`
+  — dask worker attach + health.
+- `scripts/team_chat.py` — merged union (laptop + desktop features).
+- `docs/AI_CONSTITUTION.md` — now includes Law 15 (on `opencode/main/desktop`).
+- `chat-logs/2026-08-07-session-log.md` — prior session audit.
