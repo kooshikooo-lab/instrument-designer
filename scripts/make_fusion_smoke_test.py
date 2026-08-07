@@ -3,7 +3,8 @@
 Produces (all under ``test_output/fusion/``, gitignored):
 - koncovka_C.step  : clean no-hole solid for the STEP round-trip test
 - koncovka_C.stl   : watertight STL reference (504 verts / 1008 faces)
-- xaphoon_C.stl    : known NON-watertight mesh (mesh-repair proof target)
+- xaphoon_C.stl    : 7-hole mesh (NOTE: watertight since the audit C1 hole-cutter
+                     fix — no longer a NON-watertight repair proof target)
 
 Then prints a baseline summary (watertight + volume per file) so the Fusion
 GUI steps in ``docs/FUSION_360_30day_plan.md`` have expected values to check.

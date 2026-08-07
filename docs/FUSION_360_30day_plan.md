@@ -2,7 +2,9 @@
 
 Status: **ACTIVE** (Phase 0 scriptable PASSED 2026-08-06; Phase 1 batch 5/5 PASS
 2026-08-06; Phase-2 API probe 2026-08-06 — CAM scriptable surface confirmed,
-Simulation absent; mesh-repair proof 0.3 still needs human GUI)
+Simulation absent; mesh-repair proof 0.3 still needs human GUI + a replacement
+non-watertight target since xaphoon_C is watertight; laptop-side generators now
+covered by `tests/test_fusion_360.py` 11 tests, 2026-08-07)
 Owner: laptop (with human at the Fusion GUI)
 Date: 2026-08-05
 Related: `docs/RESEARCH_design_to_finished_instrument.md`, `docs/TOOLS.md` (mesh-repair gate), `wiki/3D-Printing-Guide.md`
@@ -14,7 +16,9 @@ code-CAD core (CadQuery / build123d). The code-CAD pipeline stays canonical
 (parametric, versioned, repeatable); Fusion is evaluated for four jobs:
 
 1. **Mesh repair + STL cleanup** — repair non-watertight preset/instrument
-   meshes (e.g. xaphoon_C: 2624 verts / 5264 faces, NOT watertight in CadQuery).
+   meshes (e.g. xaphoon_C was 2624 verts / 5264 faces, NOT watertight in
+   CadQuery before the audit C1 hole-cutter fix; it now exports watertight, so
+   the Phase 0.3 repair-proof needs a genuinely non-watertight sample).
    This plugs directly into the mesh-repair-gate protocol in `docs/TOOLS.md`
    (build123d-first, repair-fallback).
 2. **CAM / CNC toolpaths** — lathe/turning for bores + milling for tone holes.
@@ -63,10 +67,14 @@ python scripts/make_fusion_smoke_test.py
 Writes to `test_output/fusion/` (gitignored):
 - `koncovka_C.step`  — clean no-hole solid (volume reference, STEP round-trip)
 - `koncovka_C.stl`   — watertight STL reference (504 verts / 1008 faces)
-- `xaphoon_C.stl`    — known NON-watertight mesh (mesh-repair proof target)
+- `xaphoon_C.stl`  — 7-hole mesh; watertight since the audit C1 hole-cutter fix
+  (2993 verts / 6014 faces). NOT a repair proof target anymore.
 
 Baseline (laptop-verified, 2026-08-06): koncovka_C watertight (504v/1008f,
 volume 73652.381 mm³); xaphoon_C NOT watertight (2624v/5264f).
+**2026-08-07 update:** the audit C1 fix (centered hole cutter) made xaphoon_C
+watertight (2993v/6014f, mesh-repair gate PASS). The Phase 0.3 repair-proof
+target must be a different, genuinely non-watertight sample (see below).
 
 **Automation (2026-08-06):** scriptable parts of Phase 0 are automated in
 `test_output/fusion/fusion_phase0_smoke.py` (staged in Fusion as
@@ -89,10 +97,16 @@ Fully automated via the `phase0_automation` add-in (no GUI steps needed):
 
 ### 0.3 Mesh repair proof (human in Fusion GUI — still open)
 
-1. Insert `test_output/fusion/xaphoon_C.stl` (File > Insert > Mesh).
+**Status 2026-08-07:** xaphoon_C is now watertight (C1 fix), so it can no longer
+serve as the repair proof target. Pick a replacement sample: one of the ~57
+gitignored output STLs that is genuinely non-watertight (find via
+`python -m backend.stl_verifier --all` / the Phase-2a sweep), or deliberately
+degrade a clean STL (e.g. delete a face in a mesh editor). Then:
+
+1. Insert the chosen STL (File > Insert > Mesh).
 2. Mesh workspace > Modify > Repair (Close Holes / Stitch-and-Remove; enable
    "Close holes" at default tolerance, then "Rebuild" if needed).
-3. Export as STL → `test_output/fusion/xaphoon_C_repaired.stl`.
+3. Export as STL → `test_output/fusion/<name>_repaired.stl`.
 4. Save the repaired mesh also as a component to measure volume.
 5. Pass criteria: repaired STL passes the laptop verification step below.
 
@@ -100,7 +114,7 @@ Fully automated via the `phase0_automation` add-in (no GUI steps needed):
 
 ```
 python -m backend.stl_verifier test_output/fusion/koncovka_C_from_fusion.stl --no-vision
-python -m backend.stl_verifier test_output/fusion/xaphoon_C_repaired.stl --no-vision
+python -m backend.stl_verifier test_output/fusion/<name>_repaired.stl --no-vision
 ```
 
 Report the `watertight=...` and `volume_mm3` lines back to #23.
@@ -111,7 +125,7 @@ manifold=true, 72844.11 mm³ → **PASS** (posted as `discussioncomment-17919778
 ### 0.5 Exit criteria for Phase 0
 
 - One STEP round-trips (0.2) with volume intact. — **DONE (automated, +0.04%).**
-- One non-watertight mesh becomes watertight via Fusion (0.3) and passes `verify_stl`. — **OPEN (human GUI).**
+- One non-watertight mesh becomes watertight via Fusion (0.3) and passes `verify_stl`. — **OPEN (human GUI; needs a replacement non-watertight target since xaphoon_C is now watertight).**
 - Automation posture recorded (what can be scripted vs manual). — **DONE (below).**
 - Findings appended to this doc; status post to #23; then proceed to Phase 1.
 
@@ -224,3 +238,9 @@ verdict. See `docs/session-logs/BOOT_STATE.md` for details.
   has no `itemById` (iterate `.count`/`.item(i)`); `Product` has no `.name`.
 - 2026-08-06: `CAMManager.manufacturingModels` does not exist on this build —
   `ManufacturingModels` is accessed via the `CAM` product (defs line 8024).
+- 2026-08-07: xaphoon_C now exports watertight (audit C1 hole-cutter fix) —
+  the Phase 0.3 mesh-repair proof needs a genuinely non-watertight sample.
+- 2026-08-07: `tests/test_fusion_360.py` (whitelisted) covers the laptop-side
+  generators: smoke artifacts + baseline, Phase-1 manifest contract (fields the
+  add-in consumes), subset/unknown-preset handling, and the add-in result-JSON
+  contract for laptop verification (11 tests).
