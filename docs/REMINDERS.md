@@ -63,6 +63,7 @@ thread starts, moves, or resolves.
 | 17 | **WoodwindOpenWind FEM** | desktop | Phase 0 completion | **PLANNED** — Create `backend/woodwind_openwind.py` mirroring `TrumpetOpenWind`; register `REFINED` strategy for woodwinds (CLARINET, SAXOPHONE, FLUTE, CHALUMEAU). Laptop research base ready: `docs/RESEARCH_openwind_fem_and_surrogates.md` (2026-08-07). | 2026-08-07 |
 | 18 | **CT-Scan Benchmarking** (Issue #47) | desktop | Phase 1 | **PLANNED** — Download FT40/FT44 from Zenodo, extract bore profiles, run two-phase optimizer, document RMS vs CT ground truth. Laptop research base ready: `docs/RESEARCH_ct_benchmarking.md` — FT40/FT44 STLs open access via DaSCH `ark:/72163/1/0845`, Slicer+VMTK extraction (2026-08-07). | 2026-08-07 |
 | 19 | **Demakein Replacement** (Issue #48) | desktop | Phase 1 | **PLANNED** — Extract 11 preset profiles via TMM, replace `demakein_wrapper.py` internals, remove demakein import, keep public API. | 2026-08-07 |
+| 20 | **Cursor agent audit side-branch** | desktop | desktop returns / branch visibility | **HOLD** — Human asked Cursor on desktop to audit code + start a new side branch, then ran out of free usage mid-task. Laptop checked 2026-08-07: no cursor/audit branch exists locally, on origin, or in worktrees (newest remote = desktop `8a264a4`); nothing pushed, no #23 post. Branch likely never created or local-only on offline desktop. Analyze when desktop is back. | 2026-08-07 |
 
 ## Nudge rule
 
