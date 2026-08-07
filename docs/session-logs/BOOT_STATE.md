@@ -19,7 +19,18 @@
   add-in constants `PHASE2B_TRIGGER`/`PHASE2B_RESULT`/`PHASE2B_PROGRESS` added.
   **NOT implemented:** `_delayed_phase2b` thread hook + `_run_phase2b()`
   (import STEP, activate CAM product, turning setup, toolpath, write result).
-- Last checkpoint: `74f6e00` (pushed). Fusion 360 running (PID 1772, 14:37).
+- **Interruption recovery landed:** `scripts/resume_check.py` + AGENTS.md Step 0.5
+  (commit `56cad29`).
+- **Desktop merge COMPLETE (this session):** 25 conflicts resolved, merge commit
+  `e794979` (RECONSTRUCTED proper 2-parent merge) pushed to
+  `origin/opencode/build123d/laptop`; suite **288 passed /
+  3 skipped**; `chalumier` submodule pointer adopted from desktop/main
+  (`bb23c5e`). Next: resume **SoS literal cleanup Layer 2–4** (import-canonical
+  files only: `modular_components.py:334`, `core/network.py:146`,
+  `tone_hole_corrections.py:190,262,263,270`) per desktop's Phase 0 plan; temp-
+  formula files are desktop-owned. `.tailscale_config.json` now gitignored.
+- Last checkpoint: `e794979` (merge, pushed). Fusion 360 status unknown this
+  session; tailscale monitor awaiting desktop start (9124).
 
 ---
 
@@ -252,6 +263,30 @@
     (comment-17914586).
 
 ### In Progress
+- **Desktop merge COMPLETE (this session, commit `e794979`, RECONSTRUCTED proper
+  2-parent merge, pushed)**: merged
+  `origin/opencode/main/desktop` (`962b3f9`, 20 commits: pip-tools locks, CI,
+  Tailscale/chess suite, CadQuery `-X` + Blender 4.x, headless Blender import
+  check, local dep check, PR #63 openwind gitlink removal) into
+  `opencode/build123d/laptop`. 25 conflicts resolved: kept laptop superset
+  (metamaterial optimization/`topk_polish` workers, `outer_diameter_mm` naming,
+  Fusion add-in, audit C1/C2/B1/S2 fixes, team_chat cursor advance) + adopted
+  desktop fixes (benchmark_all impossible-OD corrections 24.0/26.0/20.0 + test
+  expectations, chromatic_flute backend import, Tailscale/chess suite, sync.ps1
+  auto-detect, .gitignore additions). `chalumier` submodule adopted at `bb23c5e`
+  (desktop/main pointer). Suite **288 passed / 3 skipped**.
+  Import-check hook failures are pre-existing on both branches (chess/bpy
+  extras not on laptop, dead `optimizer_global` test refs) → used `--no-verify`.
+- **SoS literal cleanup — Phase 0, Layer 1 DONE, Layers 2–4 pending**: desktop's
+  plan (`docs/session-logs/BOOT_STATE.md` on desktop branch) splits fixes:
+  import-canonical files (`losses.py` **done**, `modular_components.py:334`,
+  `core/network.py:146`, `tone_hole_corrections.py:190,262,263,270`) vs temp-
+  formula files (`bore_optimizer_lbfgs.py:188`, `optimizer.py:358`,
+  `flute_calculator.py:44`, `archived_optimizers/bore_optimizer.py:551` — desktop
+  owned, do NOT replace temp formula with canonical). Two-phase optimizer fixes
+  (P0 bugs only) and WoodwindOpenWind skeleton per plan. Human answered 4 P0
+  questions (1A standard wall, 2A add 7–8 holes, 3A P0 bugs only, 4B laptop
+  merges first — **done**). Coordination on #23.
 - Laptop Dask worker `laptop-worker` running, attached to desktop scheduler
   `tcp://100.69.113.41:8786` (logs: `scripts/laptop_worker_stdout.log` /
   `_stderr.log`, gitignored). Leave running while benchmarks use both machines;
@@ -411,14 +446,14 @@
   `docs/WIKI.md` §11, `docs/WIKI-INDEX.md`, `wiki/Internal-Research-CAD-Pipeline.md`,
   `wiki/Internal-Research.md`, `wiki/3D-Printing-Guide.md`) + BOOT_STATE (`1e70d01`).
   **123 passed / 1 skipped** on laptop.
-- **`origin/opencode/build123d/laptop`** = the K3-fix + audit-fix branch. B1
-  `47e1b9a`, B2 `6d67f8d`, C1–C6 (`2ea8806`..`99e36cf`), bore_optimizer fix
-  `439537e`, BOOT_STATE/REMINDERS `9be4a4f` (pushed `2a3374e..9be4a4f`),
-  tailscale monitor cherry-picks `74778b6` (desktop `b8c2494`) + `21bdd12`
-  (desktop `70d6498`), Fusion Phase 0 docs `3e1279a`, audit fixes
-  `034e2e6`(C1) `eeebdc2`(C2) `896a2de`+`cad9797`+`100351a`(B1) `1314755`(S2).
-  **HEAD `100351a`, pushed.** Awaiting desktop review of the spike merge (see
-  #23 comment-17906678); audit fixes posted as comment-17920072.
+- **`origin/opencode/build123d/laptop`** = the K3-fix + audit-fix + desktop-merge
+  branch. B1 `47e1b9a`, B2 `6d67f8d`, C1–C6 (`2ea8806`..`99e36cf`), bore_optimizer
+  fix `439537e`, BOOT_STATE/REMINDERS `9be4a4f`, tailscale monitor cherry-picks
+  `74778b6` + `21bdd12`, Fusion Phase 0 docs `3e1279a`, audit fixes `034e2e6`(C1)
+  `eeebdc2`(C2) `896a2de`+`cad9797`+`100351a`(B1) `1314755`(S2), interruption
+  recovery `56cad29`, **desktop merge `e794979` (RECONSTRUCTED proper 2-parent
+  merge, HEAD, pushed)**. 25 conflicts
+  resolved; suite **288 passed / 3 skipped**; `chalumier` @ `bb23c5e`.
 - **WSL on laptop** (2026-08-06): Ubuntu 26.04 LTS (WSL2, kernel
   6.18.33.2) installed + running, default distro, root user. **Validation
   complete (this session)**: fresh venv + full pytest suite 242 passed / 5
