@@ -2,8 +2,7 @@
 
 Status: **REFERENCE — saved for future work** (no code changes)
 Date: 2026-08-03
-Author: desktop (opencode)
-Sources: user-shared Claude.ai conversation export
+Author: desktop (opencode)Sources: user-shared Claude.ai conversation export
 (`Metamaterials in woodwind instruments - Claude.html`, 2026-08-02) + user-shared
 Kimi conversation export (`Metamaterials in Instruments - Kimi.html`, 2026-08-03,
 low-woodwind family analysis, Section 2.4) + live web research.
@@ -348,6 +347,104 @@ Existing repo precedent: Python + numpy for TMM/solvers, numba for hot paths, JA
 gradients. For resonator/band-gap additions, Python+numpy is the lowest-friction fit
 and reuses the optimizer/tooling already in place; the Bloch-string and
 effective-properties formulas are all scalar-matrix math, no special language needed.
+
+## 9. Addendum 2026-08-07 — 2024–2026 literature update (laptop research)
+
+Live web research 2026-08-07. Confirms the body's conclusions and adds measured,
+in-duct precedents. Three-tag verdict per item: **proven** (measured) / **promising**
+(methodologically grounded, untested for instruments) / **speculative** (no measured
+instrument example).
+
+### 9.1 Field-level advances (2024–2026)
+
+- **The 2024 acoustic metamaterials roadmap** — Chaplain et al., *J. Phys. D: Appl.
+  Phys.* 58, 433001 (2025), DOI 10.1088/1361-6463/add306 — 51 pp, 36 authors:
+  resonators, space-coiling, membranes, active/topological systems, commercialization.
+  Authoritative state-of-the-art survey. Also *Architected acoustic metamaterials: an
+  integrated design perspective*, Appl. Phys. Rev. 12, 011340 (2025).
+- **Resonance-based ventilated metamaterials** — *npj Acoustics* 1, 7 (2025),
+  DOI 10.1038/s44384-025-00011-y: cascaded labyrinthine muffler with TL > 15 dB over
+  198–412 Hz (measured); Fano/FP coupled designs.
+- **Disordered resonators (extends §2.3):** Piva, Gower & Abrahams confirmed live in
+  *npj Acoustics* 2, 10 (2026), DOI 10.1038/s44384-026-00045-w — random Helmholtz
+  distributions, ~140 Hz band gap at ~6% volume fraction.
+- **Porous/bandgap hybrids:** Liu et al., *Int. J. Mech. Sci.* (2025) (simulation);
+  JASA 156:2794 (2024) porous AMM combining high-freq porous + low-freq resonator
+  (**measured**).
+- **ML inverse design** is now mainstream for resonator/lattice bandgaps (e.g.,
+  generative VAE resonator design, *Engineering with Computers*, 2025,
+  DOI 10.1007/s00366-025-02130-2) — relevant to a future "design a resonator
+  distribution" step.
+
+### 9.2 Instruments (measured, mostly non-wind)
+
+- **Hamburg group (measured):** Bader & Kontopidis, "Designing Musical Instruments and
+  Room Acoustics with Acoustic Metamaterials", Springer (2024),
+  DOI 10.1007/978-3-031-57892-2_16 — mass-loaded string (dispersion-modified
+  overtones), labyrinth-sphere resonator (band-gap damping ≈770 Hz, ≈60% absorption
+  with back plate), membrane cloaking. All measured (microphone array, laser
+  interferometry, impedance tube).
+- **Guitar (measured):** mass magnets between bridge and soundhole → ~300 Hz tunable
+  band gap (JASA 2024 abstract, 2024ASAJ..155A..59B).
+- **Wind instruments — essentially nothing new 2024–2026.** No published work applies
+  metamaterials to wind toneholes, register holes, bells, or bores. Closest measured
+  analogue: the **dizi membrane** — a tuned resonant shunt on a flute bore,
+  TMM/TMMI-modeled and impedance-measured (Luan et al., arXiv:2409.04853, 2024); it
+  measurably hurts the top three notes — strong evidence bore-mounted resonators are
+  musically significant (**promising / transferable evidence**).
+- Tonehole undercutting quantified: JASA 156:2644 (2024) — axial undercut shifts pitch
+  up to 20–25 cents; a baseline for tonehole-collar inserts (conventional, not
+  metamaterial).
+
+### 9.3 3D-printed lattices measured by impedance tube (the material-side proof)
+
+- JASA 160(1):45 (2026) — AM Helmholtz + coiled-space: layer height 0.08–0.16 mm gives
+  peak absorption above FEA; assembly air gaps alter resistance. **Measured.**
+- Sci. Rep. 15:40586 (2025) — irregular cylindrical cavities: avg α > 0.90 over
+  510–970 Hz (FEM), confirmed 100 mm impedance tube, avg α > 0.8 over 200–1600 Hz.
+  **Measured.**
+- KAUST (arXiv:2511.22563, 2025) — concentric coupled space-coiling, 3D-printed epoxy:
+  near-perfect peaks at 213/296 Hz, thickness λ/15.4, avg α > 80% over 198–315 Hz.
+  **Measured.**
+- Kelvin/DENORMS cell lattices (DLP-printed): *J. Braz. Soc. Mech. Sci.* (2026),
+  DOI 10.1007/s40430-025-06116-5; DENORMS in DLP resin, *Polym. Eng. Sci.* 64:2662
+  (2024), DOI 10.1002/pen.26717. **Measured.**
+- Jamois et al., *Acta Acustica* 9:12 (2025), DOI 10.1051/aacus/2024088 — SLA lattices
+  as duct liners: impedance-tube agreement good, in-duct liner TL matches only in
+  trend (amplitude error) — **important caveat** for bore-liner transfer.
+- Industrial scale-up proof: injection-molded multi-bandgap panels, 4 band gaps < 500 Hz,
+  validated on scaled aircraft cabin, *Int. J. Mech. Sci.* 293:110184 (2025). **Measured.**
+
+### 9.4 Honest applicability assessment
+
+- **Proven:** printed resonant arrays/lattices give high designable absorption/TL in
+  tubes (all §9.3 measured); locally-resonant duct liners and meta-mufflers work
+  in-flow (caveats, Jamois). A wind bore is a duct → a resonator-loaded **bell or bore
+  wall section** is the most physically grounded option. Caveat: these are *lossy
+  absorber* structures — in a bore that means broadband damping of the partials you
+  want to keep.
+- **Promising:** tuned Helmholtz side-branch "register-collar" arrays to suppress an
+  unwanted partial (supported by Piva/Gower band-gap formulas §2.3 + grazing-flow
+  meta-liner results, 500–3000 Hz, *Int. J. Mech. Sci.* 294:110228 (2025)); coiled
+  inserts to add effective acoustic length in a bell. A dead band gap in a bore =
+  a dead register — design accordingly.
+- **Speculative / unverified:** lattice walls lining the bore (viscothermal loss, no
+  measured playable example); metamaterial tonehole collars; "timbre emulation" via
+  bore metamaterials (Bader group demonstrated only for drum/string/guitar). The
+  LOOP3D trombone bell is real and playable but a thicker composite wall, not a
+  metamaterial, with no impedance data.
+- **IP landscape:** PatSnap 2026 — broadband silencers (AMC Ltd), fin-array (Jabil),
+  active cells (Boeing); **no music-instrument assignee — white space open.**
+
+### 9.5 Bottom line
+
+The 2024–2026 literature strongly validates the *materials* side (printed resonator
+lattices, α ≈ 0.8–1.0, sub-wavelength, multi-kHz) and the *in-duct* side (meta-mufflers
+/liners). But **no one has published a measured metamaterial treatment on a working
+wind instrument** — tonehole/register/bell metamaterials remain untested territory
+where this project would be first, not competitive. The highest-leverage, lowest-risk
+experiment remains a **removable resonator-loaded bell/liner section** measured via
+input impedance before any playing test.
 
 ## References (verified by live search, 2026-08-03)
 

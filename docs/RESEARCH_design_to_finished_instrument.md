@@ -253,16 +253,95 @@ research:
 | Tuning/opt | `topk_polish` + dask | gradient methods | reference/future |
 | QA | BIAS impedance | APR bore reconstruction | reference |
 
+## 6b. Addendum 2026-08-07 — fabrication advances + measurement-feedback loop
+
+Sources: live web research (2026-08-07). Complements the 2026-08-05 body above.
+
+### 6b.1 Impedance / validation benchmarks (adoptable)
+
+- **JASA 160(1):45 (2026)** — impedance-tube sound-absorption measurements of
+  additively manufactured metamaterials (Helmholtz resonators + coiled space):
+  layer height 0.08–0.16 mm gives peak absorption *above* FEA prediction; air gaps /
+  assembly alter resistance measurably. **Methodology transferable** to bore
+  characterization (reference-only as content).
+  https://pubs.aip.org/asa/jasa/article/160/1/45/3397231
+- **Acta Acustica 10:51 (2026)** — "Benchmark study of pipe input impedance
+  simulations and measurements": standard pipe cases with measured impedance for
+  validating any solver (cites Gibiat–Laloë TMTC, Macaluso–Dalmont harmonic
+  trumpet). **Adoptable**: use to validate our impedance code before trusting it
+  on printed bores. DOI 10.1051/aacus/2026048
+
+### 6b.2 Gradient-based geometry optimization — now concrete
+
+- **Szwarcberg, Colinot, Vergez, Jousserand — "Geometric sensitivity of modal
+  parameters in wind instrument models: a case study on saxophone intonation",**
+  arXiv:2506.16220 (v3, 2025-08-20), published in *Acta Acustica*. Analytical
+  gradients of modal parameters (resonance frequencies, Q) w.r.t. resonator
+  geometry via TMM; applied to octave-harmonicity optimization on a simplified
+  soprano saxophone. Confirms and sharpens the §3.3 "gradient-based geometry
+  optimization" direction with a citable method.
+- **Ernoult, Vergez, Missoum, Guillemain, Jousserand — "Woodwind instrument design
+  optimization based on impedance characteristics with geometric constraints",**
+  JASA 148(5):2864–2877 (2020), DOI 10.1121/10.0002449, HAL hal-02479433v3. Inverse
+  problem: bore/hole geometry → target impedance under ergonomic constraints.
+  Ernoult's INRIA page documents the "Optim-Z" incarnation (Liamfi / LMA–Buffet
+  Crampon) whose output was a **machine-optimized pentatonic clarinet that was 3D
+  printed**.
+
+### 6b.3 The closed measurement loop (all components verified)
+
+Recommended loop for a printed instrument (echoed in the CT-benchmark doc):
+1. Print (PLA or SLA per §4; low infill, single-perimeter wall for wind parts).
+2. Measure input impedance with a BIAS-class sensor (~€3k, brass-oriented,
+   bias.at) or the DIY **OpenBrass** sensor (~€50, openbrass.org, in development).
+3. Fit the bore via OpenWInD **full waveform inversion** (Acta Acustica 5:47 2021,
+   DOI 10.1051/aacus/2021038; ≤0.1 mm radii, ≤0.5 mm hole positions, ~1 min).
+4. Adjust geometry using Szwarcberg-style gradients or Optim-Z impedance targets.
+5. Reprint same day (MIT flute cadence shows this is feasible).
+
+Caveats: the "Ernoult one-day loop" claim could **not** be re-verified as a
+published one-day cycle (components exist; the specific claim is unverified).
+**No quantitative study of post-processing effects on intonation was found** — a
+clear gap and a natural extension for this project (smooth/coat a bore, measure
+before/after with BIAS-class equipment).
+
+### 6b.4 Fabrication notes (reference / heuristics, mostly unmeasured)
+
+- Materials guidance is largely anecdotal: PLA recommended for wind parts
+  (stiffness, low damping), 0–10% infill, single-perimeter wall, sanding the
+  bore/airway, epoxy sealing (e.g. XTC-3D) — no impedance measurements back the
+  tone claims (3dshopper.net, filamentfeed.com 2026).
+- Perceptual replicas: Fritz et al. 2025, *Music & Science*,
+  DOI 10.1177/20592043251387546 — blind-listening study of a Hotteterre traverso
+  facsimile vs printed copies; perceptual, no impedance data.
+- Zoran's MIT flute (2011, JNMR 40(4):379–387, DOI 10.1080/09298215.2011.621541):
+  FDM ABS failed (roughness/leaks); PolyJet multi-material (rigid body + soft
+  printed pads, 0.2 mm tolerance, watertight thin walls, 15 h print) produced a
+  working instrument. **Key historical point: iteration was by ear, not
+  impedance-feedback** — the reason the field moved to measured loops.
+
+### 6b.5 Tool mapping updates
+
+| Pipeline stage | Candidate | Status |
+|---|---|---|
+| Impedance solver V&V | Acta Acustica 2026 pipe benchmark | **adoptable** |
+| Optimization | Szwarcberg TMM modal gradients | reference/future (citable method now) |
+| Optimization | Optim-Z / Ernoult impedance targets | reference (JASA 2020) |
+| Bore QA | OpenWInD FWI bore reconstruction | **adoptable** (GPL, validation layer) |
+| Measurement hardware | BIAS / OpenBrass DIY | reference (budget-dependent) |
+
 ## 7. Guardrails
 
-- **Tool registry:** any *adopted* candidate (e.g. `pymeshlab`, `pymeshfix`) must be
-  declared in `pyproject.toml`, imported by the live pipeline, and covered by tests
-  (`scripts/toolcheck.py`, `tests/test_tool_registry.py`). Until then it is
-  **reference-only**.
+- **Tool registry:** any *adopted* candidate (e.g. `pymeshlab`, `pymeshfix`,
+  `openwind` in the live pipeline) must be declared in `pyproject.toml`, imported by
+  the live pipeline, and covered by tests (`scripts/toolcheck.py`,
+  `tests/test_tool_registry.py`). Until then it is **reference-only**.
 - **No regenerable artifacts committed** (STLs, mesh dumps, logs) — same rule as
   `test_output/`.
 - **Do not re-open the surrogate-warm-start question** without a changed contract;
   the decision is recorded in `docs/session-logs/BOOT_STATE.md` / Discussion #23.
+  (The 2024/2025 descriptor-surrogate work in `docs/RESEARCH_openwind_fem_and_surrogates.md`
+  is a different, narrower idea and needs its own #23 decision.)
 - This doc is ideas/citations; it changes no code. Adopting any tool is a separate
   task with its own tests.
 
@@ -286,6 +365,14 @@ research:
 - MIT FDTD + ML wind-instrument thesis (2021)
 - hal-05529863 / hal-05529717: brass instrument ML + physics-based sound optimization
 - 2024MTest..66..705K: ABS/PLA infill/cell-shape impedance-tube study (materials)
+- JASA 160(1):45 (2026): impedance-tube measurements of AM metamaterials
+- Acta Acustica 10:51 (2026): pipe input impedance benchmark, DOI 10.1051/aacus/2026048
+- Szwarcberg et al. (2025), geometric sensitivity of modal parameters, arXiv:2506.16220
+- Ernoult et al. (2020) Optim-Z: JASA 148(5):2864, DOI 10.1121/10.0002449
+- Ernoult et al. (2021) FWI bore reconstruction: DOI 10.1051/aacus/2021038
+- Zoran (2011): JNMR 40(4):379, DOI 10.1080/09298215.2011.621541
+- Fritz et al. (2025) perceptual traverso copies: DOI 10.1177/20592043251387546
+- BIAS: https://bias.at · OpenBrass DIY: https://openbrass.org
 - Repo-internal: `docs/ARCHITECTURE.md`, `docs/TOOLS.md`,
   `wiki/3D-Printing-Guide.md`, `wiki/Internal-Research-Measurement.md`,
-  `docs/session-logs/BOOT_STATE.md`
+  `docs/session-logs/BOOT_STATE.md`, `docs/RESEARCH_ct_benchmarking.md`
