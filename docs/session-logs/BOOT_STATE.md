@@ -9,8 +9,14 @@
 
 ## Goal
 
-- **Working branch: `opencode/build123d/laptop`** (laptop), HEAD `5c9fe08`.
+- **Working branch: `opencode/build123d/laptop`** (laptop), HEAD `0e3bf06`.
 - **Desktop branch `opencode/main/desktop`** at `8a264a4` (Laws 15+16 merged locally on laptop via staging).
+- **Fusion 360 track (2026-08-07, desktop offline)**: new `tests/test_fusion_360.py`
+  (15 tests, whitelisted) covering smoke/phase1 generators + manifest/result
+  contracts; **finding** — xaphoon_C now watertight (C1 fix) so Phase 0.3 repair
+  proof needs a new non-watertight target; **Phase 2b CAM probe** dispatched in
+  the deployed add-in (`_run_phase2b`, defensive) + contract tests. Commits:
+  `b58a65e` `6efa7ad` `917369d` `0e3bf06` (held, not pushed).
 - **Governance merge COMPLETE (2026-08-07)**: laptop merged desktop `04564614`
   (Laws 12-14 + compliance watchdog) → resolved `scripts/team_chat.py` as a union
   (1 conflict, not the 19 desktop predicted) → `6c23a11`, promoted via ff-only
@@ -101,15 +107,20 @@
 - **Law 15 ACK'd**; all `merge/` staging branches deleted on both sides.
 
 ## Next Steps
-1. Wait for desktop audit to complete; post any laptop-side gate findings.
-2. Push laptop branch (research `0808026` + Laws 15/16 merge `d4e71e0` + Law 17
-   `74edbe0` + gitignore `5c9fe08`) after audit completes.
+1. Wait for desktop audit to complete / desktop back online; post any
+   laptop-side gate findings.
+2. Push laptop branch (research `0808026` + Laws 15/16 `d4e71e0` + Law 17
+   `74edbe0` + gitignore `5c9fe08` + boot `2cd07ae` + Fusion tests/docs
+   `b58a65e` `6efa7ad` `917369d` `0e3bf06`) after audit completes.
 3. Attach laptop dask workers to desktop scheduler when reachable; re-run
    cluster test batches.
 4. Coordinate orphan branch cleanup (rename/delete) with desktop per Law 15.
-5. Phase 1: WoodwindOpenWind FEM (desktop-owned; research base in
+5. Fusion 360: human runs `phase2b_trigger.json` in a Fusion session; laptop
+   verifies `phase2b_result.json` against the CAM contract; find a replacement
+   non-watertight mesh for the Phase 0.3 repair proof.
+6. Phase 1: WoodwindOpenWind FEM (desktop-owned; research base in
    `docs/RESEARCH_openwind_fem_and_surrogates.md`), surrogate audit.
-6. Phase 2 (Issue #47): CT-scan benchmarking using
+7. Phase 2 (Issue #47): CT-scan benchmarking using
    `docs/RESEARCH_ct_benchmarking.md` (FT40/FT44, DaSCH STLs).
 
 ## Critical Context
