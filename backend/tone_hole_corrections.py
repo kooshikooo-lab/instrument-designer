@@ -18,6 +18,7 @@ Usage:
 import numpy as np
 from typing import List, Tuple, Optional
 import math
+from backend.tmm_acoustics import SPEED_OF_SOUND
 
 
 class ToneHoleCorrector:
@@ -187,7 +188,7 @@ class ToneHoleCorrector:
         # Δf/f ≈ -ΔL/L (for a stopped pipe)
         # For open pipe: Δf/f ≈ -ΔL/(2L)
         # Using average of both for a general approximation
-        L_nominal = 346100.0 / (2.0 * fundamental_freq)  # mm, approximate bore length
+        L_nominal = SPEED_OF_SOUND / (2.0 * fundamental_freq)  # mm, approximate bore length
         freq_shift = -fundamental_freq * total_correction / L_nominal
 
         return freq_shift
@@ -259,15 +260,15 @@ class ToneHoleCorrector:
             M_neck = rho * L_neck / A_hole
 
             # Radiation impedance (simplified)
-            k = 2.0 * np.pi * freqs / 346100.0  # wave number
-            Z_rad = rho * 346100.0 * (k * a) ** 2 / (2.0 * math.pi * A_hole)
+            k = 2.0 * np.pi * freqs / SPEED_OF_SOUND  # wave number
+            Z_rad = rho * SPEED_OF_SOUND * (k * a) ** 2 / (2.0 * math.pi * A_hole)
 
             # Shunt impedance magnitude
             Z_shunt = np.sqrt((2.0 * np.pi * freqs * M_neck) ** 2 + Z_rad ** 2)
 
             # Reduce impedance at shunt resonances
             # (the shunt creates antiresonances in the bore impedance)
-            f_resonance = 346100.0 / (2.0 * math.pi) * math.sqrt(A_hole / (A_bore * L_neck))
+            f_resonance = SPEED_OF_SOUND / (2.0 * math.pi) * math.sqrt(A_hole / (A_bore * L_neck))
             width = f_resonance * 0.1  # 10% bandwidth
 
             lorentzian = width ** 2 / ((freqs - f_resonance) ** 2 + width ** 2)

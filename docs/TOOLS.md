@@ -129,6 +129,23 @@ legacy CadQuery paths and arbitrary inputs.
 | pytest | pytest |
 | ruff | (lint, not imported) |
 
+## External applications (not pip packages)
+
+These are installed outside Python and are never imported by the pipeline;
+they are declared here so the registry documents every external tool.
+
+| App | Executable | Used by |
+|---|---|---|
+| Blender | `blender.exe` (auto-detected: `BLENDER_EXE` env, PATH, or `C:\Program Files\Blender Foundation\Blender*\`) | `scripts/view_instrument.py`, `blender_addon/` |
+| LM Studio | `lms.exe` (auto-detected: `LMSTUDIO_BIN` env, or `~\.lmstudio\bin\lms.exe`) | `backend/local_llm.py` (local Gemma 4: `google/gemma-4-12b`) |
+| Ollama | `ollama.exe` (on PATH) | `backend/ai_advisor.py` (LLM fallback tier) |
+| Autodesk Fusion | `FusionLauncher.exe` (webdeploy) | prototyping only (not integrated) |
+
+The local LLM stack prefers LM Studio (Gemma 4, server default
+`http://localhost:1234`), then Ollama (`http://localhost:11434`), then
+OpenRouter free models. `backend/local_llm.py` auto-starts the LM Studio
+server headless; `launchers\start_gemma.bat` is the one-click entry point.
+
 ## Known-not-installed (fine)
 
 `freecad` (optional GUI/CAD extra — not installed on headless), `ruff` (dev

@@ -51,8 +51,13 @@ scripts/*.log
 scripts/*.pid
 scripts/*.err
 
+# design_server runtime logs
+design_server.out.log
+design_server.err.log
+
 # Tailscale peer monitor runtime artifacts
 scripts/.tailscale_monitor.json
+scripts/.tailscale_config.json
 scripts/tailscale_monitor.log
 scripts/tailscale_monitor.out.log
 scripts/tailscale_monitor.err.log

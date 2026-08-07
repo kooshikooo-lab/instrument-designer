@@ -243,6 +243,8 @@ def two_phase_optimize(
         dict with optimization results and best instrument
     """
     n_holes = len(hole_lens)
+    if n_register is None:
+        n_register = 1 if closed_top else 2
 
     if hole_pos_bounds_range[1] is None:
         hole_pos_bounds_range = (10.0, bore_length - 10.0)
@@ -254,6 +256,7 @@ def two_phase_optimize(
         print(f"  Bore length: {bore_length:.1f}mm, {n_holes} holes")
         print(f"  Targets: {[f'{f:.1f}' for f in targets]} Hz")
         print(f"  Register: {n_register}")
+        print(f"  Closed top: {closed_top}, outer diameter: {outer_diameter_mm:.1f}mm")
         if loss_model:
             print(f"  Loss model: {loss_model.__class__.__name__}")
 

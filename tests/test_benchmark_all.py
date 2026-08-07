@@ -57,9 +57,9 @@ def test_chart_matches_canonical_build(name):
     "name, expected_od",
     [
         ("pvc_flute_D", 26.7),
-        ("diatonic_D_chalumeau", 22.0),
-        ("concert_flute_C", 19.8),
-        ("alto_flute_G", 22.8),
+        ("diatonic_D_chalumeau", 20.0),
+        ("concert_flute_C", 24.0),
+        ("alto_flute_G", 26.0),
     ],
 )
 def test_fixed_outer_diameters(name, expected_od):

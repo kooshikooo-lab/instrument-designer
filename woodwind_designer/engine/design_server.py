@@ -161,6 +161,18 @@ def health():
     return HealthResponse(status="ok", version=app.version)
 
 
+@app.get("/preview")
+def preview_page():
+    """Serve the three.js web preview (track B)."""
+    from fastapi.responses import FileResponse
+    html_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "..", "..", "web", "preview.html"
+    )
+    if not os.path.exists(html_path):
+        raise HTTPException(500, "web/preview.html not found")
+    return FileResponse(html_path, media_type="text/html")
+
+
 @app.get("/presets")
 def list_presets():
     designer = DemakeinDesigner()

@@ -1,7 +1,6 @@
 import sys, numpy as np
 sys.path.insert(0, '.')
-from backend.optimizer import BoreOptimizationProblem, _IMPEDANCE_CACHE
-_IMPEDANCE_CACHE.clear()
+from backend.optimizer import BoreOptimizationProblem
 
 freqs = [261.6, 293.7, 329.6, 349.2, 392.0, 440.0, 493.9, 523.3]
 

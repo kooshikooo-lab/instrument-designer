@@ -7,7 +7,7 @@ import numpy as np
 from pathlib import Path
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'backend'))
-from tmm_acoustics import TMMInstrument, SPEED_OF_SOUND
+from backend.tmm_acoustics import TMMInstrument, SPEED_OF_SOUND
 
 c = SPEED_OF_SOUND
 SEMITONE_MAP = {'C': 0, 'D': 2, 'E': 4, 'F': 5, 'G': 7, 'A': 9, 'B': 11}

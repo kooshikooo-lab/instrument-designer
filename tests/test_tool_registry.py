@@ -6,13 +6,10 @@ a package is not a step — declaring it and being importable by the whitelisted
 test suite is.
 """
 import importlib.util
-import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 TOOLCHECK = ROOT / "scripts" / "toolcheck.py"
-
-import importlib.util
 
 
 def _load_toolcheck():
@@ -22,30 +19,15 @@ def _load_toolcheck():
     return mod
 
 
-def _declared_packages() -> set[str]:
-    with open(ROOT / "pyproject.toml", "rb") as f:
-        data = tomllib.load(f)
-    deps = list(data["project"].get("dependencies", []))
-    for extra in data.get("project", {}).get("optional-dependencies", {}).values():
-        deps.extend(extra)
-    out = set()
-    for dep in deps:
-        dep = dep.strip().split("[")[0].strip()
-        dep = dep.split("==")[0].split(">=")[0].split("<=")[0].split("~=")[0].strip()
-        out.add(dep.lower().replace("_", "-"))
-    return out
-
-
 def test_all_imported_tools_are_declared():
     mod = _load_toolcheck()
-    declared = _declared_packages()
-    imported_roots = mod._imported()
-    undeclared = sorted(
-        pkg for root in imported_roots
-        if (pkg := mod._resolve_pkg(root)) not in declared
-    )
+    declared = mod._declared()
+    declared_all = set().union(*declared.values()) if declared else set()
+    imported = mod._imported()
+    imported_pkgs = {mod._resolve_pkg(r) for r in imported}
+    undeclared = mod.phantom_deps(declared_all, imported_pkgs)
     assert not undeclared, (
         "Third-party imports not declared in pyproject.toml:\n"
-        + "\n".join(f"  {r} -> {mod._resolve_pkg(r)}" for r in sorted(imported_roots) if mod._resolve_pkg(r) in undeclared)
+        + "\n".join(undeclared)
         + "\nDeclare them in pyproject.toml, or fix the alias in scripts/toolcheck.py."
     )

@@ -25,6 +25,7 @@ Usage:
 """
 
 import math
+from backend.tmm_acoustics import SPEED_OF_SOUND
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
 from enum import Enum
@@ -331,7 +332,7 @@ class Extension:
     def frequency_drop(self) -> float:
         """Approximate frequency drop from adding this extension (Hz)."""
         # For closed-open pipe: f = c / (4 * L)
-        c = 346100  # mm/s
+        c = SPEED_OF_SOUND  # mm/s
         return c / (4 * self.length_mm)
 
     def recommended_for(self) -> str:
@@ -699,10 +700,16 @@ def build_chalumeau_C() -> InstrumentAssembly:
 def build_bass_chalumeau_Bb() -> InstrumentAssembly:
     """Build a bass chalumeau prototype for Bb major scale."""
     asm = InstrumentAssembly("Bass Chalumeau in Bb", "closed-open")
-    asm.add("body", BoreSection(
-        name="Main body", length_mm=560,
-        bore_start_radius_mm=9.5, bore_end_radius_mm=9.5,
-        outer_radius_mm=14.0,
+    # 8 tone holes matching the benchmark_all.py fingering chart
+    hole_positions = [70, 140, 210, 280, 350, 420, 490, 540]
+    keys = [
+        KeyHole(position_mm=p, hole_diameter_mm=8.0, hole_length_mm=4.0,
+                pad_diameter_mm=10.0, key_type="ring")
+        for p in hole_positions
+    ]
+    asm.add("body", Joint(
+        name="Main body", bore_radius_mm=9.5, length_mm=560,
+        outer_radius_mm=14.0, keys=keys,
     ))
     asm.add("bell", Bell(
         name="Flared bell", bore_radius_start_mm=9.5, bore_radius_end_mm=30.0,

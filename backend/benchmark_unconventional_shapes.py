@@ -11,12 +11,14 @@ import numpy as np
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from backend.tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
+from backend.metrics import intonation_passes, UNCONVENTIONAL_RMS_CENTS
 from backend.physics.bore_generators import (
     BORE_SHAPE_GENERATORS, BORE_TYPE_META, bore_profile_to_diameter,
 )
 from backend.physics.bore_optimizer import (
     two_phase_optimize_bore_parameters, _compute_resonances, _best_scale_cost, _generate_radii, BORE_TYPE_META as BORE_META,
 )
+from backend.verification import verify_with_retries
 from woodwind_designer.engine.instrument_library import save_novel_instrument
 
 _c = SPEED_OF_SOUND
@@ -118,7 +120,12 @@ def benchmark_pipeline(
     result["total_time_s"] = round(time.time() - t0, 2)
     stl_ok = result.get("steps", {}).get("stl_export", {}).get("path") is not None
     acoustic_ok = result.get("steps", {}).get("acoustic_model", {}).get("success", False)
-    result["overall"] = "PASS" if (stl_ok and acoustic_ok) else "FAIL"
+    scale_fit = result.get("steps", {}).get("resonance", {}).get("scale_fit_rms_cents")
+    intonation_ok = acoustic_ok and (
+        scale_fit is None or intonation_passes(scale_fit, None, "unconventional")
+    )
+    result["intonation_ok"] = intonation_ok
+    result["overall"] = "PASS" if (stl_ok and intonation_ok) else "FAIL"
     return result
 
 
@@ -126,11 +133,14 @@ def _optimize_bore_type_dask(
     repo_root: str, bore_type: str, params: dict, fingerings: list[list[str]],
     hole_positions: list[float], hole_diameters: list[float],
     pop_size: int, n_generations: int, optimize_holes: bool,
+    budget_scale: float = 1.0,
 ) -> dict:
     """Run one bore-type optimization inside a Dask worker.
 
     All imports are local so the scheduler never needs the repo on its own
     sys.path. Returns a JSON-safe dict (instrument objects are stripped).
+    ``budget_scale`` multiplies the DE population/generations so the retry
+    policy can extend the budget on a failed screen.
     """
     import sys
     if repo_root and repo_root not in sys.path:
@@ -142,7 +152,9 @@ def _optimize_bore_type_dask(
         fingerings=fingerings, hole_positions=hole_positions,
         hole_diameters=hole_diameters,
         bore_length_mm=600.0, radius_params=params,
-        closed_top=True, pop_size=pop_size, n_generations=n_generations,
+        closed_top=True,
+        pop_size=int(pop_size * budget_scale),
+        n_generations=int(n_generations * budget_scale),
         optimize_holes=optimize_holes,
     )
     clean = {k: v for k, v in r.items() if k != "best_instrument"}
@@ -248,6 +260,7 @@ def benchmark_optimization(
             return []
 
     results_list = []
+    opt_all_pass = True
     futures = []
     if client is not None:
         print(f"\nDispatching {len(opt_tests)} bore-type optimizations to workers...")
@@ -256,22 +269,42 @@ def benchmark_optimization(
                 _optimize_bore_type_dask,
                 repo_root, bore_type, params, fingerings, hole_positions,
                 hole_diameters, pop_size, n_generations, optimize_holes,
+                budget_scale=1.0,
             ))
+
     for i, (bore_type, params) in enumerate(opt_tests):
         label = BORE_TYPE_META[bore_type]["label"]
         print(f"\n-- Optimizing: {label} --")
-        try:
-            if client is not None:
-                r = futures[i].result(timeout=3600)
+
+        def _run_once(scale: float, _i=i) -> dict:
+            """Run one optimization at ``scale``; scale=1 reuses the pre-submitted future."""
+            if client is not None and scale == 1.0:
+                r = futures[_i].result(timeout=3600)
+            elif client is not None:
+                r = client.submit(
+                    _optimize_bore_type_dask, repo_root, bore_type, params,
+                    fingerings, hole_positions, hole_diameters,
+                    pop_size, n_generations, optimize_holes,
+                    budget_scale=scale,
+                ).result(timeout=3600)
             else:
                 r = two_phase_optimize_bore_parameters(
                     bore_type=bore_type,
                     fingerings=fingerings, hole_positions=hole_positions,
                     hole_diameters=hole_diameters,
                     bore_length_mm=600.0, radius_params=params,
-                    closed_top=True, pop_size=pop_size, n_generations=n_generations,
+                    closed_top=True,
+                    pop_size=int(pop_size * scale),
+                    n_generations=int(n_generations * scale),
                     optimize_holes=optimize_holes,
                 )
+            return {"rms_cents": r["final_cost_rms_cents"], "result": r}
+
+        try:
+            ver = verify_with_retries(
+                _run_once, tier="unconventional", attempts=2, budget_scale=2.0,
+            )
+            r = ver["attempts"][-1]["result"]
             print(f"  Initial: {r['initial_cost_rms_cents']:.1f} cents")
             print(f"  Fundamental: {r['fundamental_hz']} Hz")
             print(f"  Best scale: {r['best_scale']} ({r['scale_rms_cents']:.1f} cents RMS)")
@@ -281,16 +314,26 @@ def benchmark_optimization(
             print(f"  Params:  {r['optimized_params']}")
             if r.get('hole_offsets'):
                 print(f"  Hole offsets: {r['hole_offsets']}")
+            if ver["status"] == "PASS":
+                print(f"  Intonation: PASS ({r['final_cost_rms_cents']:.1f}c "
+                      f"<= {UNCONVENTIONAL_RMS_CENTS:.0f}c, attempt "
+                      f"{ver['passed_attempt'] + 1}/{len(ver['attempts'])})")
+            else:
+                print(f"  Intonation: FAIL ({r['final_cost_rms_cents']:.1f}c "
+                      f"> {UNCONVENTIONAL_RMS_CENTS:.0f}c after "
+                      f"{len(ver['attempts'])} attempt(s))")
+                opt_all_pass = False
             results_list.append(r)
             save_novel_instrument(r, label=BORE_META.get(r['bore_type'], {}).get('label', r['bore_type']))
         except Exception as e:
             import traceback
             traceback.print_exc()
             print(f"  FAILED: {e}")
+            opt_all_pass = False
 
     if client is not None:
         client.close()
-    return results_list
+    return results_list, opt_all_pass
 
 
 def run_all(use_dask: bool = False, scheduler: str = "tcp://100.69.113.41:8786",
@@ -355,7 +398,7 @@ def run_all(use_dask: bool = False, scheduler: str = "tcp://100.69.113.41:8786",
 
     print(f"\n{'=' * 72}")
     print("--- PART 2: Parametric optimization benchmark (closed-top types) ---")
-    opt_results = benchmark_optimization(
+    opt_results, opt_all_pass = benchmark_optimization(
         fingerings, hole_positions, hole_diameters,
         pop_size=pop_size, n_generations=n_generations,
         use_dask=use_dask, scheduler=scheduler,
@@ -376,7 +419,11 @@ def run_all(use_dask: bool = False, scheduler: str = "tcp://100.69.113.41:8786",
         print(f"  {label:<16} {init:>7.1f} {final:>7.1f} {scale:<18} {f0:>6} {total:>5.2f}s")
 
     print(f"\n{'=' * 72}")
-    print(f"OVERALL: {'ALL PASSED' if all_pass else 'SOME FAILED'}")
+    all_ok = all_pass and opt_all_pass
+    print(f"OVERALL: {'ALL PASSED' if all_ok else 'SOME FAILED'}")
+    print(f"  Pipeline:  {'PASS' if all_pass else 'FAIL'}")
+    print(f"  Intonation (unconventional tier, <= {UNCONVENTIONAL_RMS_CENTS:.0f}c): "
+          f"{'PASS' if opt_all_pass else 'FAIL'}")
     print(f"{'=' * 72}")
 
     def _strip_instrument(d):
@@ -390,7 +437,10 @@ def run_all(use_dask: bool = False, scheduler: str = "tcp://100.69.113.41:8786",
     report = {
         "pipeline_results": pipeline_results,
         "optimization_results": [_strip_instrument(r) for r in opt_results],
-        "all_pass": all_pass,
+        "all_pass": all_ok,
+        "optimization_all_pass": opt_all_pass,
+        "intonation_tier": "unconventional",
+        "intonation_rms_limit_cents": UNCONVENTIONAL_RMS_CENTS,
         "timestamp": time.time(),
     }
     report_path = os.path.join(
@@ -400,7 +450,7 @@ def run_all(use_dask: bool = False, scheduler: str = "tcp://100.69.113.41:8786",
     with open(report_path, "w") as f:
         json.dump(report, f, indent=2)
     print(f"Report saved: {report_path}")
-    return all_pass
+    return all_ok
 
 
 if __name__ == "__main__":

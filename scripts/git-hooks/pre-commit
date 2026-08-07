@@ -1,0 +1,4 @@
+#!/bin/sh
+# pre-commit hook: validate staged files before commit.
+# Installed by scripts/install_hooks.ps1 (or copied into .git/hooks/).
+python "$(git rev-parse --show-toplevel)/scripts/validate_pre_commit.py" || exit 1

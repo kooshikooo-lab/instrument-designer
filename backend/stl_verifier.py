@@ -1,8 +1,9 @@
 """STL visual verifier agent.
 
 Renders an STL to multi-view images with VTK and asks a vision-capable
-LLM (via OpenRouter) to verify the mesh against expected geometry,
-complementing numeric checks (volume, watertightness, bbox).
+LLM (local Gemma 4 via LM Studio first, OpenRouter as fallback) to verify
+the mesh against expected geometry, complementing numeric checks (volume,
+watertightness, bbox).
 
 Pipeline::
     render_mesh_views(stl)        -> {view_name: png_bytes}
@@ -10,7 +11,8 @@ Pipeline::
     verify_stl(stl, expected)     -> VerifyReport (numeric + visual)
 
 The numeric checks run locally with trimesh. The visual check only runs
-when a vision model is configured (OPENROUTER_API_KEY set).
+when a vision source is available (local LM Studio server running, or
+OPENROUTER_API_KEY set).
 
 CLI::
     python -m backend.stl_verifier stl_library/flat/contra_bass_clarinet_Bb.stl
@@ -240,20 +242,41 @@ def _data_uri(png_bytes: bytes) -> str:
     return "data:image/png;base64," + base64.b64encode(png_bytes).decode()
 
 
+def local_vision_available() -> bool:
+    """True when the local LM Studio server answers (vision fallback ready)."""
+    try:
+        from backend.local_llm import server_ready
+        return server_ready()
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def ask_vision(images: dict[str, bytes], prompt: str,
                model: str = "") -> str:
-    """Send images + prompt to a vision model via OpenRouter.
+    """Send images + prompt to a vision model.
 
-    Tries :data:`DEFAULT_VISION_MODEL` (or ``model`` if given) first, then
-    each :data:`FALLBACK_VISION_MODELS` entry in order. Retries 429/5xx with
-    exponential backoff. Returns the first successful reply, or an error
-    string prefixed with "[ERROR]".
+    Tries the local LM Studio Gemma first (no API key, free), then falls
+    back to OpenRouter. OpenRouter tries :data:`DEFAULT_VISION_MODEL` (or
+    ``model`` if given) first, then each :data:`FALLBACK_VISION_MODELS` entry
+    in order. Retries 429/5xx with exponential backoff. Returns the first
+    successful reply, or an error string prefixed with "[ERROR]".
     """
+    try:
+        from backend.local_llm import chat_vision, ensure_gemma, server_ready
+        if not server_ready():
+            ensure_gemma()  # best-effort headless auto-start
+        if server_ready():
+            local = chat_vision(images, prompt)
+            if local and not local.startswith("[ERROR]"):
+                return local
+    except Exception as e:  # noqa: BLE001
+        return f"[ERROR] local vision failed: {e}"
+
     import requests
 
     api_key = os.environ.get("OPENROUTER_API_KEY", "")
     if not api_key:
-        return "[ERROR] OPENROUTER_API_KEY not set"
+        return "[ERROR] no vision source: LM Studio offline and OPENROUTER_API_KEY not set"
 
     content = [{"type": "text", "text": prompt}]
     for label, png in images.items():
@@ -368,7 +391,7 @@ def verify_stl(stl_path: str, expected: dict | None = None,
     Args:
         stl_path: path to the STL to verify.
         expected: expected-geometry dict (see _build_expected_registry).
-        vision_model: OpenRouter vision model id ('' = default).
+        vision_model: vision model id (OpenRouter; '' = local first + default).
         use_vision: override whether to run the vision model. Defaults to
             None = auto (run if OPENROUTER_API_KEY is set).
     """
@@ -395,12 +418,12 @@ def verify_stl(stl_path: str, expected: dict | None = None,
             checks.append("bbox_match")
     report.metrics["checks"] = checks
 
-    # Visual check (skip if vision disabled or no API key)
+    # Visual check (skip if vision disabled or no vision source)
     run_vision = (use_vision is not None) and use_vision
     if use_vision is None:
-        run_vision = bool(os.environ.get("OPENROUTER_API_KEY"))
+        run_vision = bool(os.environ.get("OPENROUTER_API_KEY")) or local_vision_available()
     if not run_vision:
-        report.visual = {"skipped": "vision disabled or OPENROUTER_API_KEY not set"}
+        report.visual = {"skipped": "vision disabled (LM Studio offline and OPENROUTER_API_KEY not set)"}
         report.passed = bool(checks)
         return report
 
@@ -573,9 +596,12 @@ def _cli():
         stls = stls[: args.limit]
 
     expected = _build_expected_registry()
-    if not args.no_vision and not os.environ.get("OPENROUTER_API_KEY"):
-        print("Note: OPENROUTER_API_KEY not set — numeric checks only. "
-              "Set it to enable the vision agent.")
+    if not args.no_vision and not local_vision_available() \
+            and not os.environ.get("OPENROUTER_API_KEY"):
+        print("Note: no vision source (LM Studio offline and "
+              "OPENROUTER_API_KEY unset) — numeric checks only. "
+              "Run launchers\\start_gemma.bat or set OPENROUTER_API_KEY "
+              "to enable the vision agent.")
         args.no_vision = True
 
     reports = verify_many(stls, expected if expected else None,

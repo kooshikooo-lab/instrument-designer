@@ -87,24 +87,63 @@ python scripts/dask_benchmark.py --scheduler tcp://SCHEDULER_IP:8786
 
 ## Getting Started
 
+Dependency versions are pinned with `pip-tools` lock files. Use the lock file
+that matches the extras you need:
+
 ```bash
-# Install dependencies
-pip install numpy scipy jax jaxlib pymoo cadquery dask distributed
+# Base runtime dependencies
+pip install -r requirements.txt
 
-# Run 12-instrument benchmark
+# Development + test dependencies
+pip install -r requirements-dev.txt
+
+# CAD dependencies (cadquery, etc.)
+pip install -r requirements-cad.txt
+
+# Test dependencies only
+pip install -r requirements-test.txt
+
+# Chess/Tailscale test extras
+pip install -r requirements-chess.txt
+```
+
+To regenerate the lock files after changing `pyproject.toml`:
+
+```bash
+pip install pip-tools
+python scripts/compile_requirements.py
+```
+
+Verify the committed lock files are up to date (CI enforces this):
+
+```bash
+python scripts/compile_requirements.py --check
+```
+
+Run the 12-instrument benchmark:
+
+```bash
 python backend/benchmark_all.py
+```
 
-# Run Dask-parallelized benchmark
+Run the Dask-parallelized benchmark:
+
+```bash
 python scripts/dask_benchmark.py --scheduler tcp://localhost:8786
 ```
 
 ## Dependencies
 
-Core: `numpy`, `scipy`, `jax`, `jaxlib`
-Optimization: `pymoo` (NSGA-II)
-3D Export: `cadquery`
-Distributed: `dask`, `distributed`
-Visualization: `matplotlib`
+Dependencies are declared in `pyproject.toml` with optional extras:
+
+- `dev`: linting and development tools
+- `test`: `pytest`, `jsonschema`
+- `cad`: CadQuery and related 3D export libraries
+- `chess`: `python-chess` for the Tailscale chess acceptance test
+
+Core runtime packages include `numpy`, `scipy`, `matplotlib`, `fastapi`,
+`uvicorn`, `pydantic`, and `requests`. See `requirements.txt` for the fully
+resolved, hashed lock file.
 
 ## Coordinate Systems
 

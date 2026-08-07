@@ -23,7 +23,7 @@ The design pipeline:
 ### Chalumier (MarkChuCarroll/chalumier)
 Our primary TMM reference. Kotlin, based on demakein. Produces SVG + JSON instrument designs.
 ```
-C:\Users\Admin\Desktop\Woodwind design automation\chalumier\
+C:\Users\Admin\Desktop\instrument-designer\chalumier\
 └── app\src\main\kotlin\org\goodmath\chalumier\design\
     ├── instruments\Instrument.kt       # Core TMM (preparePhase, resonancePhase)
     ├── InstrumentDesigner.kt           # Design parameters (bore, holes, etc.)
@@ -34,7 +34,7 @@ C:\Users\Admin\Desktop\Woodwind design automation\chalumier\
 ### OpenWInD (thecowgoesmoo/openwind)
 Python FEM toolbox for wind instrument acoustics. Higher fidelity, slower.
 ```
-C:\Users\Admin\Desktop\Woodwind design automation\openwind\
+pip install openwind   # no local checkout needed
 ```
 
 ## CRITICAL: Coordinate System
@@ -245,7 +245,7 @@ Since the goal is general wind instrument design:
 ## Files in the Project
 
 ```
-C:\instrument-designer\
+C:\Users\Admin\Desktop\instrument-designer\
 ├── backend\
 │   ├── tmm_acoustics.py          # Core TMM engine (ported from chalumier)
 │   ├── optimizer_global.py       # Global fingering optimizer (DE + L-BFGS-B)

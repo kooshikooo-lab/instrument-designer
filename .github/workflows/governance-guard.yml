@@ -12,6 +12,33 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 2
-      - name: Block unauthorized governance file edits
+      - name: Block unauthorized governance file edits and unmarked provisional work
         run: |
-          python scripts/guard_governance.py
+          python scripts/validate_commit_msg.py
+      - name: Check local dependencies are present for imported declared packages
+        run: |
+          python scripts/check_local_dependencies.py --warn
+
+  powershell-lint:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: PowerShell 5.1 compatibility lint
+        shell: powershell
+        run: |
+          python scripts/check_powershell_51_compat.py
+
+  dependency-locks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pip-tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install pip-tools
+      - name: Check requirements lock files are up to date
+        run: |
+          python scripts/compile_requirements.py --check

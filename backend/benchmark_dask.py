@@ -26,7 +26,7 @@ def optimize_one(name, cfg):
     """
     import sys, os, time
     os.environ["JAX_ENABLE_X64"] = "1"
-    sys.path.insert(0, r"C:\instrument-designer")
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     from backend.tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
     from scipy.optimize import minimize as sp_min, differential_evolution
     import numpy as np

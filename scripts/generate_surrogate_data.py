@@ -18,10 +18,12 @@ class InstallPackagePlugin(WorkerPlugin):
         """Called when the plugin is attached to a worker."""
         import subprocess
         import sys
+        import os
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         try:
             subprocess.run([
                 "python", "-m", "pip", "install", "-e", 
-                r"C:\instrument-designer", "--quiet"
+                root, "--quiet"
             ], check=True, capture_output=True)
             print(f"Worker {worker.id}: Package installed successfully")
         except subprocess.CalledProcessError as e:

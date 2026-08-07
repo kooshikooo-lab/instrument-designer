@@ -370,7 +370,7 @@ print(advice.analysis)
 ## 7. Code Architecture
 
 ```
-C:\instrument-designer\
+C:\Users\Admin\Desktop\instrument-designer\
 ├── backend\                          # Python optimization & AI
 │   ├── tmm_acoustics.py             # Core TMM engine (Profile, Hole, TMMInstrument)
 │   ├── tmm_optimizer_sequential.py  # Sequential + DE + L-BFGS-B optimizer

@@ -9,7 +9,7 @@ import sys, time
 import numpy as np
 from scipy.optimize import minimize
 sys.path.insert(0, '.')
-from tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
+from backend.tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
 
 DIA7 = [176, 293, 338, 445, 532, 610, 636]
 REG = 80.0

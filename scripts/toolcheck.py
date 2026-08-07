@@ -51,8 +51,15 @@ PACKAGE_ALIASES = {
 # install (their pip package is `freecad`). We still require `freecad` declared.
 FREECAD_MODULES = {"FreeCAD", "Part", "Mesh", "Import"}
 
+# Import roots provided by an external application's bundled Python, with no
+# pip package in the host env. Mirrors the FreeCAD case above, but there is no
+# pip package to declare (Blender's `bpy` is not the PyPI `bpy`). Declared in
+# TOOLS.md under "External applications" instead of pyproject.
+EXTERNAL_APP_MODULES = {"bpy"}
+
 # Local top-level package dirs — their whole subtree is never a pip package.
-LOCAL_ROOTS = {"backend", "woodwind_designer", "tests", "scripts", "conftest"}
+LOCAL_ROOTS = {"backend", "woodwind_designer", "tests", "scripts", "conftest",
+               "blender_addon"}
 
 # Third-party roots we knowingly exclude (stdlib / noisy).
 STDLIBISH = {
@@ -74,6 +81,7 @@ STDLIBISH = {
     "calendar", "locale", "gettext", "getpass", "pty", "pwd", "grp", "spwd",
     "resource", "mmap", "msvcrt", "winreg", "winsound", "venv", "ensurepip",
     "this", "antigravity", "turtle", "tkinter", "webbrowser", "zipimport",
+    "filecmp",
 }
 
 
@@ -204,7 +212,20 @@ def _resolve_pkg(import_root: str) -> str:
     return PACKAGE_ALIASES.get(import_root, import_root).lower()
 
 
+def phantom_deps(declared_all: set[str], imported_pkgs: set[str]) -> list[str]:
+    """Imported-but-undeclared pip packages (excluding external-app roots)."""
+    freecad_declared = "freecad" in declared_all
+    return sorted(
+        p for p in imported_pkgs
+        if p not in declared_all
+        and p not in EXTERNAL_APP_MODULES
+        and (p != "freecad" or not freecad_declared)
+    )
+
+
 def main() -> int:
+    strict = "--strict" in sys.argv
+
     installed = _installed()
     declared = _declared()
     declared_all = set().union(*declared.values()) if declared else set()
@@ -213,14 +234,7 @@ def main() -> int:
     # Map import roots to pip package names
     imported_pkgs = {_resolve_pkg(r) for r in imported}
 
-    # FreeCAD ships submodules Part/Mesh/Import/FreeCAD; they are satisfied by
-    # the `freecad` package which is declared as an extra — not phantom.
-    freecad_declared = "freecad" in declared_all
-    phantom = sorted(
-        p for p in imported_pkgs
-        if p not in declared_all
-        and (p != "freecad" or not freecad_declared)
-    )
+    phantom = phantom_deps(declared_all, imported_pkgs)
     orphan = sorted(p for p in declared_all if p not in installed)
     forgotten = sorted(
         p for p in installed
@@ -268,11 +282,26 @@ def main() -> int:
         print(f"  {r}  -> {_resolve_pkg(r)}")
 
     print()
-    problems = phantom  # phantom deps are the actionable failures
+    # Strict mode also fails on declared packages that the code imports but are
+    # not installed. This prevents merging code that depends on a missing local
+    # dependency across machines with different environments.
+    active_orphan = sorted(p for p in orphan if p in imported_pkgs)
+    problems = list(phantom)
+    if strict and active_orphan:
+        problems.extend(active_orphan)
     if problems:
-        print(f"RESULT: FAIL — {len(problems)} phantom dependencies must be declared or removed.")
+        print(f"RESULT: FAIL — {len(problems)} dependency problem(s):")
+        for p in problems:
+            print(f"  - {p}")
+        if strict and active_orphan:
+            print("\nRun 'pip install -e \".[dev,cad,test]\"' or the missing extras.")
         return 1
     print("RESULT: PASS — all imported tools are declared in pyproject.")
+    if strict:
+        if active_orphan:
+            print(f"(strict mode: {len(active_orphan)} declared+imported package(s) not installed, listed above)")
+        else:
+            print("(strict mode: all declared packages used by the code are installed)")
     return 0
 
 

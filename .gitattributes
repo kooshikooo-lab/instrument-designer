@@ -1,0 +1,11 @@
+# Force LF line endings for shell scripts and git hooks so they stay executable.
+*.sh text eol=lf
+*.bash text eol=lf
+scripts/git-hooks/* text eol=lf
+.gitattributes text eol=lf
+
+# Python files use native line endings.
+*.py text
+
+# JSON files use LF for portability.
+*.json text eol=lf

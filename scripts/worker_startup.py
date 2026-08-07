@@ -1,15 +1,17 @@
 """
 Worker plugin to install the instrument-designer package on each worker.
 """
+import os
 import subprocess
 import sys
 
 def install_package():
     """Install the instrument-designer package in development mode."""
     try:
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         subprocess.run([
             sys.executable, "-m", "pip", "install", "-e", 
-            r"C:\instrument-designer", "--quiet"
+            root, "--quiet"
         ], check=True, capture_output=True)
         return "Package installed successfully"
     except subprocess.CalledProcessError as e:

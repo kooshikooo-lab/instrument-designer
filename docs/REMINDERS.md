@@ -15,9 +15,14 @@ thread starts, moves, or resolves.
 
 ## Standing compliance checklist
 
-- [ ] Governance guard enabled on this clone (`scripts/install_hooks.ps1`).
+- [x] Governance guard enabled on this clone (`scripts/install_hooks.ps1`).
+- [x] Pre-commit hooks active: file placement, regenerable artifacts, UTF-16,
+       bare excepts, hardcoded IPs, module size, **config schema**, **import consistency**,
+       **PowerShell 5.1 compatibility**, **pip-tools lock-file up-to-date check**.
+- [x] Tailscale peer monitor running for real-time machine coordination
+       (`scripts/tailscale_monitor.py`, `launchers/start_tailscale_monitor.bat`).
 - [ ] Commit touching `docs/CONSTRAINTS_AND_PREFERENCES.md` carries
-      `GOVERNANCE-UPDATE` in the message (hook + CI enforce).
+       `GOVERNANCE-UPDATE` in the message (hook + CI enforce).
 - [ ] Provisional / exploratory work tagged `AUDIT:` in the commit message.
 - [ ] No regenerable artifacts committed (STLs, JSON dumps, logs, `test_output/`).
 - [ ] `team_chat.py sync` at session start and before stopping.
@@ -34,12 +39,19 @@ thread starts, moves, or resolves.
 
 | # | Thread | Owner | Awaiting | Status | Last update |
 |---|--------|-------|----------|--------|-------------|
-| 1 | Topk integration table | desktop | laptop | **RESOLVED** — desktop posted the 5-family table + robustness to #23 (comment 17891204, 2026-08-04); laptop verified shared engine parity (5.902c @ maxiter=250) | 2026-08-04 |
-| 2 | Numba wiring restore on `main` | both | merge of PR #62 | laptop keeps guarded skip; restore lands via PR #62 merge, then laptop merges `main` | 2026-08-04 |
-| 3 | PR #62 head mirror `opencode-instrument-designer` | desktop | PR #62 merge | GitHub CLI cannot retarget PR heads; mirror ref tracks `opencode/main/desktop` until merge, then delete | 2026-08-04 |
-| 4 | Track C build123d spike + mesh-repair gate protocol | desktop | laptop | **WAITING on desktop** — `opencode/build123d/laptop` (`8ddfc7a` spike, `e8d6254` protocol) posted #23 comment-17906678; merge decision is desktop's call. Branch now also carries K3 doc fixes (comment-17914586) + **audit fixes B1/C1/C2/S2 applied** (comment-17920072, 159 passed/2 skipped) | 2026-08-06 |
-| 5 | `kalles-main-branch` deleted from origin | desktop | laptop | **WAITING on desktop** — flagged #23 comment-17906728; no commits lost (tip `b198c4c` ancestor of `opencode/main/laptop`); confirm rename/deletion intent | 2026-08-05 |
-| 6 | Fusion 360 track + WSL | desktop | laptop | **WORK SEPARATION** (desktop 11:24Z): desktop owns STL pipeline (export→gate→Blender); laptop owns Fusion 360 Phase 0+ (scriptable part PASSED comment-17919778; Phase 1 batch 5/5 PASS comment-17920381; mesh-repair proof 0.3 still needs human GUI). **Charter posted comment-17920221** — laptop runs an autonomous queue (Phase-2 API probes, L2/L1 parity, metamaterial whitelist, WSL report); STL pipeline files are do-not-touch. Desktop: confirm boundary + hand off 5-preset STEP/STL artifacts. WSL2 Ubuntu ready on laptop (comment-17919942); WSL utilization plan accepted, first deliverable = Ubuntu pytest report | 2026-08-06 |
+| 1 | Numba wiring restore on `main` | both | merge of PR #62 | laptop keeps guarded skip; restore lands via PR #62 merge, then laptop merges `main` | 2026-08-04 |
+| 2 | PR #62 head mirror `opencode-instrument-designer` | desktop | PR #62 merge | GitHub CLI cannot retarget PR heads; mirror ref tracks `opencode/main/desktop` until merge, then delete | 2026-08-04 |
+| 3 | Mesh-repair gate protocol (`docs/TOOLS.md`) | laptop | laptop draft | DECIDED: build123d-first + pymeshlab/pymeshfix repair fallback (desktop 17906945); laptop drafting protocol | 2026-08-05 |
+| 4 | build123d spike merge `8ddfc7a`+`e8d6254`+`7bc624e` → `opencode/main/laptop` | laptop | laptop merge | Desktop approved step 1 (17921022): laptop merges `origin/opencode/main/desktop` → `opencode/build123d/laptop`, then opens PR to `opencode/main/desktop` | 2026-08-06 |
+| 5 | `cadquery-ocp` pin in `cad` extra | desktop | — | Resolved: desktop added pin (avoid `cadquery-ocp-novtk` OCP namespace clobber) | 2026-08-05 |
+| 6 | Config schema unification | desktop | laptop review of multi-register decision | Schema approved; 3 configs migrated to canonical; `baroque_clarinet.json` kept as legacy until multi-register decision | 2026-08-06 |
+| 7 | pip-tools dependency locks | desktop | — | Resolved: lock files generated for `[dev,cad,test,chess]` and committed; `scripts/compile_requirements.py` + CI `dependency-locks` job verify they stay up to date | 2026-08-06 |
+| 8 | Tailscale peer monitor | both | — | Resolved: symmetric monitor works; one test chess game played 2026-08-06T13:06Z and ended in a draw. Desktop monitor running (PID 4496). Laptop currently not responding but was reachable earlier | 2026-08-06 |
+| 9 | Architecture audit P0 fixes | desktop | — | Resolved: hardcoded OD/closed_top threaded through, missing holes added, impossible ODs corrected; analysis doc remains for reference | 2026-08-06 |
+| 10 | Fusion 360 track + WSL | desktop | laptop | **WORK SEPARATION** (desktop 11:24Z): desktop owns STL pipeline (export→gate→Blender); laptop owns Fusion 360 Phase 0+ (scriptable part PASSED comment-17919778; Phase 1 batch 5/5 PASS comment-17920381; mesh-repair proof 0.3 still needs human GUI). **Charter posted comment-17920221** — laptop runs an autonomous queue (Phase-2 API probes, L2/L1 parity, metamaterial whitelist, WSL report); STL pipeline files are do-not-touch. Desktop: confirm boundary + hand off 5-preset STEP/STL artifacts. WSL2 Ubuntu ready on laptop (comment-17919942); WSL utilization plan accepted, first deliverable = Ubuntu pytest report | 2026-08-06 |
+| 11 | PowerShell 5.1 compatibility lint | desktop | — | Resolved: `scripts/check_powershell_51_compat.py` added; wired into pre-commit + CI `powershell-lint` job on windows-latest | 2026-08-06 |
+| 12 | Fusion 360 personal-use free subscription | desktop | — | Resolved: laptop confirmed Phase 0/1 scriptable, CAM probe next, Simulation blocked by license | 2026-08-06 |
+| 13 | Chess match rematch | both | laptop reachable again | One test game drawn; full 10-game bullet rematch pending when both monitors are online | 2026-08-06 |
 
 ## Nudge rule
 

@@ -96,6 +96,13 @@ CATEGORIES = {
             [PY, "-c", "import backend.jax_optimizer; print('jax_optimizer import OK')"],
         ],
     },
+    "comparison": {
+        "tier": "medium",
+        "desc": "AI/ML optimization family comparison (Bayesian, neural, RL, gradient-free).",
+        "commands": [
+            _pyt("test_ai_methods_comparison.py", extra=["-m", "comparison", "-s"]),
+        ],
+    },
     "optimizer": {
         "tier": "medium",
         "desc": "Two-phase / Phase-2 objective tests + optional quick smoke (slow).",

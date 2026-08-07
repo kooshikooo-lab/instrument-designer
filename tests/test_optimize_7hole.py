@@ -5,7 +5,7 @@ Forget the unverified 0.45c claim. Start fresh and find actual optimal positions
 import sys, time
 import numpy as np
 sys.path.insert(0, '.')
-from tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
+from backend.tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
 
 # 7 diatonic targets
 targets = [73.416, 82.407, 87.307, 98.000, 110.000, 123.471, 146.832]

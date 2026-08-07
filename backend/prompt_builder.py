@@ -13,8 +13,14 @@ Best done via API (integrated into workflow):
 - cohere/north-mini-code:free (code-specialized, 256K ctx)
 - poolside/laguna-m.1:free (code-specialized)
 
+== Local Agent (LM Studio, no API key) ==
+- google/gemma-4-12b runs locally on the desktop (vision-capable). Use
+  get_local() for private, free, offline calls; backend/local_llm.py handles
+  auto-starting the server and loading the model.
+
 == Usage ==
     from backend.ai_assistant import get_researcher, get_coder, prepare_research_prompt
+    from backend.ai_assistant import get_local
     
     # Automated coding via API
     coder = get_coder()
@@ -43,6 +49,7 @@ RESEARCH_MODEL = 'cohere/north-mini-code:free'                 # fastest reliabl
 CODING_MODEL = 'cohere/north-mini-code:free'                   # code-specialized, 256K ctx
 FAST_MODEL = 'openai/gpt-oss-20b:free'                        # fastest (~5s) but weaker
 DEEP_MODEL = 'nvidia/nemotron-nano-9b-v2:free'                 # has reasoning chain, ~20s+
+LM_STUDIO_MODEL = os.environ.get('LMSTUDIO_MODEL', 'google/gemma-4-12b')  # local via LM Studio
 # For deep research: use ChatGPT/Claude web interfaces with prepare_research_prompt()
 
 
@@ -53,6 +60,16 @@ class AIAssistant:
         'openrouter': {
             'base_url': 'https://openrouter.ai/api/v1',
             'env_key': 'OPENROUTER_API_KEY',
+            'requires_key': True,
+            'default_model': RESEARCH_MODEL,
+        },
+        # Local LM Studio server (OpenAI-compatible) — no API key required.
+        # See backend/local_llm.py for auto-start of the server + model load.
+        'lmstudio': {
+            'base_url': 'http://localhost:1234/v1',
+            'env_key': '',
+            'requires_key': False,
+            'default_model': LM_STUDIO_MODEL,
         },
     }
     
@@ -62,7 +79,8 @@ class AIAssistant:
         
         self.base_url = config['base_url']
         self.api_key = api_key or os.environ.get(config['env_key'], '')
-        self.model = model or RESEARCH_MODEL
+        self.requires_key = config.get('requires_key', True)
+        self.model = model or config.get('default_model', RESEARCH_MODEL)
         
         # System prompts
         self.code_system = (
@@ -81,7 +99,7 @@ class AIAssistant:
     def _make_request(self, messages: List[Dict], model: str = '', 
                       system: str = '', max_tokens: int = 4096) -> str:
         """Make API request to chosen provider."""
-        if not self.api_key:
+        if self.requires_key and not self.api_key:
             return f"[ERROR] No API key for {self.provider}. Set {self.PROVIDERS[self.provider]['env_key']} environment variable."
         
         model = model or self.model
@@ -91,10 +109,9 @@ class AIAssistant:
             all_messages.append({"role": "system", "content": system})
         all_messages.extend(messages)
         
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-        }
+        headers = {"Content-Type": "application/json"}
+        if self.api_key:
+            headers["Authorization"] = f"Bearer {self.api_key}"
         
         # OpenRouter specific headers
         if self.provider == 'openrouter':
@@ -214,7 +231,15 @@ class AIAssistant:
             except Exception as e:
                 return f"Error listing models: {e}"
         
-        return f"Provider: {self.provider}\nFree models: {self.PROVIDERS[self.provider]['free_models']}"
+        if self.provider == 'lmstudio':
+            try:
+                resp = requests.get(f"{self.base_url}/models", timeout=10)
+                ids = [m.get('id', '') for m in resp.json().get('data', [])]
+                return "LM Studio models:\n" + ("\n".join(ids) or "(none loaded)")
+            except Exception as e:
+                return f"Error listing models: {e}"
+        
+        return f"Provider: {self.provider}\nFree models: {self.PROVIDERS[self.provider].get('free_models', 'N/A')}"
 
 
 # ============================================================================
@@ -232,6 +257,10 @@ def get_coder(model: str = '') -> AIAssistant:
 def get_fast(model: str = '') -> AIAssistant:
     """Get a fast AI assistant for simple tasks."""
     return AIAssistant(provider='openrouter', model=model or FAST_MODEL)
+
+def get_local(model: str = '') -> AIAssistant:
+    """Get an assistant wired to the local LM Studio server (Gemma 4)."""
+    return AIAssistant(provider='lmstudio', model=model or LM_STUDIO_MODEL)
 
 
 # ============================================================================

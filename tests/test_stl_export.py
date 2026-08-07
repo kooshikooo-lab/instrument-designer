@@ -1,6 +1,7 @@
 """Test STL export pipeline."""
 import sys, time, os
-sys.path.insert(0, r"C:\instrument-designer")
+_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, _root)
 from backend.stl_export import export_optimizer_result, export_bore_only, export_bore_profile_json
 
 
@@ -27,16 +28,16 @@ def test_stl_export():
 
     print("\nExporting STL...")
     t0 = time.time()
-    os.makedirs(r"C:\instrument-designer\output", exist_ok=True)
-    stl_path = export_optimizer_result(result, r"C:\instrument-designer\output\soprano_sax.stl")
+    os.makedirs(os.path.join(_root, "output"), exist_ok=True)
+    stl_path = export_optimizer_result(result, os.path.join(_root, "output", "soprano_sax.stl"))
     print(f"  STL: {stl_path} ({time.time()-t0:.2f}s)")
 
     t0 = time.time()
-    bore_path = export_bore_only(result, r"C:\instrument-designer\output\soprano_sax_bore.stl")
+    bore_path = export_bore_only(result, os.path.join(_root, "output", "soprano_sax_bore.stl"))
     print(f"  Bore: {bore_path} ({time.time()-t0:.2f}s)")
 
     t0 = time.time()
-    json_path = export_bore_profile_json(result, r"C:\instrument-designer\output\soprano_sax_profile.json")
+    json_path = export_bore_profile_json(result, os.path.join(_root, "output", "soprano_sax_profile.json"))
     print(f"  JSON: {json_path} ({time.time()-t0:.2f}s)")
 
     import os
@@ -49,7 +50,7 @@ def test_stl_export():
 def test_stl_export():
     """Test STL export functions with mock result."""
     import sys, time, os
-    sys.path.insert(0, r"C:\instrument-designer")
+    sys.path.insert(0, _root)
     from backend.stl_export import export_optimizer_result, export_bore_only, export_bore_profile_json
 
     # Mock result dict with required fields for STL export
@@ -67,16 +68,16 @@ def test_stl_export():
         'bore_length': 372.5,
     }
 
-    os.makedirs(r"C:\instrument-designer\output", exist_ok=True)
+    os.makedirs(os.path.join(_root, "output"), exist_ok=True)
     
-    stl_path = export_optimizer_result(result, r"C:\instrument-designer\output\test_soprano_sax.stl")
+    stl_path = export_optimizer_result(result, os.path.join(_root, "output", "test_soprano_sax.stl"))
     assert os.path.exists(stl_path)
     assert os.path.getsize(stl_path) > 0
     
-    bore_path = export_bore_only(result, r"C:\instrument-designer\output\test_soprano_sax_bore.stl")
+    bore_path = export_bore_only(result, os.path.join(_root, "output", "test_soprano_sax_bore.stl"))
     assert os.path.exists(bore_path)
     assert os.path.getsize(bore_path) > 0
     
-    json_path = export_bore_profile_json(result, r"C:\instrument-designer\output\test_soprano_sax_profile.json")
+    json_path = export_bore_profile_json(result, os.path.join(_root, "output", "test_soprano_sax_profile.json"))
     assert os.path.exists(json_path)
     assert os.path.getsize(json_path) > 0

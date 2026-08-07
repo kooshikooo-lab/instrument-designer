@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/kooshikooo-lab/instrument-designer/schemas/design_output.schema.json",
+  "title": "Instrument Designer — Design Output",
+  "description": "Schema for JSON design artifacts produced by the optimizer / design_server.",
+  "type": "object",
+  "required": ["name", "label", "bore_type", "bore_length_mm", "n_holes", "hole_positions_mm", "bore_profile", "fundamental_hz"],
+  "properties": {
+    "name": { "type": "string" },
+    "label": { "type": "string" },
+    "bore_type": { "type": "string" },
+    "bore_length_mm": { "type": "number", "exclusiveMinimum": 0 },
+    "n_holes": { "type": "integer", "minimum": 0 },
+    "hole_positions_mm": {
+      "type": "array",
+      "items": { "type": "number", "minimum": 0 }
+    },
+    "hole_diameters_mm": {
+      "type": "array",
+      "items": { "type": "number", "exclusiveMinimum": 0 }
+    },
+    "hole_offsets": {
+      "type": "array",
+      "items": { "type": "number" }
+    },
+    "bore_profile": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["position_mm", "radius_mm"],
+        "properties": {
+          "position_mm": { "type": "number", "minimum": 0 },
+          "radius_mm": { "type": "number", "exclusiveMinimum": 0 }
+        }
+      }
+    },
+    "optimized_params": { "type": "object" },
+    "fundamental_hz": { "type": "number", "exclusiveMinimum": 0 },
+    "best_scale": { "type": "string" },
+    "scale_rms_cents": { "type": "number", "minimum": 0 },
+    "resonances_hz": {
+      "type": "array",
+      "items": { "type": "number", "exclusiveMinimum": 0 }
+    },
+    "initial_cost_rms_cents": { "type": "number", "minimum": 0 },
+    "final_cost_rms_cents": { "type": "number", "minimum": 0 },
+    "total_time_s": { "type": "number", "minimum": 0 },
+    "target_frequencies": {
+      "anyOf": [
+        { "type": "array", "items": { "type": "number", "exclusiveMinimum": 0 } },
+        { "type": "null" }
+      ]
+    },
+    "notes": { "type": "string" }
+  }
+}

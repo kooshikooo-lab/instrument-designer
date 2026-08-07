@@ -6,10 +6,12 @@ actionable suggestions for improving intonation accuracy.
 
 Supports two modes:
 1. Rule-based (no LLM needed): heuristic analysis of optimization results
-2. LLM-powered (Ollama/GPT): natural language explanations via CrewAI-style agents
+2. LLM-powered (LM Studio Gemma / Ollama / OpenRouter): natural language
+   explanations via CrewAI-style agents
 
-The rule-based mode works immediately. The LLM mode activates when Ollama
-is running locally (default: http://localhost:11434).
+The rule-based mode works immediately. The LLM mode prefers the local LM
+Studio server (Gemma 4, default: http://localhost:1234), then Ollama
+(default: http://localhost:11434), then OpenRouter free models.
 
 Architecture follows the CrewAI pattern from chat-logs/2026-07-18-crewai-pymoo-deep-dive.md:
 - AcousticAdvisor: analyzes frequency accuracy and bore geometry
@@ -538,6 +540,18 @@ def sequential_result_for_llm(result: dict) -> dict:
 OLLAMA_BASE = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
 
 
+def _query_lmstudio(prompt: str) -> Optional[str]:
+    """Query the local LM Studio Gemma. Returns None if unavailable."""
+    try:
+        from backend.local_llm import chat, ensure_gemma, server_ready
+        if not server_ready() and not ensure_gemma():
+            return None
+        result = chat(prompt)
+        return result if result and not result.startswith("[ERROR]") else None
+    except Exception:
+        return None
+
+
 def _query_openrouter(prompt: str) -> Optional[str]:
     """Query OpenRouter free models. Returns None if unavailable."""
     try:
@@ -614,7 +628,8 @@ def get_llm_suggestion(optimization_result: dict, target_frequencies: list[float
                        model: str = "llama3.2") -> Optional[str]:
     """Get an LLM-powered analysis of optimization results.
     
-    Tries Ollama first, then falls back to OpenRouter free models."""
+    Tries the local LM Studio Gemma first, then Ollama, then OpenRouter
+    free models."""
     best = optimization_result.get("best_candidates", [{}])[0] if optimization_result.get("best_candidates") else {}
     matched = best.get("matched_frequencies", [])
 
@@ -641,6 +656,9 @@ Provide a concise analysis with:
 3. Recommended parameter changes for the next optimization run"""
 
     prompt = f"{ADVISOR_SYSTEM_PROMPT}\n\n{context}"
+    result = _query_lmstudio(prompt)
+    if result:
+        return result
     result = _query_ollama(prompt, model)
     if result:
         return result
@@ -649,13 +667,21 @@ Provide a concise analysis with:
 
 def get_advisor_status() -> dict:
     """Check advisor capabilities."""
+    try:
+        from backend.local_llm import server_ready
+        lmstudio = server_ready()
+    except Exception:  # noqa: BLE001
+        lmstudio = False
     ollama = _check_ollama_available()
     openrouter_key = os.environ.get("OPENROUTER_API_KEY", "")
     history = get_design_history(limit=5)
     return {
         "rule_based": True,
-        "llm_available": ollama["available"] or bool(openrouter_key),
-        "llm_models": ollama["models"] if ollama["available"] else (["openrouter:free"] if openrouter_key else []),
+        "llm_available": lmstudio or ollama["available"] or bool(openrouter_key),
+        "llm_models": (["lmstudio:gemma-4-12b"] if lmstudio else [])
+                      + (ollama["models"] if ollama["available"] else [])
+                      + (["openrouter:free"] if openrouter_key else []),
+        "lmstudio_available": lmstudio,
         "ollama_url": OLLAMA_BASE,
         "openrouter_available": bool(openrouter_key),
         "memory_designs": len(history),

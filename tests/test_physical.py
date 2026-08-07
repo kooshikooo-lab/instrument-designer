@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from scipy.optimize import differential_evolution, minimize
 sys.path.insert(0, '.')
-from tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
+from backend.tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
 
 targets = [73.416, 77.782, 82.407, 87.307, 92.499, 97.999,
            103.826, 110.000, 116.541, 123.471, 130.813, 138.591, 146.832]

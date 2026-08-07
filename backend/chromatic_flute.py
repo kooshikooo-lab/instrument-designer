@@ -50,14 +50,9 @@ import math
 import numpy as np
 from typing import List, Tuple, Optional, Dict
 
-try:
-    from backend.tmm_acoustics import (
-        TMMInstrument, tmm_instrument_from_radii, SPEED_OF_SOUND, Hole,
-    )
-except ImportError:
-    from tmm_acoustics import (
-        TMMInstrument, tmm_instrument_from_radii, SPEED_OF_SOUND, Hole,
-    )
+from backend.tmm_acoustics import (
+    TMMInstrument, tmm_instrument_from_radii, SPEED_OF_SOUND, Hole,
+)
 
 
 class ChromaticFluteModel:

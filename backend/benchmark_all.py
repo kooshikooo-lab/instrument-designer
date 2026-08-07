@@ -197,7 +197,7 @@ INSTRUMENTS = {
         "closed_top": False,
         "targets": [261.6, 293.7, 329.6, 349.2, 392.0, 440.0, 493.9],
         "names": ["C4", "D4", "E4", "F4", "G4", "A4", "B4"],
-        "bore_radius": 9.5, "outer_diameter": 19.8,
+        "bore_radius": 9.5, "outer_diameter": 24.0,
         "hole_diameter": 8.0, "hole_length": 3.0,
         "fingerings": [
             ["closed"] * 6,
@@ -214,7 +214,7 @@ INSTRUMENTS = {
         "closed_top": False,
         "targets": [196.0, 220.0, 246.9, 261.6, 293.7, 329.6, 369.9],
         "names": ["G3", "A3", "B3", "C4", "D4", "E4", "F#4"],
-        "bore_radius": 11.0, "outer_diameter": 22.8,
+        "bore_radius": 11.0, "outer_diameter": 26.0,
         "hole_diameter": 9.0, "hole_length": 3.0,
         "fingerings": [
             ["closed"] * 6,
@@ -248,7 +248,7 @@ INSTRUMENTS = {
         "closed_top": True,
         "targets": [277.2, 293.7, 329.6, 370.0, 392.0, 440.0, 493.9],
         "names": ["C#4", "D4", "E4", "F#4", "G4", "A4", "B4"],
-        "bore_radius": 8.0, "outer_diameter": 22.0,
+        "bore_radius": 8.0, "outer_diameter": 20.0,
         "hole_diameter": 5.0, "hole_length": 3.0,
         "fingerings": [
             ["closed"] * 6,
