@@ -28,7 +28,7 @@ dependencies = [
 [project.optional-dependencies]
 jax = ["jax>=0.4", "jaxlib>=0.4"]
 surrogate = ["jax>=0.4", "jaxlib>=0.4", "flax", "optax", "botorch", "torch", "gpytorch"]
-cad = ["cadquery>=2.4", "cadquery-ocp", "build123d>=0.7", "vtk>=9.0", "trimesh>=4.0"]
+cad = ["cadquery>=2.4", "cadquery-ocp", "build123d>=0.7", "vtk>=9.0", "trimesh>=4.0", "rtree>=1.0", "pillow>=9.0"]
 bench = ["dask[distributed]>=2024.1", "psutil>=5.9", "cma>=3.0"]
 perf = ["numba>=0.60"]
 spectral = ["librosa>=0.10"]
@@ -51,17 +51,27 @@ include = ["woodwind_designer*"]
 python_files = [
     "test_analytical_pipes.py",
     "test_architecture.py",
+    "test_blender_addon_import.py",
+    "test_blender_server_client.py",
+    "test_bore_design.py",
     "test_cadquery_instrument.py",
+    "test_compare_recording.py",
     "test_inverse_design.py",
     "test_local_llm.py",
     "test_metrics.py",
     "test_openwind_solver.py",
     "test_phase2_objective.py",
     "test_properties.py",
+    "test_scan_to_bore.py",
     "test_server_routes.py",
+    "test_stl_export.py",
+    "test_stl_render_compare.py",
+    "test_stl_watertight.py",
+    "test_folded_export.py",
     "test_surrogate.py",
     "test_tmm.py",
     "test_tool_registry.py",
+    "test_whitelist.py",
     "test_topk_polish.py",
     "test_dask_topk.py",
     "test_mesh_repair_gate.py",

@@ -1,4 +1,2 @@
 @echo off
-cd /d "%~dp0.."
-python scripts\start_gemma.py %*
-pause
+wscript //nologo "%~dp0_run_hidden.vbs" start_gemma.py

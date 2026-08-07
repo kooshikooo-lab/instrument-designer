@@ -33,6 +33,7 @@ from pymoo.operators.repair.rounding import RoundingRepair
 from pymoo.optimize import minimize
 from pymoo.termination import get_termination
 from backend.metrics import rms_cents, compute_metrics
+from backend.physics.bore_design import speed_of_sound_at
 
 
 class MonotonicRepair(Repair):
@@ -355,7 +356,7 @@ class BoreOptimizer:
         
         # Auto-calculate bore length from fundamental
         if bore_length is None:
-            v = 331.3 + 0.606 * temperature
+            v = speed_of_sound_at(temperature) / 1000.0  # m/s
             fundamental = min(target_frequencies)
             self.bore_length = v / (4 * fundamental)
         else:

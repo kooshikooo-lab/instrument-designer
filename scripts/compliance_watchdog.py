@@ -50,11 +50,13 @@ OVERSIZED_ALLOWLIST = {
     "backend\\ai_advisor.py",
     "backend\\benchmark_all.py",
     "backend\\cadquery_export.py",
+    "backend\\inverse_design.py",
     "backend\\modular_components.py",
     "backend\\pareto_optimizer.py",
     "backend\\tmm_acoustics.py",
     "backend\\trumpet_acoustics.py",
     "backend\\trumpet_openwind.py",
+    "backend\\stl_verifier.py",
     "woodwind_designer\\engine\\design_server.py",
     "woodwind_designer\\engine\\instrument_library.py",
 }

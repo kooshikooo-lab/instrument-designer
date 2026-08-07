@@ -23,6 +23,7 @@ from scipy.optimize import differential_evolution, minimize as sp_min
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 from backend.tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
 from backend.physics.losses import KeefeLoss
+from backend.physics.register_detection import detect_registers, build_initial_instrument
 
 c = SPEED_OF_SOUND
 
@@ -52,33 +53,6 @@ def peak_cost_nearest(inst, targets, fingerings, detected_regs):
     if np.any(np.abs(ca) > 1e5):
         return 1e10
     return float(np.sqrt(np.mean(ca ** 2)))
-
-
-def detect_registers(inst, targets, fingerings, max_reg=5):
-    """Detect the best register for each fingering using peak search.
-    
-    NOTE: Per desktop decision (Discussion #23), registers should be derived
-    ONCE from the INITIAL geometry before optimization, frozen, and never
-    re-derived post-hoc. This function should only be called on the INITIAL
-    geometry before any optimization begins.
-    """
-    regs = []
-    for tgt, fl in zip(targets, fingerings):
-        wl_guess = SPEED_OF_SOUND / tgt
-        best_pr = 1
-        best_dist = 1e10
-        for pr in range(1, max_reg + 1):
-            try:
-                wl = inst.find_resonance(SPEED_OF_SOUND / tgt, fl, n_register=pr)
-                f = inst.frequency_from_wavelength(wl)
-                dist = abs(cents_error(f, tgt))
-                if dist < best_dist:
-                    best_dist = dist
-                    best_pr = pr
-            except Exception:
-                continue
-        regs.append(best_pr)
-    return regs
 
 
 # ============================================================================

@@ -39,19 +39,25 @@ thread starts, moves, or resolves.
 
 | # | Thread | Owner | Awaiting | Status | Last update |
 |---|--------|-------|----------|--------|-------------|
-| 1 | Numba wiring restore on `main` | both | merge of PR #62 | laptop keeps guarded skip; restore lands via PR #62 merge, then laptop merges `main` | 2026-08-04 |
-| 2 | PR #62 head mirror `opencode-instrument-designer` | desktop | PR #62 merge | GitHub CLI cannot retarget PR heads; mirror ref tracks `opencode/main/desktop` until merge, then delete | 2026-08-04 |
+| 1 | Numba wiring restore on `main` | both | merge of PR #62 | **DONE** — PR #62 merged, numba wiring restored | 2026-08-07 |
+| 2 | PR #62 head mirror `opencode-instrument-designer` | desktop | PR #62 merge | **DONE** — PR #62 merged, mirror ref can be deleted | 2026-08-07 |
 | 3 | Mesh-repair gate protocol (`docs/TOOLS.md`) | laptop | laptop draft | DECIDED: build123d-first + pymeshlab/pymeshfix repair fallback (desktop 17906945); laptop drafting protocol | 2026-08-05 |
-| 4 | build123d spike merge `8ddfc7a`+`e8d6254`+`7bc624e` → `opencode/main/laptop` | laptop | laptop merge | Desktop approved step 1 (17921022): laptop merges `origin/opencode/main/desktop` → `opencode/build123d/laptop`, then opens PR to `opencode/main/desktop` | 2026-08-06 |
+| 4 | build123d spike merge → `opencode/main/laptop` | laptop | laptop merge | Desktop approved step 1: laptop merges `origin/opencode/main/desktop` → `opencode/build123d/laptop`, then PR to `opencode/main/desktop` | 2026-08-06 |
 | 5 | `cadquery-ocp` pin in `cad` extra | desktop | — | Resolved: desktop added pin (avoid `cadquery-ocp-novtk` OCP namespace clobber) | 2026-08-05 |
-| 6 | Config schema unification | desktop | laptop review of multi-register decision | Schema approved; 3 configs migrated to canonical; `baroque_clarinet.json` kept as legacy until multi-register decision | 2026-08-06 |
-| 7 | pip-tools dependency locks | desktop | — | Resolved: lock files generated for `[dev,cad,test,chess]` and committed; `scripts/compile_requirements.py` + CI `dependency-locks` job verify they stay up to date | 2026-08-06 |
-| 8 | Tailscale peer monitor | both | — | Resolved: symmetric monitor works; one test chess game played 2026-08-06T13:06Z and ended in a draw. Desktop monitor running (PID 4496). Laptop currently not responding but was reachable earlier | 2026-08-06 |
-| 9 | Architecture audit P0 fixes | desktop | — | Resolved: hardcoded OD/closed_top threaded through, missing holes added, impossible ODs corrected; analysis doc remains for reference | 2026-08-06 |
-| 10 | Fusion 360 track + WSL | desktop | laptop | **WORK SEPARATION** (desktop 11:24Z): desktop owns STL pipeline (export→gate→Blender); laptop owns Fusion 360 Phase 0+ (scriptable part PASSED comment-17919778; Phase 1 batch 5/5 PASS comment-17920381; mesh-repair proof 0.3 still needs human GUI). **Charter posted comment-17920221** — laptop runs an autonomous queue (Phase-2 API probes, L2/L1 parity, metamaterial whitelist, WSL report); STL pipeline files are do-not-touch. Desktop: confirm boundary + hand off 5-preset STEP/STL artifacts. WSL2 Ubuntu ready on laptop (comment-17919942); WSL utilization plan accepted, first deliverable = Ubuntu pytest report | 2026-08-06 |
-| 11 | PowerShell 5.1 compatibility lint | desktop | — | Resolved: `scripts/check_powershell_51_compat.py` added; wired into pre-commit + CI `powershell-lint` job on windows-latest | 2026-08-06 |
-| 12 | Fusion 360 personal-use free subscription | desktop | — | Resolved: laptop confirmed Phase 0/1 scriptable, CAM probe next, Simulation blocked by license | 2026-08-06 |
-| 13 | Chess match rematch | both | laptop reachable again | One test game drawn; full 10-game bullet rematch pending when both monitors are online | 2026-08-06 |
+| 6 | Config schema unification | desktop | laptop review of multi-register decision | Schema approved; 3 configs migrated to canonical; `baroque_clarinet.json` kept as legacy | 2026-08-06 |
+| 7 | pip-tools dependency locks | desktop | — | Resolved: lock files generated for `[dev,cad,test,chess]` and committed | 2026-08-06 |
+| 8 | Tailscale peer monitor | both | — | Resolved: symmetric monitor works; test chess game drawn 2026-08-06T13:06Z. Desktop monitor running. | 2026-08-06 |
+| 9 | Architecture audit P0 fixes | desktop | — | **SUPERSEDED** — new P0 fixes in Phase 0 (SoS cleanup, two-phase register freeze, bass chalumeau) | 2026-08-07 |
+| 10 | Fusion 360 personal-use free subscription | desktop | — | Resolved: laptop confirmed Phase 0/1 scriptable, CAM probe next | 2026-08-06 |
+| 11 | PowerShell 5.1 compatibility lint | desktop | — | Resolved: `scripts/check_powershell_51_compat.py` added; wired into pre-commit + CI | 2026-08-06 |
+| 12 | Chess match rematch | both | laptop reachable again | One test game drawn; full 10-game bullet rematch pending when both monitors online | 2026-08-06 |
+| 13 | Laptop Opencode account / usage budget | desktop→laptop | laptop reply | Laptop went offline mid-session (2026-08-06) with Opencode Go + Zen subscriptions NOT active. Laptop must be more restrictive if different account. | 2026-08-06 |
+| 14 | Team of experts agent model | desktop | comments / go-ahead on PoC | Proposal posted to #23 (17925874): lightweight `scripts/review_panel.py` with Physics Auditor + Math+Code Formalist first. Awaiting feedback. | 2026-08-06 |
+| 15 | **Phase 0 P0 fixes** | desktop | human decisions on 4 questions | **BLOCKED** — 4 questions posted to Discussion #23: impossible ODs, bass chalumeau holes, two-phase scope, merge conflict. Need human decision before Phase 0 execution. | 2026-08-07 |
+| 16 | **Bass chalumeau merge conflict** | desktop→laptop | laptop merge | **ACTION NEEDED** — Desktop has tone-hole fix in `build_bass_chalumeau_Bb()`; laptop doesn't. Laptop must merge `origin/opencode/main/desktop` → `opencode/main/laptop` before any merge, or manual diff required. | 2026-08-07 |
+| 17 | **WoodwindOpenWind FEM** | desktop | Phase 0 completion | **PLANNED** — Create `backend/woodwind_openwind.py` mirroring `TrumpetOpenWind`; register `REFINED` strategy for woodwinds (CLARINET, SAXOPHONE, FLUTE, CHALUMEAU). | 2026-08-07 |
+| 18 | **CT-Scan Benchmarking** (Issue #47) | desktop | Phase 1 | **PLANNED** — Download FT40/FT44 from Zenodo, extract bore profiles, run two-phase optimizer, document RMS vs CT ground truth. | 2026-08-07 |
+| 19 | **Demakein Replacement** (Issue #48) | desktop | Phase 1 | **PLANNED** — Extract 11 preset profiles via TMM, replace `demakein_wrapper.py` internals, remove demakein import, keep public API. | 2026-08-07 |
 
 ## Nudge rule
 
@@ -67,3 +73,5 @@ thread starts, moves, or resolves.
 - Edit it in the **same commit** as the #23 post that moves a thread.
 - Keep rows terse (one line per thread); delete resolved rows.
 - Add a row the moment you leave something waiting on the other machine.
+
+(End of file)

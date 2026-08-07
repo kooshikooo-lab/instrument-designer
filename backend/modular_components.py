@@ -30,6 +30,8 @@ from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
 from enum import Enum
 
+from backend.tmm_acoustics import SPEED_OF_SOUND
+
 
 # ============================================================================
 # PVC Pipe Standards (Schedule 40)

@@ -157,3 +157,49 @@ def test_match_timbre_cost_well_conditioned(tmp_path):
     assert np.isfinite(result["tier3_cost_optimized"])
     assert result["tier3_cost_initial"] < 1.0, f"cost too large: {result['tier3_cost_initial']}"
     assert len(result["bore_radii_optimized"]) == 6
+
+
+def test_design_scale_numpy_ga_returns_candidates():
+    """Tier-2 numpy-GA fallback must produce a playable, in-tune scale."""
+    from backend.inverse_design import _fingering_ladder, design_scale_numpy_ga
+    from backend.physics.losses import KeefeLoss
+
+    result = design_scale_numpy_ga(261.63, None, hole_count=6, pop_size=50, n_gen=30)
+    assert result["method"] == "numpy_ga"
+    assert len(result["candidates"]) == 2
+    cand = result["candidates"][0]
+    assert len(cand["hole_positions_mm"]) == 6
+    assert len(cand["hole_diameters_mm"]) == 6
+    assert len(result["target_frequencies"]) == 7
+    assert np.all(np.isfinite(result["fitness"]))
+
+    from backend.tmm_acoustics import tmm_instrument_from_radii
+
+    inst = tmm_instrument_from_radii(
+        np.linspace(7.0, 9.0, 6), cand["bore_length_mm"],
+        cand["hole_positions_mm"], cand["hole_diameters_mm"],
+        cand["hole_lengths_mm"], closed_top=False,
+        loss_model=KeefeLoss(),
+    )
+    target_wavelengths = [SPEED_OF_SOUND / t for t in result["target_frequencies"]]
+    played = inst.compute_fingered_frequencies(
+        target_wavelengths, _fingering_ladder(6), n_register=2
+    )
+    cents = [1200.0 * math.log2(p / t) for t, p in zip(result["target_frequencies"], played)]
+    rms = float(np.sqrt(np.mean(np.square(cents))))
+    assert rms < 10.0, f"scale not in tune: RMS {rms:.1f}c"
+    assert max(abs(c) for c in cents) < 15.0, f"worst note off by {max(abs(c) for c in cents):.1f}c"
+
+
+def test_design_scale_falls_back_without_agent():
+    """design_scale must use the numpy GA when generative_agent is missing."""
+    import backend.inverse_design as inv
+
+    original = inv._generative_design
+    inv._generative_design = None
+    try:
+        result = inv.design_scale(261.63, hole_count=4, n_candidates=1)
+        assert result["method"] == "numpy_ga"
+        assert result["geometry"]["closed_top"] is False
+    finally:
+        inv._generative_design = original

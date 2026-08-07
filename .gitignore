@@ -30,6 +30,7 @@ test_output/*.stl
 test_output/*.step
 test_output/*.json
 test_output/instruments/
+test_output/
 *.stl
 *.step
 
