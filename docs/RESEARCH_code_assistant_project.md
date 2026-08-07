@@ -242,7 +242,15 @@ behavior, and the 8-section completion-report format.
   the human role shifting to "taste maker" (judgment on AI-generated output) —
   the exact framing of a non-coder directing agents.
 
-## 9. Recommended stack / next steps (proposal for issue #67)
+## 9. Fine-tuning
+
+When and how to fine-tune OSS models for this project, in general, and for the
+instrument-design domain is covered in the companion research doc:
+`docs/RESEARCH_model_finetuning.md` (QLoRA/LoRA landscape, zero-code tools,
+CAD-Coder / FreeCAD / acoustic-metamaterial LLM precedents, data assets this
+repo already owns, risks).
+
+## 10. Recommended stack / next steps (proposal for issue #67)
 
 Assemble, don't reinvent:
 
