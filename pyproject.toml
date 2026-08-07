@@ -84,6 +84,7 @@ python_files = [
     "test_metamaterial_register_suppression.py",
     "test_metamaterial_stl_export.py",
     "test_metamaterial_subcontrabass.py",
+    "test_guard_scripts.py",
 ]
 
 [tool.ruff]

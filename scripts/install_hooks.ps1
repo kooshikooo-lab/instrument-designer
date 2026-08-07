@@ -15,6 +15,10 @@ if (-not (Test-Path (Join-Path $hooksDir "commit-msg"))) {
     Write-Error "Hook source missing: $hooksDir\commit-msg"
     exit 1
 }
+if (-not (Test-Path (Join-Path $hooksDir "pre-push"))) {
+    Write-Error "Hook source missing: $hooksDir\pre-push"
+    exit 1
+}
 
 # Set core.hooksPath to the versioned hooks directory (forward slashes for git).
 $rel = "scripts/git-hooks"
@@ -24,5 +28,7 @@ if ($LASTEXITCODE -ne 0) { Write-Error "git config core.hooksPath failed"; exit 
 Write-Host "Governance guard hooks ACTIVE via core.hooksPath=$rel"
 Write-Host "Edits to docs\CONSTRAINTS_AND_PREFERENCES.md (or other governance files)"
 Write-Host "now require 'GOVERNANCE-UPDATE' in the commit message (unless the file is unchanged)."
+Write-Host "Hooks installed: pre-commit, commit-msg, pre-push (Law 15/16)."
+Write-Host "Verify the whole system with: python scripts\system_audit.py"
 Write-Host ""
 Write-Host "To verify:  git config --get core.hooksPath"

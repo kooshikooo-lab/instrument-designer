@@ -83,13 +83,27 @@ commit message; CI (`governance-guard.yml`) enforces the same rule on every push
 If you see a BLOCKED message from the hook, you were about to rewrite the boot
 sequence without authorization — re-read the file instead of editing it.
 
+**Law 16 (system self-audit)** — the guards must not be trusted on faith. Before
+committing to a canonical branch or `main`, run:
+
+```
+python scripts/system_audit.py      # all enforcement layers active + correct
+```
+
+Before any cross-machine merge, run `python scripts/merge_gate.py <base> <head>`;
+if it predicts conflicts, rehearse on a `merge/<topic>` branch — never merge blind.
+The pre-push hook (`scripts/git-hooks/pre-push`) blocks canonical-branch
+deletion/force-push unless explicitly approved via `GUARD_BRANCH_ALLOW_DELETE=<branch>`
+or `GUARD_BRANCH_ALLOW_FORCE=<branch>` (Law 15.8 / Law 16.2).
+
 ## Environment
 
 - Repo: `kooshikooo-lab/instrument-designer` (remote: `origin`)
-- Branch naming: `opencode/<app>/<machine>` — per-machine integration branches
-  are `opencode/main/desktop` and `opencode/main/laptop` (keep divergence from
-  `main` minimal); test ideas on side branches `opencode/<idea>/<machine>`, then
-  merge or scrap.
+- Branch naming: Law 15 in `docs/AI_CONSTITUTION.md` governs branches. Only
+  four namespaces exist: `main` (trunk), `opencode/main/<machine>` (canonical,
+  permanent), `opencode/<topic>/<machine>` (feature, ephemeral), and
+  `merge/<topic>` (cross-machine merge staging, ephemeral). Nothing else is a
+  valid branch name.
 - Channel: Discussion #23 (GraphQL id `D_kwDOTOg0Rs4AoFZO`)
 - Git identity: `Admin <kooshikooo@gmail.com>`; `gh` authed as `kooshikooo-lab`.
 - Set `TEAM_MACHINE` to your machine name so sync output is self-identifying.

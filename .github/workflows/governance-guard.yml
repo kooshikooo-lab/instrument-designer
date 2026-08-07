@@ -25,6 +25,12 @@ jobs:
       - name: Dependency tool registry (phantom / orphan / unwired)
         run: |
           python scripts/toolcheck.py
+      - name: System self-audit (Law 16 — enforcement layers active and correct)
+        run: |
+          python scripts/system_audit.py
+      - name: Meta-tests for the guard scripts (Law 16.5)
+        run: |
+          python -m pytest tests/test_guard_scripts.py -q
 
   powershell-lint:
     runs-on: windows-latest
