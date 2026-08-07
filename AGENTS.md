@@ -73,10 +73,11 @@ sequence without authorization — re-read the file instead of editing it.
 ## Environment
 
 - Repo: `kooshikooo-lab/instrument-designer` (remote: `origin`)
-- Branch naming: `opencode/<app>/<machine>` — per-machine integration branches
-  are `opencode/main/desktop` and `opencode/main/laptop` (keep divergence from
-  `main` minimal); test ideas on side branches `opencode/<idea>/<machine>`, then
-  merge or scrap.
+- Branch naming: Law 15 in `docs/AI_CONSTITUTION.md` governs branches. Only
+  four namespaces exist: `main` (trunk), `opencode/main/<machine>` (canonical,
+  permanent), `opencode/<topic>/<machine>` (feature, ephemeral), and
+  `merge/<topic>` (cross-machine merge staging, ephemeral). Nothing else is a
+  valid branch name.
 - Channel: Discussion #23 (GraphQL id `D_kwDOTOg0Rs4AoFZO`)
 - Git identity: `Admin <kooshikooo@gmail.com>`; `gh` authed as `kooshikooo-lab`.
 - Set `TEAM_MACHINE` to your machine name so sync output is self-identifying.

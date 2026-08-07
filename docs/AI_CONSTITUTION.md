@@ -143,3 +143,30 @@ No commit may be made from unverified work. "It looked right" is not verificatio
 8. **No audit, no commit**: If you cannot run the tests (e.g. dependency missing), that is a Law 13 bug — fix the environment first. Committing untested work because the environment is broken only compounds the failure.
 
 Violating this protocol is a constitutional violation. Log failures in `AI_FAILURE_PATTERNS.md`.
+
+### Law 15 — Branch governance
+
+A branch's name must tell any human or agent exactly what it is, how it lives, and when it dies. Every branch is exactly one of four kinds, and a branch of a different kind does not exist.
+
+1. **Exact namespaces**. Every branch MUST be named as one of the following and MUST obey its lifecycle:
+   - `main` — the shared trunk. Clean, protected, and only ever advanced by promoting a canonical machine branch into it. Never worked on directly.
+   - `opencode/main/<machine>` — canonical per-machine integration branch (`opencode/main/desktop`, `opencode/main/laptop`). PERMANENT: never force-pushed, never renamed. Deleting a canonical branch requires explicit approval from the human user; a machine must never delete a canonical branch on its own initiative. The only place a machine's verified work accumulates. Kept as close to `main` as the machine's work allows.
+   - `opencode/<topic>/<machine>` — feature/experiment branch off a canonical branch. EPHEMERAL: merge into the machine's canonical branch when done, then delete. (`<machine>` is `desktop` or `laptop`.)
+   - `merge/<topic>` — cross-machine merge staging branch. EPHEMERAL: exists only to rehearse a merge that will land on a canonical branch. Delete after the merge is completed and promoted.
+   - Any branch that does not fit one of these namespaces is an orphan and MUST be renamed into a namespace or deleted. The words "stale", "old", or "legacy" are never a license to delete — only the namespace decides lifetime.
+
+2. **One upstream per branch**. `main` and `opencode/main/<machine>` are parents, never children. All work branches off a canonical machine branch (`opencode/main/desktop` or `opencode/main/laptop`); a machine's feature branch NEVER forks another machine's feature branch or a `merge/` branch.
+
+3. **Cross-machine merges go through `merge/` staging**. A machine that receives another machine's work creates a `merge/<topic>` branch off its own canonical branch, performs the merge there, runs the verification gates, and only then promotes the result into its canonical branch. The staging branch is deleted after promotion. Do NOT merge another machine's work directly into a canonical branch untested.
+
+4. **Promotion to `main` is PR-only and canonical-to-canonical**. The desktop and laptop canonical branches are the only valid sources for PRs into `main`. A canonical machine branch is promoted to `main` via a reviewed PR; `merge/` and `opencode/<topic>/` branches are never PR sources into `main`.
+
+5. **Before deleting any branch, prove it**. Deletion of an ephemeral branch requires that its content is fully present on a canonical branch or `main` (verify by merge or `git merge-base --is-ancestor`). If the content only lives on the branch being deleted, the deletion is a data loss bug.
+
+6. **`origin/HEAD` must point at `main`**. If it ever points elsewhere (e.g. a stale experiment branch), fix it immediately so `git checkout` and default-ref resolution are predictable.
+
+7. **Announce topology changes**. Creating or deleting a canonical branch, or promoting one to `main`, MUST be announced in #23 (per Law 11/12) so the other machine is never surprised by the shared tree. Deletion of a canonical branch additionally requires the human approval described in point 8.
+
+8. **Canonical branches need human approval to delete**. `main` and `opencode/main/<machine>` may never be deleted, renamed, or force-pushed by a machine on its own initiative. Any such action requires explicit, prior approval from the human user, obtained through #23. A machine that wants to retire a canonical branch must post the proposal, wait for the human's explicit approval, and only then act.
+
+Violating this protocol is a constitutional violation. Log failures in `AI_FAILURE_PATTERNS.md`.
