@@ -51,6 +51,7 @@ scripts/github_updates.log
 scripts/*.log
 scripts/*.pid
 scripts/*.err
+scripts/*.out
 
 # design_server runtime logs
 design_server.out.log
