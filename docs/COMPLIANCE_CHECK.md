@@ -77,6 +77,26 @@ Before every commit touching `.py` files, verify the work you are about to commi
 
 ---
 
+### CHECK 1e — System self-audit (Law 16)
+
+The enforcement system must itself be verified — a broken guard is worse than no guard, because it gives false confidence. Before committing to a canonical branch or `main`:
+
+```
+python scripts/system_audit.py          # all enforcement layers active + correct
+python -m pytest tests/test_guard_scripts.py -q   # the guards' own tests (Law 16.5)
+```
+
+And before any cross-machine merge:
+
+```
+python scripts/merge_gate.py <base> <head>   # predicts conflicts WITHOUT touching the worktree
+```
+
+**PASS:** `system_audit.py` exits 0 and the merge gate reports a clean merge (or you have rehearsed the conflicts on a `merge/<topic>` branch per Law 15.3).
+**FAIL:** Any check exits non-zero — fix the guard or the violation before proceeding. Do not commit around a failing audit.
+
+---
+
 ### CHECK 1d — Compliance watchdog (Law 14)
 
 The watchdog automates what agents forget. Run it, and trust its exit code over your memory:

@@ -75,11 +75,20 @@ def load_constitution_laws() -> list[str]:
     """
     if CONSTITUTION_FILE.exists():
         try:
-            laws = re.findall(r"^###\s+(Law \d+[^\n]*)", CONSTITUTION_FILE.read_text(encoding="utf-8"))
-            if laws:
-                return laws
+            text = CONSTITUTION_FILE.read_text(encoding="utf-8")
         except OSError:
-            pass
+            text = ""
+        laws = re.findall(r"^###\s+(Law \d+[^\n]*)", text, re.MULTILINE)
+        if laws:
+            return laws
+        # File exists but no laws parsed: a real defect. A dead guard must fail
+        # loudly, never silently fall back to a stale list (Law 16.4).
+        raise RuntimeError(
+            "AI_CONSTITUTION.md exists but no '### Law N' headings were found — "
+            "the law loader cannot verify the constitution. Fix the parser or "
+            "the file; do not trust the hardcoded fallback list."
+        )
+    # Only when the constitution file is genuinely absent do we fall back.
     return [
         "Law 1 - Architecture over features",
         "Law 2 - No architectural invention",

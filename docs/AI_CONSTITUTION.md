@@ -170,3 +170,26 @@ A branch's name must tell any human or agent exactly what it is, how it lives, a
 8. **Canonical branches need human approval to delete**. `main` and `opencode/main/<machine>` may never be deleted, renamed, or force-pushed by a machine on its own initiative. Any such action requires explicit, prior approval from the human user, obtained through #23. A machine that wants to retire a canonical branch must post the proposal, wait for the human's explicit approval, and only then act.
 
 Violating this protocol is a constitutional violation. Log failures in `AI_FAILURE_PATTERNS.md`.
+
+### Law 16 — The enforcement system must itself be enforced
+
+Agents malfunction: they misunderstand vague instructions, lose context, act rashly, or ignore direct orders. The safeguards therefore MUST NOT depend on the agent being well-behaved or well-informed. The rule set is only as strong as its mechanical enforcement, and the enforcement is only as strong as its own verification. This law makes the system audit itself.
+
+1. **Prevention over trust**. Rules that prevent harm MUST be mechanically enforced at the git layer, not just written in docs. Every push and every commit runs the guards; a guard's exit code is trusted over any agent's memory, intent, or claim. If a rule cannot be mechanically enforced, it must be recorded as unenforced debt in `AI_FAILURE_PATTERNS.md`.
+
+2. **Fail safe by default**. Destructive actions (branch deletion, force-push, canonical-branch mutation) are BLOCKED unless explicitly approved. Approval is explicit, scoped, and auditable — a named override for one specific branch, never a blanket waiver. Ambiguity resolves to "blocked".
+
+3. **No single point of trust**. Three independent layers must each verify the others:
+   - **Local hooks** (pre-commit, commit-msg, pre-push) run on every local git operation.
+   - **Server-side guards** (CI, branch protection) run on every push, so a machine that bypasses or disables local hooks is still stopped upstream.
+   - **The system audit** (`scripts/system_audit.py`) verifies the other two layers are actually active and correct.
+
+4. **The system audits itself**. `python scripts/system_audit.py` MUST pass before any commit is made to a canonical branch or `main`. It verifies: hooks are installed and wired to their validators, the constitution's laws parse, the compliance baseline is current, Law 15 branch topology holds (`origin/HEAD` points at `main`, canonical branches intact), and every guard script imports without error. A guard that fails to load is a dead guard and is treated as a system failure, not a warning.
+
+5. **The guards have tests**. The enforcement scripts (`guard_branch.py`, `merge_gate.py`, `validate_pre_commit.py`, `validate_commit_msg.py`, `guard_governance.py`, `compliance_watchdog.py`, `toolcheck.py`) MUST have passing tests in `tests/test_guard_scripts.py`. A change to a guard script without a test that exercises the changed behavior is a violation of this law.
+
+6. **Cross-machine merges are gated**. Before any cross-machine merge, run `python scripts/merge_gate.py <base> <head>`. If it predicts conflicts, do NOT merge directly — rehearse on a `merge/<topic>` staging branch (Law 15.3), resolve, verify, then promote. The gate never modifies the worktree, so it is always safe to run.
+
+7. **Audit result is declared in the commit**. Every commit touching a guard script, the hooks, the constitution, or the CI workflow MUST declare the system-audit result in its message (e.g. `System: audit PASS` or `System: audit FAIL (reason)`).
+
+Violating this protocol is a constitutional violation. Log failures in `AI_FAILURE_PATTERNS.md`.
