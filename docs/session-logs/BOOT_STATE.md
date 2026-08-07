@@ -9,8 +9,10 @@
 
 ## Goal
 
-- **Working branch: `opencode/main/desktop`** (HEAD `3393400`).
-- **Phase 0 COMPLETE**: SoS literal cleanup, Two-Phase optimizer register freeze, bass chalumeau merge conflict resolved.
+- **Working branch: `opencode/build123d/laptop`** (laptop).
+- **Desktop branch `opencode/main/desktop`** now at `9fb1c0b` (Phase 0 complete).
+- **Phase 0 COMPLETE (desktop)**: SoS literal cleanup, Two-Phase optimizer register freeze, bass chalumeau merge conflict resolved — merged into laptop.
+- **Laptop merge RECONSTRUCTED + caught up to desktop Phase 0**: broken single-parent merge `73ae792` replaced by proper 2-parent merge `e794979` (parents `56cad29` + `962b3f9`), then merged desktop `9fb1c0b` (Phase 0) on top.
 - **Phase 1 READY**: WoodwindOpenWind FEM integration, surrogate audit.
 - **Standing directive**: tools must be integrated into a pipeline, never just installed and forgotten; `AUDIT:` for provisional commits; ask rather than speculate when intent is unclear.
 
@@ -41,7 +43,8 @@
 - **Session log saved**: `chat-logs/2026-08-07-session-log.md` + P0 questions `chat-logs/2026-08-07-p0-questions.md`.
 
 ### In Progress
-- Phase 1: WoodwindOpenWind FEM skeleton, surrogate audit.
+- Laptop: Phase 1 tasks per work separation — desktop owns WoodwindOpenWind FEM skeleton + surrogate audit (per REMINDERS threads 17-19). Laptop resumes its Phase 0/1 queue (SoS cleanup folded into desktop's; Fusion 360 Phase 2b CAM probe cursor from laptop BOOT_STATE).
+- Laptop cursor (pre-merge): P0-2b CAM-activation probe (Fusion 360 Phase 2b) — trigger/result/progress constants added, `_delayed_phase2b` + `_run_phase2b()` NOT yet implemented.
 
 ### Blocked
 - None.
@@ -60,11 +63,12 @@
 5. Phase 2: CT-Scan benchmarking (Issue #47), Demakein replacement (Issue #48), Monte Carlo, Surrogate.
 
 ## Critical Context
-- `origin/main` = `d935287`; `opencode/main/desktop` = `3393400`.
-- Test baseline: `pytest tests/` → 217 passed, 3 skipped; `python scripts/toolcheck.py` PASS.
+- `origin/main` = `d935287`; `opencode/main/desktop` = `9fb1c0b` (was `962b3f9` at merge time).
+- Laptop branch `opencode/build123d/laptop`: HEAD after reconstructing merge + merging desktop Phase 0.
+- Test baseline (desktop): `pytest tests/` → 217 passed, 3 skipped; laptop full suite on merge content → **288 passed, 3 skipped** (pre-Phase-0-merge); re-run pending after Phase 0 merge.
 - Pre-commit validation passes; `backend/inverse_design.py` is allowlisted as oversized.
 - Merged PRs: #63 (openwind gitlink), #62 (45-file import repair).
-- Laptop branch `opencode/build123d/laptop` merged desktop at `73ae792`, 288 tests passing.
+- Original broken merge `73ae792` (single-parent, partial) was force-replaced with `e794979` (proper 2-parent merge). Desktop notified via #23 comments 17927394 + 17927522.
 
 ## Relevant Files
 - `backend/physics/bore_design.py` — analytic tone-hole physics (temp formula for SoS).
