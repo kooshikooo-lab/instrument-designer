@@ -1,0 +1,10 @@
+#!/bin/sh
+# pre-push hook: enforce Law 15 branch governance on every push.
+# Blocks: deletion of canonical branches, force-pushes to canonical branches,
+# and deletion of branches whose content is not preserved elsewhere.
+# Installed via core.hooksPath (scripts/install_hooks.ps1) — versioned, no copy.
+# Overrides for intentional canonical-branch changes (human approval):
+#   GUARD_BRANCH_ALLOW_DELETE=<branch>   (comma-separated for multiple)
+#   GUARD_BRANCH_ALLOW_FORCE=<branch>
+python "$(git rev-parse --show-toplevel)/scripts/guard_branch.py" --check-push \
+    || exit 1

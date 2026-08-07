@@ -71,6 +71,7 @@ python_files = [
     "test_tool_registry.py",
     "test_whitelist.py",
     "test_topk_polish.py",
+    "test_guard_scripts.py",
 ]
 
 [tool.ruff]
