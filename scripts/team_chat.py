@@ -6,6 +6,8 @@ of every session (see docs/CONSTRAINTS_AND_PREFERENCES.md Step 0).
 Usage:
     python scripts/team_chat.py sync              # fetch and print new comments since last read
     python scripts/team_chat.py post "message"    # post a comment to Discussion #23
+    python scripts/team_chat.py post --important "message"  # post + tag as READ-REQUIRED
+    python scripts/team_chat.py remind "message" # post a loud, tagged reminder
     python scripts/team_chat.py sync --json       # machine-readable output
 
 State: a per-machine cursor in scripts/.team_state.json (gitignored).
@@ -27,6 +29,9 @@ REPO = "kooshikooo-lab/instrument-designer"
 DISCUSSION_NUM = 23
 STATE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".team_state.json")
 MACHINE = os.environ.get("TEAM_MACHINE", "unknown")
+
+IMPORTANT_TAG = "[IMPORTANT: READ REQUIRED]"
+REMINDER_TAG = "[REMINDER]"
 
 
 def gh(*args):
@@ -86,7 +91,9 @@ def resolve_discussion_id(discussion_num=23):
         sys.exit(1)
 
 
-def post_comment(body, discussion_num=23):
+def post_comment(body, discussion_num=23, important=False):
+    if important and not body.startswith(IMPORTANT_TAG):
+        body = f"{IMPORTANT_TAG}\n{body}"
     disc_id = resolve_discussion_id(discussion_num)
     mutation = (
         "mutation($id: ID!, $body: String!){"
@@ -107,7 +114,16 @@ def post_comment(body, discussion_num=23):
         print(f"Unexpected response: {raw}", file=sys.stderr)
         sys.exit(1)
     print(f"POSTED: {url}")
+    if important:
+        print("This message is tagged IMPORTANT. Law 12: remind the other machine "
+              "if it is not acknowledged.")
     print("Run 'python scripts/team_chat.py sync' to fetch any replies.")
+
+
+def cmd_remind(message, discussion_num=23):
+    """Post a loud, tagged reminder so the other machine's next sync surfaces it."""
+    body = f"{REMINDER_TAG} [{MACHINE}] {message}"
+    post_comment(body, discussion_num=discussion_num)
 
 
 OTHER = {"laptop": "desktop", "desktop": "laptop"}
@@ -160,8 +176,11 @@ def cmd_watch(interval=5, timeout=0):
 def _print_new(new, comments, state):
     for c in new:
         print("-" * 60)
+        body = c["body"]
+        if IMPORTANT_TAG in body or REMINDER_TAG in body:
+            print(f"!!!!! {IMPORTANT_TAG if IMPORTANT_TAG in body else REMINDER_TAG} !!!!!")
         print(f"[{c['date']}] {c['user']}:")
-        print(c["body"])
+        print(body)
     print("-" * 60)
     state["last_comment_date"] = comments[-1]["date"]
     save_state(state)
@@ -182,8 +201,11 @@ def cmd_sync(as_json=False):
         print(f"[{MACHINE}] {len(new)} NEW message(s) from the other machine:")
         for c in new:
             print("-" * 60)
+            body = c["body"]
+            if IMPORTANT_TAG in body or REMINDER_TAG in body:
+                print(f"!!!!! {IMPORTANT_TAG if IMPORTANT_TAG in body else REMINDER_TAG} !!!!!")
             print(f"[{c['date']}] {c['user']}:")
-            print(c["body"])
+            print(body)
         print("-" * 60)
 
     if new:
@@ -209,6 +231,14 @@ def main():
     p_post.add_argument("--file", help="read message body from a file (avoids shell quoting issues)")
     p_post.add_argument("--discussion", type=int, default=23,
                         help="discussion number to post to (default 23)")
+    p_post.add_argument("--important", action="store_true",
+                        help="tag the message as IMPORTANT (Law 12: must be read + acknowledged)")
+
+    p_remind = sub.add_parser("remind",
+                              help="post a loud tagged reminder (Law 12: follow up on unacknowledged important messages)")
+    p_remind.add_argument("message", help="reminder body")
+    p_remind.add_argument("--discussion", type=int, default=23,
+                          help="discussion number to post to (default 23)")
 
     args = parser.parse_args()
 
@@ -224,7 +254,9 @@ def main():
             body = args.message
         else:
             parser.error("post requires either a message argument or --file")
-        post_comment(body, discussion_num=args.discussion)
+        post_comment(body, discussion_num=args.discussion, important=args.important)
+    elif args.cmd == "remind":
+        cmd_remind(args.message, discussion_num=args.discussion)
 
 
 if __name__ == "__main__":

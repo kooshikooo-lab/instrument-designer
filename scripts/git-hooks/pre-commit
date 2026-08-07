@@ -2,3 +2,8 @@
 # pre-commit hook: validate staged files before commit.
 # Installed by scripts/install_hooks.ps1 (or copied into .git/hooks/).
 python "$(git rev-parse --show-toplevel)/scripts/validate_pre_commit.py" || exit 1
+
+# Law 14 / compliance watchdog: block NEW violations vs the committed baseline.
+# Pre-existing debt (in scripts/compliance_baseline.json) does not block;
+# only violations added since the baseline do.
+python "$(git rev-parse --show-toplevel)/scripts/compliance_watchdog.py" --check-baseline || exit 1

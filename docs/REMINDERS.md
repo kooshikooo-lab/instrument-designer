@@ -18,7 +18,12 @@ thread starts, moves, or resolves.
 - [x] Governance guard enabled on this clone (`scripts/install_hooks.ps1`).
 - [x] Pre-commit hooks active: file placement, regenerable artifacts, UTF-16,
        bare excepts, hardcoded IPs, module size, **config schema**, **import consistency**,
-       **PowerShell 5.1 compatibility**, **pip-tools lock-file up-to-date check**.
+       **PowerShell 5.1 compatibility**, **pip-tools lock-file up-to-date check**,
+       **compliance watchdog regression** (no new violations vs baseline).
+- [x] Compliance watchdog wired: `compliance_watchdog.py --check-laws` +
+       `--check-baseline` run in CI and pre-commit (Law 14).
+- [ ] Constitution read before commit (Law 14 step 1) — re-read
+       `docs/AI_CONSTITUTION.md` if context was compacted.
 - [x] Tailscale peer monitor running for real-time machine coordination
        (`scripts/tailscale_monitor.py`, `launchers/start_tailscale_monitor.bat`).
 - [ ] Commit touching `docs/CONSTRAINTS_AND_PREFERENCES.md` carries

@@ -1,10 +1,12 @@
-"""commit-msg validation: governance guard + provisional-work marker.
+"""commit-msg validation: governance guard + provisional-work marker + audit declaration.
 
 Used by scripts/git-hooks/commit-msg.
 Rules:
   1. Changes to GOVERNANCE_FILES require GOVERNANCE-UPDATE in the message.
   2. Commit messages containing provisional keywords (experimental, spike, temp,
      provisional, draft, wip) must include an AUDIT: marker or an explicit marker.
+  3. Commits that modify or add .py files must declare their verification
+     (Law 14: Audit before you commit) via a "Tests:" or "Verification:" line.
 """
 
 import re
@@ -30,6 +32,7 @@ PROVISIONAL_KEYWORDS = [
 
 GOVERNANCE_MARKER = "GOVERNANCE-UPDATE"
 AUDIT_MARKER = "AUDIT:"
+VERIFICATION_PATTERN = re.compile(r"^(Tests?|Verification):\s*\S", re.IGNORECASE | re.MULTILINE)
 
 
 def read_message(message_file):
@@ -63,6 +66,16 @@ def governance_changed(staged=False):
     return False
 
 
+def python_changed(staged=True):
+    """True if any staged .py file was added or modified."""
+    result = subprocess.run(
+        ["git", "diff", "--cached", "--name-only", "--diff-filter=ACMR"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace"
+    )
+    return any(line.strip().endswith(".py")
+               for line in result.stdout.splitlines() if line.strip())
+
+
 def looks_provisional(msg):
     low = msg.lower()
     return any(kw in low for kw in PROVISIONAL_KEYWORDS)
@@ -91,6 +104,18 @@ def main():
             f"BLOCKED: commit message looks provisional but is missing '{AUDIT_MARKER}'.\n"
             f"Provisional keywords: {', '.join(PROVISIONAL_KEYWORDS)}\n"
             f"Add '{AUDIT_MARKER}' to the message if this work is exploratory/provisional.",
+            file=sys.stderr,
+        )
+        return 1
+
+    # Rule 3: audit declaration (Law 14) for Python commits
+    if python_changed(staged=True) and not VERIFICATION_PATTERN.search(msg):
+        print(
+            f"BLOCKED: commit changes .py file(s) but does not declare verification.\n"
+            f"Law 14 (Audit before you commit) requires a 'Tests:' or 'Verification:' "
+            f"line in the commit message, e.g.\n"
+            f"    Tests: pytest tests/test_x.py -q (12 passed)\n"
+            f"If you genuinely could not verify, declare it explicitly: 'AUDIT: unverified'.",
             file=sys.stderr,
         )
         return 1

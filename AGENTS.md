@@ -34,10 +34,16 @@ Highlights:
 ```
 python scripts/team_chat.py sync      # at session start AND before you stop
 python scripts/team_chat.py post --file path\to\msg.md   # to send (use --file)
+python scripts/team_chat.py post --important "..."       # tag a READ-REQUIRED message
+python scripts/team_chat.py remind "..."                 # follow up if not acknowledged
 ```
 
 - Post when you start/finish a task affecting shared state, make a decision, or
   are blocked.
+- **READING is mandatory (Law 12).** After `sync`, actually read and restate what
+  the other machine posted. Re-check at least every 30 min (`watch --interval 30`).
+  If you posted something important and got no acknowledgment, `remind` — never
+  assume it was read.
 - Reply in-channel; never silently drop a request.
 - **The human answers questions directly from the desktop.** If a question needs
   the human's input, post it to #23 and the desktop will surface it and post the

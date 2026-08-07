@@ -44,10 +44,29 @@ python scripts/team_chat.py sync
 - If it prints new messages, READ every one of them, then **state in your response**
   what the other machine said and whether it is waiting on you.
 - `sync` keeps a per-machine cursor (scripts/.team_state.json), so it only shows NEW messages.
+- **Reading is mandatory, not optional.** Posting a message is not the same as the
+  other machine reading it. After you post something important, you MUST verify it
+  was read (acknowledgment) and remind the other machine if it was not — see
+  `docs/AI_CONSTITUTION.md` Law 12.
 
 Skipping this step is the #1 cause of the human having to mediate. It is not optional.
 The rest of this section is the complete communications protocol — it is hard-coded here
 so it survives context drops. You do not need another file to know how to communicate.
+
+#### Reading what the other machine posted (MANDATORY)
+
+1. **Session-start read**: After `sync`, READ every new message and restate it in your
+   response. Re-read `docs/session-logs/BOOT_STATE.md` and `docs/REMINDERS.md` so you
+   have full context before writing code.
+2. **Update frequency**: Re-check the channel at least every 30 minutes of active work.
+   Prefer the live loop: `python scripts/team_chat.py watch --interval 30`. If you are
+   not running `watch`, run `sync` at least every 30 minutes.
+3. **Acknowledge**: Reply to messages that require action, stating what you read and
+   what you will do. Unacknowledged messages are treated as unread.
+4. **Remind**: If you posted something important and the other machine has not
+   acknowledged within the deadline, post a follow-up reminder and do not proceed with
+   work that depends on it. Use `python scripts/team_chat.py remind <message>` to post
+   a tagged reminder that `sync` will surface loudly on the other machine.
 
 #### When to post to the channel
 

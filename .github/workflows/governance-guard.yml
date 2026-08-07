@@ -18,6 +18,13 @@ jobs:
       - name: Check local dependencies are present for imported declared packages
         run: |
           python scripts/check_local_dependencies.py --warn
+      - name: Compliance watchdog — constitution laws match, no new violations vs baseline
+        run: |
+          python scripts/compliance_watchdog.py --check-laws
+          python scripts/compliance_watchdog.py --check-baseline
+      - name: Dependency tool registry (phantom / orphan / unwired)
+        run: |
+          python scripts/toolcheck.py
 
   powershell-lint:
     runs-on: windows-latest
