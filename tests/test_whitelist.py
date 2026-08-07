@@ -19,8 +19,22 @@ def _whitelist() -> list[str]:
     return [e for e in entries if e.startswith("test_")]
 
 
+def _find_whitelisted(name: str) -> bool:
+    for root, _dirs, files in os.walk(TESTS_DIR):
+        if name in files:
+            return True
+    return False
+
+
+def _open_whitelisted(name: str):
+    for root, _dirs, files in os.walk(TESTS_DIR):
+        if name in files:
+            return open(os.path.join(root, name), encoding="utf-8")
+    raise FileNotFoundError(name)
+
+
 def test_whitelist_files_exist():
-    missing = [n for n in _whitelist() if not os.path.exists(os.path.join(TESTS_DIR, n))]
+    missing = [n for n in _whitelist() if not _find_whitelisted(n)]
     assert not missing, f"whitelisted test files missing: {missing}"
 
 
@@ -33,7 +47,7 @@ def test_whitelist_files_contain_tests():
     empty = [
         n
         for n in _whitelist()
-        if "def test_" not in open(os.path.join(TESTS_DIR, n), encoding="utf-8").read()
+        if "def test_" not in _open_whitelisted(n).read()
     ]
     assert not empty, f"whitelisted files without test functions: {empty}"
 
@@ -42,7 +56,8 @@ def test_whitelist_files_parse():
     bad = []
     for n in _whitelist():
         try:
-            with open(os.path.join(TESTS_DIR, n), encoding="utf-8") as f:
+            _open_whitelisted(n).close()
+            with _open_whitelisted(n) as f:
                 ast.parse(f.read(), filename=n)
         except SyntaxError as exc:
             bad.append(f"{n}: {exc}")
