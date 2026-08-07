@@ -175,6 +175,14 @@ verdict. See `docs/session-logs/BOOT_STATE.md` for details.
   headless CAM probe (create setup → generate toolpath → post) is the next
   scriptable test; needs a CAM-product activation probe before committing to
   the sweep.
+  **Status (2026-08-07):** add-in now dispatches `phase2b_trigger.json` →
+  `_run_phase2b` (defensive probe: finds `CAMProductType`, enumerates
+  setups/operations, probes `createInput`; records everything in
+  `phase2b_result.json`, never crashes Fusion). Toolpath generation itself still
+  needs confirmed stock/CS/tooling params from the human at the GUI. The
+  result-JSON contract is covered by `tests/test_fusion_360.py`
+  (`test_cam_probe_*`, 4 tests). **Next:** human creates `phase2b_trigger.json`
+  and runs a Fusion session; laptop verifies `phase2b_result.json`.
 - **2c. Simulation / modal FEA** — modal analysis on a thin-wall tube body;
   compare body resonances vs the rigid-wall TMM assumption. Bounded effort:
   verify trial licensing first (Simulation Extension / Flex tokens).
@@ -244,3 +252,8 @@ verdict. See `docs/session-logs/BOOT_STATE.md` for details.
   generators: smoke artifacts + baseline, Phase-1 manifest contract (fields the
   add-in consumes), subset/unknown-preset handling, and the add-in result-JSON
   contract for laptop verification (11 tests).
+- 2026-08-07: Phase 2b CAM probe automation staged in the add-in:
+  `phase2b_trigger.json` → `_run_phase2b` (defensive capability probe — CAM
+  product activation, setups/operations enumeration, `createInput` probe;
+  result → `phase2b_result.json`, never raises into Fusion). Contract covered
+  by 4 `test_cam_probe_*` tests (15 total in the module).
