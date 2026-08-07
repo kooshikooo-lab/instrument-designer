@@ -1,179 +1,134 @@
 # Instrument Designer
 
-Computational wind instrument design platform. Instrument-agnostic optimizer with TMM acoustics, JAX differentiable solver, Pareto front multi-objective optimization, and distributed computing via Dask.
+Computational wind-instrument design platform. Given a fingering chart and target
+frequencies, the optimizer designs bore geometry and hole positions that minimize
+intonation error — currently **<3 cents RMS** across 12/12 instrument families.
 
-## What It Does
+License: GPL-3.0 · Python ≥ 3.10 · Version 2.0.0
 
-Given a fingering chart and target frequencies, the optimizer designs bore geometry and hole positions that minimize intonation error. Currently achieves **<3 cents RMS** on 12/12 instrument families after refinement.
+## What it does
 
-### Supported Instruments
+- **Design**: instrument-agnostic bore + tone-hole optimization from a fingering
+  chart and target frequencies.
+- **Acoustics**: Transfer Matrix Method (TMM) engine with a JAX rewrite for
+  automatic differentiation (~25x speedup via `vmap`).
+- **Optimize**: two-phase (differential evolution + L-BFGS-B) and Pareto-front
+  (intonation vs timbre) pipelines.
+- **Simulate & export**: OpenWInD validation, impedance plots, CadQuery/build123d
+  STL/STEP export, sliced-model prep for 3D printing.
+- **Distribute**: Dask cluster parallelizes benchmark/design sweeps across machines.
+
+## Supported instruments
+
 - **Closed-open (chalumeau family):** Chalumeau C, Bass Chalumeau Bb, Diatonic D Chalumeau
 - **Open-open cylindrical:** Concert Flute, Alto Flute, PVC Flute, Tin Whistle, Xaphoon
 - **Open-open conical:** Soprano Sax, Alto Sax, Recorder
 - **Chromatic:** Chromatic Flute (25 notes, 17 holes)
 
-## Benchmark Results
+The library holds 42+ instrument presets and the optimizer is instrument-agnostic.
 
-| Instrument | Sequential | Seq+Refined |
+## Benchmark (RMS intonation error, cents)
+
+| Instrument | Sequential | Seq + Refined |
 |---|---|---|
-| Chalumeau C | 18.73c | **0.53c** |
-| Bass Chalumeau Bb | 27.01c | **0.00c** |
-| Diatonic D Chalumeau | 26.38c | **0.62c** |
-| Soprano Sax Bb | 66.35c | **0.00c** |
-| Alto Sax Eb | 196.94c | **0.00c** |
-| Recorder C | 233.59c | **1.04c** |
-| Xaphoon C | 294.54c | **0.00c** |
-| Tin Whistle D | 170.74c | **0.00c** |
-| Concert Flute C | 182.92c | **0.00c** |
-| Alto Flute G | 187.41c | **0.00c** |
-| PVC Flute D | 381.19c | **0.00c** |
+| Chalumeau C | 18.73 | **0.53** |
+| Bass Chalumeau Bb | 27.01 | **0.00** |
+| Diatonic D Chalumeau | 26.38 | **0.62** |
+| Soprano Sax Bb | 66.35 | **0.00** |
+| Alto Sax Eb | 196.94 | **0.00** |
+| Recorder C | 233.59 | **1.04** |
+| Xaphoon C | 294.54 | **0.00** |
+| Tin Whistle D | 170.74 | **0.00** |
+| Concert Flute C | 182.92 | **0.00** |
+| Alto Flute G | 187.41 | **0.00** |
+| PVC Flute D | 381.19 | **0.00** |
+
+## Getting started
+
+```bash
+pip install -e ".[dev]"        # base + dev/test tooling
+python backend/benchmark_all.py # 12-instrument benchmark
+pytest tests/                   # test suite
+```
+
+Optional extras: `jax` (differentiable solver), `cad` (build123d/CadQuery export),
+`bench` (Dask), `surrogate`, `fem`, `spectral`, `freecad`, `chess`.
+
+Dependency versions are pinned with `pip-tools` lock files. Regenerate after
+changing `pyproject.toml`:
+
+```bash
+python scripts/compile_requirements.py        # regenerate
+python scripts/compile_requirements.py --check # verify (CI enforces)
+```
+
+### Distributed compute (Dask)
+
+```bash
+dask worker tcp://SCHEDULER_IP:8786 --nworkers 2 --nthreads 4
+python scripts/dask_benchmark.py --scheduler tcp://SCHEDULER_IP:8786
+```
+
+### Frontends
+
+- `web/` — React + Vite + TypeScript + Three.js web frontend (FastAPI backend)
+- `web/src-tauri/` — Tauri v2 desktop shell
+- `woodwind_designer/` — original PySide6 desktop app + FastAPI server
 
 ## Architecture
 
 ```
-woodwind-designer/
-├── backend/                 # Core acoustic engine
-│   ├── core/                # AcousticNetwork, coordinate systems
-│   ├── physics/             # Loss models, excitation, radiation
-│   ├── solvers/             # TMM solver, OpenWind wrapper
-│   ├── optimization/        # Optimizer stages
-│   ├── tmm_acoustics.py     # Core TMM engine
-│   ├── tmm_acoustics_jax.py # JAX differentiable TMM (25x speedup)
-│   ├── jax_optimizer.py     # JAX two-phase optimizer
-│   ├── pareto_optimizer.py  # Intonation vs timbre Pareto front
-│   ├── two_phase_optimizer.py # DE + L-BFGS-B pipeline
-│   ├── benchmark_all.py     # 12-instrument benchmark
-│   └── cadquery_export.py   # STL/STEP 3D export (1000+ lines)
-├── woodwind_designer/       # GUI (Tauri/FastAPI)
-├── web/                     # Frontend (TypeScript/Vite)
-├── tests/                   # Test suite (96 files)
-├── scripts/                 # Benchmarks, debug, utilities
-├── docs/                    # Architecture, roadmap, research
-├── research/                # Literature references
-├── chalumier/               # Third-party Kotlin designer
-├── openwind/                # Third-party FEM solver
-└── pyproject.toml
+├── backend/            # Core engine: TMM, JAX solver, optimizers, CAD export
+├── woodwind_designer/  # GUI (PySide6) + FastAPI server
+├── web/                # React/TS frontend + Tauri shell
+├── tests/             # pytest suite (405 tests)
+├── scripts/            # Benchmarks, Dask helpers, governance guards
+├── docs/               # Constitution, architecture, research, roadmaps
+├── research/           # Literature references
+├── config/             # Instrument preset configs (JSON)
+├── chalumier/          # Third-party Kotlin designer (integration)
+└── openwind/           # Third-party FEM solver (integration)
 ```
 
-## Key Components
+## Governance
 
-### TMM Acoustics Engine (`backend/tmm_acoustics.py`)
-Transfer Matrix Method solver for 1D wave propagation in cylindrical/conical bores with tone holes. Evaluates impedance spectra and resonance frequencies.
+This repo is developed collaboratively by two AI-assisted machines (desktop and
+laptop) under a written constitution. See:
 
-### JAX Differentiable TMM (`backend/tmm_acoustics_jax.py`)
-JAX-rewritten TMM for automatic differentiation. 25x speedup via vmap, enables gradient-based optimization.
+- `AGENTS.md` — working agreement + coordination protocol
+- `docs/AI_CONSTITUTION.md` — laws incl. branch governance (Law 15) and
+  self-audit of enforcement (Law 16)
+- `docs/CONSTRAINTS_AND_PREFERENCES.md` — full constraints
+- `docs/ROADMAP.md`, `docs/ARCHITECTURE.md`, `docs/STATUS.md`
 
-### Pareto Optimizer (`backend/pareto_optimizer.py`)
-Bi-objective optimization: intonation (RMS cents) vs timbre (bore smoothness + hole radiation consistency). Weighted-sum sweep and NSGA-II via pymoo.
-
-### CadQuery Export (`backend/cadquery_export.py`)
-STL/STEP generation from bore profiles + tone holes. Handles cylindrical and conical bores, closed tops, 12+ instrument presets.
-
-### Chalumier Integration (`chalumier/`)
-Kotlin-based instrument designer. Designs instruments and outputs JSON5 bore profiles. Wrapper in `woodwind_designer/engine/chalumier_wrapper.py`.
-
-## Distributed Computing
-
-Dask cluster for parallel instrument optimization across machines:
+Enable the git-hook guards on a fresh clone:
 
 ```bash
-# Start workers (set PYTHONPATH first)
-set PYTHONPATH=/path/to/woodwind-designer
-dask worker tcp://SCHEDULER_IP:8786 --nworkers 2 --nthreads 4
-
-# Run distributed benchmark
-python scripts/dask_benchmark.py --scheduler tcp://SCHEDULER_IP:8786
+powershell -ExecutionPolicy Bypass -File scripts\install_hooks.ps1
 ```
 
-## Getting Started
+## Coordinate systems
 
-Dependency versions are pinned with `pip-tools` lock files. Use the lock file
-that matches the extras you need:
-
-```bash
-# Base runtime dependencies
-pip install -r requirements.txt
-
-# Development + test dependencies
-pip install -r requirements-dev.txt
-
-# CAD dependencies (cadquery, etc.)
-pip install -r requirements-cad.txt
-
-# Test dependencies only
-pip install -r requirements-test.txt
-
-# Chess/Tailscale test extras
-pip install -r requirements-chess.txt
-```
-
-To regenerate the lock files after changing `pyproject.toml`:
-
-```bash
-pip install pip-tools
-python scripts/compile_requirements.py
-```
-
-Verify the committed lock files are up to date (CI enforces this):
-
-```bash
-python scripts/compile_requirements.py --check
-```
-
-Run the 12-instrument benchmark:
-
-```bash
-python backend/benchmark_all.py
-```
-
-Run the Dask-parallelized benchmark:
-
-```bash
-python scripts/dask_benchmark.py --scheduler tcp://localhost:8786
-```
-
-## Dependencies
-
-Dependencies are declared in `pyproject.toml` with optional extras:
-
-- `dev`: linting and development tools
-- `test`: `pytest`, `jsonschema`
-- `cad`: CadQuery and related 3D export libraries
-- `chess`: `python-chess` for the Tailscale chess acceptance test
-
-Core runtime packages include `numpy`, `scipy`, `matplotlib`, `fastapi`,
-`uvicorn`, `pydantic`, and `requests`. See `requirements.txt` for the fully
-resolved, hashed lock file.
-
-## Coordinate Systems
-
-When bridging tools, coordinate systems must be documented:
+When bridging tools, axes/fingering conventions must be mapped explicitly:
 
 | Tool | 0 = | Holes indexed from | Fingering |
 |---|---|---|---|
 | Chalumier | bell (open) | bell | X=closed, O=open |
-| OpenWind | mouthpiece | mouthpiece | x=closed, o=open |
+| OpenWInD | mouthpiece | mouthpiece | x=closed, o=open |
 | TMM | mouthpiece | mouthpiece | true=closed |
 
-See `docs/ARCHITECTURE.md` for full conversion rules.
+Full conversion rules: `docs/ARCHITECTURE.md`.
 
 ## References
 
-- Ernoult et al. (2020) JASA: Phase-based cost function for intonation
-- Petiot et al. (2025) JASA: NSGA-II Pareto optimization for trumpets
-- Noreland et al. (2013): Sequential greedy bore optimization
-- Tournemenne (2019): Timbre preference modeling
-- Keefe (1981): TMM validation
-- Benade (1976): Open hole acoustics
-- See `docs/archived-readme-2026-07-23.md` for full historical sources
+- Ernoult et al. (2020) JASA — phase-based intonation cost function
+- Petiot et al. (2025) JASA — NSGA-II Pareto trumpet optimization
+- Noreland et al. (2013) — sequential greedy bore optimization
+- Keefe (1981) — TMM validation
+- Benade (1976) — open-hole acoustics
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Run tests: `pytest tests/`
-4. Submit a pull request
-
-## License
-
-See repository for license details.
+1. Fork and create a feature branch per the branch-governance law.
+2. Run `pytest tests/` and `ruff check .`.
+3. Submit a pull request.
