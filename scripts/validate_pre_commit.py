@@ -16,6 +16,15 @@ import subprocess
 import sys
 from pathlib import Path
 
+
+# Law 15 branch namespace regexes (from guard_branch.py)
+LAW15_NAMESPACES = [
+    r"^main$",
+    r"^opencode/main/(desktop|laptop)$",
+    r"^opencode/[a-z0-9-]+/(desktop|laptop)$",
+    r"^merge/[a-z0-9-]+$",
+]
+
 # These are the directory boundaries from docs/ARCHITECTURE.md and CODING_STANDARDS.md.
 PLACEMENT_RULES = {
     "backend/": {
@@ -215,11 +224,49 @@ def check_module_size(path: Path, root: Path) -> str | None:
     return f"{rel}: {lines} lines (exceeds 500; split or add to OVERSIZED_ALLOWLIST)"
 
 
+def check_branch_name(repo_root: Path) -> str | None:
+    """Verify current branch matches a Law-15 namespace and has no unmerged paths."""
+    # Get current branch name
+    result = subprocess.run(
+        ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+        cwd=repo_root, capture_output=True, text=True, encoding="utf-8", errors="replace"
+    )
+    if result.returncode != 0:
+        return "Could not determine current branch"
+    branch = result.stdout.strip()
+    if branch == "HEAD":
+        return "Detached HEAD — commit not allowed"
+
+    # Check Law-15 namespace
+    import re
+    valid = any(re.match(pattern, branch) for pattern in LAW15_NAMESPACES)
+    if not valid:
+        return (f"Branch '{branch}' is not a valid Law-15 namespace. "
+                f"Allowed: main, opencode/main/<machine>, opencode/<topic>/<machine>, merge/<topic>")
+
+    # Check for unmerged paths (mid-merge)
+    result = subprocess.run(
+        ["git", "diff", "--name-only", "--diff-filter=U"],
+        cwd=repo_root, capture_output=True, text=True, encoding="utf-8", errors="replace"
+    )
+    if result.returncode == 0 and result.stdout.strip():
+        unmerged = result.stdout.strip().splitlines()
+        return f"Working tree has unmerged paths (mid-merge): {', '.join(unmerged)} — resolve before committing"
+
+    return None
+
+
 def main():
     repo_root = Path(subprocess.run(
         ["git", "rev-parse", "--show-toplevel"],
         capture_output=True, text=True, encoding="utf-8", errors="replace"
     ).stdout.strip())
+
+    # Law 15: block commits on invalid branches or mid-merge
+    branch_err = check_branch_name(repo_root)
+    if branch_err:
+        print(f"BLOCKED — branch violation: {branch_err}")
+        return 1
 
     files = staged_files()
     if not files:
