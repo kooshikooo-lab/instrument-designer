@@ -9,22 +9,34 @@
 
 ## Goal
 
-- **Working branch: `opencode/build123d/laptop`** (laptop), HEAD `0808026`.
-- **Desktop branch `opencode/main/desktop`** at `84309099` (includes Law 15).
+- **Working branch: `opencode/build123d/laptop`** (laptop), HEAD `5c9fe08`.
+- **Desktop branch `opencode/main/desktop`** at `8a264a4` (Laws 15+16 merged locally on laptop via staging).
 - **Governance merge COMPLETE (2026-08-07)**: laptop merged desktop `04564614`
   (Laws 12-14 + compliance watchdog) → resolved `scripts/team_chat.py` as a union
   (1 conflict, not the 19 desktop predicted) → `6c23a11`, promoted via ff-only
   onto `opencode/build123d/laptop`, pushed. Approved by desktop; 355 passed / 4
   skipped. PR #66 remains the carrier.
-- **Law 15 (Branch governance) added by desktop** (`84309099`); NOT yet merged
-  into laptop branch — bring it in via `merge/` staging when desktop authorizes
-  (holding cross-machine merges during the audit).
+- **Laws 15+16 merged locally on laptop** (`d4e71e0`, 2026-08-07): rehearsed on
+  `merge/laptop-receives-laws15-16` (1 conflict in `pyproject.toml` testpath
+  union, resolved), gates green (guard tests 32 passed, watchdog --check-laws +
+  baseline OK, toolcheck PASS, system_audit ALL PASS), promoted ff-only, staging
+  branch deleted. NOT pushed yet (audit hold).
+- **Law 17 added by laptop** (`74edbe0`, 2026-08-07): "Work in order of safety,
+  not order of approval" — do safe independent work first; only shared-state
+  actions wait for approval. [GOVERNANCE-UPDATE] System: audit PASS.
+- **Law 16 installed pre-push hook**: `scripts/git-hooks/pre-push` now wired via
+  `scripts/install_hooks.ps1` (pre-commit, commit-msg, pre-push).
+- **Orphan branches** (Law 15/16 audit finding, non-blocking debt): local +
+  remote orphans exist (`experiment/ai-tier1`, `experiment/ai-tier1-review`,
+  `kalles-rebased`, `port/main-2026-08-01*`, `scipy-prototype`,
+  `test/kalles-into-main`) — flagged for coordinated rename/delete, not touched
+  during audit.
 - **Desktop is running a FULL CODEBASE AUDIT** (Laws 1-14) — laptop holds pushes
   to shared branches until audit completes.
 - **Phase 1 READY**: WoodwindOpenWind FEM integration, surrogate audit.
 - **Standing directive**: tools must be integrated into a pipeline, never just
   installed and forgotten; `AUDIT:` for provisional commits; ask rather than
-  speculate when intent is unclear.
+  speculate when intent is unclear; **do safe work first, don't idle on approval**.
 
 ## Constraints & Preferences
 
@@ -32,9 +44,12 @@
   before stopping (Discussion #23); channel is canonical.
 - Constitution: Law 1 (no architecture damage), Law 3 (reuse existing bench
   scripts), Law 7 (canonical `346100.0` mm/s speed of sound), Law 10 (stop/ask),
-  **Law 15 (branch governance — 4 namespaces, `merge/` staging, prove-before-delete)**.
+  **Law 15 (branch governance)**, **Law 16 (enforcement must be enforced:
+  `system_audit.py` before canonical commits, guard tests)**,
+  **Law 17 (work in order of safety, not approval)**.
 - `AUDIT:` for provisional commits; `GOVERNANCE-UPDATE` for protected governance
-  files (`docs/CONSTRAINTS_AND_PREFERENCES.md`, `docs/REMINDERS.md`, etc.);
+  files (`docs/AI_CONSTITUTION.md`, `docs/REMINDERS.md`, etc.); `System: audit
+  PASS` required for commits touching guards/hooks/constitution/CI (Law 16.7);
   don't commit regenerable artifacts.
 
 ## Progress
@@ -57,7 +72,11 @@
   compliance regression passed): 2 new docs (`RESEARCH_openwind_fem_and_surrogates.md`,
   `RESEARCH_ct_benchmarking.md`) + addenda to metamaterials (§9) and
   design-to-finished (§6b). Wiki updated + pushed (separate repo, `master 7e10b6e`).
-- Research docs commit held locally pending audit; wiki live.
+- **Laws 15+16 merged locally + Law 17 authored** (`d4e71e0` + `74edbe0` +
+  `5c9fe08`): staged rehearsal on `merge/laptop-receives-laws15-16`, 1 conflict
+  resolved, all gates green (387 passed / 4 skipped), promoted ff-only, staging
+  deleted, pre-push hook installed, `.gitignore` += `scripts/*.out`.
+- Research docs commit + governance commits held locally pending audit; wiki live.
 
 ### In Progress
 - **PR #66** (`opencode/build123d/laptop` → `opencode/main/desktop`) — OPEN +
@@ -66,6 +85,8 @@
   changes to shared branches during audit.
 - **Dask worker attach to desktop scheduler**: `tcp://100.69.113.41:8786` still
   unreachable; laptop local cluster running meanwhile.
+- **Orphan branch cleanup** (Law 15/16 audit finding): to coordinate rename/
+  delete with desktop post-audit.
 
 ### Blocked
 - Chess match rematch (thread 12): pending both monitors; desktop monitor port
@@ -81,21 +102,23 @@
 
 ## Next Steps
 1. Wait for desktop audit to complete; post any laptop-side gate findings.
-2. When desktop authorizes: bring Law 15 (`84309099`) into laptop branch via
-   `merge/` staging per Law 15.3.
+2. Push laptop branch (research `0808026` + Laws 15/16 merge `d4e71e0` + Law 17
+   `74edbe0` + gitignore `5c9fe08`) after audit completes.
 3. Attach laptop dask workers to desktop scheduler when reachable; re-run
    cluster test batches.
-4. Phase 1: WoodwindOpenWind FEM (desktop-owned; research base in
+4. Coordinate orphan branch cleanup (rename/delete) with desktop per Law 15.
+5. Phase 1: WoodwindOpenWind FEM (desktop-owned; research base in
    `docs/RESEARCH_openwind_fem_and_surrogates.md`), surrogate audit.
-5. Phase 2 (Issue #47): CT-scan benchmarking using
+6. Phase 2 (Issue #47): CT-scan benchmarking using
    `docs/RESEARCH_ct_benchmarking.md` (FT40/FT44, DaSCH STLs).
-6. Push research docs commit (`0808026`) after audit completes.
 
 ## Critical Context
-- `origin/main` = `d935287`; `opencode/main/desktop` = `84309099` (includes Law 15).
-- Laptop branch `opencode/build123d/laptop`: HEAD `0808026` (research docs,
-  committed locally, NOT pushed yet — audit hold).
-- Test baseline: laptop full suite → **355 passed, 4 skipped** (≈264s).
+- `origin/main` = `d935287`; `opencode/main/desktop` = `8a264a4` (Laws 15+16);
+  desktop also has unmerged `opencode/system-guardrails/desktop` (Law 16 source).
+- Laptop branch `opencode/build123d/laptop`: HEAD `5c9fe08` (Laws 15+16 merged +
+  Law 17 + gitignore; committed locally, NOT pushed yet — audit hold).
+- Test baseline: laptop full suite → **387 passed, 4 skipped** (355 + 32 guard
+  tests from Law 16, ≈260s).
 - Pre-commit validation passes; `backend/inverse_design.py` allowlisted oversized.
 - Discussion #23 comment IDs (laptop): 17933680 (dask ready), 17933694 (ACK
   promote + audit hold), 17933898 (ACK Law 15 + test/research report).
@@ -103,6 +126,10 @@
   `%TEMP%\opencode\wiki2`, last pushed `master 7e10b6e`.
 
 ## Relevant Files
+- `docs/AI_CONSTITUTION.md` — Laws 15, 16, 17 now present (merged + authored).
+- `scripts/system_audit.py`, `scripts/merge_gate.py`, `scripts/guard_branch.py`,
+  `scripts/git-hooks/pre-push`, `tests/test_guard_scripts.py` — Law 16 guard
+  infra (now local via merge).
 - `docs/RESEARCH_openwind_fem_and_surrogates.md` — Phase 1 FEM/surrogate base (new).
 - `docs/RESEARCH_ct_benchmarking.md` — Phase 2 CT benchmark base (new).
 - `docs/RESEARCH_acoustic_metamaterials.md` — §9 addendum (2024-2026).
@@ -110,5 +137,4 @@
 - `scripts/spawn_worker.py`, `scripts/start_worker.py`, `scripts/cluster_health.py`
   — dask worker attach + health.
 - `scripts/team_chat.py` — merged union (laptop + desktop features).
-- `docs/AI_CONSTITUTION.md` — now includes Law 15 (on `opencode/main/desktop`).
 - `chat-logs/2026-08-07-session-log.md` — prior session audit.
