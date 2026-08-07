@@ -9,10 +9,11 @@
 
 ## Goal
 
-- **Working branch: `opencode/build123d/laptop`** (laptop).
-- **Desktop branch `opencode/main/desktop`** now at `9fb1c0b` (Phase 0 complete).
+- **Working branch: `opencode/build123d/laptop`** (laptop), HEAD `8e8fd97`.
+- **Desktop branch `opencode/main/desktop`** at `9fb1c0b` (Phase 0 complete).
 - **Phase 0 COMPLETE (desktop)**: SoS literal cleanup, Two-Phase optimizer register freeze, bass chalumeau merge conflict resolved — merged into laptop.
-- **Laptop merge RECONSTRUCTED + caught up to desktop Phase 0**: broken single-parent merge `73ae792` replaced by proper 2-parent merge `e794979` (parents `56cad29` + `962b3f9`), then merged desktop `9fb1c0b` (Phase 0) on top.
+- **Laptop merge RECONSTRUCTED + caught up to desktop Phase 0**: broken single-parent merge `73ae792` replaced by proper 2-parent merge `e794979` (parents `56cad29` + `962b3f9`), then merged desktop `9fb1c0b` (Phase 0) on top (`4518573`).
+- **PR #66 OPEN** (`opencode/build123d/laptop` → `opencode/main/desktop`), mergeable, awaiting desktop review.
 - **Phase 1 READY**: WoodwindOpenWind FEM integration, surrogate audit.
 - **Standing directive**: tools must be integrated into a pipeline, never just installed and forgotten; `AUDIT:` for provisional commits; ask rather than speculate when intent is unclear.
 
@@ -43,11 +44,14 @@
 - **Session log saved**: `chat-logs/2026-08-07-session-log.md` + P0 questions `chat-logs/2026-08-07-p0-questions.md`.
 
 ### In Progress
-- Laptop: Phase 1 tasks per work separation — desktop owns WoodwindOpenWind FEM skeleton + surrogate audit (per REMINDERS threads 17-19). Laptop resumes its Phase 0/1 queue (SoS cleanup folded into desktop's; Fusion 360 Phase 2b CAM probe cursor from laptop BOOT_STATE).
-- Laptop cursor (pre-merge): P0-2b CAM-activation probe (Fusion 360 Phase 2b) — trigger/result/progress constants added, `_delayed_phase2b` + `_run_phase2b()` NOT yet implemented.
+- **PR #66** (`opencode/build123d/laptop` → `opencode/main/desktop`) — OPEN + MERGEABLE, awaiting desktop review (desktop was offline/frozen at session end).
+- **Chess match rematch (thread 12)** — pending desktop recovery; laptop ready to start the 10-game bullet match monitor on request.
+- Laptop: Phase 1 tasks per work separation — desktop owns WoodwindOpenWind FEM skeleton + surrogate audit (per REMINDERS threads 17-19).
+- Laptop cursor: **P0-2b CAM-activation probe (Fusion 360 Phase 2b)** — trigger/result/progress constants added, `_delayed_phase2b` + `_run_phase2b()` NOT yet implemented.
 
 ### Blocked
-- None.
+- Chess match: desktop offline/frozen (human reported restart has no effect).
+- PR #66 review: awaiting desktop.
 
 ## Key Decisions
 - **SoS test expectations → 346100 mm/s** (Law 7: canonical source of truth).
@@ -64,11 +68,12 @@
 
 ## Critical Context
 - `origin/main` = `d935287`; `opencode/main/desktop` = `9fb1c0b` (was `962b3f9` at merge time).
-- Laptop branch `opencode/build123d/laptop`: HEAD after reconstructing merge + merging desktop Phase 0.
-- Test baseline (desktop): `pytest tests/` → 217 passed, 3 skipped; laptop full suite on merge content → **288 passed, 3 skipped** (pre-Phase-0-merge); re-run pending after Phase 0 merge.
+- Laptop branch `opencode/build123d/laptop`: HEAD `8e8fd97` — reconstruction `e794979` + Phase 0 merge `4518573` + AUDIT commits `8124afa`/`8e8fd97`. Local = remote, worktree clean.
+- Test baseline: laptop full suite after Phase 0 merge → **355 passed, 4 skipped** (273s). Desktop baseline: 217 passed, 3 skipped.
 - Pre-commit validation passes; `backend/inverse_design.py` is allowlisted as oversized.
 - Merged PRs: #63 (openwind gitlink), #62 (45-file import repair).
-- Original broken merge `73ae792` (single-parent, partial) was force-replaced with `e794979` (proper 2-parent merge). Desktop notified via #23 comments 17927394 + 17927522.
+- Original broken merge `73ae792` (single-parent, partial) force-replaced with `e794979` (proper 2-parent merge). Desktop notified via #23 comments 17927394 + 17927522; PR #66 opened.
+- This session (2026-08-07): reconstructed broken merge, merged desktop Phase 0, resolved 8 conflicts, fixed `test_whitelist.py` subdirectory search, opened PR #66.
 
 ## Relevant Files
 - `backend/physics/bore_design.py` — analytic tone-hole physics (temp formula for SoS).
