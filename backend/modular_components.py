@@ -29,6 +29,8 @@ from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
 from enum import Enum
 
+from backend.tmm_acoustics import SPEED_OF_SOUND
+
 
 # ============================================================================
 # PVC Pipe Standards (Schedule 40)
@@ -331,7 +333,7 @@ class Extension:
     def frequency_drop(self) -> float:
         """Approximate frequency drop from adding this extension (Hz)."""
         # For closed-open pipe: f = c / (4 * L)
-        c = 343000  # mm/s
+        c = SPEED_OF_SOUND  # mm/s
         return c / (4 * self.length_mm)
 
     def recommended_for(self) -> str:

@@ -51,6 +51,7 @@ OVERSIZED_ALLOWLIST = {
     "backend/cadquery_export.py",
     "backend/inverse_design.py",
     "backend/modular_components.py",
+    "backend/optimizer.py",
     "backend/pareto_optimizer.py",
     "backend/tmm_acoustics.py",
     "backend/trumpet_acoustics.py",
@@ -167,6 +168,34 @@ def check_hardcoded_ips(path: Path) -> list[str]:
     return [ip for ip in ips if ip not in safe and not _is_tailscale_ip(ip)]
 
 
+# Hardcoded speed-of-sound literals outside the canonical source are a common
+# source of cross-branch bugs (Law 7: canonical SPEED_OF_SOUND = 346100.0 mm/s).
+SPEED_OF_SOUND_LITERAL_RE = re.compile(
+    r"(?<![\w.])"
+    r"(?:331\.3|343\.42|344\.844|345\.844|346\.1|"
+    r"343000(?:\.0*)?|346100(?:\.0*)?)"
+    r"(?![\w.])"
+)
+SPEED_OF_SOUND_CANONICAL_FILE = "backend/tmm_acoustics.py"
+
+
+def check_hardcoded_speed_of_sound(path: Path, root: Path) -> list[str]:
+    """Flag hardcoded speed-of-sound literals outside the canonical module."""
+    rel = path.relative_to(root).as_posix()
+    if rel in {SPEED_OF_SOUND_CANONICAL_FILE, "scripts/validate_pre_commit.py"}:
+        return []
+    try:
+        with open(path, "r", encoding="utf-8", errors="ignore") as f:
+            content = f.read()
+    except OSError:
+        return []
+    matches = []
+    for m in SPEED_OF_SOUND_LITERAL_RE.finditer(content):
+        line = content[:m.start()].count("\n") + 1
+        matches.append(f"{rel}:{line}: hardcoded speed-of-sound literal '{m.group()}'")
+    return matches
+
+
 def check_module_size(path: Path, root: Path) -> str | None:
     """Return warning message if .py file exceeds ~500 lines and is not allowlisted."""
     try:
@@ -227,6 +256,9 @@ def main():
             size_msg = check_module_size(path, repo_root)
             if size_msg:
                 warnings.append(size_msg)
+
+            sos = check_hardcoded_speed_of_sound(path, repo_root)
+            errors.extend(sos)
 
     # 5. Schema validation for instrument configs
     if any(rel.startswith("config/") and rel.endswith(".json") for rel in files):

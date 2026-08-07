@@ -41,7 +41,8 @@ def freq_to_note(freq: float) -> Tuple[str, int]:
 
 def speed_of_sound(temp_c: float = 20.0) -> float:
     """Speed of sound in m/s at given temperature."""
-    return 331.3 + 0.606 * temp_c
+    from backend.physics.bore_design import speed_of_sound_at
+    return speed_of_sound_at(temp_c) / 1000.0
 
 
 # ============================================================================

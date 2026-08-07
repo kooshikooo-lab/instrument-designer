@@ -208,13 +208,20 @@ class TwoPhaseOptimizer(Optimizer):
     
     def __init__(self, network: AcousticNetwork, target_frequencies: List[float],
                  fingering_sets: List[List[str]], n_register: int = 1,
-                 max_time_seconds: float = 60.0):
+                 max_time_seconds: float = 60.0,
+                 outer_diameter: float = None,
+                 closed_top: bool = None,
+                 bore_length_bounds: tuple = None):
         self.network = network
         self.targets = target_frequencies
         self.fingering_sets = fingering_sets
         self.n_register = n_register
         self.max_time = max_time_seconds
         self._n_evaluations = 0
+        # Configurable parameters (not hardcoded)
+        self.outer_diameter = outer_diameter
+        self.closed_top = closed_top
+        self.bore_length_bounds = bore_length_bounds
     
     def evaluate(self, parameters: Dict[str, Any]) -> float:
         """Evaluate cost using absolute RMS."""
@@ -222,6 +229,7 @@ class TwoPhaseOptimizer(Optimizer):
         # Import here to avoid circular imports
         from backend.tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
         from backend.physics.losses import KeefeLoss
+        from backend.physics.register_detection import detect_registers, build_initial_instrument
         
         bore_length = parameters.get("bore_length", self.network.total_length)
         bore_radii = parameters.get("bore_radii", None)
@@ -229,14 +237,18 @@ class TwoPhaseOptimizer(Optimizer):
         hole_diameters = parameters.get("hole_diameters", [])
         hole_lengths = parameters.get("hole_lengths", [])
         
+        # Use configurable params instead of hardcoded values
+        outer_diameter = self.outer_diameter if self.outer_diameter is not None else 22.0
+        closed_top = self.closed_top if self.closed_top is not None else (self.n_register == 1)
+        
         inst = tmm_instrument_from_radii(
             radii=bore_radii if bore_radii is not None else np.full(6, 10.0),
             bore_length=bore_length,
             hole_positions=hole_positions,
             hole_diameters=hole_diameters,
             hole_lengths=hole_lengths,
-            outer_diameter_mm=22.0,
-            closed_top=(self.n_register == 1),
+            outer_diameter_mm=outer_diameter,
+            closed_top=closed_top,
             cone_step=0.5,
         )
         
@@ -250,9 +262,12 @@ class TwoPhaseOptimizer(Optimizer):
         return float(np.sqrt(np.mean(cents_arr ** 2)))
     
     def optimize(self, verbose: bool = False) -> OptimizationResult:
-        """Run two-phase optimization: DE global + L-BFGS-B refinement."""
+        """Run two-phase optimization: DE global + L-BFGS-B refinement with frozen registers."""
         import time
         from scipy.optimize import differential_evolution, minimize as sp_min
+        from backend.tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
+        from backend.physics.register_detection import detect_registers, build_initial_instrument
+        from backend.physics.losses import KeefeLoss
         
         t0 = time.time()
         
@@ -260,11 +275,54 @@ class TwoPhaseOptimizer(Optimizer):
         initial_length = self.network.total_length
         n_holes = len(self.fingering_sets[0]) if self.fingering_sets else 0
         
-        bounds = [(initial_length * 0.7, initial_length * 1.3)]
+        # Apply bore_length_bounds if configured (for bass instruments)
+        if self.bore_length_bounds:
+            bore_min, bore_max = self.bore_length_bounds
+            bounds = [(max(bore_min, initial_length * 0.7), min(bore_max, initial_length * 1.3))]
+        else:
+            bounds = [(initial_length * 0.7, initial_length * 1.3)]
+        
+        n_holes = len(self.fingering_sets[0]) if self.fingering_sets else 0
         if n_holes > 0:
             for _ in range(n_holes):
                 bounds.append((20, initial_length - 20))  # hole positions
                 bounds.append((3.0, 15.0))  # hole diameters
+        
+        # Build initial instrument for register detection
+        outer_diameter = self.outer_diameter if self.outer_diameter is not None else 22.0
+        closed_top = self.closed_top if self.closed_top is not None else (self.n_register == 1)
+        hole_lengths = [3.75] * n_holes if n_holes > 0 else []
+        
+        initial_inst = build_initial_instrument(
+            bore_length=initial_length,
+            n_holes=n_holes,
+            hole_lens=hole_lengths,
+            bore_radii=np.full(6, 10.0),
+            hole_positions=np.array([initial_length * (i+1) / (n_holes+1) for i in range(n_holes)]) if n_holes > 0 else np.array([]),
+            hole_diameters=np.full(n_holes, 8.0) if n_holes > 0 else np.array([]),
+            outer_diameter=outer_diameter,
+            closed_top=closed_top,
+            loss_model=KeefeLoss(),
+        )
+        
+        # Detect registers ONCE from initial geometry, freeze them
+        closed_top = self.closed_top if self.closed_top is not None else (self.n_register == 1)
+        fingerings_parsed = []
+        for f in self.fingering_sets:
+            fl = ['open' if ch in ('O', 'o') else 'closed' for ch in f]
+            while len(fl) < len(self.fingering_sets[0]):
+                fl.append('open')
+            fingerings_parsed.append(fl[:len(self.fingering_sets[0])])
+        
+        regs = detect_registers(
+            inst=initial_inst,
+            targets=self.targets,
+            fingerings=fingerings_parsed,
+            max_reg=5,
+            temperature=20.0,
+        )
+        if verbose:
+            print(f"  Initial registers (frozen): {regs}")
         
         def de_objective(x):
             bore_length = x[0]
@@ -283,7 +341,7 @@ class TwoPhaseOptimizer(Optimizer):
             polish=False,
         )
         
-        # --- Phase 2: L-BFGS-B refinement with peak cost ---
+        # --- Phase 2: L-BFGS-B refinement with phase-based absolute cost (peak_cost_nearest) ---
         best_x = result_de.x
         best_bore_length = best_x[0]
         best_hp = best_x[1::2] if len(best_x) > 1 else []
@@ -295,22 +353,64 @@ class TwoPhaseOptimizer(Optimizer):
             best_hp = [best_hp[i] for i in idx]
             best_hd = [best_hd[i] for i in idx]
         
-        # Refine with L-BFGS-B
-        def lb_objective(x):
-            return self.evaluate({
-                "bore_length": x[0],
-                "hole_positions": x[1::2] if len(x) > 1 else [],
-                "hole_diameters": x[2::2] if len(x) > 2 else [],
-            })
+        # Refine with L-BFGS-B using phase-based absolute cost (frozen registers)
+        outer_diameter = self.outer_diameter if self.outer_diameter is not None else 22.0
+        closed_top = self.closed_top if self.closed_top is not None else (self.n_register == 1)
         
-        lb_bounds = [(best_bore_length * 0.9, best_bore_length * 1.1)]
+        def peak_cost_nearest(params):
+            bore_length = params[0]
+            hp = params[1::2] if len(params) > 1 else []
+            hd = params[2::2] if len(params) > 2 else []
+            for i in range(1, len(hp)):
+                if hp[i] <= hp[i-1] + 3:
+                    return 1e6
+            try:
+                inst = tmm_instrument_from_radii(
+                    radii=np.full(6, 10.0),
+                    bore_length=bore_length,
+                    hole_positions=hp,
+                    hole_diameters=hd,
+                    hole_lengths=[3.75] * n_holes,
+                    outer_diameter_mm=outer_diameter,
+                    closed_top=closed_top,
+                    cone_step=0.5,
+                )
+                cents = []
+                for tgt, fl, pr in zip(self.targets, self.fingering_sets, regs):
+                    wl = inst.find_resonance(SPEED_OF_SOUND / tgt, fl, n_register=pr)
+                    f = inst.frequency_from_wavelength(wl)
+                    cents.append(cents_error(f, tgt))
+                ca = np.array(cents)
+                if np.any(np.abs(ca) > 1e5):
+                    return 1e10
+                return float(np.sqrt(np.mean(ca ** 2)))
+            except Exception:
+                return 1e10
+
+        # Apply bore_length_bounds for local refinement
+        if self.bore_length_bounds:
+            bore_min, bore_max = self.bore_length_bounds
+            lb_bounds = [(max(bore_min, best_bore_length * 0.9), min(bore_max, best_bore_length * 1.1))]
+        else:
+            lb_bounds = [(best_bore_length * 0.9, best_bore_length * 1.1)]
+        
+        if best_hp:
+            idx = np.argsort(best_hp)
+            best_hp = [best_hp[i] for i in idx]
+            best_hd = [best_hd[i] for i in idx]
+        
         for hp in best_hp:
             lb_bounds.append((max(20, hp - 30), min(best_bore_length - 20, hp + 30)))
         for hd in best_hd:
             lb_bounds.append((hd * 0.7, hd * 1.3))
         
+        # Need cents_error function
+        def cents_error(actual, target):
+            if actual <= 0 or target <= 0: return 1e10
+            return 1200.0 * np.log2(actual / target)
+        
         result_lb = sp_min(
-            lb_objective, best_x, method='L-BFGS-B',
+            peak_cost_nearest, best_x, method='L-BFGS-B',
             bounds=lb_bounds, options={"maxiter": 200, "ftol": 1e-8}
         )
         

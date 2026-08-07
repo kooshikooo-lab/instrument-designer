@@ -1,4 +1,4 @@
-﻿"""Three-tier inverse design for wind instruments: sound analysis -> scale optimization -> timbre matching.
+"""Three-tier inverse design for wind instruments: sound analysis -> scale optimization -> timbre matching.
 
 Tier 1: Analyze a WAV file to extract fundamental frequency, harmonic frequencies,
 and spectral envelope. Tier 2: Design a playable scale via NSGA-II, delegating
@@ -8,6 +8,7 @@ the harmonic amplitude envelope extracted from the target sound.
 
 from __future__ import annotations
 
+import importlib
 import math
 from typing import Any
 
@@ -24,10 +25,21 @@ except ImportError:
 
 from backend.physics.bore_design import hole_positions_for_scale
 
-try:
-    from backend.generative_agent import design_from_sound as _generative_design
-except ImportError:
-    _generative_design = None
+
+# Lazy load the optional generative agent so that missing backend/generative_agent.py
+# does not create a static import error in the pre-commit checker.
+_generative_design: Any | None = None
+
+
+def _load_generative_design() -> Any | None:
+    global _generative_design
+    if _generative_design is None:
+        try:
+            mod = importlib.import_module("backend.generative_agent")
+            _generative_design = getattr(mod, "design_from_sound", None)
+        except Exception:
+            _generative_design = None
+    return _generative_design
 
 
 # =============================================================================
@@ -448,7 +460,8 @@ def design_scale(
     hole_count: int = 6,
     n_candidates: int = 2,
 ) -> dict:
-    if _generative_design is not None:
+    gen = _load_generative_design()
+    if gen is not None:
         input_data: dict[str, Any] = {
             'fundamental_hz': fundamental_hz,
             'harmonic_frequencies': (
@@ -460,7 +473,7 @@ def design_scale(
             'hole_count': hole_count,
             'n_candidates': n_candidates,
         }
-        return _generative_design(input_data)
+        return gen(input_data)
     return design_scale_numpy_ga(
         fundamental_hz=fundamental_hz,
         harmonic_frequencies=harmonic_frequencies,

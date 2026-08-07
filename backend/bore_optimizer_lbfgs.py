@@ -32,6 +32,8 @@ os.environ.setdefault("OMP_NUM_THREADS", "1")
 os.environ.setdefault("MKL_NUM_THREADS", "1")
 os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
 
+from backend.physics.bore_design import speed_of_sound_at
+
 try:
     from .timbre_objectives import compute_timbre_objective
     _TIMBRE_AVAILABLE = True
@@ -185,7 +187,7 @@ class LBFGSBoreOptimizer:
         self.weight_timbre = weight_timbre
 
         if bore_length is None:
-            v = 331.3 + 0.606 * temperature
+            v = speed_of_sound_at(temperature) / 1000.0  # m/s
             fundamental = min(target_frequencies)
             self.bore_length = v / (4 * fundamental)
         else:

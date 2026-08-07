@@ -5,6 +5,8 @@ Handles viscothermal and thermoviscous losses in bore and toneholes.
 from abc import ABC, abstractmethod
 import numpy as np
 
+from backend.tmm_acoustics import SPEED_OF_SOUND
+
 
 class LossModel(ABC):
     """Abstract base class for loss models."""
@@ -93,7 +95,7 @@ class KeefeLoss(LossModel):
         """Compute viscous and thermal boundary layer thicknesses in mm."""
         # wavelength in mm, convert to m
         lam_m = wavelength * 1e-3
-        f = 346100.0 / lam_m  # frequency in Hz (c = global SPEED_OF_SOUND, matches chalumier)
+        f = SPEED_OF_SOUND / lam_m  # frequency in Hz
         omega = 2 * np.pi * f
 
         # Viscous boundary layer: δ_v = sqrt(2η/ρω)
