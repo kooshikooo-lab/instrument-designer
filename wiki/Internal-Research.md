@@ -17,6 +17,7 @@
 | Resources | [[Internal-Research-Resources]] | GitHub repos, books |
 | Metamaterials | [[Internal-Research-Metamaterials]] | Acoustic metamaterials in instruments (2026-08-03) |
 | AI/ML | [[Internal-AI-Research]] | JAX TMM, ML surrogates, CMA-ES, Bayesian optimization |
+| CAD/Fabrication | [[Internal-Research-CAD-Pipeline]] | 3D modeling/CAD, AI tools, design-to-finished-instrument (2026-08-05) |
 
 ## Cross-Cutting Notes
 
@@ -24,3 +25,6 @@
   ML surrogate plans, and optimizer comparisons.
 - **Metamaterials** — see [[Internal-Research-Metamaterials]] for acoustic metamaterials in
   instruments (bass clarinet focus), status: reference/future-work, no code changes.
+- **CAD & Fabrication** — see [[Internal-Research-CAD-Pipeline]] for 3D modeling/CAD options,
+  AI design tools, and the full design-to-finished-instrument pipeline
+  (source: `docs/RESEARCH_design_to_finished_instrument.md`), status: reference/future-work, no code changes.

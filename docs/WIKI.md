@@ -530,6 +530,43 @@ Generates a summary table comparing RMS and wall time across all instruments.
 
 ---
 
+## 11. Design-to-Finished-Instrument Pipeline (2026-08-05)
+
+> Full research: `docs/RESEARCH_design_to_finished_instrument.md` (Status: REFERENCE — no code changes).
+
+The project's pipeline — TMM optimization → CadQuery solids → STL → SLA print → post-processing → BIAS measurement — matches the state of the art for 3D-printed instruments.
+
+### 11.1 CAD layer
+
+- Code-driven parametric CAD (CadQuery/OpenCASCADE in `backend/cadquery_export.py`) is correct for a design 100% parameterized from acoustic math. **Do not** switch the core path to manual GUI CAD.
+- **Build123d** (OpenCASCADE, Apache-2.0) is the actively-maintained successor-style API — top alternative if CadQuery ergonomics are hit; can coexist incrementally (both emit BRep → same `export_stl`).
+- **JSCAD** stays preview-only in the Tauri UI (mesh render, never source of truth). **FreeCAD** stays the visualization/STEP handoff layer.
+
+### 11.2 Mesh gap
+
+- `stl_export.py` + `stl_verifier.py` use trimesh. **Gap: no mesh-repair/heal gate before slicing** — candidates `pymeshlab` / `pymeshfix` / `admesh`. Any adoption requires the `docs/TOOLS.md` protocol (declare in `pyproject.toml`, import in pipeline, test).
+
+### 11.3 AI tools
+
+- **ML surrogates** for the acoustic solver: HIGH value in literature (~10–100× FEM speedup), but **already benchmarked and rejected** here — `topk_polish` + dask won on the shared contract. Do not re-open without a changed contract.
+- **LLM→CAD code** (CAD-Coder arXiv:2505.14646 MIT; CAD-Llama; Zoo.dev Text-to-CAD): real and open-source, but a *developer accelerator* (UI scaffolding, mechanism parts) — never for acoustically-critical bores.
+- **Gradient-based geometry optimization** (Szwarcberg 2025): analytic sensitivity of TMM geometry → gradient descent on hole positions/diameters. Most promising new lever; current optimizer is derivative-free.
+
+### 11.4 Fabrication
+
+- SLA confirmed (fine features + smooth bore). **SLS nylon** (Diegel sax, 41 components) wins when mechanism toughness dominates (keys, springs, pivots).
+- Design-for-AM: print vertically, minimize interior supports, uniform walls, deliberate tonehole chamfers.
+
+### 11.5 QA/tuning
+
+- BIAS/impedance measurement is the authoritative feedback signal. Add **acoustic pulse reflectometry (APR)** to reconstruct the printed bore and verify it matches the design after reaming — the crux of "finished" quality.
+
+### 11.6 Guardrails
+
+- Adopted tools must pass `docs/TOOLS.md` registry (pyproject declaration, live import, test). No regenerable artifacts committed. This section is reference-only until a specific adoption task is scheduled.
+
+---
+
 ### Key Acoustic Constants
 
 ```python
