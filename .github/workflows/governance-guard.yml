@@ -28,6 +28,9 @@ jobs:
       - name: System self-audit (Law 16 — enforcement layers active and correct)
         run: |
           python scripts/system_audit.py
+      - name: Dead-path guard — no deleted-module imports, deleted-branch refs, or resurrected dirs
+        run: |
+          python scripts/validate_imports.py --all
       - name: Meta-tests for the guard scripts (Law 16.5)
         run: |
           python -m pytest tests/test_guard_scripts.py -q
