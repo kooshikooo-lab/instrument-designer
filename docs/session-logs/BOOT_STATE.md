@@ -9,11 +9,10 @@
 
 ## Goal
 
-- **Working branch: `opencode/build123d/laptop`** (laptop), HEAD `905266d`
-  (2026-08-08: merged desktop `a8b3cc2` rescue + Law 14.N dead-path prevention;
-  pyproject.toml testpath union; pushed. PR #66 MERGEABLE).
-- **Desktop branch `opencode/main/desktop`** at `a8b3cc2` (Laws 15+16 + dead-path
-  prevention Law 14.N + rescue bench tooling).
+- **Working branch: `opencode/build123d/laptop`** (laptop), HEAD `a6eb853`
+  (2026-08-08: governance ASK-directive fix + Fusion GUI pipeline + lint cleanup;
+  PR #68 OPEN, 3 commits, MERGEABLE, base `opencode/main/desktop`).
+- **Desktop branch `opencode/main/desktop`** at `0705f6c` (PR #66 merged 2026-08-08).
 - **Fusion 360 track (2026-08-07, desktop offline)**: new `tests/test_fusion_360.py`
   (15 tests, whitelisted) covering smoke/phase1 generators + manifest/result
   contracts; **finding** — xaphoon_C now watertight (C1 fix) so Phase 0.3 repair
@@ -66,6 +65,36 @@
 ## Progress
 
 ### Done (this session, 2026-08-08)
+- **Over-asking regression ROOT CAUSED + FIXED + PR #68**: blanket "ASK. Do not
+  speculate" directive in `docs/CONSTRAINTS_AND_PREFERENCES.md` ORDER OF
+  OPERATIONS (added desktop 08-05 `a1807bd`, reached laptop 08-07 via Laws 12-14
+  merge `6c23a11`) was context-free — any uncertainty (however trivial) justified
+  pinging the human, reproducing across different models AND both machines.
+  Scoped it (`7c379e7`): ask ONLY when genuinely ambiguous AND high-stakes/
+  irreversible AND with full context + recommended default; trivial/reversible/
+  self-verifiable → decide autonomously, log it. BOOT_STATE standing directive +
+  REMINDERS aligned. Tiebreaker Law 10 vs 17.6. Audit PASS.
+- **Fusion GUI automation pipeline committed** (`e9f660b`, AUDIT): desktop_chat.py
+  (clipboard+paste → Enter → PrintWindow capture → WinRT OCR, window-targeted +
+  abspath fix), gui_driver.py, vision_loop.py (Ollama-first + OpenRouter free-vision
+  fallback), fusion_mesh_repair_agent.py, make_nonwatertight_target.py, win_ocr.ps1,
+  volunteer_benchmark.py, chat_posts drafts (moved to `docs/chat_posts` per
+  placement rule), scrappy-setup-linux.md, Fusion review prompt.
+- **Lint cleanup on new files** (`a6eb853`): fixed all 35 ruff findings in
+  `scripts/gui_automation/*`, `tests/test_gui_automation.py`,
+  `scripts/volunteer_benchmark.py` (PEP 604 unions, `check=False`, narrowed
+  exceptions, `TypeError` for type checks). Tests 16/16 pass. Compliance watchdog
+  "no new violations vs baseline".
+- **CI failures confirmed PRE-EXISTING**: dependency-locks (pip-tools/pip
+  `stdlib_pkgs` ImportError), guard (31 missing optional deps, `.[dev]` only),
+  test/ruff (2628 baseline errors in backend/*) — all 3 already failing on
+  `10c7268` (the commit merged as PR #66). PR #68 adds zero new CI failures.
+- **PR #68 OPEN**: `opencode/build123d/laptop` → `opencode/main/desktop`
+  (precedent = PR #66), 3 commits, MERGEABLE. Posted to #23 (17941359, 17941454).
+- **Delegation plan read** (#23 17941028, posted 06:33Z by desktop side):
+  laptop owns Fusion Phase 0.3 proof, ChatGPT Desktop fallback, Scrappy
+  follow-through, OpenRouter vision key; desktop owns scheduler restart, orphan
+  cleanup, Phase 1 FEM, CT benchmarking, demakein replacement, audit finishing.
 - **Rescue + dead-path merge COMPLETE (laptop side)**: rehearsed on
   `merge/laptop-receives-rescue-deadpath` per Law 15.3 (merge_gate correctly
   predicted 1 conflict), resolved `pyproject.toml` testpath union
@@ -114,9 +143,9 @@
   at 384px screenshot against `gemma3:4b` (120s) — the Fusion mesh-repair agent
   (Phase 0.3) still needs either a smaller/faster vision path or the desktop-chat
   fallback. ChatGPT Desktop not installed (window is Store stub).
-- **PR #66** (`opencode/build123d/laptop` → `opencode/main/desktop`) — OPEN +
-  MERGEABLE, carrier for laptop work. Awaiting desktop merge + orphan-branch
-  deletion (unblocked).
+- **PR #68** (`opencode/build123d/laptop` → `opencode/main/desktop`) — OPEN +
+  MERGEABLE, 3 commits (7c379e7 governance ASK fix, e9f660b Fusion GUI pipeline,
+  a6eb853 lint cleanup). Carrier for laptop work. Awaiting desktop review/merge.
 - **Desktop codebase audit (Laws 1-14)** — posted in batches to #23; no code
   changes to shared branches during audit.
 - **Dask worker attach to desktop scheduler**: `tcp://100.69.113.41:8786` still
@@ -138,10 +167,12 @@
 
 ## Next Steps
 1. Fusion 360: pick a faster local-vision path for the GUI agent (smaller capture
-   didn't fix the gemma3:4b timeout; try OpenRouter free-vision fallback or a
-   lighter model), then run the Phase 0.3 mesh-repair proof end-to-end; wire
-   `desktop_chat.py` in as the manual-GUI fallback once ChatGPT Desktop is installed.
-3. Await desktop: merge PR #66 + delete orphan branches (unblocked by laptop merge).
+   didn't fix the gemma3:4b timeout; try OpenRouter free-vision fallback — needs
+   `OPENROUTER_API_KEY` — or a lighter model), then run the Phase 0.3 mesh-repair
+   proof end-to-end; wire `desktop_chat.py` in as the manual-GUI fallback once
+   ChatGPT Desktop is installed.
+3. Await desktop: review/merge PR #68 (governance fix + GUI pipeline); PR #66
+   already merged (0705f6c).
 4. Watch #23 for ack of merge-completion post (17939738); nudge if stale.
 5. Restart tailscale peer monitor + `team_chat.py watch --interval 30` per
    Law 12/Constitution.
@@ -159,10 +190,9 @@
    `docs/RESEARCH_ct_benchmarking.md` (FT40/FT44, DaSCH STLs).
 
 ## Critical Context
-- `origin/main` = `d935287`; `opencode/main/desktop` = `a8b3cc2` (Laws 15+16 +
-  Law 14.N dead-path + rescue tooling).
-- Laptop branch `opencode/build123d/laptop`: HEAD `905266d` (merge of desktop
-  `a8b3cc2`, pushed).
+- `origin/main` = `d935287`; `opencode/main/desktop` = `0705f6c` (PR #66 merged).
+- Laptop branch `opencode/build123d/laptop`: HEAD `a6eb853` (governance fix +
+  Fusion GUI pipeline + lint cleanup; PR #68 open).
 - Test baseline: laptop full suite → **387 passed, 4 skipped** (355 + 32 guard
   tests from Law 16, ≈260s).
 - Pre-commit validation passes; `backend/inverse_design.py` allowlisted oversized.

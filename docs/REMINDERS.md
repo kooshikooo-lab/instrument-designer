@@ -47,7 +47,7 @@ thread starts, moves, or resolves.
 | 1 | Numba wiring restore on `main` | both | merge of PR #62 | **DONE** — PR #62 merged, numba wiring restored | 2026-08-07 |
 | 2 | PR #62 head mirror `opencode-instrument-designer` | desktop | PR #62 merge | **DONE** — PR #62 merged, mirror ref can be deleted | 2026-08-07 |
 | 3 | Mesh-repair gate protocol (`docs/TOOLS.md`) | laptop | laptop draft | DECIDED: build123d-first + pymeshlab/pymeshfix repair fallback (desktop 17906945); laptop drafting protocol | 2026-08-05 |
-| 4 | build123d spike merge → `opencode/main/laptop` | laptop | desktop merges PR #66 | **DONE (2026-08-08)** — PR #66 MERGED into `opencode/main/desktop` (`0705f6c`, 2026-08-08T02:37Z). Laptop staging `merge/laptop-receives-rescue-deadpath` to delete; verify fetch both sides. Delegation plan posted #23 17941028 | 2026-08-08 |
+| 4 | build123d spike merge → `opencode/main/laptop` | laptop | desktop merges PR #68 | **DONE (2026-08-08)** — PR #66 MERGED into `opencode/main/desktop` (`0705f6c`, 2026-08-08T02:37Z). **PR #68** (governance ASK-fix `7c379e7` + Fusion GUI pipeline `e9f660b` + lint cleanup `a6eb853`) now OPEN for desktop review. Delegation plan posted #23 17941028 | 2026-08-08 |
 | 5 | `cadquery-ocp` pin in `cad` extra | desktop | — | Resolved: desktop added pin (avoid `cadquery-ocp-novtk` OCP namespace clobber) | 2026-08-05 |
 | 6 | Config schema unification | desktop | laptop review of multi-register decision | Schema approved; 3 configs migrated to canonical; `baroque_clarinet.json` kept as legacy | 2026-08-06 |
 | 7 | pip-tools dependency locks | desktop | — | Resolved: lock files generated for `[dev,cad,test,chess]` and committed | 2026-08-06 |
