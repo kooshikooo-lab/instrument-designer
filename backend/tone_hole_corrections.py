@@ -18,6 +18,7 @@ Usage:
 import numpy as np
 from typing import List, Tuple, Optional
 import math
+from backend.tmm_acoustics import SPEED_OF_SOUND
 
 from backend.tmm_acoustics import SPEED_OF_SOUND
 

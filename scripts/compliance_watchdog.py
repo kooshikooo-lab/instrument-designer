@@ -32,6 +32,8 @@ BASELINE_FILE = SCRIPTS_DIR / "compliance_baseline.json"
 BACKEND_DIRS = [
     REPO_ROOT / "backend",
     REPO_ROOT / "woodwind_designer",
+    REPO_ROOT / "tests",
+    REPO_ROOT / "scripts",
 ]
 
 EXCLUDED_DIRS = [
@@ -183,6 +185,31 @@ def check_module_size(path: Path) -> int | None:
     return None
 
 
+# Speed-of-sound literals outside the canonical module (Law 7). Mirrors the
+# regex in validate_pre_commit.py so the baseline can cover pre-existing debt
+# and --check-baseline blocks only NEW literals.
+SPEED_OF_SOUND_LITERAL_RE = re.compile(
+    r"(?<![\w.])"
+    r"(?:331\.3|343\.42|344\.844|345\.844|346\.1|"
+    r"343000(?:\.0*)?|346100(?:\.0*)?)"
+    r"(?![\w.])"
+)
+SOS_EXEMPT_FILES = {
+    "backend/tmm_acoustics.py",       # canonical source of truth (Law 7)
+    "scripts/validate_pre_commit.py",  # hosts the regex
+    "scripts/compliance_watchdog.py",  # hosts the regex
+}
+
+
+def check_hardcoded_sos(path: Path, rel: str) -> list[int]:
+    if rel.replace("\\", "/") in SOS_EXEMPT_FILES:
+        return []
+    with open(path, encoding="utf-8", errors="ignore") as f:
+        content = f.read()
+    return [content[:m.start()].count("\n") + 1
+            for m in SPEED_OF_SOUND_LITERAL_RE.finditer(content)]
+
+
 def check_docstring_present(path: Path) -> bool:
     with open(path, encoding="utf-8", errors="replace") as f:
         tree = ast.parse(f.read())
@@ -282,6 +309,7 @@ def run_checks(subsystem: str | None = None, trigger: str = "timer") -> dict:
     bare_excepts_total = 0
     mutable_total = 0
     ip_total = 0
+    sos_total = 0
     oversized_modules = []
 
     for f in files:
@@ -335,11 +363,24 @@ def run_checks(subsystem: str | None = None, trigger: str = "timer") -> dict:
         except SyntaxError:
             pass
 
+        try:
+            sos_lines = check_hardcoded_sos(f, str(rel))
+            if sos_lines:
+                results["violations"].append({
+                    "file": str(rel),
+                    "check": "hardcoded_sos",
+                    "lines": sos_lines,
+                })
+                sos_total += len(sos_lines)
+        except SyntaxError:
+            pass
+
     results["checks"] = {
         "files_scanned": len(files),
         "bare_excepts": bare_excepts_total,
         "module_mutables": mutable_total,
         "hardcoded_ips": ip_total,
+        "hardcoded_sos": sos_total,
         "oversized_modules": len(oversized_modules),
         "oversized_list": oversized_modules,
     }

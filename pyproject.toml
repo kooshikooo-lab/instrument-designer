@@ -31,6 +31,8 @@ surrogate = ["jax>=0.4", "jaxlib>=0.4", "flax", "optax", "botorch", "torch", "gp
 cad = ["cadquery>=2.4", "cadquery-ocp", "build123d>=0.7", "vtk>=9.0", "trimesh>=4.0", "rtree>=1.0", "pillow>=9.0"]
 bench = ["dask[distributed]>=2024.1", "psutil>=5.9", "cma>=3.0"]
 perf = ["numba>=0.60"]
+spectral = ["librosa>=0.10"]
+fem = ["gmsh>=4.12", "meshio>=5.3", "scikit-fem>=8.0"]
 freecad = ["freecad"]
 chess = ["chess>=1.10"]
 test = ["pytest>=7.0", "jsonschema>=4.0"]
@@ -71,7 +73,19 @@ python_files = [
     "test_tool_registry.py",
     "test_whitelist.py",
     "test_topk_polish.py",
+    "test_dask_topk.py",
+    "test_mesh_repair_gate.py",
+    "test_benchmark_all.py",
+    "test_metamaterial.py",
+    "test_metamaterial_fem_crosscheck.py",
+    "test_metamaterial_graded.py",
+    "test_metamaterial_intonation.py",
+    "test_metamaterial_low_clarinets.py",
+    "test_metamaterial_register_suppression.py",
+    "test_metamaterial_stl_export.py",
+    "test_metamaterial_subcontrabass.py",
     "test_guard_scripts.py",
+    "test_fusion_360.py",
     "test_validate_imports.py",
 ]
 

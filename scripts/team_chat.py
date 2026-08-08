@@ -16,6 +16,7 @@ State: a per-machine cursor in scripts/.team_state.json (gitignored).
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -57,11 +58,11 @@ def save_state(state):
         json.dump(state, f, indent=2)
 
 
-def fetch_comments():
+def fetch_comments(discussion_num=DISCUSSION_NUM):
     raw, err, code = gh(
-        "api", f"repos/{REPO}/discussions/{DISCUSSION_NUM}/comments",
+        "api", f"repos/{REPO}/discussions/{discussion_num}/comments",
         "--paginate", "--jq",
-        ".[] | {user: .user.login, date: .created_at, body: .body}")
+        ".[] | {user: .user.login, date: .created_at, body: .body, url: .url}")
     if code != 0:
         print(f"ERROR fetching comments: {err}", file=sys.stderr)
         sys.exit(1)
@@ -91,6 +92,14 @@ def resolve_discussion_id(discussion_num=23):
         sys.exit(1)
 
 
+def comment_id_from_url(url):
+    """Extract the numeric discussion-comment id from either an API or HTML url."""
+    if not url:
+        return None
+    m = re.search(r"discussioncomment-(\d+)", url) or re.search(r"/comments/(\d+)", url)
+    return m.group(1) if m else None
+
+
 def post_comment(body, discussion_num=23, important=False):
     if important and not body.startswith(IMPORTANT_TAG):
         body = f"{IMPORTANT_TAG}\n{body}"
@@ -109,15 +118,34 @@ def post_comment(body, discussion_num=23, important=False):
         print(f"ERROR posting: {err}", file=sys.stderr)
         sys.exit(1)
     try:
-        url = json.loads(raw)["data"]["addDiscussionComment"]["comment"]["url"]
+        posted_url = json.loads(raw)["data"]["addDiscussionComment"]["comment"]["url"]
     except (KeyError, json.JSONDecodeError):
         print(f"Unexpected response: {raw}", file=sys.stderr)
         sys.exit(1)
-    print(f"POSTED: {url}")
+    print(f"POSTED: {posted_url}")
     if important:
         print("This message is tagged IMPORTANT. Law 12: remind the other machine "
               "if it is not acknowledged.")
-    print("Run 'python scripts/team_chat.py sync' to fetch any replies.")
+    state = load_state()
+    old_cursor = state.get("last_comment_date", "")
+    try:
+        comments = fetch_comments(discussion_num=discussion_num)
+        posted_id = comment_id_from_url(posted_url)
+        mine = [c for c in comments if comment_id_from_url(c.get("url", "")) == posted_id]
+        my_date = mine[0]["date"] if mine else None
+        unread_other = [
+            c for c in comments
+            if c["date"] > old_cursor and is_other_machine(c)
+        ]
+        if unread_other:
+            print("NOTE: other machine posted while you were typing — cursor NOT advanced; run `sync` to read it.")
+        elif my_date:
+            state["last_comment_date"] = my_date
+            save_state(state)
+        else:
+            print("WARNING: could not locate own comment; cursor left unchanged (own post will show as new next sync)")
+    except Exception as e:
+        print(f"WARNING: could not update cursor after post: {e}", file=sys.stderr)
 
 
 def cmd_remind(message, discussion_num=23):
@@ -168,6 +196,7 @@ def cmd_watch(interval=5, timeout=0):
             continue
         new = [c for c in fresh if is_other_machine(c)]
         last_seen = comments[-1]["date"]
+        state["last_comment_date"] = last_seen
         save_state(state)
         if new:
             return _print_new(new, comments, state)
@@ -192,21 +221,33 @@ def cmd_sync(as_json=False):
     comments = fetch_comments()
 
     new = [c for c in comments if c["date"] > last_seen] if last_seen else comments
+    others = [c for c in new if is_other_machine(c)]
+    own = [c for c in new if not is_other_machine(c)]
 
     if as_json:
-        print(json.dumps({"new_count": len(new), "machine": MACHINE, "messages": new}))
+        tagged = [
+            {**c, "other": is_other_machine(c)}
+            for c in new
+        ]
+        print(json.dumps({
+            "new_count": len(new), "other_count": len(others),
+            "machine": MACHINE, "messages": tagged,
+        }))
     elif not new:
         print(f"[{MACHINE}] No new team messages.")
     else:
-        print(f"[{MACHINE}] {len(new)} NEW message(s) from the other machine:")
-        for c in new:
+        if others:
+            print(f"[{MACHINE}] {len(others)} NEW message(s) from the other machine:")
+            for c in others:
+                print("-" * 60)
+                body = c["body"]
+                if IMPORTANT_TAG in body or REMINDER_TAG in body:
+                    print(f"!!!!! {IMPORTANT_TAG if IMPORTANT_TAG in body else REMINDER_TAG} !!!!!")
+                print(f"[{c['date']}] {c['user']}:")
+                print(body)
             print("-" * 60)
-            body = c["body"]
-            if IMPORTANT_TAG in body or REMINDER_TAG in body:
-                print(f"!!!!! {IMPORTANT_TAG if IMPORTANT_TAG in body else REMINDER_TAG} !!!!!")
-            print(f"[{c['date']}] {c['user']}:")
-            print(body)
-        print("-" * 60)
+        if own:
+            print(f"[{MACHINE}] ({len(own)} own message(s) since last sync — not from the other machine)")
 
     if new:
         state["last_comment_date"] = comments[-1]["date"]

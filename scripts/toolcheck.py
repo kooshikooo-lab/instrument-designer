@@ -28,6 +28,7 @@ ROOT = Path(__file__).resolve().parent.parent
 # Libraries that are imported under a different name than the pip package.
 PACKAGE_ALIASES = {
     "sklearn": "scikit-learn",
+    "skfem": "scikit-fem",
     "yaml": "pyyaml",
     "PIL": "pillow",
     "cv2": "opencv-python",

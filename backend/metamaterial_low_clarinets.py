@@ -203,6 +203,11 @@ def make_hr_segment(
     return seg, mb
 
 
+def phase_at(inst: TMMInstrument, fingers, freq_hz: float) -> float:
+    """Resonance phase at a frequency (1.0 = fundamental, 2.0 = 12th)."""
+    return inst.resonance_phase(SPEED_OF_SOUND / freq_hz, fingers)
+
+
 def fundamental(inst: TMMInstrument, fingers) -> float:
     """Register-1 (all-closed) frequency in Hz."""
     wl = inst.find_resonance(4.0 * inst.length, fingers, 1)

@@ -36,6 +36,7 @@
 | [Research — Perception](https://github.com/kooshikooo-lab/instrument-designer/wiki/Internal-Research-Perception) | Timbre & intonation perception |
 | [Research — Resources](https://github.com/kooshikooo-lab/instrument-designer/wiki/Internal-Research-Resources) | GitHub repos, books |
 | [Research — Metamaterials](https://github.com/kooshikooo-lab/instrument-designer/wiki/Internal-Research-Metamaterials) | Acoustic metamaterials in instruments |
+| [Research — CAD/Pipeline](https://github.com/kooshikooo-lab/instrument-designer/wiki/Internal-Research-CAD-Pipeline) | 3D modeling/CAD, AI tools, design-to-finished-instrument |
 | [Code Conventions](https://github.com/kooshikooo-lab/instrument-designer/wiki/Internal-Conventions) | Style, testing, commit messages |
 | [Known Issues](https://github.com/kooshikooo-lab/instrument-designer/wiki/Internal-Known-Issues) | Bugs, design decisions, tech debt |
 

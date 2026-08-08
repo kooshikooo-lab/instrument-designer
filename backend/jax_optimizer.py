@@ -29,11 +29,11 @@ c = SPEED_OF_SOUND
 # Cost evaluation (matches benchmark_all.py eval_all exactly)
 # ============================================================================
 
-def eval_all(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg=None, outer_diameter=22.0):
-    """RMS cents error — same logic as benchmark_all.py eval_all."""
+def eval_cents(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg=None, outer_diameter_mm=22.0):
+    """Per-note cents deviations for a geometry (same logic as eval_all)."""
     inst = tmm_instrument_from_radii(
         radii, bore_length, hp, hd, hl,
-        outer_diameter_mm=outer_diameter, closed_top=closed_top, cone_step=0.5,
+        outer_diameter_mm=outer_diameter_mm, closed_top=closed_top, cone_step=0.5,
     )
     if n_reg is None:
         n_reg = 1 if closed_top else 2
@@ -53,15 +53,28 @@ def eval_all(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg=None, ou
     cents = []
     for a, t in zip(freqs, targets):
         cents.append(1200.0 * math.log2(a / t) if a > 0 and math.isfinite(a) else 1e10)
+    return cents
+
+
+def eval_all(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg=None, outer_diameter_mm=22.0):
+    """RMS cents error — same logic as benchmark_all.py eval_all."""
+    cents = eval_cents(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg, outer_diameter_mm)
     ca = np.array(cents)
     if np.any(np.abs(ca) > 1e5):
         return 1e10
     return float(np.sqrt(np.mean(ca ** 2)))
 
 
-def safe_eval(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg=None, outer_diameter=22.0):
+def eval_metrics(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg=None, outer_diameter_mm=22.0) -> dict:
+    """Canonical metric dict (ADR-008) for a geometry, via eval_cents."""
+    from backend.metrics import compute_metrics
+    cents = eval_cents(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg, outer_diameter_mm)
+    return compute_metrics(cents)
+
+
+def safe_eval(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg=None, outer_diameter_mm=22.0):
     try:
-        return eval_all(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg, outer_diameter=outer_diameter)
+        return eval_all(radii, bore_length, hp, hd, hl, closed_top, targets, n_reg, outer_diameter_mm)
     except Exception:
         return 1e10
 
@@ -89,7 +102,7 @@ def sequential_placement(cfg):
             f = inst.frequency_from_wavelength(wl)
             if f <= 0 or not math.isfinite(f): return 1e10
             return abs(1200.0 * math.log2(f / fundamental))
-        except: return 1e10
+        except Exception: return 1e10
 
     from scipy.optimize import minimize as sp_min
     r = sp_min(bore_obj, [L_est], method='L-BFGS-B',
@@ -133,7 +146,7 @@ def sequential_placement(cfg):
                 err = abs(1200.0 * math.log2(f / target)) if f > 0 else 1e10
                 if err < best_err:
                     best_err, best_pos = err, pos
-            except: pass
+            except Exception: pass
         hp.append(best_pos)
         hd.append(cfg["hole_diameter"])
         hl.append(cfg["hole_length"])
@@ -143,8 +156,7 @@ def sequential_placement(cfg):
     hd = [hd[j] for j in idx]
     hl = [hl[j] for j in idx]
 
-    rms = safe_eval(bore_radii, bore_length, hp, hd, hl, closed_top, targets, n_reg,
-                    outer_diameter=cfg["outer_diameter"])
+    rms = safe_eval(bore_radii, bore_length, hp, hd, hl, closed_top, targets, n_reg, cfg["outer_diameter"])
     return rms, bore_length, bore_radii, hp, hd, hl
 
 
@@ -173,14 +185,12 @@ def refine_sequential(cfg, verbose=False, use_jax_bore=False, use_phase_cost=Tru
     closed_top = cfg["closed_top"]
     targets = cfg["targets"]
     bore_r = cfg["bore_radius"]
-    outer_diameter = cfg.get("outer_diameter", 22.0)
 
     hd_min = bore_r * 0.4
     hd_max = bore_r * 0.9
 
     def safe_eval_local(radii, L, hp, hd, hl):
-        return safe_eval(radii, L, hp, hd, hl, closed_top, targets,
-                        outer_diameter=outer_diameter)
+        return safe_eval(radii, L, hp, hd, hl, closed_top, targets, outer_diameter_mm=cfg["outer_diameter"])
 
     # DE global re-optimization for open-open instruments
     if not closed_top and n_h > 0:

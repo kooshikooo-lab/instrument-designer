@@ -53,23 +53,85 @@ class TMMSolver:
         self.losses = losses or NoLoss()
         self.excitation = excitation or ReedExcitation()
 
-    def from_network(self, network: AcousticNetwork) -> TMMInstrument:
+    def from_network(
+        self, network: AcousticNetwork, outer_diameter_mm: float | None = None,
+    ) -> TMMInstrument:
         """Convert AcousticNetwork to TMMInstrument.
 
         This bridges the abstract network model to the chalumier TMM.
+
+        Parameters
+        ----------
+        network : AcousticNetwork
+            The abstract acoustic network to convert.
+        outer_diameter_mm : float or None, optional
+            Body outer diameter (mm).  The network carries no wall-thickness
+            information, so when omitted a rough estimate (2.5x the max bore
+            radius) is used.  Callers that know the real OD should pass it:
+            the end-flange correction is sensitive to it.
         """
         positions, radii = network.to_bore_profile()
         hole_pos, hole_rad, hole_len = network.to_hole_data()
 
-        outer_diameter = max(radii) * 2.5  # rough outer diameter estimate
+        if outer_diameter_mm is None:
+            outer_diameter_mm = max(radii) * 2.5  # rough estimate fallback
+
+        loss_model = None if isinstance(self.losses, NoLoss) else self.losses
 
         return tmm_instrument_from_radii(
             radii, network.total_length,
             hole_pos.tolist(), hole_rad.tolist(), hole_len.tolist(),
-            outer_diameter,
+            outer_diameter_mm=outer_diameter_mm,
             closed_top=(network.boundary_reed.type.value == "reed"),
             cone_step=0.5,
+            loss_model=loss_model,
         )
+
+    def _with_register_state(
+        self,
+        network: AcousticNetwork,
+        fingering_sets: List[List[str]],
+        n_register: int,
+    ) -> List[List[str]]:
+        """Insert register-vent states at the correct port indices.
+
+        The register vent is not guaranteed to be the first port, and the TMM
+        consumes fingering states by port index, so the vent state must be
+        inserted at the index of the register-vent port(s) rather than blindly
+        prepended.  ``fingering_sets`` is expected to contain TONEHOLE-only
+        states (one entry per non-vent port, in port order); if a set already
+        has one entry per port it is passed through with the vent states
+        overridden for the requested register.
+        """
+        vent_indices = [i for i, p in enumerate(network.ports) if p.is_register_vent]
+        if not vent_indices:
+            return [list(fs) for fs in fingering_sets]
+        reg_state = "open" if n_register >= 2 else "closed"
+        n_ports = len(network.ports)
+        vent_set = set(vent_indices)
+        adjusted = []
+        for fs in fingering_sets:
+            fs = list(fs)
+            if len(fs) == n_ports:
+                for vi in vent_indices:
+                    fs[vi] = reg_state
+            elif len(fs) == n_ports - len(vent_indices):
+                full = [None] * n_ports
+                k = 0
+                for i in range(n_ports):
+                    if i in vent_set:
+                        full[i] = reg_state
+                    else:
+                        full[i] = fs[k]
+                        k += 1
+                fs = full
+            else:
+                raise ValueError(
+                    f"fingering length {len(fs)} does not match {n_ports} ports "
+                    f"minus {len(vent_indices)} register vent(s)"
+                )
+            adjusted.append(fs)
+        return adjusted
 
     def compute_frequencies(
         self,
@@ -77,6 +139,7 @@ class TMMSolver:
         target_wavelengths: List[float],
         fingering_sets: List[List[str]],
         n_register: int = 1,
+        outer_diameter_mm: float | None = None,
     ) -> np.ndarray:
         """Compute resonant frequencies for a set of fingerings.
 
@@ -86,25 +149,20 @@ class TMMSolver:
             fingering_sets: list of fingering states for TONEHOLES only
                 (["open","closed",...], one entry per tonehole)
             n_register: register number (1 = fundamental/chalumeau, 2 = clarion)
+            outer_diameter_mm: body outer diameter (mm); see ``from_network``.
 
-        The register vent state is automatically prepended:
+        The register vent state is inserted automatically at the register-vent
+        port position:
         - n_register=1 (chalumeau): register vent CLOSED
         - n_register=2 (clarion): register vent OPEN
 
         Returns:
             Array of actual frequencies in Hz
         """
-        inst = self.from_network(network)
-
-        # Prepend register vent state to each fingering set
-        # TMM instrument expects entries for ALL holes (toneholes + register vent)
-        # Register vent is at the first port position (closest to reed)
-        has_register = any(p.is_register_vent for p in network.ports)
-        if has_register:
-            reg_state = "open" if n_register >= 2 else "closed"
-            adjusted_fingerings = [[reg_state] + list(fs) for fs in fingering_sets]
-        else:
-            adjusted_fingerings = [list(fs) for fs in fingering_sets]
+        inst = self.from_network(network, outer_diameter_mm=outer_diameter_mm)
+        adjusted_fingerings = self._with_register_state(
+            network, fingering_sets, n_register
+        )
 
         return inst.compute_fingered_frequencies(
             target_wavelengths, adjusted_fingerings, n_register
@@ -121,11 +179,8 @@ class TMMSolver:
             n_register: register number (1=chalumeau, 2=clarion)
         """
         inst = self.from_network(network)
-        has_register = any(p.is_register_vent for p in network.ports)
-        if has_register:
-            reg_state = "open" if n_register >= 2 else "closed"
-            fingering = [reg_state] + list(fingering)
-        return inst.resonance_phase(wavelength, fingering)
+        adjusted = self._with_register_state(network, [fingering], n_register)[0]
+        return inst.resonance_phase(wavelength, adjusted)
 
     def find_resonance(
         self, network: AcousticNetwork, wavelength_near: float,
@@ -133,11 +188,8 @@ class TMMSolver:
     ) -> float:
         """Find resonant wavelength near target."""
         inst = self.from_network(network)
-        has_register = any(p.is_register_vent for p in network.ports)
-        if has_register:
-            reg_state = "open" if n_register >= 2 else "closed"
-            fingering = [reg_state] + list(fingering)
-        return inst.find_resonance(wavelength_near, fingering, n_register)
+        adjusted = self._with_register_state(network, [fingering], n_register)[0]
+        return inst.find_resonance(wavelength_near, adjusted, n_register)
 
     # --- Loss model integration (for future TMM with losses) ---
     def _apply_bore_losses(self, network: AcousticNetwork, wavelengths: np.ndarray):

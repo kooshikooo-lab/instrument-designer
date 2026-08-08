@@ -199,3 +199,21 @@ Agents malfunction: they misunderstand vague instructions, lose context, act ras
 7. **Audit result is declared in the commit**. Every commit touching a guard script, the hooks, the constitution, or the CI workflow MUST declare the system-audit result in its message (e.g. `System: audit PASS` or `System: audit FAIL (reason)`).
 
 Violating this protocol is a constitutional violation. Log failures in `AI_FAILURE_PATTERNS.md`.
+
+### Law 17 — Work in order of safety, not order of approval
+
+Halting is the expensive failure. A machine that waits for approval for steps it could safely do itself wastes the whole session. Work MUST be ordered by what is safe and independent, not by what requires permission. Approval gates only the steps that truly need them.
+
+1. **Do the safe work first**. When a task has multiple steps, execute every step that is local, reversible, and unblocked BEFORE any step that requires another machine, a human, or a shared-state change. Never let a downstream approval gate stall upstream work that does not depend on it.
+
+2. **Local is never blocked**. Working on a machine's own canonical branch (committing, merging its own branches, running tests, updating docs) is always permitted and NEVER waits for the other machine. An instruction to "hold pushes" or "wait during an audit" does NOT mean hold local commits, local merges, rehearsals, or verification — it means hold only the shared-state actions (pushing to shared branches, promoting to `main`, deleting branches).
+
+3. **Rehearse while you wait**. If a step is gated (e.g. a cross-machine merge awaiting the audit), do the unblocked preparation now: run `merge_gate.py`, rehearse on a `merge/<topic>` staging branch, run the verification gates, resolve conflicts, and have the merge ready. The gated action then becomes a single push instead of a stalled workflow.
+
+4. **Blocked ≠ idle**. When blocked on the other machine or a human, do the next safe thing: test, research, document, prepare messages, review the diff. Log what is blocked and why, then keep moving. Silence and waiting are never the default.
+
+5. **Ask once, then proceed**. When a decision requires input, post the question once with a deadline, then continue with all safe independent work. Do not re-ask, do not idle, and do not re-verify a decision that is not yours to make.
+
+6. **Escalate only real blocks**. Escalation to the human is for decisions that genuinely require a human (canonical-branch deletion, architecture approval, conflicting instructions). Work that a machine can verify itself is never an escalation.
+
+Violating this protocol is a constitutional violation. Log failures in `AI_FAILURE_PATTERNS.md`.

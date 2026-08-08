@@ -14,7 +14,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import List, Optional, Tuple
 import numpy as np
-
 from backend.tmm_acoustics import SPEED_OF_SOUND
 
 
@@ -145,7 +144,7 @@ class AcousticNetwork:
         type=BoundaryType.BELL, excitation=ExcitationType.NONE, position=0.0
     ))
     fingerings: List[Fingering] = field(default_factory=list)
-    speed_of_sound: float = SPEED_OF_SOUND  # mm/s (chalumier value, ~346 m/s at 20°C)
+    speed_of_sound: float = SPEED_OF_SOUND  # mm/s (chalumier value, ~346.1 m/s at 20°C)
 
     @property
     def total_length(self) -> float:

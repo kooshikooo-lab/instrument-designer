@@ -95,7 +95,7 @@ class KeefeLoss(LossModel):
         """Compute viscous and thermal boundary layer thicknesses in mm."""
         # wavelength in mm, convert to m
         lam_m = wavelength * 1e-3
-        f = SPEED_OF_SOUND / lam_m  # frequency in Hz
+        f = SPEED_OF_SOUND / lam_m  # frequency in Hz (canonical SoS, matches chalumier)
         omega = 2 * np.pi * f
 
         # Viscous boundary layer: δ_v = sqrt(2η/ρω)

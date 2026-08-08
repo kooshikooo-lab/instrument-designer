@@ -139,7 +139,7 @@ class ClarinetMouthpiece(MouthpieceModel):
         # Chamber compliance (volume -> impedance)
         gamma = 1.4  # ratio of specific heats
         rho = 1.18  # air density kg/m^3
-        c = 343.0  # speed of sound m/s
+        c = 346.1  # speed of sound m/s
         V = self.chamber_volume * 1e-6  # cm^3 -> m^3
 
         compliance = 1.0 / (gamma * rho * c**2 * V) * omega  # inductive
@@ -241,7 +241,7 @@ class SaxophoneMouthpiece(MouthpieceModel):
 
         gamma = 1.4
         rho = 1.18
-        c = 343.0
+        c = 346.1
         V = self.chamber_volume * 1e-6
 
         compliance = 1.0 / (gamma * rho * c**2 * V) * omega
@@ -312,7 +312,7 @@ class FluteEmbouchure(MouthpieceModel):
         """
         omega = 2.0 * np.pi * freqs
         rho = 1.18
-        c = 343.0
+        c = 346.1
 
         # Hole area
         A = math.pi * (self.hole_diameter * 1e-3 / 2.0)**2

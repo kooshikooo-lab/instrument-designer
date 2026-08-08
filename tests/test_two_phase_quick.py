@@ -1,5 +1,6 @@
-import sys, os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 from backend.two_phase_optimizer import two_phase_optimize
 from backend.physics.losses import KeefeLoss

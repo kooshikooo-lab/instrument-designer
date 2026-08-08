@@ -35,8 +35,8 @@ def test_valid_imports_pass():
     assert rc == 0, stdout
 
 
-def test_archived_optimizers_blocked():
-    source = "from backend.archived_optimizers import staged_optimize\n"
+def test_legacy_optimizer_blocked():
+    source = "from backend.legacy_optimizer import staged_optimize\n"
     rc, stdout = run_validator_on(source)
     assert rc == 1, stdout
     assert "deleted module" in stdout

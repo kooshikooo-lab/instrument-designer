@@ -8,9 +8,11 @@ import time
 import os
 import sys
 
+import pytest
 import cadquery as cq
 from cadquery import exporters
 
+@pytest.mark.slow
 def test_cylindrical_bore_with_holes():
     """Generate a simple clarinet-like bore with 6 tone holes."""
 
@@ -72,12 +74,14 @@ def test_cylindrical_bore_with_holes():
     exporters.export(wall, step_path)
     step_size = os.path.getsize(step_path)
     print(f"  STEP exported: {step_path} ({step_size/1024:.1f} KB)")
+    assert step_size > 0, f"STEP file is empty: {step_path}"
 
     # Export STL
     stl_path = os.path.join(output_dir, "test_instrument.stl")
     exporters.export(wall, stl_path)
     stl_size = os.path.getsize(stl_path)
     print(f"  STL exported: {stl_path} ({stl_size/1024:.1f} KB)")
+    assert stl_size > 0, f"STL file is empty: {stl_path}"
 
     assert step_size > 0
     assert stl_size > 0
@@ -88,7 +92,13 @@ def test_cylindrical_bore_with_holes():
     print(f"  Export took {t2-t1:.2f}s")
     print(f"  Total time: {t2-t0:.2f}s")
 
+    # Verify geometry: bore is a solid, wall is a solid with holes
+    assert bore is not None, "Bore creation failed"
+    assert wall is not None, "Wall creation failed"
 
+    return True
+
+@pytest.mark.slow
 def test_conical_bore():
     """Generate a conical bore (saxophone-like) with tone holes."""
 
@@ -158,11 +168,15 @@ def test_conical_bore():
 
     step_path = os.path.join(output_dir, "test_conical.step")
     exporters.export(instrument, step_path)
-    print(f"  STEP: {os.path.getsize(step_path)/1024:.1f} KB")
+    step_size = os.path.getsize(step_path)
+    print(f"  STEP: {step_size/1024:.1f} KB")
+    assert step_size > 0, f"Conical STEP file is empty: {step_path}"
 
     stl_path = os.path.join(output_dir, "test_conical.stl")
     exporters.export(instrument, stl_path)
-    print(f"  STL: {os.path.getsize(stl_path)/1024:.1f} KB")
+    stl_size = os.path.getsize(stl_path)
+    print(f"  STL: {stl_size/1024:.1f} KB")
+    assert stl_size > 0, f"Conical STL file is empty: {stl_path}"
 
     assert os.path.getsize(step_path) > 0
     assert os.path.getsize(stl_path) > 0
@@ -170,7 +184,12 @@ def test_conical_bore():
     t2 = time.time()
     print(f"  Total time: {t2-t0:.2f}s")
 
+    assert instrument is not None, "Conical bore instrument creation failed"
 
+    return True
+
+
+@pytest.mark.slow
 def test_parametric_instrument():
     """Test parametric generation from bore profile data."""
 
@@ -243,11 +262,15 @@ def test_parametric_instrument():
 
     step_path = os.path.join(output_dir, "test_parametric.step")
     exporters.export(instrument, step_path)
-    print(f"  STEP: {os.path.getsize(step_path)/1024:.1f} KB")
+    step_size = os.path.getsize(step_path)
+    print(f"  STEP: {step_size/1024:.1f} KB")
+    assert step_size > 0, f"Parametric STEP file is empty: {step_path}"
 
     stl_path = os.path.join(output_dir, "test_parametric.stl")
     exporters.export(instrument, stl_path)
-    print(f"  STL: {os.path.getsize(stl_path)/1024:.1f} KB")
+    stl_size = os.path.getsize(stl_path)
+    print(f"  STL: {stl_size/1024:.1f} KB")
+    assert stl_size > 0, f"Parametric STL file is empty: {stl_path}"
 
     assert os.path.getsize(step_path) > 0
     assert os.path.getsize(stl_path) > 0
@@ -255,6 +278,9 @@ def test_parametric_instrument():
     t2 = time.time()
     print(f"  Total time: {t2-t0:.2f}s")
 
+    assert instrument is not None, "Parametric instrument creation failed"
+
+    return True
 
 if __name__ == "__main__":
     print("=" * 60)

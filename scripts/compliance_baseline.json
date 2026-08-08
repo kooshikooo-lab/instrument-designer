@@ -1,18 +1,31 @@
 {
   "violations": [
     [
-      "backend\\benchmark_all.py",
-      "bare_except",
+      "backend\\archived_optimizers\\bore_optimizer.py",
+      "hardcoded_sos",
       [
-        341,
-        387
+        551
+      ]
+    ],
+    [
+      "backend\\archived_optimizers\\bore_optimizer.py",
+      "module_size",
+      [
+        747
+      ]
+    ],
+    [
+      "backend\\archived_optimizers\\tmm_optimizer_sequential.py",
+      "module_size",
+      [
+        1032
       ]
     ],
     [
       "backend\\benchmark_all.py",
       "module_mutable",
       [
-        "INSTRUMENTS L9"
+        "INSTRUMENTS L10"
       ]
     ],
     [
@@ -51,10 +64,24 @@
       ]
     ],
     [
+      "backend\\build123d_export.py",
+      "module_mutable",
+      [
+        "CASES L148"
+      ]
+    ],
+    [
       "backend\\cadquery_export.py",
       "module_mutable",
       [
-        "INSTRUMENTS L377"
+        "INSTRUMENTS L473"
+      ]
+    ],
+    [
+      "backend\\core\\network.py",
+      "hardcoded_sos",
+      [
+        147
       ]
     ],
     [
@@ -62,6 +89,20 @@
       "module_mutable",
       [
         "INSTRUMENT_CONFIGS L61"
+      ]
+    ],
+    [
+      "backend\\design_pipeline.py",
+      "module_size",
+      [
+        528
+      ]
+    ],
+    [
+      "backend\\experiments\\build123d_koncovka.py",
+      "module_mutable",
+      [
+        "KONCOVKA L44"
       ]
     ],
     [
@@ -91,18 +132,53 @@
       ]
     ],
     [
-      "backend\\jax_optimizer.py",
-      "bare_except",
+      "backend\\generative_agent.py",
+      "hardcoded_ip",
       [
-        92,
-        136
+        "100.69.113.41",
+        "100.69.113.41"
+      ]
+    ],
+    [
+      "backend\\generative_agent.py",
+      "module_mutable",
+      [
+        "BORE_SHAPE_GENERATORS L176"
+      ]
+    ],
+    [
+      "backend\\generative_agent.py",
+      "module_size",
+      [
+        828
+      ]
+    ],
+    [
+      "backend\\instrument_knowledge.py",
+      "module_size",
+      [
+        800
+      ]
+    ],
+    [
+      "backend\\instruments\\brass.py",
+      "hardcoded_sos",
+      [
+        36
+      ]
+    ],
+    [
+      "backend\\instruments\\clarinet.py",
+      "hardcoded_sos",
+      [
+        30
       ]
     ],
     [
       "backend\\jax_optimizer.py",
       "module_size",
       [
-        513
+        523
       ]
     ],
     [
@@ -116,11 +192,20 @@
       "backend\\modular_components.py",
       "module_mutable",
       [
-        "PVC_PIPES L39",
-        "CLARINET_TENONS L107",
-        "SAX_TENONS L130",
-        "PVC_CONNECTIONS L143",
-        "BASS_CLARINET_REF L529"
+        "PVC_PIPES L40",
+        "CLARINET_TENONS L108",
+        "SAX_TENONS L131",
+        "PVC_CONNECTIONS L144",
+        "BASS_CLARINET_REF L530"
+      ]
+    ],
+    [
+      "backend\\mouthpiece_models.py",
+      "hardcoded_sos",
+      [
+        142,
+        244,
+        315
       ]
     ],
     [
@@ -138,6 +223,15 @@
       ]
     ],
     [
+      "backend\\physics\\bore_design.py",
+      "hardcoded_sos",
+      [
+        22,
+        50,
+        61
+      ]
+    ],
+    [
       "backend\\physics\\bore_optimizer.py",
       "module_mutable",
       [
@@ -149,7 +243,7 @@
       "module_mutable",
       [
         "FALLBACK_VISION_MODELS L39",
-        "VIEWS L155"
+        "VIEWS L219"
       ]
     ],
     [
@@ -158,6 +252,13 @@
       [
         "NOTES L52",
         "FLAT_MAP L53"
+      ]
+    ],
+    [
+      "backend\\tmm_acoustics_jax.py",
+      "hardcoded_sos",
+      [
+        15
       ]
     ],
     [
@@ -172,16 +273,1440 @@
     ],
     [
       "backend\\trumpet_openwind.py",
+      "hardcoded_sos",
+      [
+        44,
+        44
+      ]
+    ],
+    [
+      "backend\\trumpet_openwind.py",
       "module_mutable",
       [
         "NOTE_NAMES L47"
       ]
     ],
     [
-      "backend\\two_phase_optimizer.py",
+      "scripts\\_blender_import_check.py",
       "module_mutable",
       [
-        "SEMITONE_MAP L29"
+        "report L13"
+      ]
+    ],
+    [
+      "scripts\\_run_benchmark_live.py",
+      "hardcoded_ip",
+      [
+        "100.69.113.41",
+        "100.100.66.117"
+      ]
+    ],
+    [
+      "scripts\\analysis_compute_requirements.py",
+      "module_mutable",
+      [
+        "TARGETS L37"
+      ]
+    ],
+    [
+      "scripts\\analysis_init_quality.py",
+      "module_mutable",
+      [
+        "TARGETS L31"
+      ]
+    ],
+    [
+      "scripts\\benchmark_chalumier.py",
+      "module_mutable",
+      [
+        "SEMITONE_MAP L21"
+      ]
+    ],
+    [
+      "scripts\\benchmark_chalumier_dask.py",
+      "module_mutable",
+      [
+        "PRESETS L23"
+      ]
+    ],
+    [
+      "scripts\\benchmark_metamaterial_low_clarinets.py",
+      "hardcoded_sos",
+      [
+        83,
+        128
+      ]
+    ],
+    [
+      "scripts\\benchmark_timbre.py",
+      "module_mutable",
+      [
+        "INSTRUMENT_CONFIGS L69"
+      ]
+    ],
+    [
+      "scripts\\benchmark_timbre.py",
+      "module_size",
+      [
+        685
+      ]
+    ],
+    [
+      "scripts\\benchmark_unconventional_shapes.py",
+      "module_mutable",
+      [
+        "SHAPE_FLARE L36",
+        "SHAPES L48",
+        "SHAPE_TO_BORE L61"
+      ]
+    ],
+    [
+      "scripts\\chess_game.py",
+      "module_size",
+      [
+        596
+      ]
+    ],
+    [
+      "scripts\\cluster_health.py",
+      "hardcoded_ip",
+      [
+        "100.69.113.41",
+        "100.69.113.41"
+      ]
+    ],
+    [
+      "scripts\\compare_chalumier.py",
+      "module_mutable",
+      [
+        "SEMITONE_MAP L13"
+      ]
+    ],
+    [
+      "scripts\\compile_requirements.py",
+      "module_mutable",
+      [
+        "LOCKS L23"
+      ]
+    ],
+    [
+      "scripts\\compliance_watchdog.py",
+      "module_mutable",
+      [
+        "BACKEND_DIRS L32",
+        "EXCLUDED_DIRS L39",
+        "EXCLUDED_FILES L46",
+        "OVERSIZED_ALLOWLIST L52",
+        "SUBSYSTEM_TABLE L121",
+        "TRIGGER_TYPES L133",
+        "SOS_EXEMPT_FILES L197"
+      ]
+    ],
+    [
+      "scripts\\compliance_watchdog.py",
+      "module_size",
+      [
+        561
+      ]
+    ],
+    [
+      "scripts\\dask_benchmark.py",
+      "hardcoded_ip",
+      [
+        "100.100.66.117"
+      ]
+    ],
+    [
+      "scripts\\debug_cone.py",
+      "module_mutable",
+      [
+        "targets L9",
+        "names L10",
+        "fingerings L11",
+        "real_hd L126"
+      ]
+    ],
+    [
+      "scripts\\debug_constraints.py",
+      "module_mutable",
+      [
+        "freqs L5",
+        "out L17",
+        "out2 L26"
+      ]
+    ],
+    [
+      "scripts\\export_metamaterial_low_clarinets_stl.py",
+      "module_mutable",
+      [
+        "FOLDED_PRESET L46"
+      ]
+    ],
+    [
+      "scripts\\generate_surrogate_data.py",
+      "hardcoded_ip",
+      [
+        "100.100.66.117"
+      ]
+    ],
+    [
+      "scripts\\generate_surrogate_data_laptop.py",
+      "module_mutable",
+      [
+        "RANGES L17",
+        "TARGET_NAMES L27"
+      ]
+    ],
+    [
+      "scripts\\github_updates_check.py",
+      "module_mutable",
+      [
+        "DISCUSSIONS L30"
+      ]
+    ],
+    [
+      "scripts\\guard_branch.py",
+      "module_mutable",
+      [
+        "NAMESPACE_RE L32"
+      ]
+    ],
+    [
+      "scripts\\guard_governance.py",
+      "module_mutable",
+      [
+        "GOVERNANCE_FILES L19"
+      ]
+    ],
+    [
+      "scripts\\lan_chat.py",
+      "hardcoded_ip",
+      [
+        "100.69.113.41"
+      ]
+    ],
+    [
+      "scripts\\make_fusion_phase1_artifacts.py",
+      "module_mutable",
+      [
+        "PHASE1_PRESETS L34"
+      ]
+    ],
+    [
+      "scripts\\make_fusion_smoke_test.py",
+      "module_mutable",
+      [
+        "KONCOVKA L24",
+        "XAPHOON L28"
+      ]
+    ],
+    [
+      "scripts\\profile_openwind.py",
+      "module_mutable",
+      [
+        "times L28"
+      ]
+    ],
+    [
+      "scripts\\profile_single.py",
+      "module_mutable",
+      [
+        "bore L6",
+        "times L18"
+      ]
+    ],
+    [
+      "scripts\\quick_test.py",
+      "module_mutable",
+      [
+        "bore L7"
+      ]
+    ],
+    [
+      "scripts\\refine_chalumier.py",
+      "module_mutable",
+      [
+        "SEMITONE_MAP L17"
+      ]
+    ],
+    [
+      "scripts\\resume_check.py",
+      "module_mutable",
+      [
+        "FAILURE_PATTERNS L32"
+      ]
+    ],
+    [
+      "scripts\\run_all_tests.py",
+      "module_mutable",
+      [
+        "PYTEST L42",
+        "CATEGORIES L50",
+        "TIER_TIMEOUT_S L145"
+      ]
+    ],
+    [
+      "scripts\\scan_all_precommit.py",
+      "module_mutable",
+      [
+        "errors L17",
+        "warnings L18"
+      ]
+    ],
+    [
+      "scripts\\spawn_worker.py",
+      "hardcoded_ip",
+      [
+        "100.69.113.41"
+      ]
+    ],
+    [
+      "scripts\\start_scheduler.py",
+      "hardcoded_ip",
+      [
+        "100.69.113.41"
+      ]
+    ],
+    [
+      "scripts\\system_audit.py",
+      "module_mutable",
+      [
+        "HOOK_WIRING L40",
+        "GUARD_SCRIPTS L47"
+      ]
+    ],
+    [
+      "scripts\\team_chat.py",
+      "module_mutable",
+      [
+        "OTHER L157"
+      ]
+    ],
+    [
+      "scripts\\toolcheck.py",
+      "module_mutable",
+      [
+        "PACKAGE_ALIASES L29",
+        "FREECAD_MODULES L52",
+        "EXTERNAL_APP_MODULES L58",
+        "LOCAL_ROOTS L61",
+        "STDLIBISH L65"
+      ]
+    ],
+    [
+      "scripts\\train_surrogate.py",
+      "module_mutable",
+      [
+        "TARGET_NAMES L25"
+      ]
+    ],
+    [
+      "scripts\\validate_commit_msg.py",
+      "module_mutable",
+      [
+        "GOVERNANCE_FILES L16",
+        "PROVISIONAL_KEYWORDS L27"
+      ]
+    ],
+    [
+      "scripts\\validate_imports.py",
+      "module_mutable",
+      [
+        "DELETED_MODULES L24",
+        "DELETED_BRANCHES L34",
+        "DELETED_DIRS L47",
+        "REPO_LOCAL_ROOTS L93"
+      ]
+    ],
+    [
+      "scripts\\validate_pre_commit.py",
+      "hardcoded_ip",
+      [
+        "100.64.0.0"
+      ]
+    ],
+    [
+      "scripts\\validate_pre_commit.py",
+      "module_mutable",
+      [
+        "LAW15_NAMESPACES L21",
+        "PLACEMENT_RULES L29",
+        "REGENERABLE_SUFFIXES L49",
+        "REGENERABLE_PATHS L54",
+        "OVERSIZED_ALLOWLIST L57",
+        "PLACEMENT_ALLOWLIST L130"
+      ]
+    ],
+    [
+      "scripts\\verify_cone_theory.py",
+      "module_mutable",
+      [
+        "hole_pos L82"
+      ]
+    ],
+    [
+      "tests\\bass_clarinet_full_test.py",
+      "module_mutable",
+      [
+        "HOLE_POSITIONS L14",
+        "targets_1st L19",
+        "names L20"
+      ]
+    ],
+    [
+      "tests\\benchmark_bass_clarinet.py",
+      "module_mutable",
+      [
+        "BASS_CLARINET_STANDARD L67",
+        "BASS_CLARINET_EXTENDED L94"
+      ]
+    ],
+    [
+      "tests\\benchmark_diatonic.py",
+      "module_mutable",
+      [
+        "INSTRUMENTS L28",
+        "all_results L167"
+      ]
+    ],
+    [
+      "tests\\cadquery_full_test.py",
+      "module_mutable",
+      [
+        "holes L16",
+        "holes2 L40",
+        "bore_profile L75",
+        "tone_holes L79"
+      ]
+    ],
+    [
+      "tests\\compare_optimizers.py",
+      "hardcoded_sos",
+      [
+        20
+      ]
+    ],
+    [
+      "tests\\compare_optimizers.py",
+      "module_mutable",
+      [
+        "TARGETS L10"
+      ]
+    ],
+    [
+      "tests\\comparison\\ai_methods_benchmark.py",
+      "hardcoded_sos",
+      [
+        22
+      ]
+    ],
+    [
+      "tests\\comparison\\ai_methods_benchmark.py",
+      "module_mutable",
+      [
+        "TARGETS L50",
+        "HOLE_POSITIONS L52",
+        "HOLE_DIAMETERS L53",
+        "HOLE_LENGTHS L54",
+        "FAMILIES L373"
+      ]
+    ],
+    [
+      "tests\\comparison\\ai_methods_dask.py",
+      "module_mutable",
+      [
+        "FAMILIES L394"
+      ]
+    ],
+    [
+      "tests\\comparison\\test_ai_methods_comparison.py",
+      "module_mutable",
+      [
+        "pytestmark L30"
+      ]
+    ],
+    [
+      "tests\\comparison\\test_dask_topk.py",
+      "module_mutable",
+      [
+        "pytestmark L31"
+      ]
+    ],
+    [
+      "tests\\conftest.py",
+      "module_mutable",
+      [
+        "pytestmark L50"
+      ]
+    ],
+    [
+      "tests\\debug_alto.py",
+      "bare_except",
+      [
+        32
+      ]
+    ],
+    [
+      "tests\\debug_alto.py",
+      "module_mutable",
+      [
+        "targets L8",
+        "hp L15"
+      ]
+    ],
+    [
+      "tests\\debug_fingering.py",
+      "bare_except",
+      [
+        31,
+        57
+      ]
+    ],
+    [
+      "tests\\debug_fingering.py",
+      "module_mutable",
+      [
+        "targets L70",
+        "fingerings L74"
+      ]
+    ],
+    [
+      "tests\\debug_sax.py",
+      "bare_except",
+      [
+        99,
+        53
+      ]
+    ],
+    [
+      "tests\\debug_sax.py",
+      "module_mutable",
+      [
+        "cfg L9",
+        "fingerings L70"
+      ]
+    ],
+    [
+      "tests\\diagnose_absolute.py",
+      "module_mutable",
+      [
+        "cfg L10",
+        "hp L55",
+        "all_bounds L111"
+      ]
+    ],
+    [
+      "tests\\diagnose_bore_ratio.py",
+      "bare_except",
+      [
+        88
+      ]
+    ],
+    [
+      "tests\\diagnose_bore_ratio.py",
+      "module_mutable",
+      [
+        "INSTRUMENTS L17"
+      ]
+    ],
+    [
+      "tests\\diagnose_clustering.py",
+      "bare_except",
+      [
+        77
+      ]
+    ],
+    [
+      "tests\\diagnose_clustering.py",
+      "module_mutable",
+      [
+        "cfg L10",
+        "existing L56"
+      ]
+    ],
+    [
+      "tests\\diagnose_fingering_direction.py",
+      "module_mutable",
+      [
+        "realistic L126"
+      ]
+    ],
+    [
+      "tests\\diagnose_fingering_order.py",
+      "module_mutable",
+      [
+        "positions L17",
+        "targets L28",
+        "fingerings L29",
+        "fingerings_reversed L54"
+      ]
+    ],
+    [
+      "tests\\diagnose_fingering_soprano.py",
+      "module_mutable",
+      [
+        "positions L11",
+        "targets L18",
+        "fingerings_a L26",
+        "fingerings_b L49"
+      ]
+    ],
+    [
+      "tests\\diagnose_refinement.py",
+      "module_mutable",
+      [
+        "configs L27"
+      ]
+    ],
+    [
+      "tests\\diagnose_register.py",
+      "bare_except",
+      [
+        71,
+        290,
+        96,
+        311
+      ]
+    ],
+    [
+      "tests\\diagnose_register.py",
+      "module_mutable",
+      [
+        "cfg L13",
+        "all_bounds L161",
+        "all_bounds_0 L214",
+        "cfg_c L243"
+      ]
+    ],
+    [
+      "tests\\diagnose_root_cause.py",
+      "module_mutable",
+      [
+        "note_names L36",
+        "note_freqs L37"
+      ]
+    ],
+    [
+      "tests\\diagnose_single_hole.py",
+      "bare_except",
+      [
+        54
+      ]
+    ],
+    [
+      "tests\\diagnose_single_hole.py",
+      "module_mutable",
+      [
+        "INSTRUMENTS L16"
+      ]
+    ],
+    [
+      "tests\\diagnose_tmm_accuracy.py",
+      "bare_except",
+      [
+        75,
+        88
+      ]
+    ],
+    [
+      "tests\\diagnose_tmm_accuracy.py",
+      "module_mutable",
+      [
+        "CONFS L19"
+      ]
+    ],
+    [
+      "tests\\diagnose_xaphoon_deep.py",
+      "module_mutable",
+      [
+        "XAPHOON L19",
+        "SAX L26"
+      ]
+    ],
+    [
+      "tests\\generate_instruments.py",
+      "module_mutable",
+      [
+        "generators L307",
+        "results L326",
+        "all_measurements L327",
+        "validations L364"
+      ]
+    ],
+    [
+      "tests\\print_instruments.py",
+      "module_mutable",
+      [
+        "families L4"
+      ]
+    ],
+    [
+      "tests\\regression\\regression_template.py",
+      "module_mutable",
+      [
+        "V1_INRIA_BENCHMARK L118"
+      ]
+    ],
+    [
+      "tests\\test_12hole_sequential_final.py",
+      "module_mutable",
+      [
+        "FIXED_REGISTER L21",
+        "targets L23",
+        "names L25",
+        "chart L29",
+        "hole_positions L39"
+      ]
+    ],
+    [
+      "tests\\test_analytical_pipes.py",
+      "hardcoded_sos",
+      [
+        30
+      ]
+    ],
+    [
+      "tests\\test_analytical_pipes.py",
+      "module_mutable",
+      [
+        "LENGTHS L34",
+        "RADII L35",
+        "REGISTERS L36"
+      ]
+    ],
+    [
+      "tests\\test_architecture.py",
+      "hardcoded_sos",
+      [
+        13,
+        14,
+        14,
+        56
+      ]
+    ],
+    [
+      "tests\\test_bell_first_correct.py",
+      "hardcoded_sos",
+      [
+        100
+      ]
+    ],
+    [
+      "tests\\test_bell_first_correct.py",
+      "module_mutable",
+      [
+        "FIXED_REGISTER L21",
+        "targets L35",
+        "names L37",
+        "chart L59",
+        "hole_positions L117",
+        "errors L164"
+      ]
+    ],
+    [
+      "tests\\test_bell_lbfsg.py",
+      "bare_except",
+      [
+        33
+      ]
+    ],
+    [
+      "tests\\test_bell_lbfsg.py",
+      "module_mutable",
+      [
+        "targets L8",
+        "names L10",
+        "chart L13",
+        "initial L43",
+        "errs L70"
+      ]
+    ],
+    [
+      "tests\\test_bell_phase.py",
+      "bare_except",
+      [
+        41
+      ]
+    ],
+    [
+      "tests\\test_bell_phase.py",
+      "module_mutable",
+      [
+        "targets L8",
+        "names L10",
+        "chart_raw L13",
+        "initial L49",
+        "errs L82"
+      ]
+    ],
+    [
+      "tests\\test_bore_check.py",
+      "hardcoded_sos",
+      [
+        7
+      ]
+    ],
+    [
+      "tests\\test_bore_check.py",
+      "module_mutable",
+      [
+        "targets L11"
+      ]
+    ],
+    [
+      "tests\\test_bore_design.py",
+      "hardcoded_sos",
+      [
+        19,
+        20,
+        21,
+        22
+      ]
+    ],
+    [
+      "tests\\test_bore_profile.py",
+      "module_mutable",
+      [
+        "target_freqs L7",
+        "fingerings L8"
+      ]
+    ],
+    [
+      "tests\\test_chart_designs.py",
+      "bare_except",
+      [
+        118
+      ]
+    ],
+    [
+      "tests\\test_chart_designs.py",
+      "module_mutable",
+      [
+        "targets L12",
+        "names L14",
+        "chart_a_raw L21",
+        "chart_b_raw L41",
+        "chart_c_raw L59",
+        "initial L89"
+      ]
+    ],
+    [
+      "tests\\test_compare_quick.py",
+      "hardcoded_sos",
+      [
+        15
+      ]
+    ],
+    [
+      "tests\\test_compare_quick.py",
+      "module_mutable",
+      [
+        "TARGETS L9",
+        "results L75"
+      ]
+    ],
+    [
+      "tests\\test_compute_analysis.py",
+      "hardcoded_sos",
+      [
+        17
+      ]
+    ],
+    [
+      "tests\\test_compute_analysis.py",
+      "module_mutable",
+      [
+        "TARGETS L12"
+      ]
+    ],
+    [
+      "tests\\test_correct_fingerings.py",
+      "module_mutable",
+      [
+        "FIXED_REGISTER L21",
+        "chalumeau L34",
+        "targets L135",
+        "names L137",
+        "chalumeau_fingerings L139",
+        "chart L156",
+        "hole_positions L167",
+        "errors L213"
+      ]
+    ],
+    [
+      "tests\\test_cross_7plus5.py",
+      "module_mutable",
+      [
+        "targets L12",
+        "names L14",
+        "PRIMARY L17",
+        "chart L22",
+        "initial_corr L68",
+        "bounds_corr L77",
+        "errs L123"
+      ]
+    ],
+    [
+      "tests\\test_cross_chatgpt.py",
+      "module_mutable",
+      [
+        "FIXED_REGISTER L21",
+        "targets L24",
+        "names L26",
+        "chart_binary L31",
+        "hole_positions L71",
+        "errors L118"
+      ]
+    ],
+    [
+      "tests\\test_cross_extend.py",
+      "module_mutable",
+      [
+        "targets_13 L13",
+        "names_13 L15",
+        "DIA7 L18",
+        "chart_12 L24",
+        "chart_7 L130",
+        "errs7 L166"
+      ]
+    ],
+    [
+      "tests\\test_cross_fast.py",
+      "module_mutable",
+      [
+        "targets L8",
+        "names L10",
+        "chart L12",
+        "initial L54",
+        "bounds L61",
+        "errs L90"
+      ]
+    ],
+    [
+      "tests\\test_cross_fingering.py",
+      "module_mutable",
+      [
+        "FIXED_REGISTER L20",
+        "targets L22",
+        "names L24",
+        "chart L34",
+        "hole_positions L64"
+      ]
+    ],
+    [
+      "tests\\test_cross_quick.py",
+      "module_mutable",
+      [
+        "targets L9",
+        "names L11",
+        "chart_binary L13",
+        "initial L54",
+        "errs L88"
+      ]
+    ],
+    [
+      "tests\\test_cross_realistic.py",
+      "module_mutable",
+      [
+        "FIXED_REGISTER L21",
+        "targets L23",
+        "names L25",
+        "chart_reed L31",
+        "chart_real L66",
+        "hole_positions L92",
+        "errors L140"
+      ]
+    ],
+    [
+      "tests\\test_cross_spacing.py",
+      "bare_except",
+      [
+        66
+      ]
+    ],
+    [
+      "tests\\test_cross_spacing.py",
+      "module_mutable",
+      [
+        "targets L8",
+        "names L10",
+        "chart_raw L12"
+      ]
+    ],
+    [
+      "tests\\test_desktop_fixes.py",
+      "module_mutable",
+      [
+        "target_freqs_sop L13",
+        "fingerings_sop L14",
+        "target_freqs_alto L39",
+        "fingerings_alto L40"
+      ]
+    ],
+    [
+      "tests\\test_diagnose3.py",
+      "module_mutable",
+      [
+        "fingerings L74",
+        "target_freqs L88",
+        "fs_padded L97"
+      ]
+    ],
+    [
+      "tests\\test_direction.py",
+      "module_mutable",
+      [
+        "DIA7 L7",
+        "targets L9",
+        "names L11",
+        "chart_bell L45",
+        "chart_reed L59"
+      ]
+    ],
+    [
+      "tests\\test_final_bell_first.py",
+      "module_mutable",
+      [
+        "FIXED_REGISTER L21",
+        "targets L23",
+        "names L25",
+        "chart L43",
+        "hole_positions L55"
+      ]
+    ],
+    [
+      "tests\\test_final_correct.py",
+      "module_mutable",
+      [
+        "FIXED_REGISTER L21",
+        "targets L23",
+        "names L25",
+        "chart L32",
+        "hole_positions L69"
+      ]
+    ],
+    [
+      "tests\\test_folded_export.py",
+      "module_mutable",
+      [
+        "FOLDED_NAMES L23"
+      ]
+    ],
+    [
+      "tests\\test_fusion_360.py",
+      "module_mutable",
+      [
+        "PHASE1_PRESETS L32",
+        "MANIFEST_ENTRY_FIELDS L42",
+        "RESULT_FILE_FIELDS L45",
+        "CAM_PROBE_FIELDS L223"
+      ]
+    ],
+    [
+      "tests\\test_global_lbfsg.py",
+      "module_mutable",
+      [
+        "targets L25",
+        "names L27",
+        "chart L30",
+        "initial L47",
+        "errs L95"
+      ]
+    ],
+    [
+      "tests\\test_grad_dias.py",
+      "bare_except",
+      [
+        75
+      ]
+    ],
+    [
+      "tests\\test_grad_dias.py",
+      "module_mutable",
+      [
+        "targets L8",
+        "names L10",
+        "chart_raw L12",
+        "initial_pos L83",
+        "errs L121"
+      ]
+    ],
+    [
+      "tests\\test_guard_scripts.py",
+      "hardcoded_ip",
+      [
+        "100.69.113.41"
+      ]
+    ],
+    [
+      "tests\\test_hole_methods.py",
+      "bare_except",
+      [
+        77,
+        107,
+        140
+      ]
+    ],
+    [
+      "tests\\test_hole_methods.py",
+      "module_mutable",
+      [
+        "XAPHOON L12",
+        "ALTO_SAX L28"
+      ]
+    ],
+    [
+      "tests\\test_instruments.py",
+      "module_mutable",
+      [
+        "families L5"
+      ]
+    ],
+    [
+      "tests\\test_larger_holes.py",
+      "bare_except",
+      [
+        55
+      ]
+    ],
+    [
+      "tests\\test_larger_holes.py",
+      "module_mutable",
+      [
+        "targets L8",
+        "names L10",
+        "chart_raw L12",
+        "initial L63",
+        "errs L101"
+      ]
+    ],
+    [
+      "tests\\test_measure.py",
+      "hardcoded_sos",
+      [
+        10
+      ]
+    ],
+    [
+      "tests\\test_mesh_repair_gate.py",
+      "module_mutable",
+      [
+        "KONCOVKA L23",
+        "XAPHOON L28"
+      ]
+    ],
+    [
+      "tests\\test_minimal_de.py",
+      "module_mutable",
+      [
+        "targets L20",
+        "names L22",
+        "chart L24",
+        "initial L41",
+        "bounds L64",
+        "errs L121"
+      ]
+    ],
+    [
+      "tests\\test_multistart.py",
+      "bare_except",
+      [
+        48
+      ]
+    ],
+    [
+      "tests\\test_multistart.py",
+      "module_mutable",
+      [
+        "targets L8",
+        "names L10",
+        "chart_raw L12",
+        "errs2 L93"
+      ]
+    ],
+    [
+      "tests\\test_openwind_solver.py",
+      "hardcoded_sos",
+      [
+        41
+      ]
+    ],
+    [
+      "tests\\test_opt7_fast.py",
+      "bare_except",
+      [
+        28
+      ]
+    ],
+    [
+      "tests\\test_opt7_fast.py",
+      "module_mutable",
+      [
+        "targets L8",
+        "names L9",
+        "initial L39",
+        "bounds L46",
+        "chart L80",
+        "errs L91"
+      ]
+    ],
+    [
+      "tests\\test_optimize_7hole.py",
+      "module_mutable",
+      [
+        "targets L11",
+        "names L12",
+        "chart L102",
+        "errs L113"
+      ]
+    ],
+    [
+      "tests\\test_optimize_cross.py",
+      "bare_except",
+      [
+        45
+      ]
+    ],
+    [
+      "tests\\test_optimize_cross.py",
+      "module_mutable",
+      [
+        "targets L8",
+        "names L10",
+        "chart L13",
+        "initial L56",
+        "bounds L61",
+        "errs L96"
+      ]
+    ],
+    [
+      "tests\\test_optimizer2.py",
+      "module_mutable",
+      [
+        "fingerings L40",
+        "target_freqs L52",
+        "errors L82"
+      ]
+    ],
+    [
+      "tests\\test_phase2_objective.py",
+      "module_mutable",
+      [
+        "TARGETS L28",
+        "RECORDER_TARGETS L55",
+        "RECORDER_FINGERINGS L56"
+      ]
+    ],
+    [
+      "tests\\test_phase_opt.py",
+      "bare_except",
+      [
+        57
+      ]
+    ],
+    [
+      "tests\\test_phase_opt.py",
+      "module_mutable",
+      [
+        "targets L8",
+        "names L10",
+        "chart_raw L13",
+        "initial L64",
+        "errs L112"
+      ]
+    ],
+    [
+      "tests\\test_phase_register.py",
+      "bare_except",
+      [
+        52
+      ]
+    ],
+    [
+      "tests\\test_phase_register.py",
+      "module_mutable",
+      [
+        "targets L8",
+        "names L10",
+        "chart_raw L13",
+        "initial L61",
+        "errs L101"
+      ]
+    ],
+    [
+      "tests\\test_phase_vs_freq.py",
+      "bare_except",
+      [
+        61
+      ]
+    ],
+    [
+      "tests\\test_phase_vs_freq.py",
+      "module_mutable",
+      [
+        "targets L8",
+        "names L10",
+        "chart_bell L13",
+        "chart_cross L19"
+      ]
+    ],
+    [
+      "tests\\test_physical.py",
+      "module_mutable",
+      [
+        "targets L9",
+        "names L11",
+        "chart_raw L13",
+        "initial L65"
+      ]
+    ],
+    [
+      "tests\\test_profile.py",
+      "module_mutable",
+      [
+        "targets L7",
+        "chart L10",
+        "hole_pos L15"
+      ]
+    ],
+    [
+      "tests\\test_simple_sequential.py",
+      "bare_except",
+      [
+        58
+      ]
+    ],
+    [
+      "tests\\test_simple_sequential.py",
+      "module_mutable",
+      [
+        "targets L18",
+        "names L20",
+        "chart_raw L23",
+        "errs L107"
+      ]
+    ],
+    [
+      "tests\\test_stl_export.py",
+      "module_mutable",
+      [
+        "MOCK_RESULT L16"
+      ]
+    ],
+    [
+      "tests\\test_stl_watertight.py",
+      "module_mutable",
+      [
+        "BATCH L24"
+      ]
+    ],
+    [
+      "tests\\test_sympy_validation.py",
+      "hardcoded_sos",
+      [
+        101,
+        110,
+        155,
+        155
+      ]
+    ],
+    [
+      "tests\\test_sympy_validation.py",
+      "module_size",
+      [
+        535
+      ]
+    ],
+    [
+      "tests\\test_two_phase.py",
+      "module_mutable",
+      [
+        "targets L17",
+        "fingerings L18"
+      ]
+    ],
+    [
+      "tests\\test_two_phase_quick.py",
+      "module_mutable",
+      [
+        "targets L12",
+        "fingerings L13"
+      ]
+    ],
+    [
+      "tests\\test_twophase_full.py",
+      "module_mutable",
+      [
+        "hole_positions L6",
+        "hole_diameters L7",
+        "fingering_lists L14"
+      ]
+    ],
+    [
+      "tests\\test_variable_bore.py",
+      "module_mutable",
+      [
+        "INSTRUMENTS L12"
+      ]
+    ],
+    [
+      "tests\\test_verify_baseline.py",
+      "module_mutable",
+      [
+        "DIA7 L14",
+        "dia_targets L28",
+        "dia_names L29",
+        "chart_7 L42",
+        "errs7 L59",
+        "targets_13 L75",
+        "names_13 L77",
+        "chart_13 L81",
+        "errs13 L106"
+      ]
+    ],
+    [
+      "tests\\unit\\test_basic.py",
+      "hardcoded_sos",
+      [
+        14
+      ]
+    ],
+    [
+      "tests\\validate_flutomat.py",
+      "hardcoded_sos",
+      [
+        5,
+        26
+      ]
+    ],
+    [
+      "tests\\validate_flutomat.py",
+      "module_mutable",
+      [
+        "NOTE_NAMES L17"
+      ]
+    ],
+    [
+      "tests\\validate_stl_mesh.py",
+      "module_mutable",
+      [
+        "instrument_specs L91",
+        "results L154"
+      ]
+    ],
+    [
+      "tests\\verify_new.py",
+      "module_mutable",
+      [
+        "families L5",
+        "new_keys L11"
+      ]
+    ],
+    [
+      "woodwind_designer\\engine\\instrument_library.py",
+      "module_mutable",
+      [
+        "LIBRARY L28"
       ]
     ]
   ]

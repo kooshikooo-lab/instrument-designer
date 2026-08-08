@@ -1,20 +1,10 @@
 """Test desktop's fixes for open-open instruments"""
-import sys
-sys.path.insert(0, "C:\\instrument-designer")
+import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
+from backend.archived_optimizers.tmm_optimizer_sequential import SequentialBoreOptimizer
 from backend.tmm_acoustics import SPEED_OF_SOUND
 import numpy as np
-
-# QUARANTINED 2026-07-31: exercises SequentialBoreOptimizer, deleted from
-# backend/archived_optimizers (docs/ARCHIVED_OPTIMIZERS.md). Superseded by
-# backend/two_phase_optimizer.py. Kept for reference; not collected by pytest.
-try:
-    from backend.tmm_optimizer_sequential import SequentialBoreOptimizer  # noqa: F401
-except ModuleNotFoundError:
-    raise SystemExit(
-        "ARCHIVED: SequentialBoreOptimizer was deleted on 2026-07-31 "
-        "(see docs/ARCHIVED_OPTIMIZERS.md). Superseded by backend/two_phase_optimizer.py."
-    )
 
 print("=== Testing desktop's open-open register fix ===")
 print("n_register for open-open is now n_register + 1 (phase=2 for fundamental)")

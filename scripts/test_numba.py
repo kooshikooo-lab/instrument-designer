@@ -1,4 +1,4 @@
-"""Small test for numba compiled path. Run this on the perf/tmm-medium-refactor-copilot branch.
+"""Small test for the numba compiled path.
 
 It prints the Python and numba phases and timings for a representative instrument.
 """

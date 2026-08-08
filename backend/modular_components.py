@@ -25,6 +25,7 @@ Usage:
 """
 
 import math
+from backend.tmm_acoustics import SPEED_OF_SOUND
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
 from enum import Enum

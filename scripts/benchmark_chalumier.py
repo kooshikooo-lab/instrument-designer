@@ -192,12 +192,12 @@ def evaluate_chalumier_output(params, fingerings, transpose=0):
                     if dist < best_dist:
                         best_dist = dist
                         best_phase_reg = pr
-                except:
+                except Exception:
                     continue
             wl = inst.find_resonance(wl_guess, fl, n_register=best_phase_reg)
             actual = inst.frequency_from_wavelength(wl)
             err = cents_error(actual, target_freq)
-        except:
+        except Exception:
             actual = 0; err = 1e10
         results.append({'note': note_name, 'target': target_freq, 'actual': actual,
                         'cents': err, 'nth': nth, 'fingering': fingering_str})
@@ -254,7 +254,7 @@ def run_our_optimizer(fingerings, transpose=0, bore_length=None, n_holes=None,
                     if dist < best_dist:
                         best_dist = dist
                         best_pr = pr
-                except:
+                except Exception:
                     continue
             regs.append(best_pr)
         return regs
@@ -278,7 +278,7 @@ def run_our_optimizer(fingerings, transpose=0, bore_length=None, n_holes=None,
                 wl = inst.find_resonance(c / tgt, fl, n_register=pr)
                 f = inst.frequency_from_wavelength(wl)
                 cents.append(cents_error(f, tgt))
-            except:
+            except Exception:
                 cents.append(1e10)
         ca = np.array(cents)
         if np.any(np.abs(ca) > 1e5):
@@ -308,7 +308,7 @@ def run_our_optimizer(fingerings, transpose=0, bore_length=None, n_holes=None,
             wl = inst.find_resonance(c / tgt, fl, n_register=pr)
             f = inst.frequency_from_wavelength(wl)
             err = cents_error(f, tgt)
-        except:
+        except Exception:
             f = 0; err = 1e10
         per_note.append({'note': note, 'target': tgt, 'actual': f, 'cents': err, 'nth': nth})
     ca = np.array([r['cents'] for r in per_note if abs(r['cents']) < 1e5])

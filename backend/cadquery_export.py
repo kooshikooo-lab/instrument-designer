@@ -31,23 +31,22 @@ import os
 def _cut_single_hole(solid, diam, x, z, wall_thickness, hole_depth):
     """Cut one tone hole through the tube wall at (x, z).
 
-    The hole cylinder is horizontal, entering the tube from the side given by
-    ``x`` (positive = +X side, negative = -X side), with its center at axial
-    position ``z``. The cylinder extends from the inner bore surface outward,
-    so both +X and -X holes actually pierce the wall. A small overlap (eps) on
-    both ends avoids tangential boolean intersections that create non-manifold
-    edges.
+    The hole cylinder is horizontal (axis along +X), entering the tube from
+    the side, with its center at axial position ``z`` and side offset ``x``.
+
+    The cutter is centered on ``x`` (it extends ``hole_length/2`` on both
+    sides), so holes on either the +X or −X wall (odd/even ``holes`` indices)
+    pierce the wall fully. Centering on the wall centerline rather than on the
+    bore surface also keeps large-diameter cutters from crossing the far wall.
     """
     import cadquery as cq
-    sign = 1 if x >= 0 else -1
-    eps = 0.05
-    length = wall_thickness + hole_depth + 2 * eps
+    hole_length = wall_thickness + hole_depth
     cyl = (
         cq.Workplane("XY")
         .circle(diam / 2)
-        .extrude(length)
-        .rotate((0, 0, 0), (0, 1, 0), 90 * sign)
-        .translate((x - sign * eps, 0, z))
+        .extrude(hole_length)
+        .rotate((0, 0, 0), (0, 1, 0), 90)
+        .translate((x - hole_length / 2, 0, z))
     )
     return solid.cut(cyl)
 
@@ -112,13 +111,16 @@ def generate_instrument(
             .loft()
         )
         solid = outer.cut(bore)
+
         if closed_top:
+            # Cap the z=bore_length end with the outer radius there (the cone's
+            # wide end), exactly like the cylindrical branch.
             cap = (
                 cq.Workplane("XY")
-                .circle(small_outer / 2)
+                .workplane(offset=bore_length)
+                .circle(large_outer / 2)
                 .extrude(wall_thickness)
             )
-            cap = cap.translate((0, 0, -wall_thickness))
             solid = solid.union(cap)
     else:
         outer_diam = bore_diameter + 2 * wall_thickness
@@ -313,7 +315,6 @@ def generate_folded_bore_instrument(
         solid = solid.union(cap)
 
     # Map unfolded hole positions onto the straight legs; skip bend region.
-    bend_start = leg2
     bend_end = leg2 + bend_arc
     for i, (pos, diam) in enumerate(holes):
         side = 1 if i % 2 == 0 else -1
@@ -330,6 +331,77 @@ def generate_folded_bore_instrument(
     return solid
 
 
+def generate_metamaterial_section(
+    bore_length: float,
+    bore_diameter: float,
+    wall_thickness: float,
+    resonators: list[tuple] | None = None,
+    closed_end: bool = False,
+):
+    """Generate a straight bore section carrying Helmholtz-resonator side
+    branches (the printable low-register metamaterial array).
+
+    Each resonator tuple is ``(position_mm, neck_radius_mm, neck_length_mm,
+    cavity_radius_mm, cavity_length_mm)``. The bore axis runs along +Z; each
+    resonator protrudes radially in +X from the outer wall as a neck cylinder
+    (radius ``neck_radius``, length ``neck_length``) capped by a cavity
+    cylinder (bulb). Positions are measured from the z=0 tube end, matching
+    the phase-TMM metamaterial segment convention (closed end at the far end).
+
+    Args:
+        bore_length: section length (mm)
+        bore_diameter: inner bore diameter (mm)
+        wall_thickness: wall thickness (mm)
+        resonators: list of HR side-branch specs (see above)
+        closed_end: cap the z=bore_length end (the reed/closed end)
+    Returns:
+        cadquery Workplane (solid)
+    """
+    import cadquery as cq
+
+    if resonators is None:
+        resonators = []
+
+    bore_r = bore_diameter / 2.0
+    outer_r = bore_r + wall_thickness
+
+    solid = (
+        cq.Workplane("XY")
+        .circle(outer_r)
+        .circle(bore_r)
+        .extrude(bore_length)
+    )
+
+    if closed_end:
+        cap = (
+            cq.Workplane("XY")
+            .workplane(offset=bore_length)
+            .circle(outer_r)
+            .extrude(wall_thickness)
+        )
+        solid = solid.union(cap)
+
+    for (pos, neck_r, neck_l, cavity_r, cavity_l) in resonators:
+        neck_start = outer_r
+        neck = (
+            cq.Workplane("YZ")
+            .center(0, pos)
+            .circle(neck_r)
+            .extrude(neck_l)
+            .translate((neck_start, 0, 0))
+        )
+        cavity = (
+            cq.Workplane("YZ")
+            .center(0, pos)
+            .circle(cavity_r)
+            .extrude(cavity_l)
+            .translate((neck_start + neck_l, 0, 0))
+        )
+        solid = solid.union(neck).union(cavity)
+
+    return solid
+
+
 def export_stl(
     solid, path: str, tolerance: float = 0.01, angular_tolerance: float = 0.1
 ) -> float:
@@ -340,7 +412,31 @@ def export_stl(
     solid.val().exportStl(
         path, tolerance=tolerance, angularTolerance=angular_tolerance
     )
+    _check_mesh_repair_gate(path)
     return time.time() - t0
+
+
+def _check_mesh_repair_gate(path: str) -> None:
+    """Check-only mesh-repair gate (docs/TOOLS.md: build123d-first + repair fallback).
+
+    Logs a warning when the exported mesh is not watertight+manifold so the
+    pipeline can regenerate with build123d or repair (e.g. in Fusion 360) before
+    printing. Advisory: the export itself never fails.
+    """
+    import logging
+
+    try:
+        from backend.stl_verifier import check_mesh_repair_gate as _gate
+
+        result = _gate(path)
+        if not result.get("passed"):
+            logging.getLogger(__name__).warning(
+                "mesh-repair gate FAILED for %s: watertight=%s manifold=%s "
+                "(regenerate with build123d or repair before printing)",
+                result.get("stl"), result.get("watertight"), result.get("manifold"),
+            )
+    except Exception as e:  # noqa: BLE001 — gate is advisory
+        logging.getLogger(__name__).warning("mesh-repair gate check skipped: %s", e)
 
 
 def export_step(solid, path: str) -> float:
@@ -502,23 +598,6 @@ INSTRUMENTS = {
                   "verified": False, "source": "Standard bore specs (Benade)",
                   "description": "Standard 10-hole bass clarinet. Bore 23.5mm, range Bb1-C4."},
     },
-    "contra_alto_clarinet_Eb": {
-        "bore_length": 1600.0, "bore_diameter": 32.0, "wall_thickness": 6.0,
-        "closed_top": True,
-        "holes": [(200,11.0),(330,11.0),(460,11.0),(590,11.0),(720,11.0),(850,11.0),(980,11.0),(1110,11.0),(1240,11.0),(1370,11.0)],
-        "_meta": {"display_name": "Contra-Alto Clarinet Eb", "family": "Clarinet", "subcategory": "Contra-Alto",
-                  "verified": False, "source": "Standard bore specs",
-                  "description": "Contra-alto clarinet. One octave below alto sax. Powerful low register."},
-    },
-    "contra_bass_clarinet_Bb": {
-        "bore_length": 1900.0, "bore_diameter": 38.0, "wall_thickness": 7.0,
-        "closed_top": True,
-        "holes": [(250,13.0),(400,13.0),(550,13.0),(700,13.0),(850,13.0),(1000,13.0),(1150,13.0),(1300,13.0),(1450,13.0),(1600,13.0)],
-        "_meta": {"display_name": "Contra-Bass Clarinet Bb", "family": "Clarinet", "subcategory": "Contra-Bass",
-                  "verified": False, "source": "Standard bore specs",
-                  "description": "Contra-bass clarinet. One octave below bass. Deepest clarinet."},
-    },
-
     # ═══════════════════════════════════════════════════════════
     #  SAXOPHONE FAMILY — Adolphe Sax proportions
     # ═══════════════════════════════════════════════════════════

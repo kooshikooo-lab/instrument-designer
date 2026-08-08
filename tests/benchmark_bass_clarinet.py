@@ -18,18 +18,7 @@ import numpy as np
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from backend.tmm_acoustics import tmm_instrument_from_radii, SPEED_OF_SOUND
-
-# QUARANTINED 2026-07-31: exercises SequentialBoreOptimizer, deleted from
-# backend/archived_optimizers (docs/ARCHIVED_OPTIMIZERS.md). Superseded by
-# backend/two_phase_optimizer.py. Cross-method comparison now lives in
-# backend/benchmark_all.py. Kept for reference; not collected by pytest.
-try:
-    from backend.tmm_optimizer_sequential import SequentialBoreOptimizer, optimize_bore_length  # noqa: F401
-except ModuleNotFoundError:
-    raise SystemExit(
-        "ARCHIVED: SequentialBoreOptimizer was deleted on 2026-07-31 "
-        "(see docs/ARCHIVED_OPTIMIZERS.md). Superseded by backend/two_phase_optimizer.py."
-    )
+from backend.archived_optimizers.tmm_optimizer_sequential import SequentialBoreOptimizer, optimize_bore_length
 
 
 def verify_instrument(radii_mm, bore_length, positions, diameters, lengths,

@@ -118,6 +118,15 @@ def test_meta_disables_numba_fast_path():
     """Metamaterial instruments must stay on the Python walk: the compiled
     numba loop only implements pipe/junction2/hole actions, so any instrument
     whose chain contains meta actions must never build the fast-path arrays."""
+    try:
+        from backend.tmm_acoustics import _NUMBA_ENABLED
+    except ImportError:
+        _NUMBA_ENABLED = False
+
+    if not _NUMBA_ENABLED:
+        import pytest
+        pytest.skip("numba not wired into tmm_acoustics")
+
     inst = _plain_flute()
     assert inst._action_arrays is not None, "plain instrument should use the fast path"
     inst.meta_slots = [_sample_resonator()]

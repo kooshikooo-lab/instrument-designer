@@ -1,11 +1,6 @@
-"""Test variable bore profiles on hard open-open instruments.
-
-Key questions:
-1. Does variable bore (n_bore_cp>0) improve xaphoon/alto sax?
-2. What are the TMM model limitations for larger bores?
-3. Does bore profile deviation from uniform help (per Lefebvre 2011)?
-"""
+"""Test variable bore profiles on hard open-open instruments."""
 import sys, os, time, math
+import pytest
 import numpy as np
 from scipy.optimize import minimize as sp_min
 
@@ -97,7 +92,7 @@ def seq_place(cfg):
             f = inst.frequency_from_wavelength(wl)
             if f <= 0 or not math.isfinite(f): return 1e10
             return abs(1200.0 * math.log2(f / fundamental))
-        except: return 1e10
+        except Exception: return 1e10
 
     r = sp_min(bore_obj, [L_est], method='L-BFGS-B',
                bounds=[(L_est * 0.7, L_est * 1.3)],
@@ -135,7 +130,7 @@ def seq_place(cfg):
                 err = abs(1200.0 * math.log2(f / target)) if f > 0 else 1e10
                 if err < best_err:
                     best_err, best_pos = err, pos
-            except: pass
+            except Exception: pass
         hp.append(best_pos)
         hd.append(cfg["hole_diameter"])
         hl.append(cfg["hole_length"])
@@ -245,29 +240,31 @@ def refine_bore_cp(cfg, bore_length, hp, hd, hl, n_cp_list):
     return results
 
 
-for name, cfg in INSTRUMENTS.items():
-    print(f"\n{'='*60}")
-    print(f"{cfg['desc']}")
-    print(f"{'='*60}")
+def test_variable_bore_profiles():
+    for name, cfg in INSTRUMENTS.items():
+        rms_seq, L_seq, hp_seq = seq_place(cfg)
+        ca_seq = eval_detail(np.full(8, cfg["bore_radius"]), L_seq, hp_seq,
+                             [cfg["hole_diameter"]]*len(hp_seq),
+                             [cfg["hole_length"]]*len(hp_seq), cfg)
 
-    # Phase 1+2: Sequential
-    rms_seq, L_seq, hp_seq = seq_place(cfg)
-    ca_seq = eval_detail(np.full(8, cfg["bore_radius"]), L_seq, hp_seq,
-                         [cfg["hole_diameter"]]*len(hp_seq),
-                         [cfg["hole_length"]]*len(hp_seq), cfg)
-    print(f"  Sequential: {rms_seq:.1f}c | L={L_seq:.0f}mm | {len(hp_seq)} holes")
-    print(f"  Per-note:   {[f'{x:+.0f}' for x in ca_seq]}")
+        assert rms_seq < 200.0, f"{name}: sequential RMS too high: {rms_seq:.1f}c"
+        assert L_seq > 0, f"{name}: bore length must be positive, got {L_seq}"
+        assert len(hp_seq) >= 3, f"{name}: expected >=3 holes, got {len(hp_seq)}"
 
-    # Phase 3: Refine with different n_bore_cp values
-    bore_cp_results = refine_bore_cp(cfg, L_seq, hp_seq,
-                                     [cfg["hole_diameter"]]*len(hp_seq),
-                                     [cfg["hole_length"]]*len(hp_seq),
-                                     [0, 2, 4, 6])
+        bore_cp_results = refine_bore_cp(cfg, L_seq, hp_seq,
+                                         [cfg["hole_diameter"]]*len(hp_seq),
+                                         [cfg["hole_length"]]*len(hp_seq),
+                                         [0, 2, 4, 6])
 
-    print(f"\n  {'n_cp':>4} {'RMS':>8} {'Time':>7} {'Bore L':>8}  Per-note")
-    for n_cp, data in sorted(bore_cp_results.items()):
-        bore_str = f"{data['radii']}" if data['radii'] else "uniform"
-        print(f"  {n_cp:>4} {data['rms']:>7.2f}c {data['time']:>6.1f}s L={data['L']:.0f}")
-        print(f"       Per-note: {[f'{x:+.0f}' for x in data['per_note']]}")
-        if data['radii']:
-            print(f"       Radii: {[f'{r:.1f}' for r in data['radii']]}")
+        for n_cp in [0, 2, 4, 6]:
+            assert n_cp in bore_cp_results, f"{name}: missing n_cp={n_cp}"
+            data = bore_cp_results[n_cp]
+            assert data["rms"] < 200.0, f"{name} n_cp={n_cp}: RMS too high: {data['rms']:.1f}c"
+            assert data["L"] > 0, f"{name} n_cp={n_cp}: bore length must be positive"
+            assert data["time"] > 0, f"{name} n_cp={n_cp}: time must be positive"
+            if data["radii"] is not None:
+                assert all(r > 0 for r in data["radii"]), f"{name}: radii must be positive"
+
+
+if __name__ == "__main__":
+    test_variable_bore_profiles()

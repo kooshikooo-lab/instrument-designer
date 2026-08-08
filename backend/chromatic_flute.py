@@ -32,6 +32,18 @@ Usage:
     freqs = model.compute_frequencies(inst)
     for name, freq in zip(model.all_note_names, freqs):
         print(f"{name}: {freq:.1f} Hz")
+
+Coordinate convention
+---------------------
+This model uses EMBOUCHURE-origin coordinates consistently for BOTH the bore
+profile (``BORE_POSITIONS``) and the tone holes (``HOLE_SPECS``): position 0
+is the embouchure (mouthpiece) end and ``SOUNDING_LENGTH`` is the foot end.
+That differs from the backend-internal convention (0 = bell, L = reed), but
+for an open-open, near-cylindrical pipe the geometry is a self-consistent
+mirror of the internal convention: the TMM walks from position 0 (an open
+end) and the hole-to-end distances are what determine the resonances.  The
+positions are therefore NOT mirrored to the internal convention — flipping
+only the holes (and not the bore) would corrupt the hole ordering.
 """
 
 import math
@@ -208,15 +220,13 @@ class ChromaticFluteModel:
             instrument = self.build_instrument()
 
         # Build initial wavelength guesses per note.
-        # n_register=3 needs a longer initial guess (2c/f instead of c/f)
-        # to converge to the correct overtone resonance.
+        # For an open-open pipe the n-th resonance is at lambda = n*c/(2*f),
+        # so the fundamental (register 2) guess is c/f and the first overtone
+        # (register 3) guess is 3*c/(2*f).  The old 2*c/f guess was the
+        # fundamental wavelength, 1.5x too long for the n=3 resonance.
         target_wavelengths = []
         for reg, f_target in zip(self.all_registers, self.all_target_freqs):
-            if reg == 2:
-                target_wavelengths.append(self.C / f_target)
-            else:
-                # For overtone register, use fundamental-level guess
-                target_wavelengths.append(2.0 * self.C / f_target)
+            target_wavelengths.append(self.C / f_target * (reg / 2.0))
 
         return instrument.compute_fingered_frequencies(
             target_wavelengths=target_wavelengths,
@@ -296,6 +306,12 @@ def make_chromatic_config() -> Dict:
         "fingerings": model.all_fingerings,
         "outer_diameter": model.OUTER_DIAMETER,
         "bore_radius": model.BORE_DIAMETERS[-1] / 2,
+        "hole_diameter": 13.0,
+        "hole_length": model.HOLE_LENGTH,
+        "hole_positions": model.hole_positions,
+        "hole_diameters": model.hole_diameters,
+        "hole_lengths": model.hole_lengths,
+        "bore_length": model.SOUNDING_LENGTH,
         "_chromatic": True,
         "_n_registers": model.all_registers,
         "_chromatic_model": model,

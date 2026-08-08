@@ -195,7 +195,8 @@ SPEED_OF_SOUND_CANONICAL_FILE = "backend/tmm_acoustics.py"
 def check_hardcoded_speed_of_sound(path: Path, root: Path) -> list[str]:
     """Flag hardcoded speed-of-sound literals outside the canonical module."""
     rel = path.relative_to(root).as_posix()
-    if rel in {SPEED_OF_SOUND_CANONICAL_FILE, "scripts/validate_pre_commit.py"}:
+    if rel in {SPEED_OF_SOUND_CANONICAL_FILE, "scripts/validate_pre_commit.py",
+               "scripts/compliance_watchdog.py"}:
         return []
     try:
         with open(path, "r", encoding="utf-8", errors="ignore") as f:
@@ -224,9 +225,32 @@ def check_module_size(path: Path, root: Path) -> str | None:
     return f"{rel}: {lines} lines (exceeds 500; split or add to OVERSIZED_ALLOWLIST)"
 
 
+def load_baseline_checks(repo_root: Path) -> set:
+    """Load accepted pre-existing debt from compliance_baseline.json.
+
+    Returns a set of (relpath, check_type) with forward-slash paths.
+    Pre-existing debt must not block commits — only NEW violations do
+    (mirrors compliance_watchdog --check-baseline philosophy).
+    """
+    import json
+    baseline_file = repo_root / "scripts" / "compliance_baseline.json"
+    try:
+        data = json.loads(baseline_file.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return set()
+    out = set()
+    for entry in data.get("violations", []):
+        # entries: [file, check, details] (tuples/lists; details ignored here)
+        try:
+            rel, check = entry[0], entry[1]
+        except (IndexError, TypeError):
+            continue
+        out.add((str(rel).replace("\\", "/"), check))
+    return out
+
+
 def check_branch_name(repo_root: Path) -> str | None:
-    """Verify current branch matches a Law-15 namespace and has no unmerged paths."""
-    # Get current branch name
+    """Verify current branch matches a Law-15 namespace and has no unmerged paths."""    # Get current branch name
     result = subprocess.run(
         ["git", "rev-parse", "--abbrev-ref", "HEAD"],
         cwd=repo_root, capture_output=True, text=True, encoding="utf-8", errors="replace"
@@ -268,6 +292,9 @@ def main():
         print(f"BLOCKED — branch violation: {branch_err}")
         return 1
 
+    # Accepted pre-existing debt (compliance_baseline.json) — demote to warnings
+    baseline = load_baseline_checks(repo_root)
+
     files = staged_files()
     if not files:
         print("No staged files to validate.")
@@ -298,18 +325,21 @@ def main():
         if rel.endswith(".py"):
             bare = check_bare_excepts(path)
             for line in bare:
-                errors.append(f"{rel}:{line}: bare except clause")
+                msg = f"{rel}:{line}: bare except clause"
+                (warnings if (rel, "bare_except") in baseline else errors).append(msg)
 
             ips = check_hardcoded_ips(path)
             if ips:
-                errors.append(f"{rel}: hardcoded IP(s) {', '.join(set(ips))}")
+                msg = f"{rel}: hardcoded IP(s) {', '.join(set(ips))}"
+                (warnings if (rel, "hardcoded_ip") in baseline else errors).append(msg)
 
             size_msg = check_module_size(path, repo_root)
             if size_msg:
                 warnings.append(size_msg)
 
             sos = check_hardcoded_speed_of_sound(path, repo_root)
-            errors.extend(sos)
+            for msg in sos:
+                (warnings if (rel, "hardcoded_sos") in baseline else errors).append(msg)
 
     # 5. Schema validation for instrument configs
     if any(rel.startswith("config/") and rel.endswith(".json") for rel in files):

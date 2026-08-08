@@ -46,6 +46,34 @@ VISION_BASE = "https://openrouter.ai/api/v1"
 
 # ── Numeric mesh checks (no LLM needed) ────────────────────────────────────
 
+def _is_manifold(mesh) -> bool:
+    """True when no edge is shared by more than two faces (edge valence <= 2).
+
+    The classic STL solid is watertight *and* manifold: every edge borders
+    exactly two triangles. An edge shared by 3+ triangles is a non-manifold
+    (e.g. two walls fused along a seam), which slicing software and SDF/CAD
+    kernels reject even when the shell looks closed.
+    """
+    edges = mesh.edges_sorted
+    if edges.size == 0:
+        return False
+    _, counts = np.unique(edges, axis=0, return_counts=True)
+    return bool(int((counts > 2).sum()) == 0)
+
+
+def _component_count(mesh) -> int:
+    """Number of connected components (separate shells) in the mesh.
+
+    A single printable solid must be one component. Two watertight shells that
+    do not touch (e.g. a tube with a detached floating cap) still pass
+    watertight+manifold but are NOT one solid — slicing and CAD kernels treat
+    them as separate bodies, and the repair gate must reject them.
+    """
+    if len(mesh.faces) == 0:
+        return 0
+    return len(mesh.split(only_watertight=False))
+
+
 @dataclass
 class MeshMetrics:
     """Numeric facts about a mesh, computed locally with trimesh."""
@@ -53,6 +81,8 @@ class MeshMetrics:
     vertex_count: int
     face_count: int
     watertight: bool
+    manifold: bool
+    component_count: int
     volume_mm3: float
     bbox_mm: list  # [x, y, z]
     z_extent_mm: float
@@ -69,11 +99,45 @@ def compute_mesh_metrics(stl_path: str) -> MeshMetrics:
         vertex_count=len(m.vertices),
         face_count=len(m.faces),
         watertight=bool(m.is_watertight),
+        manifold=_is_manifold(m),
+        component_count=_component_count(m),
         volume_mm3=float(m.volume),
         bbox_mm=[round(float(v), 1) for v in bbox],
         z_extent_mm=round(float(bbox[2]), 1),
         open_bounds=int(m.area > 0 and not m.is_watertight),
     )
+
+
+def check_mesh_repair_gate(stl_path: str) -> dict:
+    """Check-only mesh-repair gate (see ``docs/TOOLS.md`` protocol).
+
+    A mesh passes when it is **watertight AND manifold AND a single connected
+    component** (every edge borders exactly two triangles, and the mesh is one
+    closed solid — not a compound of separate shells). This is the numeric gate
+    ``cadquery_export.export_stl`` runs after writing a mesh; per the
+    build123d-first + repair-fallback decision it is advisory (logs a warning,
+    never fails the export).
+
+    Returns a plain dict (not :class:`MeshMetrics`) so callers without dataclass
+    plumbing can read it easily. Never raises.
+    """
+    try:
+        metrics = compute_mesh_metrics(stl_path)
+    except Exception as e:  # noqa: BLE001 — gate is advisory
+        return {"stl": os.path.basename(stl_path), "passed": False, "error": str(e)}
+    passed = bool(
+        metrics.watertight and metrics.manifold and metrics.component_count == 1
+    )
+    return {
+        "stl": os.path.basename(stl_path),
+        "passed": passed,
+        "watertight": metrics.watertight,
+        "manifold": metrics.manifold,
+        "component_count": metrics.component_count,
+        "vertex_count": metrics.vertex_count,
+        "face_count": metrics.face_count,
+        "volume_mm3": metrics.volume_mm3,
+    }
 
 
 # ── VTK multi-view renderer ────────────────────────────────────────────────
@@ -653,7 +717,8 @@ def _cli():
         m = r.metrics
         if m:
             print(f"  bbox(x,y,z)={m.get('bbox_mm')}  vol={m.get('volume_mm3', 0):.0f}mm3 "
-                  f"watertight={m.get('watertight')} verts={m.get('vertex_count')}")
+                  f"watertight={m.get('watertight')} manifold={m.get('manifold')} "
+                  f"verts={m.get('vertex_count')}")
         v = r.visual
         if v and not v.get("skipped"):
             print(f"  shape={v.get('shape')}  hollow={v.get('hollow')} "
