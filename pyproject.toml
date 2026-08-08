@@ -86,6 +86,7 @@ python_files = [
     "test_metamaterial_subcontrabass.py",
     "test_guard_scripts.py",
     "test_fusion_360.py",
+    "test_validate_imports.py",
 ]
 
 [tool.ruff]

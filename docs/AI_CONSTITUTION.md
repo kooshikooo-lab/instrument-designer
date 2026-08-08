@@ -142,6 +142,12 @@ No commit may be made from unverified work. "It looked right" is not verificatio
 
 8. **No audit, no commit**: If you cannot run the tests (e.g. dependency missing), that is a Law 13 bug — fix the environment first. Committing untested work because the environment is broken only compounds the failure.
 
+N. **Dead Path Prevention**: No file may import a deleted module, reference a deleted branch name, or re-add a file under a deleted directory. The canonical registries are:
+   - `scripts/validate_imports.py`: `DELETED_MODULES`, `DELETED_BRANCHES`, `DELETED_DIRS` — the single source of truth for what is dead.
+   - `scripts/validate_imports.py --all` MUST pass in CI (Law 16) and in pre-commit (staged files).
+   - `tests/test_validate_imports.py` is a required test (Law 14.1) and MUST be in `python_files`.
+   - Deleting a module or branch requires adding it to the registries above; resurrecting a deleted path is a Law 1 violation (architecture damage).
+
 Violating this protocol is a constitutional violation. Log failures in `AI_FAILURE_PATTERNS.md`.
 
 ### Law 15 — Branch governance
