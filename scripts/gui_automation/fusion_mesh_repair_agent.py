@@ -27,9 +27,9 @@ import time
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 
-from backend.stl_verifier import check_mesh_repair_gate  # noqa: E402
-from scripts.gui_automation import gui_driver  # noqa: E402
-from scripts.gui_automation.vision_loop import run_loop  # noqa: E402
+from backend.stl_verifier import check_mesh_repair_gate
+from scripts.gui_automation import gui_driver
+from scripts.gui_automation.vision_loop import run_loop
 
 DEFAULT_STL = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "..", "..",

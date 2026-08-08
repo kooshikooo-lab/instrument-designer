@@ -16,7 +16,6 @@ human + Fusion at the GUI); that is exercised by fusion_mesh_repair_agent.py.
 """
 from __future__ import annotations
 
-import io
 import os
 import sys
 
@@ -24,16 +23,15 @@ import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
-from scripts.gui_automation import gui_driver  # noqa: E402
-from scripts.gui_automation.vision_loop import (  # noqa: E402
+from backend.stl_verifier import check_mesh_repair_gate
+from scripts.gui_automation import gui_driver
+from scripts.gui_automation.make_nonwatertight_target import punch_hole
+from scripts.gui_automation.vision_loop import (
     _ask_vision_remote,
     _parse_action_json,
     ask_vision,
     execute_action,
 )
-from scripts.gui_automation.make_nonwatertight_target import punch_hole  # noqa: E402
-
-from backend.stl_verifier import check_mesh_repair_gate  # noqa: E402
 
 FUSION_OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "test_output", "fusion")
 SOURCE_STL = os.path.join(FUSION_OUT, "koncovka_C.stl")
@@ -65,9 +63,9 @@ def test_parse_action_rejects_non_json_reply():
 
 def test_parse_action_rejects_missing_required_types():
     # text must be a string; keys must be a list
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         _parse_action_json('{"action":"type","text":123,"reason":"bad","verified":false}')
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         _parse_action_json('{"action":"hotkey","keys":"ctrl","reason":"bad","verified":false}')
 
 
@@ -154,7 +152,7 @@ def test_capture_region_accepts_normal_frame():
 
 # --- non-watertight target generator --------------------------------------
 
-import numpy as np  # noqa: E402
+import numpy as np
 
 
 def test_punch_hole_creates_nonwatertight_mesh():

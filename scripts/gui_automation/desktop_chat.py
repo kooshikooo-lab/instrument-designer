@@ -25,11 +25,10 @@ import os
 import subprocess
 import sys
 import time
-from typing import Optional
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 
-from scripts.gui_automation import gui_driver  # noqa: E402
+from scripts.gui_automation import gui_driver
 
 APP_TITLES = {
     "claude": "Claude",
@@ -89,7 +88,7 @@ def ocr_png(path: str) -> str:
     try:
         out = subprocess.run(
             ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", OCR_PS1, path],
-            capture_output=True, text=True, timeout=60,
+            capture_output=True, text=True, timeout=60, check=False,
         )
     except subprocess.TimeoutExpired:
         return ""
@@ -137,7 +136,7 @@ def send_prompt(
     wait_s: float = 60.0,
     poll_s: float = 3.0,
     min_stable_s: float = 8.0,
-    out_dir: Optional[str] = None,
+    out_dir: str | None = None,
 ) -> dict:
     """Send one prompt to the app and OCR the response.
 

@@ -13,11 +13,11 @@ Modes:
 """
 from __future__ import annotations
 
+import argparse
 import os
+import subprocess
 import sys
 import time
-import argparse
-import subprocess
 from pathlib import Path
 
 # ---- Project path setup ----
@@ -41,7 +41,7 @@ def _windows_input_idle_seconds() -> float:
             return -1.0
         ticks = user32.GetTickCount()
         return max(0.0, (ticks - last.dwTime) / 1000.0)
-    except Exception:
+    except (OSError, AttributeError):
         return -1.0
 
 
@@ -65,8 +65,8 @@ def on_ac_power() -> bool:
             kernel32 = ctypes.windll.kernel32
             if kernel32.GetSystemPowerStatus(ctypes.byref(status)):
                 return status.ACLineStatus == 1
-        except Exception:
-            pass
+        except (OSError, AttributeError):
+            return True
     return True
 
 
@@ -97,7 +97,7 @@ def run_benchmark_cycle(scheduler: str, instruments: str | None = None,
 
     print(f"[volunteer-benchmark] Running: {' '.join(cmd)}", flush=True)
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=3600)
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=3600, check=False)
         if result.stdout:
             print(result.stdout)
         if result.stderr:
@@ -106,7 +106,7 @@ def run_benchmark_cycle(scheduler: str, instruments: str | None = None,
     except subprocess.TimeoutExpired:
         print("[volunteer-benchmark] Benchmark cycle timed out (1h)", flush=True)
         return 1
-    except Exception as e:
+    except (OSError, subprocess.SubprocessError) as e:
         print(f"[volunteer-benchmark] Benchmark cycle failed: {e}", flush=True)
         return 1
 
@@ -127,7 +127,7 @@ def run_surrogate_cycle(scheduler: str, n_samples: int = 500,
 
     print(f"[volunteer-benchmark] Surrogate gen: {' '.join(cmd)}", flush=True)
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=3600)
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=3600, check=False)
         if result.stdout:
             print(result.stdout)
         if result.stderr:
@@ -136,7 +136,7 @@ def run_surrogate_cycle(scheduler: str, n_samples: int = 500,
     except subprocess.TimeoutExpired:
         print("[volunteer-benchmark] Surrogate cycle timed out (1h)", flush=True)
         return 1
-    except Exception as e:
+    except (OSError, subprocess.SubprocessError) as e:
         print(f"[volunteer-benchmark] Surrogate cycle failed: {e}", flush=True)
         return 1
 

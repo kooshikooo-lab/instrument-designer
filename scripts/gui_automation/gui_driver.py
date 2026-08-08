@@ -20,7 +20,6 @@ from __future__ import annotations
 import io
 import os
 import sys
-from typing import Optional
 
 import mss
 import numpy as np
@@ -41,7 +40,7 @@ def screen_size() -> tuple[int, int]:
     return _SCREEN_W, _SCREEN_H
 
 
-def capture_png(monitor: int = 1, downscale: Optional[int] = None) -> bytes:
+def capture_png(monitor: int = 1, downscale: int | None = None) -> bytes:
     """Capture the given monitor as PNG bytes.
 
     ``downscale`` (e.g. 1024) resizes the longest edge so the vision model
@@ -198,7 +197,7 @@ def hotkey(*keys: str) -> None:
     pyautogui.hotkey(*keys)
 
 
-def window_hwnd(title_substring: str, exclude: str = "") -> Optional[int]:
+def window_hwnd(title_substring: str, exclude: str = "") -> int | None:
     """Return the HWND of the largest visible top-level window whose title
     contains ``title_substring`` (and not ``exclude``), or None."""
     import ctypes
@@ -310,7 +309,7 @@ def _read_bitmap(dc, bmp, w: int, h: int) -> bytes:
     return buf.raw
 
 
-def window_rect(title_substring: str, exclude: str = "") -> Optional[tuple[int, int, int, int]]:
+def window_rect(title_substring: str, exclude: str = "") -> tuple[int, int, int, int] | None:
     """Return (left, top, width, height) of the first visible top-level window
     whose title contains ``title_substring`` (and not ``exclude``), or None."""
     import ctypes

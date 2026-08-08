@@ -18,10 +18,10 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 
-import numpy as np  # noqa: E402
-import trimesh  # noqa: E402
+import numpy as np
+import trimesh
 
-from backend.stl_verifier import check_mesh_repair_gate  # noqa: E402
+from backend.stl_verifier import check_mesh_repair_gate
 
 FUSION_OUT = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "..", "..", "test_output", "fusion"

@@ -22,11 +22,11 @@ import re
 import sys
 import time
 import urllib.request
-from typing import Callable, Optional
+from collections.abc import Callable
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 
-from scripts.gui_automation import gui_driver  # noqa: E402
+from scripts.gui_automation import gui_driver
 
 OLLAMA_BASE = os.environ.get("OLLAMA_BASE", "http://127.0.0.1:11434")
 # gemma3:4b fits in this machine's ~3GB free RAM (12B did not fit and
@@ -115,7 +115,7 @@ def _ask_vision_remote(png_bytes: bytes, user_prompt: str) -> dict:
     """OpenRouter fallback: screenshot + prompt -> parsed JSON action."""
     try:
         from backend.stl_verifier import ask_vision as remote_ask
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         raise ValueError(f"remote vision unavailable: {e}") from e
     text = remote_ask({"screen": png_bytes}, user_prompt, model=REMOTE_MODEL)
     if text.startswith("[ERROR]"):
@@ -136,7 +136,7 @@ def _parse_action_json(text: str) -> dict:
     except json.JSONDecodeError as e:
         raise ValueError(f"model reply not valid JSON: {e}") from e
     if not isinstance(obj, dict):
-        raise ValueError("model reply JSON is not an object")
+        raise TypeError("model reply JSON is not an object")
     if obj.get("action") not in ALLOWED_ACTIONS:
         raise ValueError(f"disallowed action {obj.get('action')!r}")
     for key, typ in ACTION_JSON_FIELDS.items():
@@ -150,7 +150,7 @@ def _parse_action_json(text: str) -> dict:
             else:
                 obj[key] = None
         if not isinstance(obj[key], typ):
-            raise ValueError(f"bad type for {key}: {obj[key]!r}")
+            raise TypeError(f"bad type for {key}: {obj[key]!r}")
     return obj
 
 
@@ -171,9 +171,7 @@ def execute_action(action: dict) -> bool:
     if name == "wait":
         time.sleep(3.0)
         return True
-    if name == "done":
-        return True
-    return False
+    return name == "done"
 
 
 def _write_log(run_log: str, entry: dict) -> None:
@@ -187,8 +185,8 @@ def run_loop(
     verify: Callable[[], bool],
     run_log: str,
     max_steps: int = 15,
-    screenshot_dir: Optional[str] = None,
-    region: Optional[tuple[int, int, int, int]] = None,
+    screenshot_dir: str | None = None,
+    region: tuple[int, int, int, int] | None = None,
 ) -> int:
     """Run the observe->decide->act->verify loop until verify() passes.
 
