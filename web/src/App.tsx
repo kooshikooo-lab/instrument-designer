@@ -8,6 +8,7 @@ import { InstrumentDetail } from "./components/InstrumentDetail";
 import { DesignTab } from "./components/DesignTab";
 import { ResourcesTab } from "./components/ResourcesTab";
 import { WikiTab } from "./components/wiki/WikiTab";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 export type Tab = "library" | "design" | "resources" | "wiki";
 
@@ -47,30 +48,38 @@ export default function App() {
           <span className="text-xs text-neutral-500 ml-auto">Web App v1.0.0</span>
         </header>
         <div className="flex-1 overflow-auto">
-          {tab === "library" && (
-            <div className="flex h-full">
-              <div className={`${selected ? "w-[420px]" : "w-full"} transition-all duration-300 border-r border-neutral-800 overflow-auto`}>
-                <InstrumentBrowser instruments={instruments} onSelect={setSelected} />
-              </div>
-              {selected && (
-                <div className="flex-1 overflow-auto">
-                  <InstrumentDetail
-                    instrument={selected}
-                    onClose={() => setSelected(null)}
-                    onGenerate={handleGenerateFromLibrary}
-                  />
+          <ErrorBoundary fallback={<p>Library tab crashed</p>}>
+            {tab === "library" && (
+              <div className="flex h-full">
+                <div className={`${selected ? "w-[420px]" : "w-full"} transition-all duration-300 border-r border-neutral-800 overflow-auto`}>
+                  <InstrumentBrowser instruments={instruments} onSelect={setSelected} />
                 </div>
-              )}
-            </div>
-          )}
-          {tab === "design" && (
-            <DesignTab
-              initialPreset={designPreset}
-              onPresetUsed={() => setDesignPreset("")}
-            />
-          )}
-          {tab === "resources" && <ResourcesTab />}
-          {tab === "wiki" && <WikiTab />}
+                {selected && (
+                  <div className="flex-1 overflow-auto">
+                    <InstrumentDetail
+                      instrument={selected}
+                      onClose={() => setSelected(null)}
+                      onGenerate={handleGenerateFromLibrary}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+          </ErrorBoundary>
+          <ErrorBoundary fallback={<p>Design tab crashed</p>}>
+            {tab === "design" && (
+              <DesignTab
+                initialPreset={designPreset}
+                onPresetUsed={() => setDesignPreset("")}
+              />
+            )}
+          </ErrorBoundary>
+          <ErrorBoundary fallback={<p>Resources tab crashed</p>}>
+            {tab === "resources" && <ResourcesTab />}
+          </ErrorBoundary>
+          <ErrorBoundary fallback={<p>Wiki tab crashed</p>}>
+            {tab === "wiki" && <WikiTab />}
+          </ErrorBoundary>
         </div>
       </main>
     </div>

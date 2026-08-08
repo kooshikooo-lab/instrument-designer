@@ -112,8 +112,8 @@ class BiObjectiveBO:
     def _initialize_model(self, train_x: torch.Tensor, train_y: torch.Tensor) -> SingleTaskGP:
         """Initialize GP model."""
         model = SingleTaskGP(
-            train_x=train_x,
-            train_y=train_y,
+            train_X=train_x,
+            train_Y=train_y,
             outcome_transform=Standardize(m=train_y.shape[-1]) if self.config.standardize else None,
         )
         
@@ -157,14 +157,20 @@ class BiObjectiveBO:
             raise ValueError(f"Unknown acquisition type: {self.config.acquisition_type}")
     
     def optimize(self, 
-                 objective_fn: Callable,
+                 objective_fn: Optional[Callable] = None,
                  n_iterations: Optional[int] = None) -> Tuple[np.ndarray, np.ndarray]:
         """
         Run BO optimization loop.
         
+        Args:
+            objective_fn: Objective function (n, dim) -> (n, n_obj); defaults to self.objective_fn
+            n_iterations: Number of iterations; defaults to self.config.n_iterations
+            
         Returns:
             (pareto_x, pareto_y) - Pareto optimal inputs and objectives
         """
+        if objective_fn is None:
+            objective_fn = self.objective_fn
         n_iter = n_iterations or self.config.n_iterations
         
         # Initial design
@@ -176,7 +182,7 @@ class BiObjectiveBO:
         print("Evaluating initial design...")
         init_y_list = []
         for i in range(self.config.n_initial):
-            y = self.objective_fn(self.train_x[i:i+1].numpy())
+            y = np.asarray(self.objective_fn(self.train_x[i:i+1].numpy())).squeeze()
             init_y_list.append(y)
         self.train_y = torch.tensor(np.array(init_y_list), dtype=torch.double)
         
@@ -192,10 +198,10 @@ class BiObjectiveBO:
             # Get acquisition function
             acq_fn = self._get_acquisition_function(self.train_y)
             
-            # Optimize acquisition function
+            # Optimize acquisition function (botorch>=0.16 expects 2 x d bounds)
             candidates, _ = optimize_acqf(
                 acq_function=acq_fn,
-                bounds=self.bounds,
+                bounds=self.bounds.T,
                 q=self.config.batch_size,
                 num_restarts=20,
                 raw_samples=512,
@@ -205,7 +211,7 @@ class BiObjectiveBO:
             # Evaluate new candidates
             new_y_list = []
             for i in range(self.config.batch_size):
-                y = objective_fn(candidates[i:i+1].numpy())
+                y = np.asarray(objective_fn(candidates[i:i+1].numpy())).squeeze()
                 new_y_list.append(y)
             new_y = torch.tensor(np.array(new_y_list), dtype=torch.double)
             

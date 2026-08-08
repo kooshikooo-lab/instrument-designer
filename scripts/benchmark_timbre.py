@@ -34,7 +34,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # Dask configuration
-DASK_SCHEDULER = "tcp://100.69.113.41:8786"
+DASK_SCHEDULER = "tcp://127.0.0.1:8786"
 
 
 # =============================================================================

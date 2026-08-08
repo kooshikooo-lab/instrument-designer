@@ -32,6 +32,18 @@
 **Decision:** `n_register = 1 if closed_top else 2` auto-detected.
 **Reason:** Open-open instruments require n_register=2 for the fundamental.
 
+> **Note (2026-08-01):** Peak-search verification (`detect_registers`, per-note
+> best n_register over 1..6 by cents distance) found register 1 works for ALL
+> notes on properly-sized closed-top instruments — including bass chalumeau
+> (L≈371mm) and a 1900mm contra-bass with 14 holes — and register 2 for all
+> notes on open-top instruments (soprano sax, xaphoon, tin whistle). Register 2
+> only appears on closed-top when the bore is over-long (L≈600–800mm for bass).
+> Caveat: analytical `estimate_registers` had an open-top off-by-one (phase
+> register = harmonic index + 1), fixed 2026-08-01. Results are
+> machine/geometry-dependent (numerics, stepped-cylinder phantom resonance),
+> so the "long closed-top needs n_reg=2" finding is NOT fully settled —
+> re-verify per instrument when geometry or tuning changes.
+
 ### Coordinate Convention Locked
 **Decision:** Position 0 = bell, Position L = reed.
 **Reason:** Matches chalumier convention. All code uses this.

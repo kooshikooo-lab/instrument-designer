@@ -1,41 +1,53 @@
+"""One-off indentation repair for backend/tmm_acoustics.py.
+
+Historical patch. The source file no longer needs this fix. Kept only as a
+safety-guarded, path-portable record of what was applied. Does nothing unless
+explicitly invoked with --apply.
+"""
 import os
+import sys
 
-_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-_path = os.path.join(_root, "backend", "tmm_acoustics.py")
+REPO_ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
+TARGET = os.path.join(REPO_ROOT, "backend", "tmm_acoustics.py")
 
-with open(_path, 'r', encoding='utf-8') as f:
-    content = f.read()
+BACKUP_SUFFIX = ".fix.bak"
 
-lines = content.split('\n')
 
-# Fix indentation for methods from line 455 to 697 (class end)
-# Methods should have 4 spaces for def, 8 for body
-# Currently they have 0 or 4 for def, 4 or 8 for body
+def main():
+    if "--apply" not in sys.argv:
+        print("test_fix.py: historical patch, no-op (pass --apply to re-apply)")
+        return 0
+    if not os.path.exists(TARGET):
+        print(f"test_fix.py: target not found: {TARGET}")
+        return 1
 
-fixed_lines = []
-for i, line in enumerate(lines):
-    # Lines 455-697 (0-indexed: 454-696)
-    if 454 <= i <= 696:
-        stripped = line.lstrip()
-        if stripped:
-            # Check if it's a method definition or body
-            # Method definitions should have 4 spaces, body 8
-            if line.startswith('def ') or line.startswith('@'):
-                # Method decorator or def - should be 4 spaces
-                if not line.startswith(' ' * 4):
-                    line = '    ' + line.lstrip()
-            elif line.strip() and not line.startswith(' ') and not line.startswith('\t'):
-                # Body line that lost indentation
-                # But don't re-indent comments or empty lines
-                if not line.startswith('#') and line.strip():
-                    line = '    ' + line
-    fixed_lines.append(line)
-else:
-    fixed_lines.append(line)
+    with open(TARGET, "r", encoding="utf-8") as f:
+        content = f.read()
 
-new_content = '\n'.join(fixed_lines)
+    backup_path = TARGET + BACKUP_SUFFIX
+    if not os.path.exists(backup_path):
+        with open(backup_path, "w", encoding="utf-8") as f:
+            f.write(content)
 
-with open(_path, 'w', encoding='utf-8') as f:
-    f.write(new_content)
+    lines = content.split("\n")
+    fixed_lines = []
+    for i, line in enumerate(lines):
+        if 454 <= i <= 696:
+            stripped = line.lstrip()
+            if stripped:
+                if line.startswith("def ") or line.startswith("@"):
+                    if not line.startswith(" " * 4):
+                        line = "    " + line.lstrip()
+                elif line.strip() and not line.startswith(" ") and not line.startswith("\t"):
+                    if not line.startswith("#") and line.strip():
+                        line = "    " + line
+        fixed_lines.append(line)
 
-print("Fixed indentation")
+    with open(TARGET, "w", encoding="utf-8") as f:
+        f.write("\n".join(fixed_lines))
+    print("Fixed indentation (backup at", backup_path + ")")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

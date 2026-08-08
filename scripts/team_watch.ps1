@@ -58,8 +58,8 @@ while ($true) {
     }
 
     foreach ($m in $obj.messages) {
+        if ($null -ne $m.other -and -not $m.other) { continue }
         $body = [string]$m.body
-        if ($body -match "\[$env:TEAM_MACHINE\]") { continue }
         $snippet = ($body -replace "\s+", " ").Trim()
         if ($snippet.Length -gt 160) { $snippet = $snippet.Substring(0, 157) + "..." }
         Write-Log "NEW from $($m.user): $snippet"

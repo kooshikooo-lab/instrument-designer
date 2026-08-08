@@ -27,7 +27,7 @@ Transfer Matrix Method — a computational method that models sound propagation 
 Sound absorption due to viscosity and thermal conduction at the bore walls. Modeled using Keefe (1984) with Sutherland's temperature correction. Adds frequency-dependent attenuation and phase shift.
 
 ### What is n_register?
-The harmonic register index. For open-open pipes (flute, sax), n_register=2 is the fundamental. For closed-open pipes (clarinet), n_register=1 is the fundamental. Auto-detected: `n_register = 1 if closed_top else 2`.
+The harmonic register index. For open-open pipes (flute, sax), n_register=2 is the fundamental. For closed-open pipes (clarinet), n_register=1 is the fundamental. Auto-detected: `n_register = 1 if closed_top else 2`. Peak-search per-note detection (`detect_registers`) is available for cases where the scalar default fails (over-long closed-top bores, octave-boundary notes).
 
 ### Why does my instrument sound different from the prediction?
 Several factors:

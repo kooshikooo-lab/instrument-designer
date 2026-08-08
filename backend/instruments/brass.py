@@ -33,7 +33,7 @@ class BrassBuilder:
         self._valves = []
         self._bell_radius = None
         self._bell_flare = None
-        self._speed_of_sound = 343200.0
+        self._speed_of_sound = 346100.0
 
     def set_bore(self, length: float, radius_in: float, radius_out: float):
         """Set bore geometry.

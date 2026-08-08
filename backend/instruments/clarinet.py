@@ -27,7 +27,7 @@ class ClarinetBuilder:
         self._ports = []
         self._register_vent = None
         self._bell_radius = None
-        self._speed_of_sound = 343200.0  # mm/s
+        self._speed_of_sound = 346100.0  # mm/s
 
     def set_bore(self, length: float, radius: float, taper: float = 0.0):
         """Set bore geometry.

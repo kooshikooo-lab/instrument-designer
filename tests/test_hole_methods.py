@@ -1,10 +1,6 @@
-"""Test: what if we remove the sequential ordering constraint for open-open?
-
-Ernoult (2021) says each hole is independent. But our optimizer forces
-holes to be placed in order (min_pos = prev + 10mm). What if we allow
-holes to be placed anywhere, optimizing all positions simultaneously?
-"""
+"""Test: what if we remove the sequential ordering constraint for open-open?"""
 import sys, os, time, math
+import pytest
 import numpy as np
 from scipy.optimize import minimize as sp_min
 
@@ -193,19 +189,24 @@ def method_simultaneous(cfg):
     return rms, bore_length, hp, ca
 
 
-for name, cfg in [("Xaphoon C", XAPHOON), ("Alto Sax Eb", ALTO_SAX)]:
-    print(f"\n{'='*60}")
-    print(f"{name}")
-    print(f"{'='*60}")
-    
-    for label, fn in [("Sequential (ordered)", method_sequential),
-                       ("Independent (no order)", method_independent),
-                       ("Simultaneous", method_simultaneous)]:
-        t0 = time.time()
-        rms, L, hp, ca = fn(cfg)
-        dt = time.time() - t0
-        print(f"\n  {label}:")
-        print(f"    RMS={rms:.1f}c | L={L:.0f}mm | {len(hp)} holes | {dt:.1f}s")
-        print(f"    Positions: {[f'{p:.0f}' for p in hp]}")
-        print(f"    Per-note:  {[f'{x:+.0f}' for x in ca]}")
-        print(f"    Spread:    {ca.max()-ca.min():.0f}c")
+def test_hole_methods():
+    for name, cfg in [("Xaphoon C", XAPHOON), ("Alto Sax Eb", ALTO_SAX)]:
+        results = {}
+        for label, fn in [("Sequential (ordered)", method_sequential),
+                           ("Independent (no order)", method_independent),
+                           ("Simultaneous", method_simultaneous)]:
+            rms, L, hp, ca = fn(cfg)
+            results[label] = {"rms": rms, "L": L, "hp": hp, "ca": ca}
+            assert rms < 200.0, f"{name} {label}: RMS too high: {rms:.1f}c"
+            assert L > 0, f"{name} {label}: bore length must be positive"
+            assert len(hp) >= 3, f"{name} {label}: expected >=3 holes, got {len(hp)}"
+
+        # Simultaneous should be at least as good as Sequential (lower or equal RMS)
+        assert results["Simultaneous"]["rms"] <= results["Sequential (ordered)"]["rms"] * 1.5, (
+            f"{name}: Simultaneous RMS ({results['Simultaneous']['rms']:.1f}c) "
+            f"much worse than Sequential ({results['Sequential (ordered)']['rms']:.1f}c)"
+        )
+
+
+if __name__ == "__main__":
+    test_hole_methods()

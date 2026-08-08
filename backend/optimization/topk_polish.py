@@ -25,6 +25,7 @@ def topk_polish(
     seed: int = 42,
     polish_method: str = "L-BFGS-B",
     polish_options: Optional[dict] = None,
+    workers: int = 1,
 ) -> dict:
     """Run DE, then L-BFGS-B polish on the n_polish best elite candidates.
 
@@ -37,6 +38,9 @@ def topk_polish(
         seed: random seed
         polish_method: scipy minimize method for the local refinement
         polish_options: options dict for the local refinement
+        workers: passed to scipy differential_evolution (int for local
+            processes, or a map-like callable such as a Dask-backed mapper).
+            The L-BFGS-B polish step stays serial.
 
     Returns:
         dict with ``rms_cents`` (best cost), ``radii`` (best vector),
@@ -49,6 +53,7 @@ def topk_polish(
         objective, bounds,
         maxiter=maxiter, popsize=popsize, seed=seed,
         tol=1e-6, mutation=(0.5, 1.0), recombination=0.7, polish=False,
+        workers=workers,
     )
     pop = np.vstack([res.population, res.x])
     vals = np.array([objective(x) for x in pop])

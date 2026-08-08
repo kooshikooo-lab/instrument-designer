@@ -27,6 +27,7 @@ class SurrogateConfig:
     activation: str = "relu"  # "relu", "tanh", "swish", "snake"
     output_dim: int = 4  # RMS, EFP, threshold_pressure, peak_error
     dropout_rate: float = 0.1
+    input_dim: int = 30  # radii(6) + holes(3*7) + [L, outer_d, closed_top]
     dtype: jnp.dtype = jnp.float32
 
 
@@ -103,21 +104,24 @@ class SurrogateTrainer:
         self._model = BoreSurrogate(self.config)
         self._tx = optax.adamw(self.learning_rate, weight_decay=self.weight_decay)
         key = jax.random.PRNGKey(self.seed)
-        dummy_input = jnp.ones((1, 50))  # Will be reshaped on first call
+        dummy_input = jnp.ones((1, self.config.input_dim))  # Will be reshaped on first call
         self._params = self._model.init(key, dummy_input)
         self._opt_state = self._tx.init(self._params)
         self._rng_seq = jax.random.split(key, 1000)  # Pre-generate RNG keys for dropout
         self._rng_idx = 0
     
     def loss_fn(self, params: dict, batch: tuple) -> float:
-        inputs, targets = batch
+        inputs, targets = batch[:2]
+        weights = batch[2] if len(batch) > 2 and batch[2] is not None else None
         # Generate RNG key for dropout
         rng = self._rng_seq[self._rng_idx % len(self._rng_seq)]
         self._rng_idx += 1
         preds, _ = self._model.apply(params, inputs, training=True, mutable=['batch_stats'], rngs={'dropout': rng})
         # MSE loss with descriptor-weighted loss (Petiot 2025)
-        mse = jnp.mean((preds - targets) ** 2)
-        return mse
+        errs = (preds - targets) ** 2
+        if weights is not None:
+            return jnp.sum(errs * weights[:, None]) / jnp.sum(weights)
+        return jnp.mean(errs)
     
     def train_step(self, params: dict, opt_state: optax.OptState, 
                    batch: tuple) -> tuple:
@@ -127,51 +131,79 @@ class SurrogateTrainer:
         return new_params, new_opt_state, loss
     
     def train(self, train_data: list, val_data: list, epochs: int = 100,
-              batch_size: int = 32, verbose: bool = True) -> dict:
+              batch_size: int = 32, verbose: bool = True,
+              patience: Optional[int] = None,
+              sample_weights: Optional[np.ndarray] = None) -> dict:
         """Train the surrogate model.
-        
+
         Args:
             train_data: List of (inputs, targets) tuples
             val_data: List of (inputs, targets) tuples for validation
             epochs: Number of training epochs
             batch_size: Mini-batch size
             verbose: Whether to print progress
-            
+            patience: Early-stopping epochs without val improvement (None = disable)
+            sample_weights: Optional per-sample weights (len == len(train_data));
+                used to up-weight rare/low-target samples. None = unweighted MSE.
+
         Returns:
-            Training history dict
+            Training history dict (params restored to best-val checkpoint when
+            patience is used)
         """
         params = self._params
         opt_state = self._opt_state
         history = {"train_loss": [], "val_loss": []}
-        
+
+        best_val = float("inf")
+        best_params = None
+        best_epoch = -1
+
+        order = list(range(len(train_data)))
+
         for epoch in range(epochs):
             # Shuffle and batch
-            np.random.shuffle(train_data)
+            np.random.shuffle(order)
             epoch_losses = []
-            
-            for i in range(0, len(train_data), batch_size):
-                batch = train_data[i:i+batch_size]
-                if len(batch) < batch_size:
+
+            for start in range(0, len(order), batch_size):
+                batch_idx = order[start:start + batch_size]
+                if len(batch_idx) < batch_size:
                     continue
-                inputs = jnp.stack([b[0] for b in batch])
-                targets = jnp.stack([b[1] for b in batch])
-                
-                params, opt_state, loss = self.train_step(params, opt_state, (inputs, targets))
+                inputs = jnp.stack([train_data[j][0] for j in batch_idx])
+                targets = jnp.stack([train_data[j][1] for j in batch_idx])
+                if sample_weights is not None:
+                    wts = jnp.asarray([sample_weights[j] for j in batch_idx], dtype=jnp.float32)
+                else:
+                    wts = None
+                params, opt_state, loss = self.train_step(params, opt_state, (inputs, targets, wts))
                 epoch_losses.append(float(loss))
-            
+
             avg_train_loss = np.mean(epoch_losses)
             history["train_loss"].append(avg_train_loss)
-            
+
             # Validation
             val_inputs = jnp.stack([b[0] for b in val_data])
             val_targets = jnp.stack([b[1] for b in val_data])
             val_preds = self._model.apply(params, val_inputs, training=False)
             val_loss = float(jnp.mean((val_preds - val_targets) ** 2))
             history["val_loss"].append(val_loss)
-            
+
+            if val_loss < best_val:
+                best_val = val_loss
+                best_params = params
+                best_epoch = epoch
+
             if verbose and (epoch + 1) % 10 == 0:
                 print(f"Epoch {epoch+1}/{epochs}: train_loss={avg_train_loss:.6f}, val_loss={val_loss:.6f}")
-        
+
+            if patience is not None and (epoch - best_epoch) >= patience:
+                if verbose:
+                    print(f"Early stopping at epoch {epoch+1} (best val={best_val:.6f} at epoch {best_epoch+1})")
+                break
+
+        # Restore best-val checkpoint
+        if best_params is not None:
+            params = best_params
         self._params = params
         self._opt_state = opt_state
         return history
@@ -261,35 +293,23 @@ def generate_training_data(n_samples: int,
             hl,
             [bore_length, outer_d, float(closed_top)]
         ])
-        
-        # Evaluate with TMM
-        if use_jax_tmm:
-            from backend.jax_optimizer import refine_sequential
-            from backend.benchmark_all import INSTRUMENTS
-            
-            cfg = {
-                "targets": np.array(targets),
-                "closed_top": closed_top,
-                "bore_radius": 7.25,
-                "outer_diameter": outer_d,
-                "hole_diameter": hd.mean(),
-                "hole_length": hl.mean(),
-            }
-            
-            try:
-                rms, L, radii_opt, hp_opt, hd_opt, hl_opt, dt = refine_sequential(
-                    cfg, use_jax_bore=True, use_phase_cost=True
-                )
-                target_vector = np.array([rms, 0.0, 0.0, 0.0])  # RMS, EFP, threshold, peak_error
-            except Exception:
-                target_vector = np.array([1e10, 0.0, 0.0, 0.0])
-        else:
-            # Fallback: use dummy targets for now
-            target_vector = np.array([np.random.uniform(0.1, 50.0), 
-                                      np.random.uniform(0.5, 2.0),
-                                      np.random.uniform(500.0, 5000.0),
-                                      np.random.uniform(0.1, 20.0)])
-        
+
+        # Evaluate with direct TMM (Petiot-style: geometry -> intonation descriptors,
+        # one forward pass, no per-sample optimization). Uses ADR-008 canonical metrics.
+        from backend.jax_optimizer import eval_metrics
+
+        try:
+            m = eval_metrics(radii, bore_length, hp, hd, hl, closed_top,
+                             targets=np.array(targets), outer_diameter_mm=outer_d)
+            target_vector = np.array([
+                m["final_rms_cents"],
+                m["peak_error_cents"],
+                m["median_offset_cents"],
+                m["scale_rms_cents"],
+            ])
+        except Exception:
+            target_vector = np.array([1e10, 1e10, 0.0, 1e10])
+
         # Normalize input features
         input_norm = np.concatenate([
             radii / 15.0,
@@ -298,9 +318,9 @@ def generate_training_data(n_samples: int,
             hl / 5.0,
             [bore_length / 400.0, outer_d / 25.0, float(closed_top)]
         ])
-        
+
         data.append((input_norm, target_vector))
-    
+
     return data
 
 

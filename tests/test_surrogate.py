@@ -21,7 +21,7 @@ from backend.surrogate import SurrogateConfig, SurrogateTrainer, generate_traini
 
 
 def _small_config():
-    return SurrogateConfig(hidden_dims=(32, 32), output_dim=4, dropout_rate=0.0)
+    return SurrogateConfig(hidden_dims=(32, 32), output_dim=4, dropout_rate=0.0, input_dim=50)
 
 
 def test_trainer_init_and_forward_shape():
@@ -85,3 +85,52 @@ def test_generate_training_data_shape():
         assert tgt.shape == (4,)
         assert np.all(np.isfinite(inp))
         assert np.all(np.isfinite(tgt))
+
+
+def test_bi_objective_bo_end_to_end():
+    """Smoke-test BiObjectiveBO wiring (SingleTaskGP API + qNEHVI loop)."""
+    botorch = pytest.importorskip("botorch")
+
+    from backend.surrogate import BiObjectiveBO, BOConfig
+
+    dim = 4
+    bounds = np.array([[0.0, 1.0]] * dim)
+
+    def objective_fn(x):
+        # Simple bi-objective: minimize both norms of x
+        return np.stack([x[:, 0], x[:, 1]], axis=1)
+
+    bo = BiObjectiveBO(
+        objective_fn=objective_fn,
+        bounds=bounds,
+        config=BOConfig(n_initial=4, n_iterations=2, batch_size=2, mc_samples=32),
+    )
+    pareto_x, pareto_y = bo.optimize(None, n_iterations=2)
+
+    assert pareto_x.ndim == 2 and pareto_x.shape[1] == dim
+    assert pareto_y.ndim == 2 and pareto_y.shape[1] == 2
+    assert np.all(np.isfinite(pareto_y))
+
+
+def test_hybrid_warm_start_decode():
+    """Decode normalized 30-dim vector back to physical geometry (round-trip)."""
+    from scripts.hybrid_warm_start import decode
+
+    x = np.array([
+        7.5 / 15.0, 9.0 / 15.0, 5.5 / 15.0, 12.0 / 15.0, 6.0 / 15.0, 8.0 / 15.0,  # radii
+        100.0 / 400.0, 150.0 / 400.0, 200.0 / 400.0, 250.0 / 400.0,
+        300.0 / 400.0, 320.0 / 400.0, 340.0 / 400.0,                                # hp
+        7.0 / 10.0, 7.0 / 10.0, 7.0 / 10.0, 7.0 / 10.0, 7.0 / 10.0,
+        7.0 / 10.0, 7.0 / 10.0,                                                      # hd
+        3.0 / 5.0, 3.0 / 5.0, 3.0 / 5.0, 3.0 / 5.0, 3.0 / 5.0, 3.0 / 5.0,
+        3.0 / 5.0,                                                                   # hl
+        350.0 / 400.0, 22.0 / 25.0, 1.0,                                             # L, outer_d, closed
+    ])
+    radii, L, hp, hd, hl, outer_d = decode(x)
+    assert radii.shape == (6,)
+    assert hp.shape == (7,) and hd.shape == (7,) and hl.shape == (7,)
+    np.testing.assert_allclose(radii[0], 7.5)
+    np.testing.assert_allclose(L, 350.0)
+    np.testing.assert_allclose(hp[0], 100.0)
+    np.testing.assert_allclose(outer_d, 22.0)
+

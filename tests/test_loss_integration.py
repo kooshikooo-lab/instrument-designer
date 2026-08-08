@@ -1,33 +1,33 @@
-import sys, os
+import sys
+import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from backend.tmm_acoustics import tmm_instrument_from_radii
 from backend.physics.losses import KeefeLoss
-import numpy as np
 
-# Test KeefeLoss integration directly
-print("Testing KeefeLoss integration...")
 
-loss_model = KeefeLoss()
-inst = tmm_instrument_from_radii(
-    np.array([7.5]*6),  # 6 control points, 7.5mm radius
-    320.0,  # bore length
-    [60, 100, 140, 180, 220, 260, 300],  # hole positions
-    [5.0]*7,  # hole diameters
-    [3.5]*7,  # hole lengths
-    loss_model=loss_model,
-)
+def test_loss_integration():
+    loss_model = KeefeLoss()
+    inst = tmm_instrument_from_radii(
+        np.array([7.5]*6),
+        320.0,
+        [60, 100, 140, 180, 220, 260, 300],
+        [5.0]*7,
+        [3.5]*7,
+        loss_model=loss_model,
+    )
 
-# Test resonance
-wl_guess = 346100 / 523.25  # C5 wavelength
-wl = inst.find_resonance(wl_guess, ['open']*7, n_register=2)
-freq = inst.frequency_from_wavelength(wl)
-print(f"Test freq: {freq:.1f} Hz (target: 523.25)")
+    wl_guess = 346100 / 523.25
+    wl = inst.find_resonance(wl_guess, ['open']*7, n_register=2)
+    freq = inst.frequency_from_wavelength(wl)
+    assert abs(freq - 523.25) < 50.0, f"Resonance freq {freq:.1f} Hz too far from target 523.25 Hz"
 
-# Test loss model directly
-factor = loss_model.bore_loss(100.0, 7.5, 661.0)  # 100mm, 7.5mm radius, ~661mm wavelength
-print(f"Loss factor: {factor}")
-print(f"Loss magnitude: {abs(factor):.4f}")
-print(f"Loss phase shift: {np.angle(factor):.6f} rad")
+    factor = loss_model.bore_loss(100.0, 7.5, 661.0)
+    assert factor is not None, "bore_loss returned None"
+    assert np.isfinite(factor), f"bore_loss returned non-finite: {factor}"
+    assert abs(factor) > 0, "Loss factor magnitude must be > 0"
+    assert abs(factor) < 1, f"Loss factor magnitude {abs(factor):.4f} too large (expected < 1)"
 
-print("\n✅ KeefeLoss integration works!")
+
+if __name__ == "__main__":
+    test_loss_integration()

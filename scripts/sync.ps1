@@ -1,8 +1,8 @@
 ﻿param([int]$Interval = 0)
 
-$repo = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
-$desktopIP = "100.69.113.41"
-$laptopIP = "100.100.66.117"
+$repo = if ($env:INSTRUMENT_DESIGNER_DIR) { $env:INSTRUMENT_DESIGNER_DIR } else { (Resolve-Path (Join-Path $PSScriptRoot '..')).Path }
+$desktopIP = if ($env:DESKTOP_IP) { $env:DESKTOP_IP } else { "100.69.113.41" }
+$laptopIP = if ($env:LAPTOP_IP) { $env:LAPTOP_IP } else { "100.100.66.117" }
 $servicePorts = @(8000, 8786, 9124, 9999)
 $selfIP = (tailscale ip -4 2>&1 | Out-String).Trim()
 if ($selfIP -match $desktopIP) { $machine = "desktop" }

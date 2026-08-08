@@ -115,7 +115,7 @@ def evaluate_inst(inst, fingerings, transpose=0):
                     best_dist = dist
                     best_freq = f
                     best_pr = pr
-            except:
+            except Exception:
                 continue
         err = cents_error(best_freq, target_freq) if best_freq > 0 else 1e10
         results.append({'note': note_name, 'target': target_freq, 'actual': best_freq,
