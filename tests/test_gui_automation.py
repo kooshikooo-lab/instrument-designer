@@ -26,6 +26,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 
 from backend.stl_verifier import check_mesh_repair_gate
 from scripts.gui_automation import gui_driver
+from scripts.gui_automation.desktop_chat import _focus_composer
 from scripts.gui_automation.make_nonwatertight_target import punch_hole
 from scripts.gui_automation.vision_loop import (
     _ask_vision_remote,
@@ -90,6 +91,26 @@ def test_execute_action_click_gate_can_veto(monkeypatch):
                                "reason": "x", "verified": False}) is False
     finally:
         gui_driver.set_click_gate(lambda _p: True)
+
+
+def test_focus_composer_clicks_lower_center(monkeypatch):
+    # The composer-focus helper must click the lower-center of the app window
+    # through the approval gate; a vetoed click just falls through.
+    calls = []
+
+    def fake_click(x, y, button="left", approve=True):
+        calls.append((x, y, approve))
+
+    monkeypatch.setattr(gui_driver, "window_rect",
+                        lambda *a, **k: (100, 200, 900, 1000))
+    monkeypatch.setattr(gui_driver, "click", fake_click)
+    _focus_composer("chatgpt")
+    assert calls == [(500, 960, True)]
+
+
+def test_focus_composer_no_window_noop(monkeypatch):
+    monkeypatch.setattr(gui_driver, "window_rect", lambda *a, **k: None)
+    _focus_composer("chatgpt")  # must not raise
 
 
 # --- vision remote fallback -----------------------------------------------

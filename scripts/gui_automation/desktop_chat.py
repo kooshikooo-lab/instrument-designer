@@ -99,6 +99,22 @@ def ocr_png(path: str) -> str:
     return "\n".join(lines)
 
 
+def _focus_composer(app: str) -> None:
+    """Click the composer (bottom of the app window) to receive keyboard focus.
+
+    The click goes through the human-approval gate; if vetoed we proceed anyway
+    (Ctrl+V falls back to wherever focus already is). Uses the window's lower
+    center, which is the input box in ChatGPT/Claude Desktop layouts.
+    """
+    rect = gui_driver.window_rect(APP_TITLES[app], exclude=APP_EXCLUDE.get(app, ""))
+    if rect is None:
+        return
+    left, _top, right, bottom = rect
+    x = (left + right) // 2
+    y = bottom - 40
+    gui_driver.click(x, y, approve=True)
+
+
 def find_app_window(app: str) -> bool:
     title = APP_TITLES.get(app, app)
     exclude = APP_EXCLUDE.get(app, "")
@@ -185,10 +201,12 @@ def send_image(
         return {"sent": False, "error": f"{app} window not found; is it running?"}
 
     gui_driver.set_clipboard_image(png_bytes)
-    # Focus the input box and paste the image (Ctrl+V), then type the caption
-    # (if any) after the image; Enter sends.
+    # Focus the input box (click it) then paste the image (Ctrl+V), then type
+    # the caption (if any) after the image; Enter sends. The click goes through
+    # the gate so the human can veto a click outside the expected composer area.
     gui_driver.activate_window(APP_TITLES[app])
     time.sleep(1.5)
+    _focus_composer(app)
     gui_driver.hotkey("ctrl", "v")
     time.sleep(1.0)
     if caption.strip():
