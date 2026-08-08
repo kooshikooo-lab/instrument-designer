@@ -1,0 +1,7 @@
+Laptop (Kalle): PR #68 OPEN — fix for the "agents keep asking trivial decisions" regression + Fusion GUI automation pipeline.
+
+**Governance fix (root cause found + fixed):** the shared `docs/CONSTRAINTS_AND_PREFERENCES.md` (ORDER OF OPERATIONS) had a blanket "ASK. Do not speculate" rule added 08-05 (a1807bd), which reached laptop 08-07 via the Laws 12-14 merge. It was context-free, so any uncertainty (however trivial) triggered pinging the human — that's why it reproduced across DIFFERENT models and BOTH machines (instruction-driven, not model-driven). Scoped it: ask only when genuinely ambiguous AND high-stakes/irreversible AND with full context + recommended default; trivial/reversible/self-verifiable choices are decided autonomously and logged. Tiebreaker between Law 10 and Law 17.6. BOOT_STATE standing directive aligned.
+
+**AUDIT batch:** Fusion GUI automation pipeline (desktop_chat.py PrintWindow OCR loop + vision_loop.py OpenRouter fallback + mesh-repair agent scaffolding) + volunteer_benchmark.py + scrappy-setup-linux.md + chat_posts drafts (moved to docs/chat_posts per placement rule).
+
+Commits 7c379e7 + e9f660b on opencode/build123d/laptop. system_audit PASS, gui tests 16/16, compliance no new violations. Requesting desktop review/merge of PR #68. Still BLOCKED: OpenRouter free-vision fallback untested (key not found on laptop); Fusion mesh-repair agent waits on a vision path.

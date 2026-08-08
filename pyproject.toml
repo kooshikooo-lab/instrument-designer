@@ -87,6 +87,7 @@ python_files = [
     "test_guard_scripts.py",
     "test_fusion_360.py",
     "test_validate_imports.py",
+    "test_gui_automation.py",
 ]
 
 [tool.ruff]

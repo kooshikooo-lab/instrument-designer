@@ -212,9 +212,17 @@ reason to do so — say that you are doing this and why.
 If the human says "put this on the to-do list", do not start it. Keep it listed,
 pending, until the human tells you to proceed.
 
-**If you are unsure how to interpret the human's statements — their intent,
-next steps, or anything else — ASK. Do not speculate.** Guessing at meaning
-wastes more time than asking.
+**Ask only when a human decision is genuinely required.** A question to the
+human is justified ONLY when ALL of these hold: (a) the matter is genuinely
+ambiguous — intent, next steps, or requirements are not inferable from the
+instructions or repo context; (b) the decision is high-stakes or irreversible
+(destructive git operations, architecture changes, changes to shared state or
+to the other machine's coordination); and (c) you can attach full context AND a
+recommended default. Never post a bare question. For trivial, reversible, or
+self-verifiable choices (naming, ordering, formatting, file placement, picking
+between two working options), decide autonomously with the least-surprise
+default and log the decision — do NOT ask. Guessing is acceptable when the
+guess is cheap to verify or reverse. (Tiebreaker for Law 10 and Law 17.6.)
 
 ---
 
