@@ -144,8 +144,15 @@
   (Phase 0.3) still needs either a smaller/faster vision path or the desktop-chat
   fallback. ChatGPT Desktop not installed (window is Store stub).
 - **PR #68** (`opencode/build123d/laptop` → `opencode/main/desktop`) — OPEN +
-  MERGEABLE, 3 commits (7c379e7 governance ASK fix, e9f660b Fusion GUI pipeline,
-  a6eb853 lint cleanup). Carrier for laptop work. Awaiting desktop review/merge.
+  MERGEABLE, 6 commits (7c379e7 governance ASK fix, e9f660b Fusion GUI pipeline,
+  a6eb853 lint cleanup, 120ba18 ChatGPT Desktop vision backend, docs).
+  Carrier for laptop work. Awaiting desktop review/merge.
+- **Vision path UNBLOCKED (2026-08-08)**: ChatGPT Desktop vision backend
+  (`120ba18`) — `gui_driver.set_clipboard_image` (Win32 CF_DIB) +
+  `desktop_chat.send_image` + `VISION_BACKEND=auto|ollama|chatgpt|openrouter`.
+  Fusion Phase 0.3 mesh-repair agent can now run with
+  `VISION_BACKEND=chatgpt` — no API key, needs ChatGPT Desktop installed+running.
+  Works on laptop + desktop (both have it). Tests 19 passed, audit PASS.
 - **Desktop codebase audit (Laws 1-14)** — posted in batches to #23; no code
   changes to shared branches during audit.
 - **Dask worker attach to desktop scheduler**: `tcp://100.69.113.41:8786` still
