@@ -1,0 +1,256 @@
+"""Vision loop: screenshot -> local vision model -> safe action.
+
+Drives the observe->decide->act->verify cycle using the local Ollama
+``gemma4:12b`` model (no external API). The model is asked to reply with a
+single JSON object drawn from a strict action schema:
+
+    {"action": "click"|"type"|"press"|"hotkey"|"done"|"wait",
+     "x": <int>, "y": <int>, "text": "...", "keys": ["..."],
+     "reason": "why", "verified": true|false}
+
+Actions are executed through :mod:`gui_driver` (with its click gate), then
+the caller's verification callback (e.g. ``check_mesh_repair_gate``) decides
+whether the loop continues. Every step is logged to a JSONL run file.
+"""
+from __future__ import annotations
+
+import argparse
+import base64
+import json
+import os
+import re
+import sys
+import time
+import urllib.request
+from typing import Callable, Optional
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
+
+from scripts.gui_automation import gui_driver  # noqa: E402
+
+OLLAMA_BASE = os.environ.get("OLLAMA_BASE", "http://127.0.0.1:11434")
+# gemma3:4b fits in this machine's ~3GB free RAM (12B did not fit and
+# swapped at 0.75 tok/s); override with VISION_MODEL if a bigger model runs.
+MODEL = os.environ.get("VISION_MODEL", "gemma3:4b")
+# Remote vision fallback (OpenRouter). Used when the local Ollama vision path
+# is too slow or times out. Default model/free fallbacks are shared with the
+# STL verifier so the key + model list live in one place.
+REMOTE_MODEL = os.environ.get("REMOTE_VISION_MODEL", "")
+
+# Action names the model is allowed to emit; anything else is rejected.
+ALLOWED_ACTIONS = {"click", "type", "press", "hotkey", "done", "wait"}
+
+SYSTEM_PROMPT = """You are driving Fusion 360's GUI to repair a non-watertight
+mesh. You see one screenshot. Decide the SINGLE next action and reply with
+ONLY a JSON object, no prose, no code fences:
+
+{"action": "...", "x": 0, "y": 0, "text": "", "keys": [], "reason": "...", "verified": false}
+
+Allowed actions:
+- click: press mouse at (x, y) in screenshot pixel coordinates.
+- type: type "text" into the focused field.
+- press: press a single key, e.g. "enter", "escape", "tab".
+- hotkey: press "keys" together, e.g. ["ctrl", "o"].
+- wait: wait a few seconds (dialogs animating, documents loading).
+- done: the task is finished; set "verified": true only if you are certain.
+
+Rules: coordinates are relative to the screenshot you were shown. Prefer
+small, verifiable steps. If you cannot see a target, choose "wait" or
+"done". Never invent coordinates for something that is not visible."""
+
+# The JSON the model must produce, plus a free-form summary for the log.
+ACTION_KEYS = {"action", "reason", "verified"}
+ACTION_JSON_FIELDS = {
+    "action": str,
+    "x": (int, type(None)),
+    "y": (int, type(None)),
+    "text": str,
+    "keys": list,
+    "reason": str,
+    "verified": bool,
+}
+
+
+def _image_payload(png_bytes: bytes) -> str:
+    return base64.b64encode(png_bytes).decode("ascii")
+
+
+def ask_vision(png_bytes: bytes, user_prompt: str, timeout: int = 120) -> dict:
+    """Send screenshot + prompt to the vision model, return parsed JSON.
+
+    Tries the local Ollama model first; if it is unavailable or times out,
+    falls back to OpenRouter (reuses :func:`backend.stl_verifier.ask_vision`,
+    which retries 429/5xx across a small free-model list). Set
+    ``OPENROUTER_API_KEY`` to enable the remote path.
+    """
+    body = {
+        "model": MODEL,
+        "messages": [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {
+                "role": "user",
+                "content": user_prompt,
+                "images": [_image_payload(png_bytes)],
+            },
+        ],
+        "stream": False,
+        "options": {"temperature": 0.1},
+    }
+    req = urllib.request.Request(
+        f"{OLLAMA_BASE}/api/chat",
+        data=json.dumps(body).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+        text = data["message"]["content"]
+    except Exception:  # noqa: BLE001  (timeout / connection refused / decode)
+        return _ask_vision_remote(png_bytes, user_prompt)
+    return _parse_action_json(text)
+
+
+def _ask_vision_remote(png_bytes: bytes, user_prompt: str) -> dict:
+    """OpenRouter fallback: screenshot + prompt -> parsed JSON action."""
+    try:
+        from backend.stl_verifier import ask_vision as remote_ask
+    except Exception as e:  # noqa: BLE001
+        raise ValueError(f"remote vision unavailable: {e}") from e
+    text = remote_ask({"screen": png_bytes}, user_prompt, model=REMOTE_MODEL)
+    if text.startswith("[ERROR]"):
+        raise ValueError(text)
+    return _parse_action_json(text)
+
+
+def _parse_action_json(text: str) -> dict:
+    """Extract the first JSON object from the model reply and validate it."""
+    # Strip code fences if the model added them despite instructions.
+    text = re.sub(r"```(?:json)?", "", text).strip()
+    start = text.find("{")
+    end = text.rfind("}")
+    if start == -1 or end == -1 or end <= start:
+        raise ValueError(f"no JSON object in model reply: {text[:200]!r}")
+    try:
+        obj = json.loads(text[start : end + 1])
+    except json.JSONDecodeError as e:
+        raise ValueError(f"model reply not valid JSON: {e}") from e
+    if not isinstance(obj, dict):
+        raise ValueError("model reply JSON is not an object")
+    if obj.get("action") not in ALLOWED_ACTIONS:
+        raise ValueError(f"disallowed action {obj.get('action')!r}")
+    for key, typ in ACTION_JSON_FIELDS.items():
+        if key not in obj:
+            if key in ("text", "reason"):
+                obj[key] = ""
+            elif key == "verified":
+                obj[key] = False
+            elif key == "keys":
+                obj[key] = []
+            else:
+                obj[key] = None
+        if not isinstance(obj[key], typ):
+            raise ValueError(f"bad type for {key}: {obj[key]!r}")
+    return obj
+
+
+def execute_action(action: dict) -> bool:
+    """Run a parsed action via gui_driver. Returns True if it ran (or was done)."""
+    name = action["action"]
+    if name == "click":
+        return gui_driver.click(float(action["x"]), float(action["y"]))
+    if name == "type":
+        gui_driver.type_text(action.get("text") or "")
+        return True
+    if name == "press":
+        gui_driver.press(action.get("text") or action.get("keys") or "enter")
+        return True
+    if name == "hotkey":
+        gui_driver.hotkey(*action.get("keys") or ["ctrl"])
+        return True
+    if name == "wait":
+        time.sleep(3.0)
+        return True
+    if name == "done":
+        return True
+    return False
+
+
+def _write_log(run_log: str, entry: dict) -> None:
+    os.makedirs(os.path.dirname(os.path.abspath(run_log)), exist_ok=True)
+    with open(run_log, "a", encoding="utf-8") as f:
+        f.write(json.dumps(entry) + "\n")
+
+
+def run_loop(
+    task_prompt: str,
+    verify: Callable[[], bool],
+    run_log: str,
+    max_steps: int = 15,
+    screenshot_dir: Optional[str] = None,
+    region: Optional[tuple[int, int, int, int]] = None,
+) -> int:
+    """Run the observe->decide->act->verify loop until verify() passes.
+
+    Returns 0 on verified success, 1 if the model said done without
+    verification, 2 if max_steps exhausted.
+    """
+    screenshot_dir = screenshot_dir or os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "..", "..", "test_output", "gui_agent"
+    )
+    for step in range(1, max_steps + 1):
+        png = (
+            gui_driver.capture_region_png(*region)
+            if region
+            else gui_driver.capture_png(downscale=1280)
+        )
+        shot_path = os.path.join(screenshot_dir, f"step{step:02d}.png")
+        gui_driver.save_png(png, shot_path)
+
+        prompt = (
+            f"Task: {task_prompt}\nThis is step {step}. Decide the next single action. "
+            "Reply with ONLY the JSON object."
+        )
+        action = ask_vision(png, prompt)
+        _write_log(
+            run_log,
+            {"step": step, "shot": shot_path, "action": action},
+        )
+        print(f"[{step}] {action['action']} {action.get('reason', '')}")
+
+        if action["action"] == "done":
+            if action.get("verified") or verify():
+                print("done (verified)")
+                return 0
+            print("model claims done but verification failed - forcing continue")
+            continue
+
+        if not execute_action(action):
+            print("action vetoed by click gate - stopping")
+            return 3
+
+        time.sleep(1.0)
+        if verify():
+            print(f"verification PASSED after step {step}")
+            return 0
+    print("max steps exhausted")
+    return 2
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description="Local vision GUI agent (Fusion mesh repair).")
+    ap.add_argument("--task", default="Repair the non-watertight mesh and export it as STL.")
+    ap.add_argument("--max-steps", type=int, default=15)
+    ap.add_argument("--log", default="test_output/gui_agent/run.jsonl")
+    ap.add_argument("--shots", default=None, help="dir to save step screenshots")
+    args = ap.parse_args()
+
+    # Demo verify callback: place a file to signal manual success.
+    def _verify() -> bool:
+        return os.path.exists(os.path.join("test_output", "gui_agent", "done.txt"))
+
+    return run_loop(args.task, _verify, args.log, max_steps=args.max_steps, screenshot_dir=args.shots)
+
+
+if __name__ == "__main__":
+    sys.exit(main())
