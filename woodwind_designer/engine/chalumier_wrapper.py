@@ -210,10 +210,12 @@ class ChalumierDesigner:
 
         java_cmd = self._find_java()
         try:
+            # Cap the JVM heap so concurrent design processes cannot saturate RAM
+            # (3 JVMs without a cap caused the earlier Dask sweep timeouts).
             result = subprocess.run(
-                [java_cmd, "-jar", str(jar), "design",
+                [java_cmd, "-Xmx2g", "-jar", str(jar), "design",
                  "--output-dir", output_dir, str(chal_path)],
-                capture_output=True, text=True, timeout=600
+                capture_output=True, text=True, timeout=1800
             )
 
             log = result.stdout + "\n" + result.stderr
@@ -275,7 +277,7 @@ class ChalumierDesigner:
             return ChalumierResult(
                 output_dir=output_dir,
                 success=False,
-                log="Design timed out after 10 minutes"
+                log="Design timed out after 30 minutes"
             )
         except Exception as e:
             return ChalumierResult(
