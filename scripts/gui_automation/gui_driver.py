@@ -453,5 +453,6 @@ def activate_window(title_substring: str) -> bool:
     user32.EnumWindows(_cb, 0)
     if not found:
         return False
+    user32.ShowWindow(found[0], 9)  # SW_RESTORE: unminimize before foregrounding
     user32.SetForegroundWindow(found[0])
     return True
