@@ -9,8 +9,11 @@
 
 ## Goal
 
-- **Working branch: `opencode/build123d/laptop`** (laptop), HEAD `0e3bf06`.
-- **Desktop branch `opencode/main/desktop`** at `8a264a4` (Laws 15+16 merged locally on laptop via staging).
+- **Working branch: `opencode/build123d/laptop`** (laptop), HEAD `905266d`
+  (2026-08-08: merged desktop `a8b3cc2` rescue + Law 14.N dead-path prevention;
+  pyproject.toml testpath union; pushed. PR #66 MERGEABLE).
+- **Desktop branch `opencode/main/desktop`** at `a8b3cc2` (Laws 15+16 + dead-path
+  prevention Law 14.N + rescue bench tooling).
 - **Fusion 360 track (2026-08-07, desktop offline)**: new `tests/test_fusion_360.py`
   (15 tests, whitelisted) covering smoke/phase1 generators + manifest/result
   contracts; **finding** — xaphoon_C now watertight (C1 fix) so Phase 0.3 repair
@@ -60,12 +63,24 @@
 
 ## Progress
 
-### Done (this session, 2026-08-07)
-- **Governance merge completed + verified**: side branch
-  `merge/build123d-laptop-receives-governance` → merged desktop `04564614`,
-  1 conflict resolved (`team_chat.py` union), exec-bit fixes on git hooks,
-  compliance baseline regenerated 23→30, gates green, 355 passed / 4 skipped,
-  promoted + pushed `6c23a11`. Posted merge report + completion to #23.
+### Done (this session, 2026-08-08)
+- **Rescue + dead-path merge COMPLETE (laptop side)**: rehearsed on
+  `merge/laptop-receives-rescue-deadpath` per Law 15.3 (merge_gate correctly
+  predicted 1 conflict), resolved `pyproject.toml` testpath union
+  (`test_fusion_360.py` laptop + `test_validate_imports.py` desktop), forward-
+  ported `validate_imports.py` venv exclusions (.venv/.venv-wsl/venv/node_modules
+  — fixes `jedi` `import __main__` crash on `.venv-wsl`), reworded
+  `scripts/test_numba.py` docstring dropping deleted-branch ref. Commit `905266d`
+  (GOVERNANCE-UPDATE for desktop-ratified Law 14.N). Verified: system_audit ALL
+  PASS, guard tests 32 passed, pre-commit validation 23 staged files, compliance
+  "no new violations vs baseline". Pushed; PR #66 MERGEABLE. Posted completion
+  to #23 (comment 17939738).
+- **Pre-existing finding (AUDIT, not merge-introduced)**: `validate_imports.py
+  --all` reports DEAD PATH ERRORS identically on desktop's own canonical
+  `opencode/main/desktop` (run.py → woodwind_designer.main, benchmark_chalumeau.py
+  → tmm_optimizer, bpy/chess deps) — confirmed via clean clone at
+  `%TEMP%\opencode\desktop_clone`. Environmental or missing registry entries on
+  desktop side; reported to #23.
 - **ACK'd desktop promote instruction + audit coordination** (holding shared
   pushes).
 - **Dask test batches (local cluster)**: local scheduler (PID 15908) + 1 worker
@@ -86,13 +101,14 @@
 
 ### In Progress
 - **PR #66** (`opencode/build123d/laptop` → `opencode/main/desktop`) — OPEN +
-  MERGEABLE, carrier for laptop work.
+  MERGEABLE, carrier for laptop work. Awaiting desktop merge + orphan-branch
+  deletion (unblocked).
 - **Desktop codebase audit (Laws 1-14)** — posted in batches to #23; no code
   changes to shared branches during audit.
 - **Dask worker attach to desktop scheduler**: `tcp://100.69.113.41:8786` still
   unreachable; laptop local cluster running meanwhile.
 - **Orphan branch cleanup** (Law 15/16 audit finding): to coordinate rename/
-  delete with desktop post-audit.
+  delete with desktop post-merge.
 
 ### Blocked
 - Chess match rematch (thread 12): pending both monitors; desktop monitor port
@@ -107,32 +123,34 @@
 - **Law 15 ACK'd**; all `merge/` staging branches deleted on both sides.
 
 ## Next Steps
-1. Wait for desktop audit to complete / desktop back online; post any
-   laptop-side gate findings.
-2. Push laptop branch (research `0808026` + Laws 15/16 `d4e71e0` + Law 17
-   `74edbe0` + gitignore `5c9fe08` + boot `2cd07ae` + Fusion tests/docs
-   `b58a65e` `6efa7ad` `917369d` `0e3bf06`) after audit completes.
-3. Attach laptop dask workers to desktop scheduler when reachable; re-run
+1. Await desktop: merge PR #66 + delete orphan branches (unblocked by laptop merge).
+2. Watch #23 for ack of merge-completion post (17939738); nudge if stale.
+3. Restart tailscale peer monitor + `team_chat.py watch --interval 30` per
+   Law 12/Constitution.
+4. Attach laptop dask workers to desktop scheduler when reachable; re-run
    cluster test batches.
-4. Coordinate orphan branch cleanup (rename/delete) with desktop per Law 15.
-5. Fusion 360: human runs `phase2b_trigger.json` in a Fusion session; laptop
+5. WSL2 + Tailscale (userspace) + Dask scheduler/worker setup (queued todo).
+6. Lawkeeper: `opencode/framework-mvp/desktop` STILL not pushed by desktop —
+   re-verify `git ls-remote` before executor work.
+7. Fusion 360: human runs `phase2b_trigger.json` in a Fusion session; laptop
    verifies `phase2b_result.json` against the CAM contract; find a replacement
    non-watertight mesh for the Phase 0.3 repair proof.
-6. Phase 1: WoodwindOpenWind FEM (desktop-owned; research base in
+8. Phase 1: WoodwindOpenWind FEM (desktop-owned; research base in
    `docs/RESEARCH_openwind_fem_and_surrogates.md`), surrogate audit.
-7. Phase 2 (Issue #47): CT-scan benchmarking using
+9. Phase 2 (Issue #47): CT-scan benchmarking using
    `docs/RESEARCH_ct_benchmarking.md` (FT40/FT44, DaSCH STLs).
 
 ## Critical Context
-- `origin/main` = `d935287`; `opencode/main/desktop` = `8a264a4` (Laws 15+16);
-  desktop also has unmerged `opencode/system-guardrails/desktop` (Law 16 source).
-- Laptop branch `opencode/build123d/laptop`: HEAD `5c9fe08` (Laws 15+16 merged +
-  Law 17 + gitignore; committed locally, NOT pushed yet — audit hold).
+- `origin/main` = `d935287`; `opencode/main/desktop` = `a8b3cc2` (Laws 15+16 +
+  Law 14.N dead-path + rescue tooling).
+- Laptop branch `opencode/build123d/laptop`: HEAD `905266d` (merge of desktop
+  `a8b3cc2`, pushed).
 - Test baseline: laptop full suite → **387 passed, 4 skipped** (355 + 32 guard
   tests from Law 16, ≈260s).
 - Pre-commit validation passes; `backend/inverse_design.py` allowlisted oversized.
-- Discussion #23 comment IDs (laptop): 17933680 (dask ready), 17933694 (ACK
-  promote + audit hold), 17933898 (ACK Law 15 + test/research report).
+- Discussion #23 comment IDs (laptop): 17939738 (rescue+dead-path merge done),
+  17933680 (dask ready), 17933694 (ACK promote + audit hold), 17933898 (ACK Law
+  15 + test/research report).
 - Wiki repo: `instrument-designer.wiki.git`, cloned at
   `%TEMP%\opencode\wiki2`, last pushed `master 7e10b6e`.
 
