@@ -26,7 +26,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 
 from backend.stl_verifier import check_mesh_repair_gate
 from scripts.gui_automation import gui_driver
-from scripts.gui_automation.desktop_chat import _focus_composer
+from scripts.gui_automation.desktop_chat import _crop_conversation, _focus_composer
 from scripts.gui_automation.make_nonwatertight_target import punch_hole
 from scripts.gui_automation.vision_loop import (
     _ask_vision_remote,
@@ -111,6 +111,34 @@ def test_focus_composer_clicks_lower_center(monkeypatch):
 def test_focus_composer_no_window_noop(monkeypatch):
     monkeypatch.setattr(gui_driver, "window_rect", lambda *a, **k: None)
     _focus_composer("chatgpt")  # must not raise
+
+
+def test_crop_conversation_keeps_right_two_thirds():
+    # The sidebar crop must drop the left ~third (static chat list) and keep
+    # the thread pane, still a valid PNG.
+    from PIL import Image
+
+    buf = io.BytesIO()
+    Image.new("RGB", (600, 400), (40, 40, 40)).save(buf, format="PNG")
+    out = _crop_conversation(buf.getvalue())
+    im = Image.open(io.BytesIO(out))
+    assert im.size == (402, 400)  # int(600 * 0.33) = 198 -> right 402px
+
+
+def test_crop_conversation_passthrough_without_pil(monkeypatch):
+    # No PIL available -> the crop must fall back to returning the input bytes.
+    import builtins
+
+    real_import = builtins.__import__
+
+    def fake_import(name, *args, **kwargs):
+        if name == "PIL" or name.startswith("PIL."):
+            raise ImportError("no PIL")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", fake_import)
+    raw = b"\x89PNG-fake-bytes"
+    assert _crop_conversation(raw) == raw
 
 
 # --- vision remote fallback -----------------------------------------------

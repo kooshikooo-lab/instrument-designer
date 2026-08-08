@@ -218,6 +218,54 @@ def send_image(
     return _poll_reply(app, wait_s, poll_s, min_stable_s, out_dir)
 
 
+def _scroll_chat_to_bottom(hwnd: int) -> None:
+    """Jump the chat to the newest message so the reply is inside the window.
+
+    Click the conversation area (which gives it keyboard focus) then press
+    End repeatedly - deterministic in chat UIs, unlike mouse-wheel scrolling
+    which depends on hover position and ignores off-screen views.
+    """
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        import pyautogui
+    except ImportError:
+        return
+    user32 = ctypes.windll.user32
+    r = wintypes.RECT()
+    if not user32.GetWindowRect(hwnd, ctypes.byref(r)):
+        return
+    cx = (r.left + r.right) // 2
+    cy = r.top + (r.bottom - r.top) // 3  # conversation area, above old text
+    pyautogui.click(cx, cy)
+    time.sleep(0.3)
+    for _ in range(6):
+        pyautogui.press("end")
+        time.sleep(0.1)
+
+
+def _crop_conversation(png: bytes) -> bytes:
+    """Crop a ChatGPT/Claude window capture to the conversation pane.
+
+    The left sidebar (chat list) is static noise: OCR of the full window never
+    changes while the reply is streaming, so stability detection trips on the
+    sidebar. Keep the right ~two-thirds where the thread lives.
+    """
+    try:
+        import io
+
+        from PIL import Image
+    except ImportError:
+        return png
+    im = Image.open(io.BytesIO(png))
+    w, h = im.size
+    crop = im.crop((int(w * 0.33), 0, w, h))
+    buf = io.BytesIO()
+    crop.save(buf, format="PNG")
+    return buf.getvalue()
+
+
 def _poll_reply(
     app: str,
     wait_s: float,
@@ -241,6 +289,9 @@ def _poll_reply(
     texts = []
     while time.time() < deadline:
         try:
+            _scroll_chat_to_bottom(hwnd)
+            gui_driver.activate_window(APP_TITLES[app])  # restore if minimized
+            _scroll_chat_to_bottom(hwnd)
             png = gui_driver.capture_window_png(hwnd)
         except RuntimeError:
             time.sleep(poll_s)
@@ -248,7 +299,12 @@ def _poll_reply(
         shot = os.path.join(out_dir, f"shot_{len(shot_paths):03d}.png")
         gui_driver.save_png(png, shot)
         shot_paths.append(shot)
-        text = ocr_png(shot)
+        # OCR only the conversation pane: the sidebar never changes, so whole-
+        # window OCR looks "stable" before the reply has even started.
+        crop = _crop_conversation(png)
+        crop_shot = os.path.join(out_dir, f"crop_{len(shot_paths):03d}.png")
+        gui_driver.save_png(crop, crop_shot)
+        text = ocr_png(crop_shot)
         texts.append(text)
         if text == last_text and text.strip():
             stable_for += poll_s
