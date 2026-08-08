@@ -9,10 +9,11 @@
 
 ## Goal
 
-- **Working branch: `opencode/build123d/laptop`** (laptop), HEAD `a6eb853`
-  (2026-08-08: governance ASK-directive fix + Fusion GUI pipeline + lint cleanup;
-  PR #68 OPEN, 3 commits, MERGEABLE, base `opencode/main/desktop`).
-- **Desktop branch `opencode/main/desktop`** at `0705f6c` (PR #66 merged 2026-08-08).
+- **Working branch: `opencode/build123d/laptop`** (laptop), HEAD `06e4c9f`
+  (2026-08-08: PR #68 MERGED by desktop; OCR-stability fixes committed;
+  GUI deps declared). PR #68 closed; laptop line contained in desktop main.
+- **Desktop branch `opencode/main/desktop`** at `7a7f34f` (PR #68 merged 2026-08-08).
+  Desktop also pushed `opencode/rescue-perf-medium/desktop` (WIP rescue snapshot, desktop-side).
 - **Fusion 360 track (2026-08-07, desktop offline)**: new `tests/test_fusion_360.py`
   (15 tests, whitelisted) covering smoke/phase1 generators + manifest/result
   contracts; **finding** — xaphoon_C now watertight (C1 fix) so Phase 0.3 repair
@@ -65,6 +66,31 @@
 ## Progress
 
 ### Done (this session, 2026-08-08)
+- **PR #68 MERGED by desktop** into `opencode/main/desktop` (`7a7f34f`, 2026-08-08):
+  governance ASK-fix + Fusion GUI pipeline + ChatGPT Desktop vision backend
+  (9 commits incl. `120ba18`, `46c61d7`). Laptop HEAD `46c61d7` fully contained
+  in desktop main; laptop branch needs no further action.
+- **Dask workers attached to desktop scheduler** `tcp://100.69.113.41:8786`:
+  `laptop-worker` + `laptop-worker2` registered (verified on desktop dashboard
+  `100.69.113.41:8787`). Desktop scheduler was up with 0 workers; laptop workers
+  now serve it. Python version mismatch (laptop 3.14.6 vs scheduler 3.12.10)
+  warns but runs. Scrappy Tailscale fix deferred by human.
+- **Full suite re-run on laptop**: 426 passed / 4 skipped / 1 failed in 421s.
+  The 1 failure = `test_tool_registry.py::test_all_imported_tools_are_declared`
+  (`mss`, `pyautogui` imported by GUI pipeline but undeclared) — the ONLY new CI
+  failure introduced by the pipeline; FIXED.
+- **GUI deps declared** (`06e4c9f`): new `gui` extra
+  (`mss>=9.0`, `pyautogui>=0.9.54`). toolcheck PASS; test_tool_registry passes.
+- **OCR-reply stability committed** (`06e4c9f`, AUDIT): `_scroll_chat_to_bottom`
+  (click conversation + End x6), `_crop_conversation` (right ~2/3, drops static
+  sidebar), `_poll_reply` re-scroll + SW_RESTORE each poll. 23 tests pass.
+  NOT yet live-proven: last live proof still returned sidebar/old-thread text
+  (`no JSON object in model reply`).
+- **Kimi desktop (Moonshot) tried + REVERTED**: posting triggers an in-app
+  onboarding/permission overlay every time; human closed it and asked to prevent
+  recurrence. All Kimi wiring removed from `desktop_chat.py` APP_TITLES/EXCLUDE;
+  test scripts left in `%TEMP%\opencode\`. Kimi intended as general coding chat,
+  not vision.
 - **Over-asking regression ROOT CAUSED + FIXED + PR #68**: blanket "ASK. Do not
   speculate" directive in `docs/CONSTRAINTS_AND_PREFERENCES.md` ORDER OF
   OPERATIONS (added desktop 08-05 `a1807bd`, reached laptop 08-07 via Laws 12-14
@@ -131,39 +157,27 @@
 - Research docs commit + governance commits held locally pending audit; wiki live.
 
 ### In Progress
-- **Fusion 360 GUI track (desktop-chat pipeline working, 2026-08-08)**: built +
-  verified `scripts/gui_automation/desktop_chat.py` (clipboard+paste → Enter →
-  `PrintWindow` capture → WinRT OCR). Root-caused two bugs: (1) screen-region
-  capture grabbed the occluding terminal → replaced with `gui_driver.capture_window_png`
-  (PrintWindow, works while occluded) + `window_hwnd`; (2) non-normalized paths
-  with `..` broke `StorageFile.GetFileFromPathAsync` → `os.path.abspath` in
-  `send_prompt`. Live-verified: Claude replies read back via OCR (resp_len ~2200).
-  `tests/test_gui_automation.py` 13 passed. Posted #23 comment 17940797.
-  STILL BLOCKED: local vision loop (`vision_loop.py` ask_vision) times out even
-  at 384px screenshot against `gemma3:4b` (120s) — the Fusion mesh-repair agent
-  (Phase 0.3) still needs either a smaller/faster vision path or the desktop-chat
-  fallback. ChatGPT Desktop not installed (window is Store stub).
-- **PR #68** (`opencode/build123d/laptop` → `opencode/main/desktop`) — OPEN +
-  MERGEABLE, 6 commits (7c379e7 governance ASK fix, e9f660b Fusion GUI pipeline,
-  a6eb853 lint cleanup, 120ba18 ChatGPT Desktop vision backend, docs).
-  Carrier for laptop work. Awaiting desktop review/merge.
-- **Vision path UNBLOCKED (2026-08-08)**: ChatGPT Desktop vision backend
-  (`120ba18`) — `gui_driver.set_clipboard_image` (Win32 CF_DIB) +
-  `desktop_chat.send_image` + `VISION_BACKEND=auto|ollama|chatgpt|openrouter`.
-  Fusion Phase 0.3 mesh-repair agent can now run with
-  `VISION_BACKEND=chatgpt` — no API key, needs ChatGPT Desktop installed+running.
-  Works on laptop + desktop (both have it). Tests 19 passed, audit PASS.
+- **ChatGPT Desktop vision round-trip (send path WORKS, reply OCR not proven)**:
+  live proof confirmed ChatGPT receives pasted image+prompt (human relayed the
+  reply; clipboard verified via `ImageGrab.grabclipboard` → DIB (200,120)).
+  The remaining gap: `_poll_reply` OCR reply extraction — last proof read the
+  sidebar/old-thread text ("no JSON object in model reply"). Fixes committed
+  (`06e4c9f`) but not yet live-proven end-to-end.
+- **PR #68** — MERGED (closed). Next carrier for laptop work TBD (possibly a
+  new PR from `opencode/build123d/laptop` after more commits).
 - **Desktop codebase audit (Laws 1-14)** — posted in batches to #23; no code
   changes to shared branches during audit.
-- **Dask worker attach to desktop scheduler**: `tcp://100.69.113.41:8786` still
-  unreachable; laptop local cluster running meanwhile.
+- **Dask cross-machine cluster**: laptop workers attached to desktop scheduler
+  (`100.69.113.41:8786`). Scrappy Tailscale fix deferred by human.
 - **Orphan branch cleanup** (Law 15/16 audit finding): to coordinate rename/
   delete with desktop post-merge.
 
 ### Blocked
+- **ChatGPT reply OCR extraction**: not yet stable enough to prove the Phase 0.3
+  mesh-repair loop end-to-end (needs a fresh live proof after `06e4c9f`).
 - Chess match rematch (thread 12): pending both monitors; desktop monitor port
   9124 not responding.
-- Dask desktop scheduler: not started yet on desktop side.
+- Scrappy Tailscale connection: human will fix later.
 
 ## Key Decisions
 - **SoS test expectations → 346100 mm/s** (Law 7: canonical source of truth).
@@ -173,39 +187,34 @@
 - **Law 15 ACK'd**; all `merge/` staging branches deleted on both sides.
 
 ## Next Steps
-1. Fusion 360: pick a faster local-vision path for the GUI agent (smaller capture
-   didn't fix the gemma3:4b timeout; try OpenRouter free-vision fallback — needs
-   `OPENROUTER_API_KEY` — or a lighter model), then run the Phase 0.3 mesh-repair
-   proof end-to-end; wire `desktop_chat.py` in as the manual-GUI fallback once
-   ChatGPT Desktop is installed.
-3. Await desktop: review/merge PR #68 (governance fix + GUI pipeline); PR #66
-   already merged (0705f6c).
-4. Watch #23 for ack of merge-completion post (17939738); nudge if stale.
-5. Restart tailscale peer monitor + `team_chat.py watch --interval 30` per
-   Law 12/Constitution.
-6. Attach laptop dask workers to desktop scheduler when reachable; re-run
-   cluster test batches.
-7. WSL2 + Tailscale (userspace) + Dask scheduler/worker setup (queued todo).
-8. Lawkeeper: `opencode/framework-mvp/desktop` STILL not pushed by desktop —
+1. Re-run the ChatGPT Desktop live proof with `06e4c9f` fixes (scroll-to-bottom +
+   conversation crop + SW_RESTORE per poll) and capture the OCR'd reply JSON; if
+   stable, run the Phase 0.3 mesh-repair proof end-to-end with
+   `VISION_BACKEND=chatgpt`.
+2. Continue on `opencode/build123d/laptop` (PR #68 is merged); push new work in
+   a new PR when a batch is ready.
+3. When Scrappy Tailscale is fixed, attach a Scrappy worker to
+   `tcp://100.69.113.41:8786` and re-run cluster test batches.
+4. Watch #23 for the desktop audit wrap-up; nudge if stale.
+5. Lawkeeper: `opencode/framework-mvp/desktop` STILL not pushed by desktop —
    re-verify `git ls-remote` before executor work.
-9. Fusion 360: human runs `phase2b_trigger.json` in a Fusion session; laptop
+6. Fusion 360: human runs `phase2b_trigger.json` in a Fusion session; laptop
    verifies `phase2b_result.json` against the CAM contract; find a replacement
    non-watertight mesh for the Phase 0.3 repair proof.
-10. Phase 1: WoodwindOpenWind FEM (desktop-owned; research base in
+7. Phase 1: WoodwindOpenWind FEM (desktop-owned; research base in
    `docs/RESEARCH_openwind_fem_and_surrogates.md`), surrogate audit.
-11. Phase 2 (Issue #47): CT-scan benchmarking using
+8. Phase 2 (Issue #47): CT-scan benchmarking using
    `docs/RESEARCH_ct_benchmarking.md` (FT40/FT44, DaSCH STLs).
 
 ## Critical Context
-- `origin/main` = `d935287`; `opencode/main/desktop` = `0705f6c` (PR #66 merged).
-- Laptop branch `opencode/build123d/laptop`: HEAD `a6eb853` (governance fix +
-  Fusion GUI pipeline + lint cleanup; PR #68 open).
-- Test baseline: laptop full suite → **387 passed, 4 skipped** (355 + 32 guard
-  tests from Law 16, ≈260s).
+- `origin/main` = `d935287`; `opencode/main/desktop` = `7a7f34f` (PR #68 merged).
+- Laptop branch `opencode/build123d/laptop`: HEAD `06e4c9f` (contained in desktop main).
+- Test baseline: laptop full suite → **426 passed, 4 skipped, 1 failed (fixed)**,
+  ≈421s. After gui-extra fix: test_tool_registry passes.
 - Pre-commit validation passes; `backend/inverse_design.py` allowlisted oversized.
 - Discussion #23 comment IDs (laptop): 17939738 (rescue+dead-path merge done),
   17933680 (dask ready), 17933694 (ACK promote + audit hold), 17933898 (ACK Law
-  15 + test/research report).
+  15 + test/research report), 17941523 (chatgpt vision backend post).
 - Wiki repo: `instrument-designer.wiki.git`, cloned at
   `%TEMP%\opencode\wiki2`, last pushed `master 7e10b6e`.
 
