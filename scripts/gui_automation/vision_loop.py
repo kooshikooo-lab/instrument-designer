@@ -36,6 +36,9 @@ MODEL = os.environ.get("VISION_MODEL", "gemma3:4b")
 # is too slow or times out. Default model/free fallbacks are shared with the
 # STL verifier so the key + model list live in one place.
 REMOTE_MODEL = os.environ.get("REMOTE_VISION_MODEL", "")
+# Vision backend order. "auto" = ollama, then chatgpt-desktop, then openrouter.
+# Force a specific one with VISION_BACKEND=ollama|chatgpt|openrouter.
+VISION_BACKEND = os.environ.get("VISION_BACKEND", "auto")
 
 # Action names the model is allowed to emit; anything else is rejected.
 ALLOWED_ACTIONS = {"click", "type", "press", "hotkey", "done", "wait"}
@@ -78,11 +81,40 @@ def _image_payload(png_bytes: bytes) -> str:
 def ask_vision(png_bytes: bytes, user_prompt: str, timeout: int = 120) -> dict:
     """Send screenshot + prompt to the vision model, return parsed JSON.
 
-    Tries the local Ollama model first; if it is unavailable or times out,
-    falls back to OpenRouter (reuses :func:`backend.stl_verifier.ask_vision`,
-    which retries 429/5xx across a small free-model list). Set
-    ``OPENROUTER_API_KEY`` to enable the remote path.
+    Backends, in order (override with ``VISION_BACKEND``):
+      1. ollama     - local Ollama model (no API key). Fast when the model is
+                      already warm; times out when it is not loaded.
+      2. chatgpt    - ChatGPT Desktop via clipboard+paste+OCR. No API key, but
+                      needs the app installed and running on this machine.
+      3. openrouter - OpenRouter free models (needs ``OPENROUTER_API_KEY``);
+                      reuses :func:`backend.stl_verifier.ask_vision`, which
+                      retries 429/5xx across a small free-model list.
+
+    In "auto" mode the next backend is tried only if the current one raises.
     """
+    order = {
+        "ollama": (_ask_vision_ollama, timeout),
+        "chatgpt": (_ask_vision_chatgpt, 180),
+        "openrouter": (_ask_vision_remote, timeout),
+    }
+    if VISION_BACKEND == "auto":
+        chain = ["ollama", "chatgpt", "openrouter"]
+    elif VISION_BACKEND in order:
+        chain = [VISION_BACKEND]
+    else:
+        raise ValueError(f"unknown VISION_BACKEND {VISION_BACKEND!r}")
+    errors = []
+    for name in chain:
+        fn, t = order[name]
+        try:
+            return fn(png_bytes, user_prompt, timeout=t)
+        except Exception as e:  # noqa: BLE001  (backend fallthrough)
+            errors.append(f"{name}: {e}")
+    raise ValueError("all vision backends failed: " + "; ".join(errors))
+
+
+def _ask_vision_ollama(png_bytes: bytes, user_prompt: str, timeout: int = 120) -> dict:
+    """Local Ollama vision path (see :func:`ask_vision`)."""
     body = {
         "model": MODEL,
         "messages": [
@@ -102,16 +134,13 @@ def ask_vision(png_bytes: bytes, user_prompt: str, timeout: int = 120) -> dict:
         headers={"Content-Type": "application/json"},
         method="POST",
     )
-    try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-        text = data["message"]["content"]
-    except Exception:  # noqa: BLE001  (timeout / connection refused / decode)
-        return _ask_vision_remote(png_bytes, user_prompt)
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        data = json.loads(resp.read().decode("utf-8"))
+    text = data["message"]["content"]
     return _parse_action_json(text)
 
 
-def _ask_vision_remote(png_bytes: bytes, user_prompt: str) -> dict:
+def _ask_vision_remote(png_bytes: bytes, user_prompt: str, timeout: int = 120) -> dict:
     """OpenRouter fallback: screenshot + prompt -> parsed JSON action."""
     try:
         from backend.stl_verifier import ask_vision as remote_ask
@@ -120,6 +149,31 @@ def _ask_vision_remote(png_bytes: bytes, user_prompt: str) -> dict:
     text = remote_ask({"screen": png_bytes}, user_prompt, model=REMOTE_MODEL)
     if text.startswith("[ERROR]"):
         raise ValueError(text)
+    return _parse_action_json(text)
+
+
+def _ask_vision_chatgpt(png_bytes: bytes, user_prompt: str, timeout: int = 180) -> dict:
+    """ChatGPT Desktop backend: paste the screenshot into the chat app, OCR
+    the reply, and parse it as the action JSON.
+
+    No API key needed - drives the installed desktop app via clipboard+paste
+    (``desktop_chat.send_image``). Works on any machine with ChatGPT Desktop
+    installed. Falls back to :func:`_ask_vision_remote` if the app window is
+    not available.
+    """
+    from scripts.gui_automation import desktop_chat
+
+    result = desktop_chat.send_image(
+        "chatgpt",
+        png_bytes,
+        caption=user_prompt,
+        wait_s=float(timeout),
+    )
+    if not result.get("sent"):
+        raise ValueError(result.get("error", "chatgpt send failed"))
+    text = result.get("response", "").strip()
+    if not text:
+        raise ValueError("chatgpt replied with empty OCR text")
     return _parse_action_json(text)
 
 

@@ -16,6 +16,7 @@ human + Fusion at the GUI); that is exercised by fusion_mesh_repair_agent.py.
 """
 from __future__ import annotations
 
+import io
 import os
 import sys
 
@@ -95,8 +96,11 @@ def test_execute_action_click_gate_can_veto(monkeypatch):
 
 
 def test_ask_vision_falls_back_to_remote_on_local_failure(monkeypatch):
-    # Local Ollama request raises (timeout/refused) -> remote OpenRouter used.
+    # Local Ollama request raises (timeout/refused); ChatGPT window not
+    # present -> OpenRouter used.
     monkeypatch.setattr("urllib.request.urlopen", lambda *a, **k: (_ for _ in ()).throw(TimeoutError("local timed out")))
+    monkeypatch.setattr("scripts.gui_automation.vision_loop._ask_vision_chatgpt",
+                        lambda png, prompt, timeout=180: (_ for _ in ()).throw(ValueError("chatgpt window not found")))
 
     def fake_remote(images, prompt, model=""):
         assert "screen" in images
@@ -105,6 +109,46 @@ def test_ask_vision_falls_back_to_remote_on_local_failure(monkeypatch):
     monkeypatch.setattr("backend.stl_verifier.ask_vision", fake_remote)
     obj = ask_vision(b"pngbytes", "task")
     assert obj["action"] == "wait"
+
+
+def test_ask_vision_chatgpt_backend_used_when_forced(monkeypatch):
+    # VISION_BACKEND=chatgpt must route to the ChatGPT Desktop backend only.
+    monkeypatch.setattr("scripts.gui_automation.vision_loop.VISION_BACKEND", "chatgpt")
+    calls = []
+
+    def fake_chatgpt(png, prompt, timeout=180):
+        calls.append((png, prompt))
+        return {"action": "press", "text": "enter", "reason": "chatgpt ok",
+                "verified": True, "x": None, "y": None, "keys": []}
+
+    monkeypatch.setattr("scripts.gui_automation.vision_loop._ask_vision_chatgpt", fake_chatgpt)
+    obj = ask_vision(b"pngbytes", "task")
+    assert obj["action"] == "press"
+    assert len(calls) == 1
+
+
+def test_ask_vision_all_backends_fail_raises(monkeypatch):
+    monkeypatch.setattr("urllib.request.urlopen", lambda *a, **k: (_ for _ in ()).throw(TimeoutError("down")))
+    monkeypatch.setattr("scripts.gui_automation.vision_loop._ask_vision_chatgpt",
+                        lambda png, prompt, timeout=180: (_ for _ in ()).throw(ValueError("no window")))
+
+    def fake_remote(images, prompt, model=""):
+        return "[ERROR] all vision models unavailable"
+
+    monkeypatch.setattr("backend.stl_verifier.ask_vision", fake_remote)
+    with pytest.raises(ValueError, match="all vision backends failed"):
+        ask_vision(b"png", "task")
+
+
+def test_set_clipboard_image_roundtrips(monkeypatch):
+    # Verify the DIB path is produced and placed without error. Runs only where
+    # a clipboard exists (Windows desktop session).
+    if not sys.platform.startswith("win"):
+        pytest.skip("Windows clipboard required")
+    from PIL import Image
+    buf = io.BytesIO()
+    Image.new("RGB", (32, 24), (10, 200, 30)).save(buf, format="PNG")
+    gui_driver.set_clipboard_image(buf.getvalue())  # must not raise
 
 
 def test_ask_vision_remote_passes_through_errors(monkeypatch):

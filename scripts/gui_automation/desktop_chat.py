@@ -160,6 +160,54 @@ def send_prompt(
     gui_driver.press("enter")
     print(f"[{app}] sent prompt ({len(prompt)} chars)")
 
+    return _poll_reply(app, wait_s, poll_s, min_stable_s, out_dir)
+
+
+def send_image(
+    app: str,
+    png_bytes: bytes,
+    caption: str = "",
+    wait_s: float = 120.0,
+    poll_s: float = 3.0,
+    min_stable_s: float = 8.0,
+    out_dir: str | None = None,
+) -> dict:
+    """Paste an image (plus optional caption) into the app and OCR the reply.
+
+    Like ``send_prompt`` but puts the PNG on the clipboard as an image, so a
+    vision-capable desktop chat app (ChatGPT Desktop, Claude) can *see* the
+    screenshot. Returns {"response", "shots": [...], "sent": bool}.
+    """
+    out_dir = os.path.abspath(out_dir or os.path.join(STATE_DIR, app))
+    os.makedirs(out_dir, exist_ok=True)
+
+    if not find_app_window(app):
+        return {"sent": False, "error": f"{app} window not found; is it running?"}
+
+    gui_driver.set_clipboard_image(png_bytes)
+    # Focus the input box and paste the image (Ctrl+V), then type the caption
+    # (if any) after the image; Enter sends.
+    gui_driver.activate_window(APP_TITLES[app])
+    time.sleep(1.5)
+    gui_driver.hotkey("ctrl", "v")
+    time.sleep(1.0)
+    if caption.strip():
+        gui_driver.type_text(caption.strip())
+        time.sleep(0.5)
+    gui_driver.press("enter")
+    print(f"[{app}] sent image ({len(png_bytes)} bytes png)")
+
+    return _poll_reply(app, wait_s, poll_s, min_stable_s, out_dir)
+
+
+def _poll_reply(
+    app: str,
+    wait_s: float,
+    poll_s: float,
+    min_stable_s: float,
+    out_dir: str,
+) -> dict:
+    """Poll the app window until the reply is stable, then OCR it."""
     # Poll the window until the reply is stable. We capture the app window via
     # PrintWindow (window_hwnd), which renders the window itself and so works
     # even when the terminal occludes it on screen.
@@ -208,20 +256,14 @@ def main() -> int:
     ap.add_argument("--app", choices=list(APP_TITLES), default="claude")
     ap.add_argument("--prompt", default="")
     ap.add_argument("--prompt-file", default=None)
+    ap.add_argument("--image", default=None, help="PNG file to paste as an image instead of a text prompt")
+    ap.add_argument("--caption", default="", help="caption typed after the pasted image")
     ap.add_argument("--wait", type=float, default=60.0)
     ap.add_argument("--min-stable", type=float, default=8.0)
     ap.add_argument("--out", default=None)
     ap.add_argument("--cap", type=int, default=40, help="max sends per rolling window")
     ap.add_argument("--window-h", type=float, default=5.0, help="rolling window hours")
     args = ap.parse_args()
-
-    prompt = args.prompt
-    if args.prompt_file:
-        with open(args.prompt_file, "r", encoding="utf-8") as f:
-            prompt = f.read()
-    if not prompt.strip():
-        print("no prompt")
-        return 2
 
     window = RollingWindow(
         os.path.join(STATE_DIR, args.app, "window.json"),
@@ -233,7 +275,23 @@ def main() -> int:
         print("session cap reached - stopping")
         return 1
 
-    result = send_prompt(args.app, prompt, wait_s=args.wait, min_stable_s=args.min_stable, out_dir=args.out)
+    if args.image:
+        with open(args.image, "rb") as f:
+            png = f.read()
+        result = send_image(
+            args.app, png, caption=args.caption,
+            wait_s=args.wait, min_stable_s=args.min_stable, out_dir=args.out,
+        )
+    else:
+        prompt = args.prompt
+        if args.prompt_file:
+            with open(args.prompt_file, "r", encoding="utf-8") as f:
+                prompt = f.read()
+        if not prompt.strip():
+            print("no prompt")
+            return 2
+        result = send_prompt(args.app, prompt, wait_s=args.wait, min_stable_s=args.min_stable, out_dir=args.out)
+
     result["model"] = args.app
     log_path = os.path.join(STATE_DIR, args.app, "log.jsonl")
     os.makedirs(os.path.dirname(log_path), exist_ok=True)

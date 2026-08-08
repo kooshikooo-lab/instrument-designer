@@ -141,6 +141,87 @@ def save_png(bytes_: bytes, path: str) -> str:
     return path
 
 
+def set_clipboard_image(png_bytes: bytes) -> None:
+    """Put an image on the Windows clipboard (CF_DIB) so Ctrl+V pastes it.
+
+    Converts the PNG bytes to a 32bpp bottom-up BGRA DIB and hands it to
+    ``SetClipboardData(CF_DIB=8)``. Pure Win32, no external deps.
+    """
+    import ctypes
+    from ctypes import wintypes
+
+    user32 = ctypes.WinDLL("user32", use_last_error=True)
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+
+    user32.OpenClipboard.argtypes = [wintypes.HWND]
+    user32.OpenClipboard.restype = wintypes.BOOL
+    user32.EmptyClipboard.restype = wintypes.BOOL
+    user32.SetClipboardData.argtypes = [wintypes.UINT, wintypes.HANDLE]
+    user32.SetClipboardData.restype = wintypes.HANDLE
+    user32.CloseClipboard.restype = wintypes.BOOL
+    kernel32.GlobalAlloc.argtypes = [wintypes.UINT, ctypes.c_size_t]
+    kernel32.GlobalAlloc.restype = wintypes.HGLOBAL
+    kernel32.GlobalLock.argtypes = [wintypes.HGLOBAL]
+    kernel32.GlobalLock.restype = wintypes.LPVOID
+    kernel32.GlobalUnlock.argtypes = [wintypes.HGLOBAL]
+    kernel32.GlobalUnlock.restype = wintypes.BOOL
+
+    img = Image.open(io.BytesIO(png_bytes)).convert("RGBA")
+    w, h = img.size
+    bgra = bytearray(img.tobytes("raw", "RGBA"))
+    # RGBA -> BGRA
+    for i in range(0, len(bgra), 4):
+        bgra[i], bgra[i + 2] = bgra[i + 2], bgra[i]
+    rows = [bytes(bgra[y * w * 4 : (y + 1) * w * 4]) for y in range(h)]
+    pixels = b"".join(reversed(rows))  # bottom-up DIB
+
+    class BITMAPINFOHEADER(ctypes.Structure):
+        _fields_ = [
+            ("biSize", wintypes.DWORD),
+            ("biWidth", wintypes.LONG),
+            ("biHeight", wintypes.LONG),
+            ("biPlanes", wintypes.WORD),
+            ("biBitCount", wintypes.WORD),
+            ("biCompression", wintypes.DWORD),
+            ("biSizeImage", wintypes.DWORD),
+            ("biXPelsPerMeter", wintypes.LONG),
+            ("biYPelsPerMeter", wintypes.LONG),
+            ("biClrUsed", wintypes.DWORD),
+            ("biClrImportant", wintypes.DWORD),
+        ]
+
+    bmi = BITMAPINFOHEADER()
+    bmi.biSize = ctypes.sizeof(BITMAPINFOHEADER)
+    bmi.biWidth = w
+    bmi.biHeight = h
+    bmi.biPlanes = 1
+    bmi.biBitCount = 32
+    bmi.biCompression = 0  # BI_RGB
+    bmi.biSizeImage = w * h * 4
+    dib = ctypes.string_at(ctypes.byref(bmi), ctypes.sizeof(bmi)) + pixels
+
+    CF_DIB = 8
+    GHND = 0x0042
+    if not user32.OpenClipboard(None):
+        raise ctypes.WinError(ctypes.get_last_error())
+    try:
+        user32.EmptyClipboard()
+        h = kernel32.GlobalAlloc(GHND, len(dib))
+        if not h:
+            raise ctypes.WinError(ctypes.get_last_error())
+        ptr = kernel32.GlobalLock(h)
+        if not ptr:
+            raise ctypes.WinError(ctypes.get_last_error())
+        try:
+            ctypes.memmove(ptr, dib, len(dib))
+        finally:
+            kernel32.GlobalUnlock(h)
+        if not user32.SetClipboardData(CF_DIB, h):
+            raise ctypes.WinError(ctypes.get_last_error())
+    finally:
+        user32.CloseClipboard()
+
+
 # --- input ---------------------------------------------------------------
 
 
