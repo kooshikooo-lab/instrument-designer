@@ -44,8 +44,10 @@
   to shared branches until audit completes.
 - **Phase 1 READY**: WoodwindOpenWind FEM integration, surrogate audit.
 - **Standing directive**: tools must be integrated into a pipeline, never just
-  installed and forgotten; `AUDIT:` for provisional commits; ask rather than
-  speculate when intent is unclear; **do safe work first, don't idle on approval**.
+  installed and forgotten; `AUDIT:` for provisional commits; ask the human ONLY
+  for genuinely ambiguous + high-stakes/irreversible decisions, always with full
+  context and a recommended default — never trivial or bare questions;
+  **do safe work first, don't idle on approval**.
 
 ## Constraints & Preferences
 
@@ -100,6 +102,18 @@
 - Research docs commit + governance commits held locally pending audit; wiki live.
 
 ### In Progress
+- **Fusion 360 GUI track (desktop-chat pipeline working, 2026-08-08)**: built +
+  verified `scripts/gui_automation/desktop_chat.py` (clipboard+paste → Enter →
+  `PrintWindow` capture → WinRT OCR). Root-caused two bugs: (1) screen-region
+  capture grabbed the occluding terminal → replaced with `gui_driver.capture_window_png`
+  (PrintWindow, works while occluded) + `window_hwnd`; (2) non-normalized paths
+  with `..` broke `StorageFile.GetFileFromPathAsync` → `os.path.abspath` in
+  `send_prompt`. Live-verified: Claude replies read back via OCR (resp_len ~2200).
+  `tests/test_gui_automation.py` 13 passed. Posted #23 comment 17940797.
+  STILL BLOCKED: local vision loop (`vision_loop.py` ask_vision) times out even
+  at 384px screenshot against `gemma3:4b` (120s) — the Fusion mesh-repair agent
+  (Phase 0.3) still needs either a smaller/faster vision path or the desktop-chat
+  fallback. ChatGPT Desktop not installed (window is Store stub).
 - **PR #66** (`opencode/build123d/laptop` → `opencode/main/desktop`) — OPEN +
   MERGEABLE, carrier for laptop work. Awaiting desktop merge + orphan-branch
   deletion (unblocked).
@@ -123,21 +137,25 @@
 - **Law 15 ACK'd**; all `merge/` staging branches deleted on both sides.
 
 ## Next Steps
-1. Await desktop: merge PR #66 + delete orphan branches (unblocked by laptop merge).
-2. Watch #23 for ack of merge-completion post (17939738); nudge if stale.
-3. Restart tailscale peer monitor + `team_chat.py watch --interval 30` per
+1. Fusion 360: pick a faster local-vision path for the GUI agent (smaller capture
+   didn't fix the gemma3:4b timeout; try OpenRouter free-vision fallback or a
+   lighter model), then run the Phase 0.3 mesh-repair proof end-to-end; wire
+   `desktop_chat.py` in as the manual-GUI fallback once ChatGPT Desktop is installed.
+3. Await desktop: merge PR #66 + delete orphan branches (unblocked by laptop merge).
+4. Watch #23 for ack of merge-completion post (17939738); nudge if stale.
+5. Restart tailscale peer monitor + `team_chat.py watch --interval 30` per
    Law 12/Constitution.
-4. Attach laptop dask workers to desktop scheduler when reachable; re-run
+6. Attach laptop dask workers to desktop scheduler when reachable; re-run
    cluster test batches.
-5. WSL2 + Tailscale (userspace) + Dask scheduler/worker setup (queued todo).
-6. Lawkeeper: `opencode/framework-mvp/desktop` STILL not pushed by desktop —
+7. WSL2 + Tailscale (userspace) + Dask scheduler/worker setup (queued todo).
+8. Lawkeeper: `opencode/framework-mvp/desktop` STILL not pushed by desktop —
    re-verify `git ls-remote` before executor work.
-7. Fusion 360: human runs `phase2b_trigger.json` in a Fusion session; laptop
+9. Fusion 360: human runs `phase2b_trigger.json` in a Fusion session; laptop
    verifies `phase2b_result.json` against the CAM contract; find a replacement
    non-watertight mesh for the Phase 0.3 repair proof.
-8. Phase 1: WoodwindOpenWind FEM (desktop-owned; research base in
+10. Phase 1: WoodwindOpenWind FEM (desktop-owned; research base in
    `docs/RESEARCH_openwind_fem_and_surrogates.md`), surrogate audit.
-9. Phase 2 (Issue #47): CT-scan benchmarking using
+11. Phase 2 (Issue #47): CT-scan benchmarking using
    `docs/RESEARCH_ct_benchmarking.md` (FT40/FT44, DaSCH STLs).
 
 ## Critical Context
